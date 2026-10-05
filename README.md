@@ -128,11 +128,21 @@ ArchTitan provides a suite of native C++ and Qt6 applications built specifically
   - Hardened systemd sandboxing (`ProtectSystem=strict`, `StateDirectory=titanshare`) with IPC pairing PIN output at `/run/titanshare/titanshare-pin.json`.
   - Registered in THM v3.1 `ProtectedRegistry` to prevent freeze or OOM reclaim during active file transfers.
 
-### 9. 🚧 Additional Subsystems (In Development)
+### 9. 🚧 TitanFocus (`titan-focus`) — *Proposed*
+* **Lead:** `@GitGuru29` | **Location:** `subsystems/titan-focus/` *(not yet created)*
+* **Status:** 🚧 Design proposal only — no code implemented. Review the plan before contributing.
+* Developer work optimization engine, extending THM's existing fusion classifier from machine-resource orchestration to human-attention orchestration:
+  - Advisory-only by design: observes and suggests, never signals, throttles, or suspends a process.
+  - 12-rule nudge engine (hydration, 20-20-20 eye strain, posture, focus blocks, context-switch thrash, long builds, agent completion, thermal pressure).
+  - Zero-cost presence detection via Wayland `ext-idle-notify-v1` v2 — no camera, no sensors, no polling loop.
+  - Reuses THM's classifier vocabulary from `/etc/titan-hwm/config` for developer-context signals.
+
+### 10. 🚧 Additional Subsystems (In Development)
 * **Auto GPU Switcher** (`subsystems/auto-gpu-switcher/`): Intelligent iGPU/dGPU dynamic switching.
 * **TITAN AI** (`subsystems/titan-ai/`): Context-aware developer assistant.
 * **TITAN Task Manager** (`subsystems/titan-task-manager/`): Advanced scheduling and resource tracking.
 * **TITAN Mirror** (`subsystems/titan-mirror/`): Wayland-native screen mirroring for mobile devices.
+* **TitanFocus** (`subsystems/titan-focus/`): 🚧 Developer work optimization engine — *proposal only, not yet implemented*.
 
 ---
 
@@ -346,6 +356,7 @@ Comprehensive guides and technical documentation are available on the [ArchTitan
 | **ArchTitan Settings** | System control center and THM profile manager | [Settings Manual](https://github.com/GitGuru29/archtitan-os/wiki/ArchTitan-Settings) |
 | **Titan Media HUD** | Dynamic Island overlay and power menu | [Media HUD Guide](https://github.com/GitGuru29/archtitan-os/wiki/Titan-Media-HUD) |
 | **Titan Share** | P2P file sharing daemon, Android client & storage layout | [Titan Share Guide](https://github.com/GitGuru29/archtitan-os/wiki/Titan-Share) |
+| **TitanFocus** | Developer work optimization engine — design proposal (not implemented) | [Wiki Page (planned)](https://github.com/GitGuru29/archtitan-os/wiki/Titan-Focus) · [Design Notes](https://github.com/GitGuru29/archtitan-os/wiki/Titan-Focus#design-notes) |
 | **Desktop Environment** | Hyprland config, Waybar widgets, and themes | [Desktop Configuration](https://github.com/GitGuru29/archtitan-os/wiki/Desktop-Environment) |
 | **Developer Guide** | Subsystem development and contributor standards | [Developer Guide](https://github.com/GitGuru29/archtitan-os/wiki/Developer-Guide) |
 
