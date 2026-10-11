@@ -17,6 +17,7 @@ set(SOURCES
     src/bluetoothcontroller.cpp
     src/audiocontroller.cpp
     src/nightlightcontroller.cpp
+    src/notificationmodel.cpp
     src/notificationserver.cpp
 )
 
@@ -27,6 +28,7 @@ set(HEADERS
     src/bluetoothcontroller.h
     src/audiocontroller.h
     src/nightlightcontroller.h
+    src/notificationmodel.h
     src/notificationserver.h
 )
 

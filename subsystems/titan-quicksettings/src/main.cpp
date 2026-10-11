@@ -175,6 +175,7 @@ int main(int argc, char *argv[])
     context->setContextProperty("audioCtrl", &audioCtrl);
     context->setContextProperty("nightLightCtrl", &nightCtrl);
     context->setContextProperty("notifServer", &notifServer);
+    context->setContextProperty("notifModel", notifServer.model());
 
     const QUrl url(QStringLiteral("qrc:/qml/QuickSettingsWindow.qml"));
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,

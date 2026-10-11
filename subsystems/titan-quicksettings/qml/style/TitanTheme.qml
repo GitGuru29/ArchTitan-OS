@@ -2,63 +2,72 @@ pragma Singleton
 import QtQuick
 
 /**
- * TitanTheme — ArchTitan design tokens.
+ * TitanTheme — ArchTitan design tokens with Samsung One UI 9.0 styling.
  *
- * Palette is Catppuccin Mocha, tuned to match the OS-wide surface language
- * used by Waybar (rgba(13,14,21) bar), the SwayNC notification center and the
- * Titan media HUD.  All typography uses JetBrainsMono Nerd Font, the single
- * icon+text family shipped on the ISO, so UI glyphs never fall back to a
- * mismatched font.
+ * Merges the clean Catppuccin Mocha contrast with Samsung One UI 9.0
+ * bento-box geometry, continuous squircles, and frosted glass depth.
  */
 QtObject {
     readonly property string fontFamily: "JetBrainsMono Nerd Font"
 
-    // ── Surfaces ────────────────────────────────────────────────────────────
-    readonly property color bgWindow:      "#F00B0E13"   // drawer body, ~94% charcoal moon
-    readonly property color bgSurface:     "#151924"     // raised card
-    readonly property color bgSurfaceAlt:  "#1A1F2C"     // elevated control
-    readonly property color bgInset:       "#0D111A"     // recessed (inset rows)
-    readonly property color bgHover:       "#242B3B"     // hover fill
-    readonly property color bgPressed:     "#1B2130"     // pressed fill
-    readonly property color bgActive:      "#89B4FA"     // active accent fill
+    // ── One UI 9.0 Surfaces & Acrylic Glass ─────────────────────────────────
+    readonly property color bgWindow:          "#F20B0E14"   // ~95% frosted dark backdrop
+    readonly property color bgSurface:         "#161A26"     // raised bento container
+    readonly property color bgSurfaceAlt:      "#1D2232"     // elevated squircle tile
+    readonly property color bgInset:           "#0E121C"     // recessed track / inset
+    readonly property color bgHover:           "#262D42"     // hover state
+    readonly property color bgPressed:         "#191E2C"     // pressed state
+    readonly property color bgActive:          "#2B7FFF"     // One UI vibrant active blue
+
+    readonly property color bgOneUICard:       "#1B2030"     // One UI modular bento card
+    readonly property color bgOneUICardAlt:    "#23293D"     // slightly brighter subcard
+    readonly property color bgOneUITrack:      "#222838"     // pill slider inactive track
+    readonly property color bgOneUIPill:       "#2B3248"     // interactive capsule pill
 
     // ── Borders ─────────────────────────────────────────────────────────────
-    readonly property color borderSubtle:  "#14FFFFFF"   // 8% white hairline
-    readonly property color borderHover:   "#2CFFFFFF"   // 17% white
-    readonly property color borderActive:  "#6689B4FA"   // accent
-    readonly property color borderGlass:   "#0DFFFFFF"
+    readonly property color borderSubtle:      "#18FFFFFF"   // 9% white hairline
+    readonly property color borderHover:       "#30FFFFFF"   // 19% white
+    readonly property color borderActive:      "#702B7FFF"   // One UI accent glow
+    readonly property color borderGlass:       "#14FFFFFF"   // 8% white glass highlight
+    readonly property color borderOneUIGlass:  "rgba(255, 255, 255, 0.09)"
 
-    // ── Accents (Catppuccin Mocha) ──────────────────────────────────────────
-    readonly property color accent:        "#89B4FA"     // blue — primary accent
-    readonly property color accentText:    "#0B0E17"     // text on accent fill
-    readonly property color cyan:          "#38BDF8"     // electric cyan (brand)
-    readonly property color green:         "#A6E3A1"     // success / active
-    readonly property color red:           "#F38BA8"     // destructive
-    readonly property color yellow:        "#F9E2AF"     // warning
-    readonly property color teal:          "#94E2D5"
-    readonly property color lavender:      "#B4BEFE"
-    readonly property color peach:         "#FAB387"
+    // ── Accents & Indicators ────────────────────────────────────────────────
+    readonly property color accent:            "#2B7FFF"     // One UI 9 Electric Blue
+    readonly property color accentBlue:        "#2B7FFF"
+    readonly property color accentText:        "#FFFFFF"     // white text on vibrant pill
+    readonly property color cyan:              "#38BDF8"     // electric cyan
+    readonly property color green:             "#10B981"     // One UI emerald active
+    readonly property color red:               "#EF4444"     // One UI crimson alert
+    readonly property color yellow:            "#F59E0B"     // One UI amber
+    readonly property color teal:              "#14B8A6"
+    readonly property color lavender:          "#818CF8"
+    readonly property color peach:             "#F97316"     // Night light warm glow
 
-    // ── Text ────────────────────────────────────────────────────────────────
-    readonly property color textPrimary:   "#CDD6F4"
-    readonly property color textSecondary: "#A6ADC8"
-    readonly property color textMuted:     "#9399B2"
-    readonly property color textSubtle:    "#6C7086"
-    readonly property color textOnAccent:  "#0B0E17"
+    // ── Text & Typography ───────────────────────────────────────────────────
+    readonly property color textPrimary:       "#FFFFFF"     // high-contrast primary
+    readonly property color textSecondary:     "#CBD5E1"     // secondary details
+    readonly property color textMuted:         "#94A3B8"     // descriptions
+    readonly property color textSubtle:        "#64748B"     // timestamps & captions
+    readonly property color textOnAccent:      "#FFFFFF"
 
     // ── Type scale ──────────────────────────────────────────────────────────
-    readonly property int sizeDisplay: 17
-    readonly property int sizeTitle:   13
-    readonly property int sizeBody:    12
-    readonly property int sizeSmall:   11
-    readonly property int sizeCaption: 9
+    readonly property int sizeClock:    32
+    readonly property int sizeDisplay:  18
+    readonly property int sizeTitle:    14
+    readonly property int sizeBody:     12
+    readonly property int sizeSmall:    11
+    readonly property int sizeCaption:  9
 
-    // ── Geometry ────────────────────────────────────────────────────────────
-    readonly property int radiusWindow:  24
-    readonly property int radiusCard:    16
-    readonly property int radiusControl: 12
-    readonly property int radiusPill:    24
-    readonly property int radiusIcon:    20
-    readonly property int spacing:       10
-    readonly property int panelPadding:  14
+    // ── One UI Geometry & Radii ─────────────────────────────────────────────
+    readonly property int radiusWindow:    28    // main overlay rounded corner
+    readonly property int radiusBento:     24    // modular bento cards
+    readonly property int radiusCard:      20    // notification & inner cards
+    readonly property int radiusControl:   16    // small buttons
+    readonly property int radiusSlider:    26    // thick pill slider
+    readonly property int radiusCircle:    26    // circular quick toggle buttons (52px)
+    readonly property int radiusPill:      24    // segmented pill
+    readonly property int radiusIcon:      20
+
+    readonly property int spacing:         10
+    readonly property int panelPadding:    14
 }

@@ -3,193 +3,322 @@ import QtQuick.Layouts
 import "../style"
 
 /**
- * QuickToggleGrid — the "system" controls cluster of the drawer.
+ * QuickToggleGrid — Samsung One UI 9.0 Bento-Box Quick Settings cluster.
  *
- * Connectivity pills, the volume / brightness card and the 4x2 tool grid.
- * All tiles share design tokens and states via the reusable components.
+ * Squircles, thick pill sliders, and circular action toggles with live
+ * PipeWire, NetworkManager, BlueZ, and Backlight integration.
  */
-Rectangle {
-    id: gridContainer
+ColumnLayout {
+    id: bentoRoot
     Layout.fillWidth: true
-    Layout.preferredHeight: 392
-    radius: TitanTheme.radiusCard
-    color: TitanTheme.bgSurface
-    border.color: TitanTheme.borderSubtle
-    border.width: 1
+    spacing: 12
 
-    ColumnLayout {
-        anchors.fill: parent
-        anchors.leftMargin: 12
-        anchors.rightMargin: 12
-        anchors.topMargin: 10
-        anchors.bottomMargin: 12
-        spacing: 8
+    // ── 1. Top Connectivity Bento (Dual Squircles) ──────────────────────────
+    RowLayout {
+        Layout.fillWidth: true
+        spacing: 10
 
-        // ── Section label ─────────────────────────────────────────────────────
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: 7
-
-            Rectangle { width: 3; height: 12; radius: 1.5; color: TitanTheme.accent }
-            Text {
-                text: "QUICK SETTINGS"
-                font.family: TitanTheme.fontFamily
-                font.pixelSize: TitanTheme.sizeCaption
-                font.weight: Font.Bold
-                font.letterSpacing: 1.2
-                color: TitanTheme.textSubtle
+        OneUIConnectivityTile {
+            active: (typeof networkCtrl !== "undefined" && networkCtrl) ? networkCtrl.wifiEnabled : false
+            iconGlyph: "\uf1eb"
+            title: "Wi-Fi"
+            subtitle: (typeof networkCtrl !== "undefined" && networkCtrl)
+                      ? networkCtrl.ssid : "Disconnected"
+            onClicked: {
+                if (typeof networkCtrl !== "undefined" && networkCtrl)
+                    networkCtrl.toggleWifi()
             }
-            Item { Layout.fillWidth: true }
         }
 
-        // ── Connectivity row ──────────────────────────────────────────────────
-        RowLayout {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 50
-            spacing: 8
+        OneUIConnectivityTile {
+            active: (typeof bluetoothCtrl !== "undefined" && bluetoothCtrl) ? bluetoothCtrl.powered : false
+            iconGlyph: "\uf294"
+            title: "Bluetooth"
+            subtitle: (typeof bluetoothCtrl !== "undefined" && bluetoothCtrl)
+                      ? bluetoothCtrl.statusText : "Off"
+            onClicked: {
+                if (typeof bluetoothCtrl !== "undefined" && bluetoothCtrl)
+                    bluetoothCtrl.toggleBluetooth()
+            }
+        }
+    }
 
-            LargeToggleTile {
-                active: (typeof networkCtrl !== "undefined" && networkCtrl) ? networkCtrl.wifiEnabled : false
-                source: "\uf1eb"   // wifi
-                titleText: "Internet"
-                statusText: (typeof networkCtrl !== "undefined" && networkCtrl)
-                            ? networkCtrl.ssid : "No connection"
-                accent: TitanTheme.teal
-                onClicked: if (typeof networkCtrl !== "undefined" && networkCtrl) networkCtrl.toggleWifi()
+    // ── 2. Thick Pill Sliders Bento (Brightness & Sound) ────────────────────
+    Rectangle {
+        Layout.fillWidth: true
+        implicitHeight: sliderCol.implicitHeight + 20
+        radius: TitanTheme.radiusBento
+        color: TitanTheme.bgOneUICard
+        border.color: TitanTheme.borderGlass
+        border.width: 1
+
+        ColumnLayout {
+            id: sliderCol
+            anchors.fill: parent
+            anchors.margins: 12
+            spacing: 10
+
+            // Sound Volume Slider
+            OneUISlider {
+                iconGlyph: {
+                    if (muted) return "\uf026";
+                    if (value <= 30) return "\uf027";
+                    return "\uf028";
+                }
+                from: 0
+                to: 150
+                value: (typeof audioCtrl !== "undefined" && audioCtrl) ? audioCtrl.sinkVolume : 60
+                muted: typeof audioCtrl !== "undefined" && audioCtrl && audioCtrl.sinkMuted
+                fillAccent: TitanTheme.accentBlue
+                onChanged: (v) => {
+                    if (typeof audioCtrl !== "undefined" && audioCtrl) audioCtrl.setVolume(v)
+                }
             }
 
-            LargeToggleTile {
-                active: (typeof bluetoothCtrl !== "undefined" && bluetoothCtrl) ? bluetoothCtrl.powered : false
-                source: "\uf294"   // bluetooth
-                titleText: "Bluetooth"
-                statusText: (typeof bluetoothCtrl !== "undefined" && bluetoothCtrl)
-                            ? bluetoothCtrl.statusText : "Not connected"
-                accent: TitanTheme.lavender
-                onClicked: if (typeof bluetoothCtrl !== "undefined" && bluetoothCtrl) bluetoothCtrl.toggleBluetooth()
+            // Display Brightness Slider
+            OneUISlider {
+                iconGlyph: "\uf185" // sun
+                from: 0
+                to: 100
+                value: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.brightness : 80
+                fillAccent: TitanTheme.yellow
+                onChanged: (v) => {
+                    if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.setBrightness(v)
+                }
             }
+        }
+    }
 
-            // Caffeine mini-toggle
-            Rectangle {
-                Layout.preferredWidth: 50
-                Layout.preferredHeight: 50
-                radius: TitanTheme.radiusControl
-                color: cafMa.pressed ? TitanTheme.bgPressed
-                      : (cafActive ? TitanTheme.yellow
-                        : (cafMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgSurfaceAlt))
-                border.color: cafActive ? TitanTheme.borderActive
-                              : (cafMa.containsMouse ? TitanTheme.borderHover : TitanTheme.borderSubtle)
-                border.width: 1
+    // ── 3. Circular Quick Action Toggles (4x2 Grid) ─────────────────────────
+    Rectangle {
+        Layout.fillWidth: true
+        implicitHeight: gridCol.implicitHeight + 22
+        radius: TitanTheme.radiusBento
+        color: TitanTheme.bgOneUICard
+        border.color: TitanTheme.borderGlass
+        border.width: 1
 
-                Behavior on color { ColorAnimation { duration: 120 } }
+        ColumnLayout {
+            id: gridCol
+            anchors.fill: parent
+            anchors.margins: 12
+            spacing: 12
 
-                HavenIcon {
-                    anchors.centerIn: parent
-                    source: "\uf0f4"   // coffee
-                    tint: cafActive ? TitanTheme.accentText : TitanTheme.textMuted
-                    glyphSize: 18
+            // Row 1
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 0
+
+                Item {
+                    Layout.fillWidth: true
+                    height: 74
+                    OneUICircleButton {
+                        anchors.centerIn: parent
+                        iconGlyph: "\uf186" // moon
+                        label: "Dark mode"
+                        active: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.themeDark : true
+                        onClicked: {
+                            if (typeof systemCtrl !== "undefined" && systemCtrl)
+                                systemCtrl.themeDark = !systemCtrl.themeDark
+                        }
+                    }
                 }
 
-                MouseArea {
-                    id: cafMa
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: if (typeof systemCtrl !== "undefined" && systemCtrl)
-                                   systemCtrl.caffeineActive = !systemCtrl.caffeineActive
+                Item {
+                    Layout.fillWidth: true
+                    height: 74
+                    OneUICircleButton {
+                        anchors.centerIn: parent
+                        iconGlyph: "\uf06e" // eye comfort / night light
+                        label: "Eye shield"
+                        active: (typeof nightLightCtrl !== "undefined" && nightLightCtrl) ? nightLightCtrl.active : false
+                        activeColor: TitanTheme.peach
+                        onClicked: {
+                            if (typeof nightLightCtrl !== "undefined" && nightLightCtrl)
+                                nightLightCtrl.toggleNightLight()
+                        }
+                    }
                 }
 
-                property bool cafActive: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.caffeineActive : false
+                Item {
+                    Layout.fillWidth: true
+                    height: 74
+                    OneUICircleButton {
+                        anchors.centerIn: parent
+                        iconGlyph: "\uf0f4" // caffeine
+                        label: "Awake"
+                        active: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.caffeineActive : false
+                        activeColor: TitanTheme.yellow
+                        onClicked: {
+                            if (typeof systemCtrl !== "undefined" && systemCtrl)
+                                systemCtrl.caffeineActive = !systemCtrl.caffeineActive
+                        }
+                    }
+                }
 
-                Accessible.role: Accessible.Button
-                Accessible.name: "Caffeine"
+                Item {
+                    Layout.fillWidth: true
+                    height: 74
+                    OneUICircleButton {
+                        anchors.centerIn: parent
+                        iconGlyph: (typeof audioCtrl !== "undefined" && audioCtrl && audioCtrl.sourceMuted) ? "\uf131" : "\uf130"
+                        label: "Mic mute"
+                        active: (typeof audioCtrl !== "undefined" && audioCtrl) ? audioCtrl.sourceMuted : false
+                        activeColor: TitanTheme.red
+                        onClicked: {
+                            if (typeof audioCtrl !== "undefined" && audioCtrl)
+                                audioCtrl.toggleSourceMute()
+                        }
+                    }
+                }
+            }
+
+            // Row 2
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 0
+
+                Item {
+                    Layout.fillWidth: true
+                    height: 74
+                    OneUICircleButton {
+                        anchors.centerIn: parent
+                        iconGlyph: "\uf030" // camera
+                        label: "Capture"
+                        active: false
+                        onClicked: {
+                            if (typeof systemCtrl !== "undefined" && systemCtrl)
+                                systemCtrl.takeScreenshot()
+                        }
+                    }
+                }
+
+                Item {
+                    Layout.fillWidth: true
+                    height: 74
+                    OneUICircleButton {
+                        anchors.centerIn: parent
+                        iconGlyph: "\uf1fb" // color picker
+                        label: "Color pick"
+                        active: false
+                        onClicked: {
+                            if (typeof systemCtrl !== "undefined" && systemCtrl)
+                                systemCtrl.pickColor()
+                        }
+                    }
+                }
+
+                Item {
+                    Layout.fillWidth: true
+                    height: 74
+                    OneUICircleButton {
+                        anchors.centerIn: parent
+                        iconGlyph: "\uf11b" // game mode
+                        label: "Game mode"
+                        active: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.gameModeActive : false
+                        activeColor: TitanTheme.green
+                        onClicked: {
+                            if (typeof systemCtrl !== "undefined" && systemCtrl)
+                                systemCtrl.gameModeActive = !systemCtrl.gameModeActive
+                        }
+                    }
+                }
+
+                Item {
+                    Layout.fillWidth: true
+                    height: 74
+                    OneUICircleButton {
+                        anchors.centerIn: parent
+                        iconGlyph: "\uf023" // VPN lock
+                        label: "VPN"
+                        active: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.vpnActive : false
+                        activeColor: TitanTheme.lavender
+                        onClicked: {
+                            if (typeof systemCtrl !== "undefined" && systemCtrl)
+                                systemCtrl.vpnActive = !systemCtrl.vpnActive
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // ── 4. Bottom Device & Media Control Pills ──────────────────────────────
+    RowLayout {
+        Layout.fillWidth: true
+        spacing: 10
+
+        Rectangle {
+            Layout.fillWidth: true
+            height: 44
+            radius: 22
+            color: medMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgOneUICard
+            border.color: TitanTheme.borderGlass
+            border.width: 1
+
+            RowLayout {
+                anchors.centerIn: parent
+                spacing: 8
+                Text {
+                    text: "\uf001" // music
+                    font.family: TitanTheme.fontFamily
+                    font.pixelSize: 13
+                    color: TitanTheme.accentBlue
+                }
+                Text {
+                    text: "Media Output"
+                    font.family: TitanTheme.fontFamily
+                    font.pixelSize: 11
+                    font.weight: Font.DemiBold
+                    color: TitanTheme.textPrimary
+                }
+            }
+
+            MouseArea {
+                id: medMa
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                    if (typeof systemCtrl !== "undefined" && systemCtrl)
+                        systemCtrl.openMediaWidget()
+                }
             }
         }
 
-        // ── Volume / brightness card ──────────────────────────────────────────
-        VolumeCard {}
-
-        // ── Tools section ─────────────────────────────────────────────────────
-        RowLayout {
+        Rectangle {
             Layout.fillWidth: true
-            spacing: 7
+            height: 44
+            radius: 22
+            color: kbdMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgOneUICard
+            border.color: TitanTheme.borderGlass
+            border.width: 1
 
-            Rectangle { width: 3; height: 12; radius: 1.5; color: TitanTheme.accent }
-            Text {
-                text: "TOOLS"
-                font.family: TitanTheme.fontFamily
-                font.pixelSize: TitanTheme.sizeCaption
-                font.weight: Font.Bold
-                font.letterSpacing: 1.2
-                color: TitanTheme.textSubtle
+            RowLayout {
+                anchors.centerIn: parent
+                spacing: 8
+                Text {
+                    text: "\uf11c" // keyboard
+                    font.family: TitanTheme.fontFamily
+                    font.pixelSize: 13
+                    color: TitanTheme.textSecondary
+                }
+                Text {
+                    text: "Virtual Input"
+                    font.family: TitanTheme.fontFamily
+                    font.pixelSize: 11
+                    font.weight: Font.DemiBold
+                    color: TitanTheme.textPrimary
+                }
             }
-            Item { Layout.fillWidth: true }
-        }
 
-        // Row 1
-        RowLayout {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 46
-            spacing: 8
-
-            GridTile {
-                source: "\uf186"   // moon
-                tip: "Toggle dark theme"
-                glyphSize: 17
-                active: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.themeDark : true
-                onActivated: if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.themeDark = !systemCtrl.themeDark
-            }
-            GridTile {
-                source: "\uf1fe"   // pulse
-                tip: "Audio visualizer"
-                glyphSize: 17
-                active: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.visualizerActive : false
-                onActivated: if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.visualizerActive = !systemCtrl.visualizerActive
-            }
-            GridTile {
-                source: "\uf023"   // lock
-                tip: "VPN on/off"
-                glyphSize: 16
-                active: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.vpnActive : false
-                onActivated: if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.vpnActive = !systemCtrl.vpnActive
-            }
-            GridTile {
-                source: "\uf11b"   // gamepad
-                tip: "Game mode"
-                glyphSize: 16
-                active: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.gameModeActive : false
-                onActivated: if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.gameModeActive = !systemCtrl.gameModeActive
-            }
-        }
-
-        // Row 2
-        RowLayout {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 46
-            spacing: 8
-
-            GridTile {
-                source: "\uf030"   // camera
-                tip: "Screenshot region"
-                glyphSize: 16
-                onActivated: if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.takeScreenshot()
-            }
-            GridTile {
-                source: "\uf1fb"   // eye dropper
-                tip: "Pick screen color"
-                glyphSize: 16
-                onActivated: if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.pickColor()
-            }
-            GridTile {
-                source: "\uf11c"   // keyboard
-                tip: "Virtual keyboard"
-                glyphSize: 16
-                onActivated: if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.toggleVirtualKeyboard()
-            }
-            GridTile {
-                source: "\uf001"   // music
-                tip: "Media widget"
-                glyphSize: 16
-                onActivated: if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.openMediaWidget()
+            MouseArea {
+                id: kbdMa
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                    if (typeof systemCtrl !== "undefined" && systemCtrl)
+                        systemCtrl.toggleVirtualKeyboard()
+                }
             }
         }
     }

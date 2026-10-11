@@ -3,69 +3,104 @@ import QtQuick.Layouts
 import "../style"
 
 /**
- * NotificationFooter — DND toggle, running total and clear-all.
+ * NotificationFooter — Samsung One UI 9.0 notification action bar.
  *
- * Slim status bar under the list: gives destructive and mute actions a
- * fixed, always-reachable home.
+ * Left: Do Not Disturb pill button.
+ * Center: Notification count.
+ * Right: "Clear all" action pill.
  */
 RowLayout {
     id: footerRoot
     Layout.fillWidth: true
-    Layout.preferredHeight: 36
-    spacing: 8
+    Layout.preferredHeight: 38
+    spacing: 10
 
-    // DND toggle
-    IconButton {
-        Layout.preferredWidth: 36
-        Layout.preferredHeight: 36
-        source: "\uf1f6"   // bell-slash
-        tip: (typeof notifServer !== "undefined" && notifServer && notifServer.dndActive)
-             ? "Do Not Disturb: on" : "Do Not Disturb: off"
-        active: (typeof notifServer !== "undefined" && notifServer) ? notifServer.dndActive : false
-        activeColor: TitanTheme.red
-        activeTint: TitanTheme.accentText
-        onClicked: if (typeof notifServer !== "undefined" && notifServer) notifServer.toggleDnd()
-    }
-
-    // Total pill
+    // ── DND Toggle Pill ─────────────────────────────────────────────────────
     Rectangle {
-        Layout.fillWidth: true
         Layout.preferredHeight: 36
+        Layout.preferredWidth: dndRow.implicitWidth + 24
         radius: 18
-        color: TitanTheme.bgSurfaceAlt
-        border.color: TitanTheme.borderSubtle
+        color: dndActive ? TitanTheme.accentBlue : (dndMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgOneUIPill)
+        border.color: dndActive ? TitanTheme.borderActive : TitanTheme.borderGlass
         border.width: 1
 
+        property bool dndActive: (typeof notifServer !== "undefined" && notifServer) ? notifServer.dndActive : false
+
+        Behavior on color { ColorAnimation { duration: 130 } }
+
         RowLayout {
+            id: dndRow
             anchors.centerIn: parent
             spacing: 6
 
             Text {
-                text: "\uf0f3"   // bell
+                text: footerRoot.dndActive ? "\uf1f6" : "\uf0f3"
                 font.family: TitanTheme.fontFamily
-                font.pixelSize: 13
-                color: (typeof notifServer !== "undefined" && notifServer && notifServer.dndActive)
-                       ? TitanTheme.textSubtle : TitanTheme.textMuted
+                font.pixelSize: 12
+                color: footerRoot.dndActive ? "#FFFFFF" : TitanTheme.textSubtle
             }
+
             Text {
-                text: (typeof notifServer !== "undefined" && notifServer)
-                      ? notifServer.totalCount.toLocaleString() + " notifications"
-                      : "0 notifications"
+                text: "DND"
                 font.family: TitanTheme.fontFamily
-                font.pixelSize: TitanTheme.sizeSmall
+                font.pixelSize: 11
                 font.weight: Font.DemiBold
-                color: TitanTheme.textMuted
+                color: footerRoot.dndActive ? "#FFFFFF" : TitanTheme.textSecondary
+            }
+        }
+
+        MouseArea {
+            id: dndMa
+            anchors.fill: parent
+            cursorShape: Qt.PointingHandCursor
+            onClicked: {
+                if (typeof notifServer !== "undefined" && notifServer)
+                    notifServer.toggleDnd()
             }
         }
     }
 
-    // Clear all
-    IconButton {
-        Layout.preferredWidth: 36
+    Item { Layout.fillWidth: true }
+
+    // ── Clear All Action Pill ───────────────────────────────────────────────
+    Rectangle {
         Layout.preferredHeight: 36
-        source: "\uf1f8"   // trash
-        tip: "Clear all notifications"
-        destructive: true
-        onClicked: if (typeof notifServer !== "undefined" && notifServer) notifServer.clearAll()
+        Layout.preferredWidth: clearRow.implicitWidth + 24
+        radius: 18
+        color: clearMa.pressed ? TitanTheme.bgPressed : (clearMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgOneUIPill)
+        border.color: clearMa.containsMouse ? TitanTheme.borderHover : TitanTheme.borderGlass
+        border.width: 1
+
+        RowLayout {
+            id: clearRow
+            anchors.centerIn: parent
+            spacing: 6
+
+            Text {
+                text: "\uf1f8" // trash
+                font.family: TitanTheme.fontFamily
+                font.pixelSize: 11
+                color: clearMa.containsMouse ? TitanTheme.red : TitanTheme.textSubtle
+            }
+
+            Text {
+                text: "Clear all"
+                font.family: TitanTheme.fontFamily
+                font.pixelSize: 11
+                font.weight: Font.DemiBold
+                color: clearMa.containsMouse ? TitanTheme.red : TitanTheme.textSecondary
+            }
+        }
+
+        MouseArea {
+            id: clearMa
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: {
+                if (typeof notifServer !== "undefined" && notifServer)
+                    notifServer.clearAll()
+            }
+        }
     }
 }

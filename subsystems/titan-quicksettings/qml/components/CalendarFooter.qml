@@ -3,21 +3,19 @@ import QtQuick.Layouts
 import "../style"
 
 /**
- * CalendarFooter — collapseable current-month calendar.
+ * CalendarFooter — Samsung One UI 9.0 collapsible mini-calendar strip.
  *
- * Collapsed it is a slim "date • tasks" strip; expanded it becomes a real
- * mini-month grid with weekday headings and the current day highlighted.
- * Pure view-layer: month math runs in JavaScript against Date().
+ * Squircles with frosted glass depth and responsive month grid.
  */
-
 Rectangle {
     id: calFooterRoot
     Layout.fillWidth: true
     Layout.preferredHeight: contentHeight
     radius: TitanTheme.radiusCard
-    color: TitanTheme.bgSurface
-    border.color: TitanTheme.borderSubtle
+    color: TitanTheme.bgOneUICard
+    border.color: TitanTheme.borderGlass
     border.width: 1
+    clip: true
 
     property bool expanded: false
     property int contentHeight: 40
@@ -63,10 +61,10 @@ Rectangle {
             spacing: 8
 
             Text {
-                text: "\uf133"   // calendar
+                text: "\uf133" // calendar
                 font.family: TitanTheme.fontFamily
-                font.pixelSize: 14
-                color: TitanTheme.textSubtle
+                font.pixelSize: 13
+                color: TitanTheme.accentBlue
             }
 
             Text {
@@ -75,16 +73,16 @@ Rectangle {
                       ? systemCtrl.currentDateString
                       : today.toLocaleDateString(Qt.locale(), "dddd, MMMM d") + " • 0 tasks"
                 font.family: TitanTheme.fontFamily
-                font.pixelSize: TitanTheme.sizeSmall
+                font.pixelSize: 11
                 font.weight: Font.DemiBold
                 color: TitanTheme.textSecondary
                 elide: Text.ElideRight
             }
 
             Text {
-                text: expanded ? "\uf0d7" : "\uf0d8"   // square-caret down / up
+                text: expanded ? "\uf077" : "\uf078" // chevron up / down
                 font.family: TitanTheme.fontFamily
-                font.pixelSize: 12
+                font.pixelSize: 10
                 color: TitanTheme.textSubtle
             }
 
@@ -109,7 +107,7 @@ Rectangle {
                 font.family: TitanTheme.fontFamily
                 font.pixelSize: TitanTheme.sizeCaption
                 font.weight: Font.Bold
-                font.letterSpacing: 1.4
+                font.letterSpacing: 1.2
                 color: TitanTheme.textMuted
             }
 
@@ -144,40 +142,40 @@ Rectangle {
 
                     Repeater {
                         model: 7
-                            delegate: Rectangle {
+                        delegate: Rectangle {
                             Layout.fillWidth: true
                             Layout.preferredHeight: 24
-                                property int dayNumber: calFooterRoot.dayNumberFor(index, weekRow.rowIndex)
-                                property bool isToday: dayNumber > 0
-                                                       && dayNumber === calFooterRoot.today.getDate()
-                                                       && calFooterRoot.currentMonth === calFooterRoot.today.getMonth()
-                                property bool weekend: index >= 5
+                            property int dayNumber: calFooterRoot.dayNumberFor(index, weekRow.rowIndex)
+                            property bool isToday: dayNumber > 0
+                                                   && dayNumber === calFooterRoot.today.getDate()
+                                                   && calFooterRoot.currentMonth === calFooterRoot.today.getMonth()
+                            property bool weekend: index >= 5
 
-                                radius: 8
-                                color: {
-                                    if (isToday) return TitanTheme.accent;
-                                    if (ma.containsMouse && dayNumber > 0) return TitanTheme.bgHover;
-                                    return "transparent";
-                                }
+                            radius: 8
+                            color: {
+                                if (isToday) return TitanTheme.accentBlue;
+                                if (ma.containsMouse && dayNumber > 0) return TitanTheme.bgHover;
+                                return "transparent";
+                            }
 
-                                Behavior on color { ColorAnimation { duration: 110 } }
+                            Behavior on color { ColorAnimation { duration: 110 } }
 
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: dayNumber > 0 ? dayNumber : ""
-                                    font.family: TitanTheme.fontFamily
-                                    font.pixelSize: TitanTheme.sizeSmall
-                                    font.weight: isToday ? Font.Bold : Font.Normal
-                                    color: isToday ? TitanTheme.accentText
-                                                   : (weekend ? TitanTheme.textSubtle : TitanTheme.textSecondary)
-                                }
+                            Text {
+                                anchors.centerIn: parent
+                                text: dayNumber > 0 ? dayNumber : ""
+                                font.family: TitanTheme.fontFamily
+                                font.pixelSize: 11
+                                font.weight: isToday ? Font.Bold : Font.Normal
+                                color: isToday ? "#FFFFFF"
+                                               : (weekend ? TitanTheme.textSubtle : TitanTheme.textSecondary)
+                            }
 
-                                MouseArea {
-                                    id: ma
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                }
+                            MouseArea {
+                                id: ma
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                            }
                         }
                     }
                 }
@@ -188,11 +186,11 @@ Rectangle {
                 Layout.fillWidth: true
                 spacing: 7
 
-                Rectangle { width: 3; height: 12; radius: 1.5; color: TitanTheme.accent; Layout.preferredHeight: 12 }
+                Rectangle { width: 3; height: 12; radius: 1.5; color: TitanTheme.accentBlue; Layout.preferredHeight: 12 }
                 Text {
                     text: calFooterRoot.taskLine
                     font.family: TitanTheme.fontFamily
-                    font.pixelSize: TitanTheme.sizeSmall
+                    font.pixelSize: 11
                     color: TitanTheme.textMuted
                     elide: Text.ElideRight
                     Layout.fillWidth: true

@@ -4,10 +4,10 @@ import QtQuick.Layouts
 import "../style"
 
 /**
- * NotificationList — scrollable grouped notification history.
+ * NotificationList — High-performance virtualized One UI 9.0 notification history.
  *
- * Renders NotificationCard delegates over the server model with a thin
- * styled scrollbar and a friendly empty state.
+ * Backed by QAbstractListModel with reuseItems for minimal memory overhead and
+ * 60 FPS scrolling.
  */
 Item {
     id: notifListRoot
@@ -18,30 +18,39 @@ Item {
     ListView {
         id: notifListView
         anchors.fill: parent
-        spacing: 8
+        spacing: 10
         clip: true
-        model: (typeof notifServer !== "undefined" && notifServer) ? notifServer.notifications : []
+        reuseItems: true
+        cacheBuffer: 120
+        model: (typeof notifModel !== "undefined" && notifModel) ? notifModel : null
 
-        delegate: NotificationCard {
+        delegate: OneUINotificationCard {
             width: notifListView.width
-            modelItem: modelData
             cardIndex: index
+            appNameText: model.appName
+            summaryText: model.summary
+            bodyText: model.body
+            dateText: model.dateStr
+            iconTypeVal: model.iconType
+            countVal: model.itemCount
+            expandedVal: model.isExpanded
+            subItemsList: model.subItems
         }
 
         ScrollBar.vertical: ScrollBar {
-            width: 5
+            width: 4
             policy: ScrollBar.AsNeeded
             interactive: true
             anchors.right: parent.right
-            anchors.rightMargin: 1
+            anchors.rightMargin: 2
 
             contentItem: Rectangle {
-                radius: 2.5
-                color: control.active ? TitanTheme.accent : TitanTheme.bgSurfaceAlt
-                opacity: control.active ? 1.0 : 0.9
+                radius: 2
+                color: control.active ? TitanTheme.accentBlue : TitanTheme.bgOneUIPill
+                opacity: control.active ? 1.0 : 0.8
             }
             background: Rectangle {
-                radius: 2.5
+                radius: 2
                 color: "transparent"
             }
         }
@@ -49,35 +58,37 @@ Item {
         // Empty state
         Rectangle {
             anchors.centerIn: parent
-            width: parent.width - 40
-            height: 96
+            width: parent.width - 32
+            height: 110
             radius: TitanTheme.radiusCard
-            color: TitanTheme.bgSurface
-            border.color: TitanTheme.borderSubtle
+            color: TitanTheme.bgOneUICard
+            border.color: TitanTheme.borderGlass
             border.width: 1
             visible: notifListView.count === 0
 
             ColumnLayout {
                 anchors.centerIn: parent
-                spacing: 6
+                spacing: 8
 
                 Text {
-                    text: "\uf0f3"   // bell
+                    text: "\uf0f3" // bell
                     Layout.alignment: Qt.AlignHCenter
                     font.family: TitanTheme.fontFamily
-                    font.pixelSize: 26
+                    font.pixelSize: 24
                     color: TitanTheme.textSubtle
                 }
+
                 Text {
                     text: "You're all caught up"
                     Layout.alignment: Qt.AlignHCenter
                     font.family: TitanTheme.fontFamily
-                    font.pixelSize: TitanTheme.sizeSmall
+                    font.pixelSize: 13
                     font.weight: Font.DemiBold
                     color: TitanTheme.textSecondary
                 }
+
                 Text {
-                    text: "No new notifications"
+                    text: "No pending notifications"
                     Layout.alignment: Qt.AlignHCenter
                     font.family: TitanTheme.fontFamily
                     font.pixelSize: 10

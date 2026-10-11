@@ -3,101 +3,75 @@ import QtQuick.Layouts
 import "../style"
 
 /**
- * HeaderBar — session badge, live clock and the system action row.
+ * HeaderBar — Samsung One UI 9.0 session header.
  *
- * Left: ArchTitan delta + uptime.  Right: live HH:MM clock, then the
- * edit / refresh / settings / power icon buttons (with tooltips).
+ * Left: Bold clock and date with uptime indicator.
+ * Right: Quick action pills (Power, Settings, Refresh).
  */
 RowLayout {
     id: headerRoot
     Layout.fillWidth: true
-    Layout.preferredHeight: 42
-    spacing: 8
+    Layout.preferredHeight: 52
+    spacing: 12
 
-    property alias uptimeText: uptimeLabel.text
-
-    // ── Uptime badge ─────────────────────────────────────────────────────────
-    Rectangle {
-        Layout.preferredHeight: 36
-        Layout.preferredWidth: 118
-        radius: 18
-        color: TitanTheme.bgSurfaceAlt
-        border.color: TitanTheme.borderSubtle
-        border.width: 1
+    // ── Clock & Date Cluster ────────────────────────────────────────────────
+    ColumnLayout {
+        spacing: 1
+        Layout.alignment: Qt.AlignVCenter
 
         RowLayout {
-            anchors.centerIn: parent
-            spacing: 8
+            spacing: 6
 
-            // ArchTitan Delta mark
-            Canvas {
-                Layout.preferredWidth: 15
-                Layout.preferredHeight: 15
-                onPaint: {
-                    var ctx = getContext("2d");
-                    ctx.clearRect(0, 0, width, height);
-                    ctx.beginPath();
-                    ctx.moveTo(width * 0.5, 2);
-                    ctx.lineTo(width - 2, height - 2);
-                    ctx.lineTo(width * 0.65, height - 2);
-                    ctx.lineTo(width * 0.5, height * 0.52);
-                    ctx.lineTo(width * 0.35, height - 2);
-                    ctx.lineTo(2, height - 2);
-                    ctx.closePath();
-                    ctx.fillStyle = TitanTheme.cyan;
-                    ctx.fill();
-                }
+            Text {
+                id: clockTime
+                text: "21:45"
+                font.family: TitanTheme.fontFamily
+                font.pixelSize: 22
+                font.weight: Font.Bold
+                color: TitanTheme.textPrimary
             }
 
             Text {
-                id: uptimeLabel
-                text: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.uptime : "Up 0m"
+                id: clockSeconds
+                text: ""
                 font.family: TitanTheme.fontFamily
-                font.pixelSize: TitanTheme.sizeSmall
-                font.weight: Font.DemiBold
-                color: TitanTheme.textPrimary
-                elide: Text.ElideRight
+                font.pixelSize: 11
+                color: TitanTheme.textSubtle
+                Layout.alignment: Qt.AlignBaseline
+            }
+        }
+
+        RowLayout {
+            spacing: 6
+
+            Text {
+                id: dateLabel
+                text: "Saturday, Oct 11"
+                font.family: TitanTheme.fontFamily
+                font.pixelSize: 11
+                color: TitanTheme.textSecondary
+            }
+
+            Text {
+                text: "• " + ((typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.uptime : "Up 0m")
+                font.family: TitanTheme.fontFamily
+                font.pixelSize: 10
+                color: TitanTheme.textSubtle
             }
         }
     }
 
     Item { Layout.fillWidth: true }
 
-    // ── Live clock ───────────────────────────────────────────────────────────
-    ColumnLayout {
-        spacing: 0
-
-        Text {
-            id: clockTime
-            text: "00:00"
-            Layout.alignment: Qt.AlignHCenter
-            font.family: TitanTheme.fontFamily
-            font.pixelSize: TitanTheme.sizeTitle + 2
-            font.weight: Font.Bold
-            color: TitanTheme.textPrimary
-        }
-        Text {
-            id: clockSeconds
-            text: ""
-            Layout.alignment: Qt.AlignHCenter
-            font.family: TitanTheme.fontFamily
-            font.pixelSize: 9
-            color: TitanTheme.textSubtle
-        }
-    }
-
-    // ── Action buttons ───────────────────────────────────────────────────────
+    // ── One UI Action Pills ─────────────────────────────────────────────────
     RowLayout {
-        spacing: 6
+        spacing: 8
+        Layout.alignment: Qt.AlignVCenter
 
+        // Refresh all
         IconButton {
-            source: "\uf1de"          // sliders — edit tiles
-            tip: "Edit quick settings"
-            onClicked: {} // tile editor (placeholder surface)
-        }
-        IconButton {
-            source: "\uf021"          // sync
-            tip: "Refresh all"
+            source: "\uf021"
+            tip: "Refresh status"
             onClicked: {
                 if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.refresh();
                 if (typeof networkCtrl !== "undefined" && networkCtrl) networkCtrl.refresh();
@@ -105,17 +79,26 @@ RowLayout {
                 if (typeof audioCtrl !== "undefined" && audioCtrl) audioCtrl.refresh();
             }
         }
+
+        // Settings Gear
         IconButton {
-            source: "\uf013"          // cog
-            tip: "Open system settings"
-            onClicked: if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.openSettings()
+            source: "\uf013"
+            tip: "System Settings"
+            onClicked: {
+                if (typeof systemCtrl !== "undefined" && systemCtrl)
+                    systemCtrl.openSettings();
+            }
         }
+
+        // Power Menu
         IconButton {
-            source: "\uf011"          // power
+            source: "\uf011"
             tip: "Power menu"
             destructive: true
-            active: false
-            onClicked: if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.openPowerMenu()
+            onClicked: {
+                if (typeof systemCtrl !== "undefined" && systemCtrl)
+                    systemCtrl.openPowerMenu();
+            }
         }
     }
 
@@ -124,6 +107,7 @@ RowLayout {
         interval: 1000
         repeat: true
         running: true
+        triggeredOnStart: true
         onTriggered: {
             var d = new Date();
             var hh = ("0" + d.getHours()).slice(-2);
@@ -131,6 +115,9 @@ RowLayout {
             var ss = ("0" + d.getSeconds()).slice(-2);
             clockTime.text = hh + ":" + mm;
             clockSeconds.text = ss;
+            var days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+            var months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            dateLabel.text = days[d.getDay()] + ", " + months[d.getMonth()] + " " + d.getDate();
         }
     }
 }

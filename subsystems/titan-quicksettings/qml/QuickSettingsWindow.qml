@@ -7,11 +7,10 @@ import "components"
 import "style"
 
 /**
- * titan-quicksettings — ArchTitan Quick Settings & Notification Center.
+ * titan-quicksettings — ArchTitan Samsung One UI 9.0 Quick Settings & Notification Center.
  *
- * A glassmorphic layer-shell drawer that slides in from the right edge.
- * All surfaces, type and accents delegate to TitanTheme so the whole panel
- * changes together when the design system is tuned.
+ * Squircles, Bento-grid layout, thick pill sliders, and high-performance
+ * virtualized Notification Center backed by C++ QAbstractListModel.
  */
 Window {
     id: rootWindow
@@ -59,6 +58,8 @@ Window {
         anchors.fill: parent
         focus: true
         Keys.onEscapePressed: closeDrawer()
+        Keys.onLeftPressed: segmentTab.currentIndex = 0
+        Keys.onRightPressed: segmentTab.currentIndex = 1
     }
 
     // ── Drawer body ───────────────────────────────────────────────────────────
@@ -67,11 +68,11 @@ Window {
         anchors.fill: parent
         radius: TitanTheme.radiusWindow
         color: TitanTheme.bgWindow
-        border.color: TitanTheme.borderActive
+        border.color: TitanTheme.borderGlass
         border.width: 1
         clip: true
 
-        // Frosted edge highlight (hairline inside the top edge)
+        // Frosted edge highlight
         Rectangle {
             anchors.top: parent.top
             anchors.left: parent.left
@@ -80,7 +81,7 @@ Window {
             color: TitanTheme.borderGlass
         }
 
-        // Slide-in: enter from the right, over-shoot like the OS panel
+        // Slide-in: enter from the right
         x: drawerOpen ? 0 : width + 40
         Behavior on x {
             NumberAnimation {
@@ -90,7 +91,6 @@ Window {
             }
         }
 
-        // Subtle fade with the slide
         opacity: drawerOpen ? 1.0 : 0.0
         Behavior on opacity {
             NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
@@ -98,40 +98,82 @@ Window {
 
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 12
-            spacing: 8
+            anchors.margins: 14
+            spacing: 12
 
-            // 1. Session header
+            // 1. Samsung One UI Header (Clock, Date, Power, Settings)
             HeaderBar {}
 
-            // 2. Quick controls (connectivity, volume/brightness, tool grid)
-            QuickToggleGrid {}
-
-            // 3. Notifications section label
-            RowLayout {
-                Layout.fillWidth: true
-                spacing: 7
-
-                Rectangle { width: 3; height: 12; radius: 1.5; color: TitanTheme.accent }
-                Text {
-                    text: "NOTIFICATIONS"
-                    font.family: TitanTheme.fontFamily
-                    font.pixelSize: TitanTheme.sizeCaption
-                    font.weight: Font.Bold
-                    font.letterSpacing: 1.2
-                    color: TitanTheme.textSubtle
-                }
-                Item { Layout.fillWidth: true }
+            // 2. One UI 9.0 Segmented Tab Switcher
+            OneUISegmentTab {
+                id: segmentTab
+                currentIndex: 0
+                notifCount: (typeof notifModel !== "undefined" && notifModel) ? notifModel.totalCount : 0
             }
 
-            // 4. Notification history
-            NotificationList {}
+            // 3. Tab Views (Quick Settings vs Notification Center)
+            StackLayout {
+                id: viewStack
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                currentIndex: segmentTab.currentIndex
 
-            // 5. Notification footer (DND / count / clear)
-            NotificationFooter {}
+                // ── View 0: Bento Quick Settings ────────────────────────────
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    spacing: 12
 
-            // 6. Calendar & tasks
-            CalendarFooter {}
+                    Flickable {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        contentWidth: width
+                        contentHeight: bentoContent.implicitHeight
+                        clip: true
+                        boundsBehavior: Flickable.StopAtBounds
+
+                        ColumnLayout {
+                            id: bentoContent
+                            width: parent.width
+                            spacing: 12
+
+                            QuickToggleGrid {}
+
+                            CalendarFooter {}
+                        }
+                    }
+                }
+
+                // ── View 1: Notification Center ─────────────────────────────
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    spacing: 10
+
+                    // Quick Display Brightness Bar
+                    OneUISlider {
+                        iconGlyph: "\uf185" // sun
+                        fillAccent: TitanTheme.yellow
+                        value: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.brightness : 80
+                        onChanged: (v) => {
+                            if (typeof systemCtrl !== "undefined" && systemCtrl)
+                                systemCtrl.setBrightness(v)
+                        }
+                    }
+
+                    // Virtualized Notification List
+                    NotificationList {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                    }
+
+                    // Notification Action Footer
+                    NotificationFooter {}
+
+                    // Mini Calendar Strip
+                    CalendarFooter {}
+                }
+            }
         }
     }
 }

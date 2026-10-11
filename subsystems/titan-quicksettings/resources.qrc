@@ -16,5 +16,10 @@
         <file>qml/components/NotificationList.qml</file>
         <file>qml/components/NotificationFooter.qml</file>
         <file>qml/components/CalendarFooter.qml</file>
+        <file>qml/components/OneUISlider.qml</file>
+        <file>qml/components/OneUIConnectivityTile.qml</file>
+        <file>qml/components/OneUICircleButton.qml</file>
+        <file>qml/components/OneUISegmentTab.qml</file>
+        <file>qml/components/OneUINotificationCard.qml</file>
     </qresource>
 </RCC>
