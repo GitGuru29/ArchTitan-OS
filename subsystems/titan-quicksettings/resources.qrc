@@ -3,6 +3,12 @@
     <qresource prefix="/">
         <file>qml/QuickSettingsWindow.qml</file>
         <file>qml/style/TitanTheme.qml</file>
+        <file>qml/style/qmldir</file>
+        <file>qml/components/HavenIcon.qml</file>
+        <file>qml/components/IconButton.qml</file>
+        <file>qml/components/GridTile.qml</file>
+        <file>qml/components/LevelSlider.qml</file>
+        <file>qml/components/VolumeCard.qml</file>
         <file>qml/components/HeaderBar.qml</file>
         <file>qml/components/LargeToggleTile.qml</file>
         <file>qml/components/QuickToggleGrid.qml</file>

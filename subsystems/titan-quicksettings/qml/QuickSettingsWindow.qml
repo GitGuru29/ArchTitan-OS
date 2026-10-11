@@ -6,12 +6,18 @@ import QtQuick.Layouts
 import "components"
 import "style"
 
+/**
+ * titan-quicksettings — ArchTitan Quick Settings & Notification Center.
+ *
+ * A glassmorphic layer-shell drawer that slides in from the right edge.
+ * All surfaces, type and accents delegate to TitanTheme so the whole panel
+ * changes together when the design system is tuned.
+ */
 Window {
     id: rootWindow
     title: "titan-quicksettings"
     width: 420
-    // Fixed height — LayerShell is anchored Top+Right only (no Bottom),
-    // so the window occupies exactly this height starting from the margin below Waybar.
+    // Fallback height — main.cpp clamps this to the available work area.
     height: 860
 
     flags: Qt.FramelessWindowHint
@@ -41,7 +47,7 @@ Window {
 
     Timer {
         id: closeTimer
-        interval: 260
+        interval: 280
         onTriggered: {
             if (!drawerOpen) {
                 rootWindow.visible = false;
@@ -55,45 +61,76 @@ Window {
         Keys.onEscapePressed: closeDrawer()
     }
 
-    // Main Drawer Card Container with Slide Animation
+    // ── Drawer body ───────────────────────────────────────────────────────────
     Rectangle {
         id: card
         anchors.fill: parent
-        radius: 22
-        color: "#F011141D" // 94% opacity deep obsidian
-        border.color: "#2E38BDF8" // Subtle 1px cyan border
+        radius: TitanTheme.radiusWindow
+        color: TitanTheme.bgWindow
+        border.color: TitanTheme.borderActive
         border.width: 1
         clip: true
 
-        // Slide animation — card slides in from the right
-        x: drawerOpen ? 0 : width + 30
+        // Frosted edge highlight (hairline inside the top edge)
+        Rectangle {
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.right: parent.right
+            height: 1
+            color: TitanTheme.borderGlass
+        }
+
+        // Slide-in: enter from the right, over-shoot like the OS panel
+        x: drawerOpen ? 0 : width + 40
         Behavior on x {
             NumberAnimation {
-                duration: 260
+                duration: 280
                 easing.type: Easing.OutBack
-                easing.overshoot: 1.05
+                easing.overshoot: 1.15
             }
         }
 
+        // Subtle fade with the slide
+        opacity: drawerOpen ? 1.0 : 0.0
+        Behavior on opacity {
+            NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
+        }
 
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 14
-            spacing: 10
+            anchors.margins: 12
+            spacing: 8
 
-            // 1. TOP HEADER BAR
+            // 1. Session header
             HeaderBar {}
 
-            // 2. QUICK SETTINGS CONTROLS GRID
+            // 2. Quick controls (connectivity, volume/brightness, tool grid)
             QuickToggleGrid {}
 
-            // 3. GROUPED NOTIFICATIONS LIST
+            // 3. Notifications section label
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 7
+
+                Rectangle { width: 3; height: 12; radius: 1.5; color: TitanTheme.accent }
+                Text {
+                    text: "NOTIFICATIONS"
+                    font.family: TitanTheme.fontFamily
+                    font.pixelSize: TitanTheme.sizeCaption
+                    font.weight: Font.Bold
+                    font.letterSpacing: 1.2
+                    color: TitanTheme.textSubtle
+                }
+                Item { Layout.fillWidth: true }
+            }
+
+            // 4. Notification history
             NotificationList {}
 
-            // 4. NOTIFICATION FOOTER
+            // 5. Notification footer (DND / count / clear)
             NotificationFooter {}
 
-            // 5. BOTTOM CALENDAR & TASK BAR
+            // 6. Calendar & tasks
             CalendarFooter {}
         }
     }

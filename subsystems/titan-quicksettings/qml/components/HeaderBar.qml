@@ -1,30 +1,38 @@
 import QtQuick
 import QtQuick.Layouts
-import QtQuick.Controls
+import "../style"
 
+/**
+ * HeaderBar — session badge, live clock and the system action row.
+ *
+ * Left: ArchTitan delta + uptime.  Right: live HH:MM clock, then the
+ * edit / refresh / settings / power icon buttons (with tooltips).
+ */
 RowLayout {
     id: headerRoot
     Layout.fillWidth: true
-    Layout.preferredHeight: 38
+    Layout.preferredHeight: 42
     spacing: 8
 
-    // ArchTitan Logo + Uptime Badge
+    property alias uptimeText: uptimeLabel.text
+
+    // ── Uptime badge ─────────────────────────────────────────────────────────
     Rectangle {
-        Layout.preferredHeight: 34
-        Layout.preferredWidth: 106
-        radius: 17
-        color: "#1C202C"
-        border.color: "#20FFFFFF"
+        Layout.preferredHeight: 36
+        Layout.preferredWidth: 118
+        radius: 18
+        color: TitanTheme.bgSurfaceAlt
+        border.color: TitanTheme.borderSubtle
         border.width: 1
 
         RowLayout {
             anchors.centerIn: parent
-            spacing: 7
+            spacing: 8
 
-            // ArchTitan Delta Icon
+            // ArchTitan Delta mark
             Canvas {
-                Layout.preferredWidth: 16
-                Layout.preferredHeight: 16
+                Layout.preferredWidth: 15
+                Layout.preferredHeight: 15
                 onPaint: {
                     var ctx = getContext("2d");
                     ctx.clearRect(0, 0, width, height);
@@ -36,80 +44,93 @@ RowLayout {
                     ctx.lineTo(width * 0.35, height - 2);
                     ctx.lineTo(2, height - 2);
                     ctx.closePath();
-                    ctx.fillStyle = "#38BDF8";
+                    ctx.fillStyle = TitanTheme.cyan;
                     ctx.fill();
                 }
             }
 
             Text {
-                text: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.uptime : "Up 25m"
-                font.family: "Outfit, Inter, sans-serif"
-                font.pixelSize: 13
+                id: uptimeLabel
+                text: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.uptime : "Up 0m"
+                font.family: TitanTheme.fontFamily
+                font.pixelSize: TitanTheme.sizeSmall
                 font.weight: Font.DemiBold
-                color: "#FFFFFF"
+                color: TitanTheme.textPrimary
+                elide: Text.ElideRight
             }
         }
     }
 
     Item { Layout.fillWidth: true }
 
-    // Header Action Buttons
+    // ── Live clock ───────────────────────────────────────────────────────────
+    ColumnLayout {
+        spacing: 0
+
+        Text {
+            id: clockTime
+            text: "00:00"
+            Layout.alignment: Qt.AlignHCenter
+            font.family: TitanTheme.fontFamily
+            font.pixelSize: TitanTheme.sizeTitle + 2
+            font.weight: Font.Bold
+            color: TitanTheme.textPrimary
+        }
+        Text {
+            id: clockSeconds
+            text: ""
+            Layout.alignment: Qt.AlignHCenter
+            font.family: TitanTheme.fontFamily
+            font.pixelSize: 9
+            color: TitanTheme.textSubtle
+        }
+    }
+
+    // ── Action buttons ───────────────────────────────────────────────────────
     RowLayout {
         spacing: 6
 
-        // Edit Button
-        Rectangle {
-            width: 32; height: 32; radius: 16
-            color: editMa.containsMouse ? "#2A3042" : "#1A1D27"
-            Text { anchors.centerIn: parent; text: "✎"; color: "#94A3B8"; font.pixelSize: 14 }
-            MouseArea { id: editMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor }
+        IconButton {
+            source: "\uf1de"          // sliders — edit tiles
+            tip: "Edit quick settings"
+            onClicked: {} // tile editor (placeholder surface)
         }
-
-        // Refresh Button
-        Rectangle {
-            width: 32; height: 32; radius: 16
-            color: refreshMa.containsMouse ? "#2A3042" : "#1A1D27"
-            Text { anchors.centerIn: parent; text: "↻"; color: "#94A3B8"; font.pixelSize: 15 }
-            MouseArea {
-                id: refreshMa
-                anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: {
-                    if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.refresh();
-                    if (typeof networkCtrl !== "undefined" && networkCtrl) networkCtrl.refresh();
-                    if (typeof bluetoothCtrl !== "undefined" && bluetoothCtrl) bluetoothCtrl.refresh();
-                    if (typeof audioCtrl !== "undefined" && audioCtrl) audioCtrl.refresh();
-                }
+        IconButton {
+            source: "\uf021"          // sync
+            tip: "Refresh all"
+            onClicked: {
+                if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.refresh();
+                if (typeof networkCtrl !== "undefined" && networkCtrl) networkCtrl.refresh();
+                if (typeof bluetoothCtrl !== "undefined" && bluetoothCtrl) bluetoothCtrl.refresh();
+                if (typeof audioCtrl !== "undefined" && audioCtrl) audioCtrl.refresh();
             }
         }
-
-        // Settings Button
-        Rectangle {
-            width: 32; height: 32; radius: 16
-            color: setMa.containsMouse ? "#2A3042" : "#1A1D27"
-            Text { anchors.centerIn: parent; text: "⚙"; color: "#94A3B8"; font.pixelSize: 15 }
-            MouseArea {
-                id: setMa
-                anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.openSettings()
-            }
+        IconButton {
+            source: "\uf013"          // cog
+            tip: "Open system settings"
+            onClicked: if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.openSettings()
         }
+        IconButton {
+            source: "\uf011"          // power
+            tip: "Power menu"
+            destructive: true
+            active: false
+            onClicked: if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.openPowerMenu()
+        }
+    }
 
-        // Power Button
-        Rectangle {
-            width: 32; height: 32; radius: 16
-            color: pwrMa.containsMouse ? "#3A2024" : "#1A1D27"
-            Text { anchors.centerIn: parent; text: "⏻"; color: pwrMa.containsMouse ? "#F87171" : "#94A3B8"; font.pixelSize: 15 }
-            MouseArea {
-                id: pwrMa
-                anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.openPowerMenu()
-            }
+    // Tick the clock every second
+    Timer {
+        interval: 1000
+        repeat: true
+        running: true
+        onTriggered: {
+            var d = new Date();
+            var hh = ("0" + d.getHours()).slice(-2);
+            var mm = ("0" + d.getMinutes()).slice(-2);
+            var ss = ("0" + d.getSeconds()).slice(-2);
+            clockTime.text = hh + ":" + mm;
+            clockSeconds.text = ss;
         }
     }
 }

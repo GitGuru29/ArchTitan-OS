@@ -2,6 +2,7 @@
 #include <QFile>
 #include <QTextStream>
 #include <QProcess>
+#include <QDir>
 #include <QDebug>
 
 SystemController::SystemController(QObject *parent)
@@ -10,10 +11,12 @@ SystemController::SystemController(QObject *parent)
 {
     updateUptime();
     updateDate();
+    updateBrightness();
 
     connect(m_timer, &QTimer::timeout, this, [this]() {
         updateUptime();
         updateDate();
+        updateBrightness();
     });
     m_timer->start(10000); // Check every 10s
 }
@@ -55,10 +58,56 @@ void SystemController::updateDate()
     }
 }
 
+void SystemController::updateBrightness()
+{
+    // Aggregate average of all ACPI backlight devices (fallback if the
+    // brightnessctl helper is unavailable at invoke time).
+    QDir dir("/sys/class/backlight");
+    const QStringList entries = dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+    int acc = 0;
+    int count = 0;
+    for (const QString &name : entries) {
+        QFile cur(dir.filePath(name) + "/brightness");
+        QFile max(dir.filePath(name) + "/max_brightness");
+        if (!cur.open(QIODevice::ReadOnly | QIODevice::Text) ||
+            !max.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            cur.close();
+            max.close();
+            continue;
+        }
+        const int c = static_cast<int>(cur.readAll().trimmed().toDouble());
+        const int m = static_cast<int>(max.readAll().trimmed().toDouble());
+        cur.close();
+        max.close();
+        if (m > 0) {
+            acc += static_cast<int>(100.0 * c / m + 0.5);
+            ++count;
+        }
+    }
+    if (count > 0) {
+        int avg = acc / count;
+        if (avg != m_brightness) {
+            m_brightness = avg;
+            emit brightnessChanged();
+        }
+    }
+}
+
+void SystemController::setBrightness(int value)
+{
+    value = qBound(0, value, 100);
+    if (value != m_brightness) {
+        m_brightness = value;
+        emit brightnessChanged();
+    }
+    QProcess::startDetached("brightnessctl", {"set", QString("%1%").arg(value)});
+}
+
 void SystemController::refresh()
 {
     updateUptime();
     updateDate();
+    updateBrightness();
 }
 
 void SystemController::setCaffeineActive(bool active)

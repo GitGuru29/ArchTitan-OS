@@ -201,12 +201,18 @@ int main(int argc, char *argv[])
             layerWindow->setExclusiveZone(0); // 0 = don't claim space, still respect bar
             layerWindow->setKeyboardInteractivity(LayerShellQt::Window::KeyboardInteractivityOnDemand);
             layerWindow->setScope("titan-quicksettings");
-            // Apply panel dimensions from config
+            // Apply panel width from config; clamp height to the available
+            // work area so short displays never get the drawer clipped.
             window->setWidth(lc.panelWidth);
-            window->setHeight(lc.panelHeight);
+            int availHeight = QGuiApplication::primaryScreen()
+                                  ? QGuiApplication::primaryScreen()->availableGeometry().height()
+                                  : lc.panelHeight;
+            int clampedHeight = qMax(460, qMin(lc.panelHeight, availHeight - 56));
+            window->setHeight(clampedHeight);
             std::cout << "[titan-qs] Layout: top=" << lc.topMargin
                       << " right=" << lc.rightMargin
-                      << " size=" << lc.panelWidth << "x" << lc.panelHeight << "\n";
+                      << " size=" << lc.panelWidth << "x" << clampedHeight
+                      << " (clamped from " << lc.panelHeight << ")\n";
         }
 
         QObject::connect(&ipc, &IpcServer::toggleRequested, window, [window]() {

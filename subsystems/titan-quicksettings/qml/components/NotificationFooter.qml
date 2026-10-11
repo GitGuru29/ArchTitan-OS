@@ -1,52 +1,71 @@
 import QtQuick
 import QtQuick.Layouts
-import QtQuick.Controls
+import "../style"
 
+/**
+ * NotificationFooter — DND toggle, running total and clear-all.
+ *
+ * Slim status bar under the list: gives destructive and mute actions a
+ * fixed, always-reachable home.
+ */
 RowLayout {
     id: footerRoot
     Layout.fillWidth: true
-    Layout.preferredHeight: 38
+    Layout.preferredHeight: 36
     spacing: 8
 
-    // DND Toggle
-    Rectangle {
-        width: 36; height: 36; radius: 18
-        color: (typeof notifServer !== "undefined" && notifServer && notifServer.dndActive) ? "#38BDF8" : "#1A1D27"
-        Text { anchors.centerIn: parent; text: "🔕"; font.pixelSize: 14 }
-        MouseArea {
-            anchors.fill: parent
-            cursorShape: Qt.PointingHandCursor
-            onClicked: if (typeof notifServer !== "undefined" && notifServer) notifServer.toggleDnd()
-        }
+    // DND toggle
+    IconButton {
+        Layout.preferredWidth: 36
+        Layout.preferredHeight: 36
+        source: "\uf1f6"   // bell-slash
+        tip: (typeof notifServer !== "undefined" && notifServer && notifServer.dndActive)
+             ? "Do Not Disturb: on" : "Do Not Disturb: off"
+        active: (typeof notifServer !== "undefined" && notifServer) ? notifServer.dndActive : false
+        activeColor: TitanTheme.red
+        activeTint: TitanTheme.accentText
+        onClicked: if (typeof notifServer !== "undefined" && notifServer) notifServer.toggleDnd()
     }
 
-    // Total Notifications Pill
+    // Total pill
     Rectangle {
         Layout.fillWidth: true
         Layout.preferredHeight: 36
         radius: 18
-        color: "#1A1D27"
-        Text {
+        color: TitanTheme.bgSurfaceAlt
+        border.color: TitanTheme.borderSubtle
+        border.width: 1
+
+        RowLayout {
             anchors.centerIn: parent
-            text: (typeof notifServer !== "undefined" && notifServer) ? (notifServer.totalCount + " notifications") : "8967 notifications"
-            font.family: "Outfit, Inter, sans-serif"
-            font.pixelSize: 12
-            font.weight: Font.DemiBold
-            color: "#94A3B8"
+            spacing: 6
+
+            Text {
+                text: "\uf0f3"   // bell
+                font.family: TitanTheme.fontFamily
+                font.pixelSize: 13
+                color: (typeof notifServer !== "undefined" && notifServer && notifServer.dndActive)
+                       ? TitanTheme.textSubtle : TitanTheme.textMuted
+            }
+            Text {
+                text: (typeof notifServer !== "undefined" && notifServer)
+                      ? notifServer.totalCount.toLocaleString() + " notifications"
+                      : "0 notifications"
+                font.family: TitanTheme.fontFamily
+                font.pixelSize: TitanTheme.sizeSmall
+                font.weight: Font.DemiBold
+                color: TitanTheme.textMuted
+            }
         }
     }
 
-    // Clear All / Trash Button
-    Rectangle {
-        width: 36; height: 36; radius: 18
-        color: trashMa.containsMouse ? "#3A2024" : "#1A1D27"
-        Text { anchors.centerIn: parent; text: "🗑"; font.pixelSize: 15; color: trashMa.containsMouse ? "#F87171" : "#94A3B8" }
-        MouseArea {
-            id: trashMa
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: if (typeof notifServer !== "undefined" && notifServer) notifServer.clearAll()
-        }
+    // Clear all
+    IconButton {
+        Layout.preferredWidth: 36
+        Layout.preferredHeight: 36
+        source: "\uf1f8"   // trash
+        tip: "Clear all notifications"
+        destructive: true
+        onClicked: if (typeof notifServer !== "undefined" && notifServer) notifServer.clearAll()
     }
 }

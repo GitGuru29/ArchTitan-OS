@@ -1,75 +1,110 @@
 import QtQuick
 import QtQuick.Layouts
-import QtQuick.Controls
+import "../style"
 
+/**
+ * LargeToggleTile — wide toggle pill (connectivity, audio, night light).
+ *
+ * Filled-with-accent when active, tinted sub-badge shows live status beneath
+ * the title.  Hover and press states are animated for tactile feedback.
+ */
 Rectangle {
     id: pillRoot
+
     Layout.fillWidth: true
-    Layout.preferredHeight: 46
-    radius: 23
+    implicitHeight: 50
 
     property bool active: false
-    property string iconText: "📶"
+    property string source: "\uf1eb"   // nerd glyph
     property string titleText: "Tile"
     property string statusText: "Status"
+    property color accent: TitanTheme.accent
+    property int glyphSize: 15
+
     signal clicked()
 
-    color: active ? "#38BDF8" : "#1F2330"
-    border.color: active ? "#38BDF8" : "#20FFFFFF"
+    radius: TitanTheme.radiusPill
+    color: {
+        if (ma.pressed) return active ? Qt.darker(accent, 1.15) : TitanTheme.bgPressed;
+        if (active) return accent;
+        if (ma.containsMouse) return TitanTheme.bgHover;
+        return TitanTheme.bgSurfaceAlt;
+    }
+    border.color: active ? accent : (ma.containsMouse ? TitanTheme.borderHover : TitanTheme.borderSubtle)
     border.width: 1
 
-    Behavior on color { ColorAnimation { duration: 150 } }
+    Behavior on color { ColorAnimation { duration: 130 } }
+    Behavior on border.color { ColorAnimation { duration: 130 } }
 
     RowLayout {
         anchors.fill: parent
-        anchors.leftMargin: 10
-        anchors.rightMargin: 10
-        spacing: 8
+        anchors.leftMargin: 8
+        anchors.rightMargin: 12
+        spacing: 10
 
-        // Circular Icon Container
+        // Icon medallion
         Rectangle {
-            width: 30
-            height: 30
-            radius: 15
-            color: pillRoot.active ? "#250A1322" : "#2A3040"
+            width: 32
+            height: 32
+            radius: 16
+            color: active ? Qt.rgba(0, 0, 0, 0.14) : TitanTheme.bgInset
+            border.color: active ? Qt.rgba(0, 0, 0, 0.18) : TitanTheme.borderSubtle
+            border.width: 1
 
-            Text {
+            HavenIcon {
                 anchors.centerIn: parent
-                text: pillRoot.iconText
-                font.pixelSize: 13
-                color: pillRoot.active ? "#0A1322" : "#FFFFFF"
+                source: pillRoot.source
+                tint: active ? TitanTheme.accentText : pillRoot.accent
+                glyphSize: pillRoot.glyphSize
+                Behavior on color { ColorAnimation { duration: 130 } }
             }
         }
 
-        // Title and Status Labels
         ColumnLayout {
-            spacing: 0
             Layout.fillWidth: true
+            Layout.alignment: Qt.AlignVCenter
+            spacing: 1
 
             Text {
                 text: pillRoot.titleText
-                font.family: "Outfit, Inter, sans-serif"
-                font.pixelSize: 12
-                font.weight: Font.Bold
-                color: pillRoot.active ? "#0A1322" : "#FFFFFF"
-                elide: Text.ElideRight
                 Layout.fillWidth: true
+                font.family: TitanTheme.fontFamily
+                font.pixelSize: TitanTheme.sizeSmall
+                font.weight: Font.DemiBold
+                color: active ? TitanTheme.accentText : TitanTheme.textPrimary
+                elide: Text.ElideRight
             }
 
             Text {
                 text: pillRoot.statusText
-                font.family: "Outfit, Inter, sans-serif"
-                font.pixelSize: 10
-                color: pillRoot.active ? "#15304B" : "#94A3B8"
-                elide: Text.ElideRight
                 Layout.fillWidth: true
+                font.family: TitanTheme.fontFamily
+                font.pixelSize: 10
+                color: active ? Qt.lighter(TitanTheme.accentText, 1.05)
+                              : (ma.containsMouse ? TitanTheme.textSecondary : TitanTheme.textMuted)
+                elide: Text.ElideRight
             }
+        }
+
+        // Active check affordance
+        Text {
+            text: pillRoot.active ? "\uf00c" : ""
+            font.family: TitanTheme.fontFamily
+            font.pixelSize: 10
+            color: active ? TitanTheme.accentText : "transparent"
+            visible: pillRoot.active
         }
     }
 
     MouseArea {
+        id: ma
         anchors.fill: parent
+        hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
         onClicked: pillRoot.clicked()
     }
+
+    Accessible.role: Accessible.Button
+    Accessible.name: titleText + (active ? " on" : " off")
+    Accessible.onPressAction: pillRoot.clicked()
 }

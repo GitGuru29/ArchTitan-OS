@@ -1,217 +1,196 @@
 import QtQuick
 import QtQuick.Layouts
-import QtQuick.Controls
+import "../style"
 
+/**
+ * QuickToggleGrid — the "system" controls cluster of the drawer.
+ *
+ * Connectivity pills, the volume / brightness card and the 4x2 tool grid.
+ * All tiles share design tokens and states via the reusable components.
+ */
 Rectangle {
     id: gridContainer
     Layout.fillWidth: true
-    Layout.preferredHeight: 250
-    radius: 18
-    color: "#141722"
-    border.color: "#18FFFFFF"
+    Layout.preferredHeight: 392
+    radius: TitanTheme.radiusCard
+    color: TitanTheme.bgSurface
+    border.color: TitanTheme.borderSubtle
     border.width: 1
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: 12
-        spacing: 9
+        anchors.leftMargin: 12
+        anchors.rightMargin: 12
+        anchors.topMargin: 10
+        anchors.bottomMargin: 12
+        spacing: 8
 
-        // ROW 1: Internet Pill, Bluetooth Pill, Caffeine
+        // ── Section label ─────────────────────────────────────────────────────
         RowLayout {
             Layout.fillWidth: true
-            Layout.preferredHeight: 46
+            spacing: 7
+
+            Rectangle { width: 3; height: 12; radius: 1.5; color: TitanTheme.accent }
+            Text {
+                text: "QUICK SETTINGS"
+                font.family: TitanTheme.fontFamily
+                font.pixelSize: TitanTheme.sizeCaption
+                font.weight: Font.Bold
+                font.letterSpacing: 1.2
+                color: TitanTheme.textSubtle
+            }
+            Item { Layout.fillWidth: true }
+        }
+
+        // ── Connectivity row ──────────────────────────────────────────────────
+        RowLayout {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 50
             spacing: 8
 
             LargeToggleTile {
-                active: typeof networkCtrl !== "undefined" && networkCtrl && networkCtrl.wifiEnabled
-                iconText: "📶"
+                active: (typeof networkCtrl !== "undefined" && networkCtrl) ? networkCtrl.wifiEnabled : false
+                source: "\uf1eb"   // wifi
                 titleText: "Internet"
-                statusText: (typeof networkCtrl !== "undefined" && networkCtrl) ? networkCtrl.ssid : "moto g24 power"
+                statusText: (typeof networkCtrl !== "undefined" && networkCtrl)
+                            ? networkCtrl.ssid : "No connection"
+                accent: TitanTheme.teal
                 onClicked: if (typeof networkCtrl !== "undefined" && networkCtrl) networkCtrl.toggleWifi()
             }
 
             LargeToggleTile {
-                active: typeof bluetoothCtrl !== "undefined" && bluetoothCtrl && bluetoothCtrl.powered
-                iconText: "ᛒ"
+                active: (typeof bluetoothCtrl !== "undefined" && bluetoothCtrl) ? bluetoothCtrl.powered : false
+                source: "\uf294"   // bluetooth
                 titleText: "Bluetooth"
-                statusText: (typeof bluetoothCtrl !== "undefined" && bluetoothCtrl) ? bluetoothCtrl.statusText : "Not connected"
+                statusText: (typeof bluetoothCtrl !== "undefined" && bluetoothCtrl)
+                            ? bluetoothCtrl.statusText : "Not connected"
+                accent: TitanTheme.lavender
                 onClicked: if (typeof bluetoothCtrl !== "undefined" && bluetoothCtrl) bluetoothCtrl.toggleBluetooth()
             }
 
-            // Caffeine Mini Button
+            // Caffeine mini-toggle
             Rectangle {
-                width: 46; height: 46; radius: 23
-                color: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.caffeineActive) ? "#38BDF8" : "#1F2330"
-                border.color: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.caffeineActive) ? "#38BDF8" : "#20FFFFFF"
+                Layout.preferredWidth: 50
+                Layout.preferredHeight: 50
+                radius: TitanTheme.radiusControl
+                color: cafMa.pressed ? TitanTheme.bgPressed
+                      : (cafActive ? TitanTheme.yellow
+                        : (cafMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgSurfaceAlt))
+                border.color: cafActive ? TitanTheme.borderActive
+                              : (cafMa.containsMouse ? TitanTheme.borderHover : TitanTheme.borderSubtle)
                 border.width: 1
 
-                Text {
+                Behavior on color { ColorAnimation { duration: 120 } }
+
+                HavenIcon {
                     anchors.centerIn: parent
-                    text: "☕"
-                    font.pixelSize: 16
+                    source: "\uf0f4"   // coffee
+                    tint: cafActive ? TitanTheme.accentText : TitanTheme.textMuted
+                    glyphSize: 18
                 }
 
                 MouseArea {
+                    id: cafMa
                     anchors.fill: parent
+                    hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.caffeineActive = !systemCtrl.caffeineActive
+                    onClicked: if (typeof systemCtrl !== "undefined" && systemCtrl)
+                                   systemCtrl.caffeineActive = !systemCtrl.caffeineActive
                 }
+
+                property bool cafActive: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.caffeineActive : false
+
+                Accessible.role: Accessible.Button
+                Accessible.name: "Caffeine"
             }
         }
 
-        // ROW 2: Mic Mute Button, Audio Output Pill, Night Light Pill
+        // ── Volume / brightness card ──────────────────────────────────────────
+        VolumeCard {}
+
+        // ── Tools section ─────────────────────────────────────────────────────
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 7
+
+            Rectangle { width: 3; height: 12; radius: 1.5; color: TitanTheme.accent }
+            Text {
+                text: "TOOLS"
+                font.family: TitanTheme.fontFamily
+                font.pixelSize: TitanTheme.sizeCaption
+                font.weight: Font.Bold
+                font.letterSpacing: 1.2
+                color: TitanTheme.textSubtle
+            }
+            Item { Layout.fillWidth: true }
+        }
+
+        // Row 1
         RowLayout {
             Layout.fillWidth: true
             Layout.preferredHeight: 46
             spacing: 8
 
-            // Mic Muted Pill Button
-            Rectangle {
-                width: 46; height: 46; radius: 23
-                color: (typeof audioCtrl !== "undefined" && audioCtrl && !audioCtrl.sourceMuted) ? "#38BDF8" : "#1F2330"
-                border.color: (typeof audioCtrl !== "undefined" && audioCtrl && !audioCtrl.sourceMuted) ? "#38BDF8" : "#20FFFFFF"
-                border.width: 1
-
-                Text {
-                    anchors.centerIn: parent
-                    text: (typeof audioCtrl !== "undefined" && audioCtrl && audioCtrl.sourceMuted) ? "🎙✕" : "🎙"
-                    font.pixelSize: 14
-                    color: (typeof audioCtrl !== "undefined" && audioCtrl && !audioCtrl.sourceMuted) ? "#0A1322" : "#FFFFFF"
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: if (typeof audioCtrl !== "undefined" && audioCtrl) audioCtrl.toggleSourceMute()
-                }
+            GridTile {
+                source: "\uf186"   // moon
+                tip: "Toggle dark theme"
+                glyphSize: 17
+                active: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.themeDark : true
+                onActivated: if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.themeDark = !systemCtrl.themeDark
             }
-
-            LargeToggleTile {
-                active: typeof audioCtrl !== "undefined" && audioCtrl && !audioCtrl.sinkMuted
-                iconText: (typeof audioCtrl !== "undefined" && audioCtrl && audioCtrl.sinkMuted) ? "🔇" : "🔊"
-                titleText: "Audio output"
-                statusText: (typeof audioCtrl !== "undefined" && audioCtrl) ? audioCtrl.statusText : "Muted"
-                onClicked: if (typeof audioCtrl !== "undefined" && audioCtrl) audioCtrl.toggleSinkMute()
+            GridTile {
+                source: "\uf1fe"   // pulse
+                tip: "Audio visualizer"
+                glyphSize: 17
+                active: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.visualizerActive : false
+                onActivated: if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.visualizerActive = !systemCtrl.visualizerActive
             }
-
-            LargeToggleTile {
-                active: typeof nightLightCtrl !== "undefined" && nightLightCtrl && nightLightCtrl.active
-                iconText: "🌙"
-                titleText: "Night Light"
-                statusText: (typeof nightLightCtrl !== "undefined" && nightLightCtrl) ? nightLightCtrl.statusText : "Inactive"
-                onClicked: if (typeof nightLightCtrl !== "undefined" && nightLightCtrl) nightLightCtrl.toggleNightLight()
+            GridTile {
+                source: "\uf023"   // lock
+                tip: "VPN on/off"
+                glyphSize: 16
+                active: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.vpnActive : false
+                onActivated: if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.vpnActive = !systemCtrl.vpnActive
+            }
+            GridTile {
+                source: "\uf11b"   // gamepad
+                tip: "Game mode"
+                glyphSize: 16
+                active: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.gameModeActive : false
+                onActivated: if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.gameModeActive = !systemCtrl.gameModeActive
             }
         }
 
-        // ROW 3: 5 Squircle Action Buttons
+        // Row 2
         RowLayout {
             Layout.fillWidth: true
-            Layout.preferredHeight: 44
+            Layout.preferredHeight: 46
             spacing: 8
 
-            // 1. Contrast/Theme
-            Rectangle {
-                Layout.fillWidth: true; Layout.preferredHeight: 44; radius: 22
-                color: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.themeDark) ? "#38BDF8" : "#1F2330"
-                Text { anchors.centerIn: parent; text: "◑"; font.pixelSize: 18; color: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.themeDark) ? "#0A1322" : "#FFFFFF" }
-                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.themeDark = !systemCtrl.themeDark }
+            GridTile {
+                source: "\uf030"   // camera
+                tip: "Screenshot region"
+                glyphSize: 16
+                onActivated: if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.takeScreenshot()
             }
-
-            // 2. Audio Visualizer
-            Rectangle {
-                Layout.fillWidth: true; Layout.preferredHeight: 44; radius: 22
-                color: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.visualizerActive) ? "#38BDF8" : "#1F2330"
-                Text { anchors.centerIn: parent; text: "ılı"; font.pixelSize: 18; font.bold: true; color: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.visualizerActive) ? "#0A1322" : "#FFFFFF" }
-                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.visualizerActive = !systemCtrl.visualizerActive }
+            GridTile {
+                source: "\uf1fb"   // eye dropper
+                tip: "Pick screen color"
+                glyphSize: 16
+                onActivated: if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.pickColor()
             }
-
-            // 3. Waves / Ambient
-            Rectangle {
-                Layout.fillWidth: true; Layout.preferredHeight: 44; radius: 22
-                color: "#1F2330"
-                Text { anchors.centerIn: parent; text: "≈"; font.pixelSize: 20; color: "#FFFFFF" }
-                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor }
+            GridTile {
+                source: "\uf11c"   // keyboard
+                tip: "Virtual keyboard"
+                glyphSize: 16
+                onActivated: if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.toggleVirtualKeyboard()
             }
-
-            // 4. VPN Lock
-            Rectangle {
-                Layout.fillWidth: true; Layout.preferredHeight: 44; radius: 22
-                color: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.vpnActive) ? "#38BDF8" : "#1F2330"
-                Text { anchors.centerIn: parent; text: "☁🔒"; font.pixelSize: 14; color: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.vpnActive) ? "#0A1322" : "#FFFFFF" }
-                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.vpnActive = !systemCtrl.vpnActive }
+            GridTile {
+                source: "\uf001"   // music
+                tip: "Media widget"
+                glyphSize: 16
+                onActivated: if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.openMediaWidget()
             }
-
-            // 5. Game Mode
-            Rectangle {
-                Layout.fillWidth: true; Layout.preferredHeight: 44; radius: 22
-                color: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.gameModeActive) ? "#38BDF8" : "#1F2330"
-                Text { anchors.centerIn: parent; text: "🎮"; font.pixelSize: 16 }
-                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.gameModeActive = !systemCtrl.gameModeActive }
-            }
-        }
-
-        // ROW 4: 5 Squircle Action Buttons
-        RowLayout {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 44
-            spacing: 8
-
-            // 1. Screenshot
-            Rectangle {
-                Layout.fillWidth: true; Layout.preferredHeight: 44; radius: 22
-                color: "#1F2330"
-                Text { anchors.centerIn: parent; text: "⛶"; font.pixelSize: 18; color: "#FFFFFF" }
-                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.takeScreenshot() }
-            }
-
-            // 2. Color Picker
-            Rectangle {
-                Layout.fillWidth: true; Layout.preferredHeight: 44; radius: 22
-                color: "#1F2330"
-                Text { anchors.centerIn: parent; text: "💉"; font.pixelSize: 15 }
-                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.pickColor() }
-            }
-
-            // 3. Virtual Keyboard
-            Rectangle {
-                Layout.fillWidth: true; Layout.preferredHeight: 44; radius: 22
-                color: "#1F2330"
-                Text { anchors.centerIn: parent; text: "⌨"; font.pixelSize: 17; color: "#FFFFFF" }
-                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.toggleVirtualKeyboard() }
-            }
-
-            // 4. Notifications Bell
-            Rectangle {
-                Layout.fillWidth: true; Layout.preferredHeight: 44; radius: 22
-                color: (typeof notifServer !== "undefined" && notifServer && !notifServer.dndActive) ? "#38BDF8" : "#1F2330"
-                Text { anchors.centerIn: parent; text: "🔔"; font.pixelSize: 15; color: (typeof notifServer !== "undefined" && notifServer && !notifServer.dndActive) ? "#0A1322" : "#FFFFFF" }
-                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: if (typeof notifServer !== "undefined" && notifServer) notifServer.toggleDnd() }
-            }
-
-            // 5. Music Widget
-            Rectangle {
-                Layout.fillWidth: true; Layout.preferredHeight: 44; radius: 22
-                color: "#1F2330"
-                Text { anchors.centerIn: parent; text: "🎵"; font.pixelSize: 16 }
-                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.openMediaWidget() }
-            }
-        }
-
-        // ROW 5: Bottom Mic Mute Button
-        RowLayout {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 38
-            spacing: 8
-
-            Rectangle {
-                width: 44; height: 38; radius: 19
-                color: "#1F2330"
-                border.color: "#20FFFFFF"
-                border.width: 1
-                Text { anchors.centerIn: parent; text: "🕬"; font.pixelSize: 16; color: "#FFFFFF" }
-                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: if (typeof audioCtrl !== "undefined" && audioCtrl) audioCtrl.toggleSourceMute() }
-            }
-            Item { Layout.fillWidth: true }
         }
     }
 }
