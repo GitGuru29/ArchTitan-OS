@@ -27,10 +27,15 @@ static void ensureDefaultConfig()
     if (!QFile::exists(path)) {
         QSettings cfg(path, QSettings::IniFormat);
         cfg.beginGroup("layout");
-        cfg.setValue("top_margin",    0);   // px above panel (0 = use exclusive zone)
+        // Measured on host system (1920x1080, Quickshell bar):
+        //   bar surface:      xywh 0 0 1920 73  (bar bottom = y73)
+        //   exclusive zone:   45px  (compositor usable area starts at y45)
+        //   top_margin=28  →  panel lands at y=45+28=73  (flush below bar)
+        // Adjust top_margin if your setup differs (positive=down, negative=up)
+        cfg.setValue("top_margin",    28);  // px — tweak to close/open the gap
         cfg.setValue("right_margin",  6);   // px from right screen edge
-        cfg.setValue("panel_width",   420); // panel width in px
-        cfg.setValue("panel_height",  860); // panel height in px
+        cfg.setValue("panel_width",   420); // px
+        cfg.setValue("panel_height",  860); // px — should fill screen below bar
         cfg.endGroup();
         cfg.sync();
         std::cout << "[titan-qs] Created default config: "
@@ -50,8 +55,8 @@ static LayoutConfig readConfig()
     QSettings cfg(configPath(), QSettings::IniFormat);
     cfg.beginGroup("layout");
     LayoutConfig lc;
-    lc.topMargin   = cfg.value("top_margin",    0).toInt();
-    lc.rightMargin = cfg.value("right_margin",  6).toInt();
+    lc.topMargin   = cfg.value("top_margin",    28).toInt();
+    lc.rightMargin = cfg.value("right_margin",   6).toInt();
     lc.panelWidth  = cfg.value("panel_width",   420).toInt();
     lc.panelHeight = cfg.value("panel_height",  860).toInt();
     cfg.endGroup();
@@ -174,6 +179,7 @@ int main(int argc, char *argv[])
     context->setContextProperty("audioCtrl", &audioCtrl);
     context->setContextProperty("nightLightCtrl", &nightCtrl);
     context->setContextProperty("notifServer", &notifServer);
+    context->setContextProperty("notifModel", notifServer.model());
 
     const QUrl url(QStringLiteral("qrc:/qml/QuickSettingsWindow.qml"));
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
@@ -197,15 +203,21 @@ int main(int argc, char *argv[])
             layerWindow->setAnchors(LayerShellQt::Window::Anchors(LayerShellQt::Window::AnchorTop | LayerShellQt::Window::AnchorRight));
             layerWindow->setLayer(LayerShellQt::Window::LayerOverlay);
             layerWindow->setMargins(QMargins(0, lc.topMargin, lc.rightMargin, 0));
-            layerWindow->setExclusiveZone(-1); // respect bar's exclusive zone
+            layerWindow->setExclusiveZone(0); // 0 = don't claim space, still respect bar
             layerWindow->setKeyboardInteractivity(LayerShellQt::Window::KeyboardInteractivityOnDemand);
             layerWindow->setScope("titan-quicksettings");
-            // Apply panel dimensions from config
+            // Apply panel width from config; clamp height to the available
+            // work area so short displays never get the drawer clipped.
             window->setWidth(lc.panelWidth);
-            window->setHeight(lc.panelHeight);
+            int availHeight = QGuiApplication::primaryScreen()
+                                  ? QGuiApplication::primaryScreen()->availableGeometry().height()
+                                  : lc.panelHeight;
+            int clampedHeight = qMax(460, qMin(lc.panelHeight, availHeight - 56));
+            window->setHeight(clampedHeight);
             std::cout << "[titan-qs] Layout: top=" << lc.topMargin
                       << " right=" << lc.rightMargin
-                      << " size=" << lc.panelWidth << "x" << lc.panelHeight << "\n";
+                      << " size=" << lc.panelWidth << "x" << clampedHeight
+                      << " (clamped from " << lc.panelHeight << ")\n";
         }
 
         QObject::connect(&ipc, &IpcServer::toggleRequested, window, [window]() {

@@ -14,6 +14,7 @@ class SystemController : public QObject
     Q_PROPERTY(bool visualizerActive READ visualizerActive WRITE setVisualizerActive NOTIFY visualizerActiveChanged)
     Q_PROPERTY(bool gameModeActive READ gameModeActive WRITE setGameModeActive NOTIFY gameModeActiveChanged)
     Q_PROPERTY(bool vpnActive READ vpnActive WRITE setVpnActive NOTIFY vpnActiveChanged)
+    Q_PROPERTY(int brightness READ brightness NOTIFY brightnessChanged)
 
 public:
     explicit SystemController(QObject *parent = nullptr);
@@ -25,6 +26,7 @@ public:
     bool visualizerActive() const { return m_visualizerActive; }
     bool gameModeActive() const { return m_gameModeActive; }
     bool vpnActive() const { return m_vpnActive; }
+    int brightness() const { return m_brightness; }
 
     void setCaffeineActive(bool active);
     void setThemeDark(bool dark);
@@ -40,6 +42,7 @@ public slots:
     void pickColor();
     void toggleVirtualKeyboard();
     void openMediaWidget();
+    void setBrightness(int value);
 
 signals:
     void uptimeChanged();
@@ -49,10 +52,12 @@ signals:
     void visualizerActiveChanged();
     void gameModeActiveChanged();
     void vpnActiveChanged();
+    void brightnessChanged();
 
 private:
     void updateUptime();
     void updateDate();
+    void updateBrightness();
 
     QString m_uptime{"Up 0m"};
     QString m_currentDateString;
@@ -61,6 +66,7 @@ private:
     bool m_visualizerActive{true};
     bool m_gameModeActive{false};
     bool m_vpnActive{false};
+    int m_brightness{80};
 
     QTimer *m_timer;
 };

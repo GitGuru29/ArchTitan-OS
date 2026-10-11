@@ -1,217 +1,325 @@
 import QtQuick
 import QtQuick.Layouts
-import QtQuick.Controls
+import "../style"
 
-Rectangle {
-    id: gridContainer
+/**
+ * QuickToggleGrid — Samsung One UI 9.0 Bento-Box Quick Settings cluster.
+ *
+ * Squircles, thick pill sliders, and circular action toggles with live
+ * PipeWire, NetworkManager, BlueZ, and Backlight integration.
+ */
+ColumnLayout {
+    id: bentoRoot
     Layout.fillWidth: true
-    Layout.preferredHeight: 250
-    radius: 18
-    color: "#141722"
-    border.color: "#18FFFFFF"
-    border.width: 1
+    spacing: 12
 
-    ColumnLayout {
-        anchors.fill: parent
-        anchors.margins: 12
-        spacing: 9
+    // ── 1. Top Connectivity Bento (Dual Squircles) ──────────────────────────
+    RowLayout {
+        Layout.fillWidth: true
+        spacing: 10
 
-        // ROW 1: Internet Pill, Bluetooth Pill, Caffeine
-        RowLayout {
+        OneUIConnectivityTile {
+            active: (typeof networkCtrl !== "undefined" && networkCtrl) ? networkCtrl.wifiEnabled : false
+            iconGlyph: "\uf1eb"
+            title: "Wi-Fi"
+            subtitle: (typeof networkCtrl !== "undefined" && networkCtrl)
+                      ? networkCtrl.ssid : "Disconnected"
+            onClicked: {
+                if (typeof networkCtrl !== "undefined" && networkCtrl)
+                    networkCtrl.toggleWifi()
+            }
+        }
+
+        OneUIConnectivityTile {
+            active: (typeof bluetoothCtrl !== "undefined" && bluetoothCtrl) ? bluetoothCtrl.powered : false
+            iconGlyph: "\uf294"
+            title: "Bluetooth"
+            subtitle: (typeof bluetoothCtrl !== "undefined" && bluetoothCtrl)
+                      ? bluetoothCtrl.statusText : "Off"
+            onClicked: {
+                if (typeof bluetoothCtrl !== "undefined" && bluetoothCtrl)
+                    bluetoothCtrl.toggleBluetooth()
+            }
+        }
+    }
+
+    // ── 2. Thick Pill Sliders Bento (Brightness & Sound) ────────────────────
+    Rectangle {
+        Layout.fillWidth: true
+        implicitHeight: sliderCol.implicitHeight + 20
+        radius: TitanTheme.radiusBento
+        color: TitanTheme.bgOneUICard
+        border.color: TitanTheme.borderGlass
+        border.width: 1
+
+        ColumnLayout {
+            id: sliderCol
+            anchors.fill: parent
+            anchors.margins: 12
+            spacing: 10
+
+            // Sound Volume Slider
+            OneUISlider {
+                iconGlyph: {
+                    if (muted) return "\uf026";
+                    if (value <= 30) return "\uf027";
+                    return "\uf028";
+                }
+                from: 0
+                to: 150
+                value: (typeof audioCtrl !== "undefined" && audioCtrl) ? audioCtrl.sinkVolume : 60
+                muted: typeof audioCtrl !== "undefined" && audioCtrl && audioCtrl.sinkMuted
+                fillAccent: TitanTheme.accentBlue
+                onChanged: (v) => {
+                    if (typeof audioCtrl !== "undefined" && audioCtrl) audioCtrl.setVolume(v)
+                }
+            }
+
+            // Display Brightness Slider
+            OneUISlider {
+                iconGlyph: "\uf185" // sun
+                from: 0
+                to: 100
+                value: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.brightness : 80
+                fillAccent: TitanTheme.yellow
+                onChanged: (v) => {
+                    if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.setBrightness(v)
+                }
+            }
+        }
+    }
+
+    // ── 3. Circular Quick Action Toggles (4x2 Grid) ─────────────────────────
+    Rectangle {
+        Layout.fillWidth: true
+        implicitHeight: gridCol.implicitHeight + 22
+        radius: TitanTheme.radiusBento
+        color: TitanTheme.bgOneUICard
+        border.color: TitanTheme.borderGlass
+        border.width: 1
+
+        ColumnLayout {
+            id: gridCol
+            anchors.fill: parent
+            anchors.margins: 12
+            spacing: 12
+
+            // Row 1
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 0
+
+                Item {
+                    Layout.fillWidth: true
+                    height: 74
+                    OneUICircleButton {
+                        anchors.centerIn: parent
+                        iconGlyph: "\uf186" // moon
+                        label: "Dark mode"
+                        active: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.themeDark : true
+                        onClicked: {
+                            if (typeof systemCtrl !== "undefined" && systemCtrl)
+                                systemCtrl.themeDark = !systemCtrl.themeDark
+                        }
+                    }
+                }
+
+                Item {
+                    Layout.fillWidth: true
+                    height: 74
+                    OneUICircleButton {
+                        anchors.centerIn: parent
+                        iconGlyph: "\uf06e" // eye comfort / night light
+                        label: "Eye shield"
+                        active: (typeof nightLightCtrl !== "undefined" && nightLightCtrl) ? nightLightCtrl.active : false
+                        activeColor: TitanTheme.peach
+                        onClicked: {
+                            if (typeof nightLightCtrl !== "undefined" && nightLightCtrl)
+                                nightLightCtrl.toggleNightLight()
+                        }
+                    }
+                }
+
+                Item {
+                    Layout.fillWidth: true
+                    height: 74
+                    OneUICircleButton {
+                        anchors.centerIn: parent
+                        iconGlyph: "\uf0f4" // caffeine
+                        label: "Awake"
+                        active: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.caffeineActive : false
+                        activeColor: TitanTheme.yellow
+                        onClicked: {
+                            if (typeof systemCtrl !== "undefined" && systemCtrl)
+                                systemCtrl.caffeineActive = !systemCtrl.caffeineActive
+                        }
+                    }
+                }
+
+                Item {
+                    Layout.fillWidth: true
+                    height: 74
+                    OneUICircleButton {
+                        anchors.centerIn: parent
+                        iconGlyph: (typeof audioCtrl !== "undefined" && audioCtrl && audioCtrl.sourceMuted) ? "\uf131" : "\uf130"
+                        label: "Mic mute"
+                        active: (typeof audioCtrl !== "undefined" && audioCtrl) ? audioCtrl.sourceMuted : false
+                        activeColor: TitanTheme.red
+                        onClicked: {
+                            if (typeof audioCtrl !== "undefined" && audioCtrl)
+                                audioCtrl.toggleSourceMute()
+                        }
+                    }
+                }
+            }
+
+            // Row 2
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 0
+
+                Item {
+                    Layout.fillWidth: true
+                    height: 74
+                    OneUICircleButton {
+                        anchors.centerIn: parent
+                        iconGlyph: "\uf030" // camera
+                        label: "Capture"
+                        active: false
+                        onClicked: {
+                            if (typeof systemCtrl !== "undefined" && systemCtrl)
+                                systemCtrl.takeScreenshot()
+                        }
+                    }
+                }
+
+                Item {
+                    Layout.fillWidth: true
+                    height: 74
+                    OneUICircleButton {
+                        anchors.centerIn: parent
+                        iconGlyph: "\uf1fb" // color picker
+                        label: "Color pick"
+                        active: false
+                        onClicked: {
+                            if (typeof systemCtrl !== "undefined" && systemCtrl)
+                                systemCtrl.pickColor()
+                        }
+                    }
+                }
+
+                Item {
+                    Layout.fillWidth: true
+                    height: 74
+                    OneUICircleButton {
+                        anchors.centerIn: parent
+                        iconGlyph: "\uf11b" // game mode
+                        label: "Game mode"
+                        active: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.gameModeActive : false
+                        activeColor: TitanTheme.green
+                        onClicked: {
+                            if (typeof systemCtrl !== "undefined" && systemCtrl)
+                                systemCtrl.gameModeActive = !systemCtrl.gameModeActive
+                        }
+                    }
+                }
+
+                Item {
+                    Layout.fillWidth: true
+                    height: 74
+                    OneUICircleButton {
+                        anchors.centerIn: parent
+                        iconGlyph: "\uf023" // VPN lock
+                        label: "VPN"
+                        active: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.vpnActive : false
+                        activeColor: TitanTheme.lavender
+                        onClicked: {
+                            if (typeof systemCtrl !== "undefined" && systemCtrl)
+                                systemCtrl.vpnActive = !systemCtrl.vpnActive
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // ── 4. Bottom Device & Media Control Pills ──────────────────────────────
+    RowLayout {
+        Layout.fillWidth: true
+        spacing: 10
+
+        Rectangle {
             Layout.fillWidth: true
-            Layout.preferredHeight: 46
-            spacing: 8
+            height: 44
+            radius: 22
+            color: medMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgOneUICard
+            border.color: TitanTheme.borderGlass
+            border.width: 1
 
-            LargeToggleTile {
-                active: typeof networkCtrl !== "undefined" && networkCtrl && networkCtrl.wifiEnabled
-                iconText: "📶"
-                titleText: "Internet"
-                statusText: (typeof networkCtrl !== "undefined" && networkCtrl) ? networkCtrl.ssid : "moto g24 power"
-                onClicked: if (typeof networkCtrl !== "undefined" && networkCtrl) networkCtrl.toggleWifi()
-            }
-
-            LargeToggleTile {
-                active: typeof bluetoothCtrl !== "undefined" && bluetoothCtrl && bluetoothCtrl.powered
-                iconText: "ᛒ"
-                titleText: "Bluetooth"
-                statusText: (typeof bluetoothCtrl !== "undefined" && bluetoothCtrl) ? bluetoothCtrl.statusText : "Not connected"
-                onClicked: if (typeof bluetoothCtrl !== "undefined" && bluetoothCtrl) bluetoothCtrl.toggleBluetooth()
-            }
-
-            // Caffeine Mini Button
-            Rectangle {
-                width: 46; height: 46; radius: 23
-                color: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.caffeineActive) ? "#38BDF8" : "#1F2330"
-                border.color: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.caffeineActive) ? "#38BDF8" : "#20FFFFFF"
-                border.width: 1
-
+            RowLayout {
+                anchors.centerIn: parent
+                spacing: 8
                 Text {
-                    anchors.centerIn: parent
-                    text: "☕"
-                    font.pixelSize: 16
+                    text: "\uf001" // music
+                    font.family: TitanTheme.fontFamily
+                    font.pixelSize: 13
+                    color: TitanTheme.accentBlue
                 }
-
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.caffeineActive = !systemCtrl.caffeineActive
-                }
-            }
-        }
-
-        // ROW 2: Mic Mute Button, Audio Output Pill, Night Light Pill
-        RowLayout {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 46
-            spacing: 8
-
-            // Mic Muted Pill Button
-            Rectangle {
-                width: 46; height: 46; radius: 23
-                color: (typeof audioCtrl !== "undefined" && audioCtrl && !audioCtrl.sourceMuted) ? "#38BDF8" : "#1F2330"
-                border.color: (typeof audioCtrl !== "undefined" && audioCtrl && !audioCtrl.sourceMuted) ? "#38BDF8" : "#20FFFFFF"
-                border.width: 1
-
                 Text {
-                    anchors.centerIn: parent
-                    text: (typeof audioCtrl !== "undefined" && audioCtrl && audioCtrl.sourceMuted) ? "🎙✕" : "🎙"
-                    font.pixelSize: 14
-                    color: (typeof audioCtrl !== "undefined" && audioCtrl && !audioCtrl.sourceMuted) ? "#0A1322" : "#FFFFFF"
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: if (typeof audioCtrl !== "undefined" && audioCtrl) audioCtrl.toggleSourceMute()
+                    text: "Media Output"
+                    font.family: TitanTheme.fontFamily
+                    font.pixelSize: 11
+                    font.weight: Font.DemiBold
+                    color: TitanTheme.textPrimary
                 }
             }
 
-            LargeToggleTile {
-                active: typeof audioCtrl !== "undefined" && audioCtrl && !audioCtrl.sinkMuted
-                iconText: (typeof audioCtrl !== "undefined" && audioCtrl && audioCtrl.sinkMuted) ? "🔇" : "🔊"
-                titleText: "Audio output"
-                statusText: (typeof audioCtrl !== "undefined" && audioCtrl) ? audioCtrl.statusText : "Muted"
-                onClicked: if (typeof audioCtrl !== "undefined" && audioCtrl) audioCtrl.toggleSinkMute()
-            }
-
-            LargeToggleTile {
-                active: typeof nightLightCtrl !== "undefined" && nightLightCtrl && nightLightCtrl.active
-                iconText: "🌙"
-                titleText: "Night Light"
-                statusText: (typeof nightLightCtrl !== "undefined" && nightLightCtrl) ? nightLightCtrl.statusText : "Inactive"
-                onClicked: if (typeof nightLightCtrl !== "undefined" && nightLightCtrl) nightLightCtrl.toggleNightLight()
+            MouseArea {
+                id: medMa
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                    if (typeof systemCtrl !== "undefined" && systemCtrl)
+                        systemCtrl.openMediaWidget()
+                }
             }
         }
 
-        // ROW 3: 5 Squircle Action Buttons
-        RowLayout {
+        Rectangle {
             Layout.fillWidth: true
-            Layout.preferredHeight: 44
-            spacing: 8
+            height: 44
+            radius: 22
+            color: kbdMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgOneUICard
+            border.color: TitanTheme.borderGlass
+            border.width: 1
 
-            // 1. Contrast/Theme
-            Rectangle {
-                Layout.fillWidth: true; Layout.preferredHeight: 44; radius: 22
-                color: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.themeDark) ? "#38BDF8" : "#1F2330"
-                Text { anchors.centerIn: parent; text: "◑"; font.pixelSize: 18; color: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.themeDark) ? "#0A1322" : "#FFFFFF" }
-                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.themeDark = !systemCtrl.themeDark }
+            RowLayout {
+                anchors.centerIn: parent
+                spacing: 8
+                Text {
+                    text: "\uf11c" // keyboard
+                    font.family: TitanTheme.fontFamily
+                    font.pixelSize: 13
+                    color: TitanTheme.textSecondary
+                }
+                Text {
+                    text: "Virtual Input"
+                    font.family: TitanTheme.fontFamily
+                    font.pixelSize: 11
+                    font.weight: Font.DemiBold
+                    color: TitanTheme.textPrimary
+                }
             }
 
-            // 2. Audio Visualizer
-            Rectangle {
-                Layout.fillWidth: true; Layout.preferredHeight: 44; radius: 22
-                color: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.visualizerActive) ? "#38BDF8" : "#1F2330"
-                Text { anchors.centerIn: parent; text: "ılı"; font.pixelSize: 18; font.bold: true; color: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.visualizerActive) ? "#0A1322" : "#FFFFFF" }
-                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.visualizerActive = !systemCtrl.visualizerActive }
+            MouseArea {
+                id: kbdMa
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                    if (typeof systemCtrl !== "undefined" && systemCtrl)
+                        systemCtrl.toggleVirtualKeyboard()
+                }
             }
-
-            // 3. Waves / Ambient
-            Rectangle {
-                Layout.fillWidth: true; Layout.preferredHeight: 44; radius: 22
-                color: "#1F2330"
-                Text { anchors.centerIn: parent; text: "≈"; font.pixelSize: 20; color: "#FFFFFF" }
-                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor }
-            }
-
-            // 4. VPN Lock
-            Rectangle {
-                Layout.fillWidth: true; Layout.preferredHeight: 44; radius: 22
-                color: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.vpnActive) ? "#38BDF8" : "#1F2330"
-                Text { anchors.centerIn: parent; text: "☁🔒"; font.pixelSize: 14; color: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.vpnActive) ? "#0A1322" : "#FFFFFF" }
-                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.vpnActive = !systemCtrl.vpnActive }
-            }
-
-            // 5. Game Mode
-            Rectangle {
-                Layout.fillWidth: true; Layout.preferredHeight: 44; radius: 22
-                color: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.gameModeActive) ? "#38BDF8" : "#1F2330"
-                Text { anchors.centerIn: parent; text: "🎮"; font.pixelSize: 16 }
-                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.gameModeActive = !systemCtrl.gameModeActive }
-            }
-        }
-
-        // ROW 4: 5 Squircle Action Buttons
-        RowLayout {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 44
-            spacing: 8
-
-            // 1. Screenshot
-            Rectangle {
-                Layout.fillWidth: true; Layout.preferredHeight: 44; radius: 22
-                color: "#1F2330"
-                Text { anchors.centerIn: parent; text: "⛶"; font.pixelSize: 18; color: "#FFFFFF" }
-                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.takeScreenshot() }
-            }
-
-            // 2. Color Picker
-            Rectangle {
-                Layout.fillWidth: true; Layout.preferredHeight: 44; radius: 22
-                color: "#1F2330"
-                Text { anchors.centerIn: parent; text: "💉"; font.pixelSize: 15 }
-                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.pickColor() }
-            }
-
-            // 3. Virtual Keyboard
-            Rectangle {
-                Layout.fillWidth: true; Layout.preferredHeight: 44; radius: 22
-                color: "#1F2330"
-                Text { anchors.centerIn: parent; text: "⌨"; font.pixelSize: 17; color: "#FFFFFF" }
-                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.toggleVirtualKeyboard() }
-            }
-
-            // 4. Notifications Bell
-            Rectangle {
-                Layout.fillWidth: true; Layout.preferredHeight: 44; radius: 22
-                color: (typeof notifServer !== "undefined" && notifServer && !notifServer.dndActive) ? "#38BDF8" : "#1F2330"
-                Text { anchors.centerIn: parent; text: "🔔"; font.pixelSize: 15; color: (typeof notifServer !== "undefined" && notifServer && !notifServer.dndActive) ? "#0A1322" : "#FFFFFF" }
-                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: if (typeof notifServer !== "undefined" && notifServer) notifServer.toggleDnd() }
-            }
-
-            // 5. Music Widget
-            Rectangle {
-                Layout.fillWidth: true; Layout.preferredHeight: 44; radius: 22
-                color: "#1F2330"
-                Text { anchors.centerIn: parent; text: "🎵"; font.pixelSize: 16 }
-                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.openMediaWidget() }
-            }
-        }
-
-        // ROW 5: Bottom Mic Mute Button
-        RowLayout {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 38
-            spacing: 8
-
-            Rectangle {
-                width: 44; height: 38; radius: 19
-                color: "#1F2330"
-                border.color: "#20FFFFFF"
-                border.width: 1
-                Text { anchors.centerIn: parent; text: "🕬"; font.pixelSize: 16; color: "#FFFFFF" }
-                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: if (typeof audioCtrl !== "undefined" && audioCtrl) audioCtrl.toggleSourceMute() }
-            }
-            Item { Layout.fillWidth: true }
         }
     }
 }

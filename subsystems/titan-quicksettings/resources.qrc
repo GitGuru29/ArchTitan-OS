@@ -3,6 +3,12 @@
     <qresource prefix="/">
         <file>qml/QuickSettingsWindow.qml</file>
         <file>qml/style/TitanTheme.qml</file>
+        <file>qml/style/qmldir</file>
+        <file>qml/components/HavenIcon.qml</file>
+        <file>qml/components/IconButton.qml</file>
+        <file>qml/components/GridTile.qml</file>
+        <file>qml/components/LevelSlider.qml</file>
+        <file>qml/components/VolumeCard.qml</file>
         <file>qml/components/HeaderBar.qml</file>
         <file>qml/components/LargeToggleTile.qml</file>
         <file>qml/components/QuickToggleGrid.qml</file>
@@ -10,5 +16,10 @@
         <file>qml/components/NotificationList.qml</file>
         <file>qml/components/NotificationFooter.qml</file>
         <file>qml/components/CalendarFooter.qml</file>
+        <file>qml/components/OneUISlider.qml</file>
+        <file>qml/components/OneUIConnectivityTile.qml</file>
+        <file>qml/components/OneUICircleButton.qml</file>
+        <file>qml/components/OneUISegmentTab.qml</file>
+        <file>qml/components/OneUINotificationCard.qml</file>
     </qresource>
 </RCC>
