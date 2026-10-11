@@ -28,13 +28,13 @@ static void ensureDefaultConfig()
         QSettings cfg(path, QSettings::IniFormat);
         cfg.beginGroup("layout");
         // Layout metrics:
-        //   top_margin:        px below bar surface (28 lands flush below quickshell bar y73)
+        //   top_margin:        px below bar surface (4 snaps cleanly below waybar)
         //   bottom_margin:     px from screen foot / workspace bottom edge (default 8)
         //   right_margin:      px from right screen edge (default 8)
         //   panel_width:       drawer width in px (default 420)
         //   panel_height:      fallback height in px (used if stretch_to_bottom=false)
         //   stretch_to_bottom: stretch drawer from bar to workspace foot (default true)
-        cfg.setValue("top_margin",        28);
+        cfg.setValue("top_margin",        4);
         cfg.setValue("bottom_margin",      8);
         cfg.setValue("right_margin",       8);
         cfg.setValue("panel_width",      420);
@@ -61,7 +61,7 @@ static LayoutConfig readConfig()
     QSettings cfg(configPath(), QSettings::IniFormat);
     cfg.beginGroup("layout");
     LayoutConfig lc;
-    lc.topMargin        = cfg.value("top_margin",        28).toInt();
+    lc.topMargin        = cfg.value("top_margin",        4).toInt();
     lc.bottomMargin     = cfg.value("bottom_margin",      8).toInt();
     lc.rightMargin      = cfg.value("right_margin",       8).toInt();
     lc.panelWidth       = cfg.value("panel_width",      420).toInt();
