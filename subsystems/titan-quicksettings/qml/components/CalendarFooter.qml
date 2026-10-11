@@ -55,35 +55,39 @@ Rectangle {
         spacing: 8
 
         // ── Header row (always visible, click to toggle) ─────────────────────
-        RowLayout {
+        Item {
             Layout.fillWidth: true
             Layout.preferredHeight: 24
-            spacing: 8
 
-            Text {
-                text: "\uf133" // calendar
-                font.family: TitanTheme.fontFamily
-                font.pixelSize: 13
-                color: TitanTheme.accentBlue
-            }
+            RowLayout {
+                anchors.fill: parent
+                spacing: 8
 
-            Text {
-                Layout.fillWidth: true
-                text: (typeof systemCtrl !== "undefined" && systemCtrl)
-                      ? systemCtrl.currentDateString
-                      : today.toLocaleDateString(Qt.locale(), "dddd, MMMM d") + " • 0 tasks"
-                font.family: TitanTheme.fontFamily
-                font.pixelSize: 11
-                font.weight: Font.DemiBold
-                color: TitanTheme.textSecondary
-                elide: Text.ElideRight
-            }
+                Text {
+                    text: "\uf133" // calendar
+                    font.family: TitanTheme.fontFamily
+                    font.pixelSize: 13
+                    color: TitanTheme.accentBlue
+                }
 
-            Text {
-                text: expanded ? "\uf077" : "\uf078" // chevron up / down
-                font.family: TitanTheme.fontFamily
-                font.pixelSize: 10
-                color: TitanTheme.textSubtle
+                Text {
+                    Layout.fillWidth: true
+                    text: (typeof systemCtrl !== "undefined" && systemCtrl)
+                          ? systemCtrl.currentDateString
+                          : today.toLocaleDateString(Qt.locale(), "dddd, MMMM d") + " • 0 tasks"
+                    font.family: TitanTheme.fontFamily
+                    font.pixelSize: 11
+                    font.weight: Font.DemiBold
+                    color: TitanTheme.textSecondary
+                    elide: Text.ElideRight
+                }
+
+                Text {
+                    text: expanded ? "\uf077" : "\uf078" // chevron up / down
+                    font.family: TitanTheme.fontFamily
+                    font.pixelSize: 10
+                    color: TitanTheme.textSubtle
+                }
             }
 
             MouseArea {

@@ -72,14 +72,7 @@ Window {
         border.width: 1
         clip: true
 
-        // Frosted edge highlight
-        Rectangle {
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.right: parent.right
-            height: 1
-            color: TitanTheme.borderGlass
-        }
+
 
         // Slide-in: enter from the right
         x: drawerOpen ? 0 : width + 40
