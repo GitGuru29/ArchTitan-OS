@@ -31,7 +31,7 @@ Item {
     signal clicked()
 
     // ── Tooltip (QtQuick.Controls) ───────────────────────────────────────────
-    ToolTip.visible: tipMa.containsMouse && tip.length > 0
+    ToolTip.visible: ma.containsMouse && tip.length > 0
     ToolTip.text: tip
     ToolTip.delay: 500
     ToolTip.toolTip.background: Rectangle {

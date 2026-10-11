@@ -39,7 +39,7 @@ Rectangle {
             Layout.preferredWidth: 42
             Layout.preferredHeight: 42
             radius: 21
-            color: tileRoot.active ? "rgba(255, 255, 255, 0.22)" : TitanTheme.bgOneUIPill
+            color: tileRoot.active ? "#38FFFFFF" : TitanTheme.bgOneUIPill
 
             Text {
                 anchors.centerIn: parent
@@ -67,7 +67,7 @@ Rectangle {
                 text: tileRoot.subtitle
                 font.family: TitanTheme.fontFamily
                 font.pixelSize: 11
-                color: tileRoot.active ? "rgba(255, 255, 255, 0.85)" : TitanTheme.textSubtle
+                color: tileRoot.active ? "#D9FFFFFF" : TitanTheme.textSubtle
                 elide: Text.ElideRight
                 Layout.fillWidth: true
             }

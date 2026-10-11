@@ -38,6 +38,7 @@ Item {
         }
 
         ScrollBar.vertical: ScrollBar {
+            id: vBar
             width: 4
             policy: ScrollBar.AsNeeded
             interactive: true
@@ -46,8 +47,8 @@ Item {
 
             contentItem: Rectangle {
                 radius: 2
-                color: control.active ? TitanTheme.accentBlue : TitanTheme.bgOneUIPill
-                opacity: control.active ? 1.0 : 0.8
+                color: vBar.active ? TitanTheme.accentBlue : TitanTheme.bgOneUIPill
+                opacity: vBar.active ? 1.0 : 0.8
             }
             background: Rectangle {
                 radius: 2
