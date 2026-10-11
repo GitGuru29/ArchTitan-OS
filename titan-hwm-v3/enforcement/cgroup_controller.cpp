@@ -8,6 +8,7 @@
 #include <iostream>
 #include <filesystem>
 #include <system_error>
+#include <unistd.h>
 
 namespace fs = std::filesystem;
 
@@ -23,7 +24,19 @@ bool CgroupController::write_file(const std::string& path, const std::string& va
         return false;
     }
     f << value;
-    return f.good();
+    // The kernel receives the data on flush/close, and can reject it (EINVAL for
+    // a malformed cgroup.subtree_control, for example) only then. Checking
+    // good() before flushing reported success for writes that never happened,
+    // which is how enforcement silently degraded to a no-op.
+    f.flush();
+    const bool ok = f.good();
+    f.close();
+    if (!ok) {
+        std::cerr << "[cgroup] Write to " << path << " failed"
+                  << " (value='" << value << "')\n";
+        return false;
+    }
+    return true;
 }
 
 bool CgroupController::mkdir_p(const std::string& path) {
@@ -45,6 +58,53 @@ std::string CgroupController::slice_path(const std::string& slice_name) {
 // setup_slices — create the 4 sub-slices under archtitan.slice (idempotent)
 // Requires Delegate=yes in /etc/systemd/system/archtitan.slice
 // ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// enable_controllers — delegate the controllers THM needs into the slice
+//
+// On cgroup v2 a controller interface file (cpu.weight, memory.high, ...) only
+// exists in a child cgroup if that controller is enabled in the PARENT's
+// cgroup.subtree_control. systemd programs subtree_control from the unit's
+// accounting settings, and for this slice that yields "memory pids" but not
+// "cpu" — so archtitan-active.slice and friends come up with no cpu.weight and
+// set_cpu_weight() silently fails, leaving CPU throttling a no-op.
+//
+// The sub-slices are created by THM via mkdir, not by systemd, so systemd has no
+// reason to delegate cpu to them. THM therefore enables the controllers it
+// actually uses. Best-effort: a failure here degrades enforcement but must not
+// stop the daemon, so it is logged and the caller continues.
+// ─────────────────────────────────────────────────────────────────────────────
+void CgroupController::enable_controllers() {
+    static const char* kWanted[] = { "cpu", "memory", "pids" };
+
+    const std::string subtree = std::string(SLICE_ROOT) + "/cgroup.subtree_control";
+
+    // Only request controllers this kernel actually offers, to avoid EBUSY on
+    // a controller the parent never delegated down.
+    std::string available;
+    {
+        std::ifstream f(std::string(SLICE_ROOT) + "/cgroup.controllers");
+        if (f.good()) std::getline(f, available);
+    }
+
+    std::string want;
+    for (const char* c : kWanted) {
+        if (available.find(c) == std::string::npos) continue;
+        // Tokens MUST be space separated. cgroup.subtree_control rejects the
+        // unseparated form ("+cpu+memory") with EINVAL.
+        if (!want.empty()) want += ' ';
+        want += '+';
+        want += c;
+    }
+    if (want.empty()) {
+        std::cerr << "[cgroup] No controllers available in " << SLICE_ROOT << "\n";
+        return;
+    }
+
+    // subtree_control is write-only for reads of current state; a write of
+    // "+cpu" is idempotent, so simply re-requesting everything is correct.
+    write_file(subtree, want);
+}
+
 bool CgroupController::setup_slices() {
     // Verify the root slice exists (systemd must have created it)
     if (!fs::exists(SLICE_ROOT)) {
@@ -52,6 +112,10 @@ bool CgroupController::setup_slices() {
                   << " — is systemd unit loaded?\n";
         return false;
     }
+
+    // Must happen before the sub-slices are created: a controller enabled in the
+    // slice's subtree_control is what materialises the interface files below it.
+    enable_controllers();
 
     bool ok = true;
     for (const char* name : {SLICE_PROTECTED, SLICE_ACTIVE,
@@ -61,10 +125,22 @@ bool CgroupController::setup_slices() {
 
     // Enable memory accounting in the slices we manage
     for (const char* name : {SLICE_ACTIVE, SLICE_BACKGROUND, SLICE_FROZEN}) {
-        write_file(slice_path(name) + "/memory.oom.group", "1");
+        ok &= write_file(slice_path(name) + "/memory.oom.group", "1");
     }
 
-    if (ok) std::cout << "[cgroup] archtitan.slice hierarchy ready.\n";
+    // Definitive writability probe. The sub-slice directories existing is NOT
+    // sufficient: under an undelegated slice they exist (created by systemd, or
+    // by a previous privileged run) but every control-file write fails EACCES,
+    // so enforcement silently degrades to a no-op. Writing cgroup.freeze=0 is
+    // idempotent and succeeds only when we can actually drive the hierarchy.
+    ok &= write_file(slice_path(SLICE_FROZEN) + "/cgroup.freeze", "0");
+
+    if (ok) {
+        std::cout << "[cgroup] archtitan.slice hierarchy ready.\n";
+    } else {
+        std::cerr << "[cgroup] archtitan.slice hierarchy NOT writable by uid "
+                  << getuid() << " — enforcement would be a no-op here.\n";
+    }
     return ok;
 }
 
