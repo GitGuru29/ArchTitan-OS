@@ -29,7 +29,7 @@ QtObject {
     readonly property color borderHover:       "#30FFFFFF"   // 19% white
     readonly property color borderActive:      "#702B7FFF"   // One UI accent glow
     readonly property color borderGlass:       "#14FFFFFF"   // 8% white glass highlight
-    readonly property color borderOneUIGlass:  "rgba(255, 255, 255, 0.09)"
+    readonly property color borderOneUIGlass:  "#17FFFFFF"
 
     // ── Accents & Indicators ────────────────────────────────────────────────
     readonly property color accent:            "#2B7FFF"     // One UI 9 Electric Blue

@@ -106,7 +106,7 @@ Rectangle {
                         width: Math.max(18, badgeText.implicitWidth + 8)
                         height: 18
                         radius: 9
-                        color: tabRoot.currentIndex === 1 ? "rgba(255, 255, 255, 0.25)" : TitanTheme.accentBlue
+                        color: tabRoot.currentIndex === 1 ? "#40FFFFFF" : TitanTheme.accentBlue
 
                         Text {
                             id: badgeText
