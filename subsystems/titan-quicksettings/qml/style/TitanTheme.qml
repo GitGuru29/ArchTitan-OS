@@ -10,8 +10,8 @@ import QtQuick
 QtObject {
     readonly property string fontFamily: "JetBrainsMono Nerd Font"
 
-    // ── One UI 9.0 Surfaces & Acrylic Glass ─────────────────────────────────
-    readonly property color bgWindow:          "#F20B0E14"   // ~95% frosted dark backdrop
+    // ── One UI 9.0 Surfaces & Solid Dark Canvas ────────────────────────────
+    readonly property color bgWindow:          "#0B0E14"     // Solid opaque dark backdrop (no ghosting/bleed-through)
     readonly property color bgSurface:         "#161A26"     // raised bento container
     readonly property color bgSurfaceAlt:      "#1D2232"     // elevated squircle tile
     readonly property color bgInset:           "#0E121C"     // recessed track / inset
