@@ -30,6 +30,12 @@ Window {
         rootWindow.width = showNotificationPanel ? 870 : 420;
     }
 
+    Binding {
+        target: TitanTheme
+        property: "isDark"
+        value: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.themeDark : true
+    }
+
     function openDrawer() {
         drawerOpen = true;
         rootWindow.visible = true;
