@@ -119,16 +119,23 @@ Window {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         contentWidth: width
-                        contentHeight: bentoContent.implicitHeight
+                        contentHeight: Math.max(height, bentoContent.implicitHeight)
                         clip: true
                         boundsBehavior: Flickable.StopAtBounds
 
                         ColumnLayout {
                             id: bentoContent
                             width: parent.width
+                            height: Math.max(parent.height, implicitHeight)
                             spacing: 12
 
                             QuickToggleGrid {}
+
+                            Item {
+                                Layout.fillHeight: true
+                            }
+
+                            CalendarFooter {}
                         }
                     }
                 }
