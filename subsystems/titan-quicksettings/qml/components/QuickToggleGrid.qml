@@ -52,17 +52,6 @@ ColumnLayout {
         border.width: 1
         clip: true
 
-        // Liquid Glass Top Rim Line
-        Rectangle {
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.top: parent.top
-            anchors.leftMargin: parent.radius
-            anchors.rightMargin: parent.radius
-            height: 1
-            color: TitanTheme.borderGlassTop
-        }
-
         RowLayout {
             id: primaryCol
             anchors.fill: parent
@@ -154,17 +143,6 @@ ColumnLayout {
         border.width: 1
         clip: true
 
-        // Liquid Glass Top Rim Line
-        Rectangle {
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.top: parent.top
-            anchors.leftMargin: parent.radius
-            anchors.rightMargin: parent.radius
-            height: 1
-            color: TitanTheme.borderGlassTop
-        }
-
         ColumnLayout {
             id: sliderCol
             anchors.fill: parent
@@ -211,17 +189,6 @@ ColumnLayout {
         border.color: TitanTheme.borderGlass
         border.width: 1
         clip: true
-
-        // Liquid Glass Top Rim Line
-        Rectangle {
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.top: parent.top
-            anchors.leftMargin: parent.radius
-            anchors.rightMargin: parent.radius
-            height: 1
-            color: TitanTheme.borderGlassTop
-        }
 
         ColumnLayout {
             id: gridCol
@@ -387,17 +354,6 @@ ColumnLayout {
             NumberAnimation { duration: 130; easing.type: Easing.OutQuad }
         }
 
-        // Liquid Glass Top Rim Line
-        Rectangle {
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.top: parent.top
-            anchors.leftMargin: parent.radius
-            anchors.rightMargin: parent.radius
-            height: 1
-            color: TitanTheme.borderGlassTop
-        }
-
         RowLayout {
             anchors.fill: parent
             anchors.leftMargin: 14
@@ -472,17 +428,6 @@ ColumnLayout {
         scale: devMa.pressed ? 0.97 : (devMa.containsMouse ? 1.015 : 1.0)
         Behavior on scale {
             NumberAnimation { duration: 130; easing.type: Easing.OutQuad }
-        }
-
-        // Liquid Glass Top Rim Line
-        Rectangle {
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.top: parent.top
-            anchors.leftMargin: parent.radius
-            anchors.rightMargin: parent.radius
-            height: 1
-            color: TitanTheme.borderGlassTop
         }
 
         RowLayout {

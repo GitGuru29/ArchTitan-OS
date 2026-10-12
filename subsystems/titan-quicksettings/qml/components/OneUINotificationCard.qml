@@ -24,17 +24,6 @@ Rectangle {
         NumberAnimation { duration: 130; easing.type: Easing.OutQuad }
     }
 
-    // Liquid Glass Top Rim Line
-    Rectangle {
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.top: parent.top
-        anchors.leftMargin: parent.radius
-        anchors.rightMargin: parent.radius
-        height: 1
-        color: TitanTheme.borderGlassTop
-    }
-
     property int cardIndex: (typeof index !== "undefined") ? index : 0
     property string appNameText: (typeof appName !== "undefined") ? appName : "System"
     property string summaryText: (typeof summary !== "undefined") ? summary : ""

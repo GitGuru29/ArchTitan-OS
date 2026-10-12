@@ -33,30 +33,6 @@ Rectangle {
 
     Behavior on color { ColorAnimation { duration: 150 } }
 
-    // Liquid Glass Specular Gradient Sheen
-    Rectangle {
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.top: parent.top
-        height: parent.height * 0.48
-        radius: parent.radius
-        gradient: Gradient {
-            GradientStop { position: 0.0; color: tileRoot.active ? "#35FFFFFF" : (TitanTheme.isDark ? "#18FFFFFF" : "#60FFFFFF") }
-            GradientStop { position: 1.0; color: "transparent" }
-        }
-    }
-
-    // Liquid Glass Top Rim Highlight
-    Rectangle {
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.top: parent.top
-        anchors.leftMargin: parent.radius
-        anchors.rightMargin: parent.radius
-        height: 1
-        color: tileRoot.active ? "#60FFFFFF" : TitanTheme.borderGlassTop
-    }
-
     RowLayout {
         anchors.fill: parent
         anchors.leftMargin: 14

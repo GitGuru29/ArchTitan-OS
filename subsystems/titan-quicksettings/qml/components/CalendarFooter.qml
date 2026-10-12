@@ -17,17 +17,6 @@ Rectangle {
     border.width: 1
     clip: true
 
-    // Liquid Glass Top Rim Line
-    Rectangle {
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.top: parent.top
-        anchors.leftMargin: parent.radius
-        anchors.rightMargin: parent.radius
-        height: 1
-        color: TitanTheme.borderGlassTop
-    }
-
     property bool expanded: false
     property int contentHeight: 40
     Behavior on contentHeight { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }

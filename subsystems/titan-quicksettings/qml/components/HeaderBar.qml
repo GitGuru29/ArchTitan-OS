@@ -108,20 +108,6 @@ RowLayout {
             border.color: headerRoot.showNotificationPanel ? TitanTheme.borderActive : TitanTheme.borderGlass
             border.width: 1
 
-            // Liquid Glass Specular Highlight
-            Rectangle {
-                anchors.horizontalCenter: parent.horizontalCenter
-                anchors.top: parent.top
-                anchors.topMargin: 1
-                width: parent.width - 6
-                height: parent.height * 0.44
-                radius: width / 2
-                gradient: Gradient {
-                    GradientStop { position: 0.0; color: headerRoot.showNotificationPanel ? "#45FFFFFF" : (TitanTheme.isDark ? "#25FFFFFF" : "#70FFFFFF") }
-                    GradientStop { position: 1.0; color: "transparent" }
-                }
-            }
-
             Text {
                 anchors.centerIn: parent
                 text: "\uf0f3" // bell
@@ -175,20 +161,6 @@ RowLayout {
             border.color: editMa.containsMouse ? TitanTheme.borderHover : TitanTheme.borderGlass
             border.width: 1
 
-            // Liquid Glass Specular Highlight
-            Rectangle {
-                anchors.horizontalCenter: parent.horizontalCenter
-                anchors.top: parent.top
-                anchors.topMargin: 1
-                width: parent.width - 6
-                height: parent.height * 0.44
-                radius: width / 2
-                gradient: Gradient {
-                    GradientStop { position: 0.0; color: TitanTheme.isDark ? "#25FFFFFF" : "#70FFFFFF" }
-                    GradientStop { position: 1.0; color: "transparent" }
-                }
-            }
-
             Text {
                 anchors.centerIn: parent
                 text: "\uf044" // pencil edit
@@ -220,20 +192,6 @@ RowLayout {
             color: setMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgOneUIPill
             border.color: setMa.containsMouse ? TitanTheme.borderHover : TitanTheme.borderGlass
             border.width: 1
-
-            // Liquid Glass Specular Highlight
-            Rectangle {
-                anchors.horizontalCenter: parent.horizontalCenter
-                anchors.top: parent.top
-                anchors.topMargin: 1
-                width: parent.width - 6
-                height: parent.height * 0.44
-                radius: width / 2
-                gradient: Gradient {
-                    GradientStop { position: 0.0; color: TitanTheme.isDark ? "#25FFFFFF" : "#70FFFFFF" }
-                    GradientStop { position: 1.0; color: "transparent" }
-                }
-            }
 
             Text {
                 anchors.centerIn: parent

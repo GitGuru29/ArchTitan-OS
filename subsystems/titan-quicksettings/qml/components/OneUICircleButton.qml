@@ -39,20 +39,6 @@ ColumnLayout {
 
         Behavior on color { ColorAnimation { duration: 130 } }
 
-        // Liquid Glass Bead Specular Highlight
-        Rectangle {
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.top: parent.top
-            anchors.topMargin: 2
-            width: parent.width - 8
-            height: parent.height * 0.44
-            radius: width / 2
-            gradient: Gradient {
-                GradientStop { position: 0.0; color: buttonRoot.active ? "#55FFFFFF" : (TitanTheme.isDark ? "#25FFFFFF" : "#75FFFFFF") }
-                GradientStop { position: 1.0; color: "transparent" }
-            }
-        }
-
         Text {
             anchors.centerIn: parent
             text: buttonRoot.iconGlyph

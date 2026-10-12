@@ -72,17 +72,6 @@ ColumnLayout {
         border.width: 1
         clip: true
 
-        // Liquid Glass Top Rim Line
-        Rectangle {
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.top: parent.top
-            anchors.leftMargin: parent.radius
-            anchors.rightMargin: parent.radius
-            height: 1
-            color: TitanTheme.borderGlassTop
-        }
-
         RowLayout {
             anchors.fill: parent
             anchors.leftMargin: 12
