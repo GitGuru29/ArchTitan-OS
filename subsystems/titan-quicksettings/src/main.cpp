@@ -82,9 +82,7 @@ static LayoutConfig readConfig()
 
 int main(int argc, char *argv[])
 {
-    // Low-memory footprint configuration (~10-15 MB RSS)
-    qputenv("QSG_RENDER_LOOP", "basic");
-    qputenv("QT_QUICK_BACKEND", "software");
+    // Wayland configuration & GPU rendering (software backend can be set via env var if needed)
     qputenv("QML_DISABLE_DISK_CACHE", "1");
     qputenv("QT_QPA_PLATFORM", "wayland;xcb");
     qputenv("QT_WAYLAND_DISABLE_WINDOWDECORATION", "1");

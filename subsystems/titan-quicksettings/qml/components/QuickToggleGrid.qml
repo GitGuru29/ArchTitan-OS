@@ -165,7 +165,7 @@ ColumnLayout {
                     return "\uf028";
                 }
                 from: 0
-                to: 150
+                to: 100
                 value: (typeof audioCtrl !== "undefined" && audioCtrl) ? audioCtrl.sinkVolume : 60
                 muted: typeof audioCtrl !== "undefined" && audioCtrl && audioCtrl.sinkMuted
                 fillAccent: TitanTheme.accentBlue
