@@ -9,6 +9,7 @@ class SystemController : public QObject
     Q_OBJECT
     Q_PROPERTY(QString uptime READ uptime NOTIFY uptimeChanged)
     Q_PROPERTY(QString currentDateString READ currentDateString NOTIFY currentDateStringChanged)
+    Q_PROPERTY(QString userName READ userName CONSTANT)
     Q_PROPERTY(bool caffeineActive READ caffeineActive WRITE setCaffeineActive NOTIFY caffeineActiveChanged)
     Q_PROPERTY(bool themeDark READ themeDark WRITE setThemeDark NOTIFY themeDarkChanged)
     Q_PROPERTY(bool visualizerActive READ visualizerActive WRITE setVisualizerActive NOTIFY visualizerActiveChanged)
@@ -21,6 +22,7 @@ public:
 
     QString uptime() const { return m_uptime; }
     QString currentDateString() const { return m_currentDateString; }
+    QString userName() const;
     bool caffeineActive() const { return m_caffeineActive; }
     bool themeDark() const { return m_themeDark; }
     bool visualizerActive() const { return m_visualizerActive; }
