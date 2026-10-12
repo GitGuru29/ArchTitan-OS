@@ -57,13 +57,19 @@ SystemController::SystemController(QObject *parent)
     updateUptime();
     updateDate();
     updateBrightness();
+    updateTheme();
+    updateScreenRecording();
+    updateAirplaneMode();
 
     connect(m_timer, &QTimer::timeout, this, [this]() {
         updateUptime();
         updateDate();
         updateBrightness();
+        updateTheme();
+        updateScreenRecording();
+        updateAirplaneMode();
     });
-    m_timer->start(10000); // Check every 10s
+    m_timer->start(3000); // Check every 3s
 }
 
 void SystemController::updateUptime()
@@ -153,6 +159,9 @@ void SystemController::refresh()
     updateUptime();
     updateDate();
     updateBrightness();
+    updateTheme();
+    updateScreenRecording();
+    updateAirplaneMode();
 }
 
 void SystemController::setCaffeineActive(bool active)
@@ -161,6 +170,11 @@ void SystemController::setCaffeineActive(bool active)
         m_caffeineActive = active;
         emit caffeineActiveChanged();
     }
+    if (active) {
+        QProcess::startDetached("systemd-inhibit", {"--what=idle:sleep", "--who=ArchTitan", "--why=Caffeine", "sleep", "infinity"});
+    } else {
+        QProcess::startDetached("pkill", {"-f", "systemd-inhibit.*ArchTitan"});
+    }
 }
 
 void SystemController::setThemeDark(bool dark)
@@ -168,6 +182,24 @@ void SystemController::setThemeDark(bool dark)
     if (m_themeDark != dark) {
         m_themeDark = dark;
         emit themeDarkChanged();
+    }
+    QString scheme = dark ? "prefer-dark" : "prefer-light";
+    QString gtkTheme = dark ? "adw-gtk3-dark" : "adw-gtk3";
+    QProcess::startDetached("gsettings", {"set", "org.gnome.desktop.interface", "color-scheme", scheme});
+    QProcess::startDetached("gsettings", {"set", "org.gnome.desktop.interface", "gtk-theme", gtkTheme});
+}
+
+void SystemController::updateTheme()
+{
+    QProcess proc;
+    proc.start("gsettings", {"get", "org.gnome.desktop.interface", "color-scheme"});
+    if (proc.waitForFinished(300)) {
+        QString out = proc.readAllStandardOutput().trimmed();
+        bool isDark = out.contains("prefer-dark");
+        if (isDark != m_themeDark) {
+            m_themeDark = isDark;
+            emit themeDarkChanged();
+        }
     }
 }
 
@@ -185,6 +217,14 @@ void SystemController::setGameModeActive(bool active)
         m_gameModeActive = active;
         emit gameModeActiveChanged();
     }
+    if (active) {
+        QProcess::startDetached("hyprctl", {
+            "--batch",
+            "keyword animations:enabled 0; keyword decoration:drop_shadow 0; keyword decoration:blur:enabled 0; keyword general:gaps_in 0; keyword general:gaps_out 0"
+        });
+    } else {
+        QProcess::startDetached("hyprctl", {"reload"});
+    }
 }
 
 void SystemController::setVpnActive(bool active)
@@ -193,6 +233,89 @@ void SystemController::setVpnActive(bool active)
         m_vpnActive = active;
         emit vpnActiveChanged();
     }
+}
+
+void SystemController::toggleScreenRecording()
+{
+    if (m_screenRecordingActive) {
+        QProcess::startDetached("killall", {"-SIGINT", "wf-recorder"});
+        m_screenRecordingActive = false;
+        emit screenRecordingActiveChanged();
+
+        QProcess::startDetached("notify-send", {
+            "-a", "ArchTitan",
+            "-i", "media-record",
+            "Screen Recording Saved",
+            "Video saved to ~/Videos"
+        });
+    } else {
+        QString videoDir = QDir::homePath() + "/Videos";
+        QDir().mkpath(videoDir);
+
+        QString timestamp = QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss");
+        QString filename = videoDir + "/recording_" + timestamp + ".mp4";
+
+        QProcess::startDetached("wf-recorder", {"-f", filename});
+        m_screenRecordingActive = true;
+        emit screenRecordingActiveChanged();
+
+        QProcess::startDetached("notify-send", {
+            "-a", "ArchTitan",
+            "-i", "media-record",
+            "Screen Recording Started",
+            "Click Screen Record again to stop and save"
+        });
+    }
+}
+
+void SystemController::updateScreenRecording()
+{
+    QProcess proc;
+    proc.start("pgrep", {"-x", "wf-recorder"});
+    if (proc.waitForFinished(200)) {
+        bool active = (proc.exitCode() == 0);
+        if (active != m_screenRecordingActive) {
+            m_screenRecordingActive = active;
+            emit screenRecordingActiveChanged();
+        }
+    }
+}
+
+void SystemController::setAirplaneMode(bool active)
+{
+    if (m_airplaneMode != active) {
+        m_airplaneMode = active;
+        emit airplaneModeChanged();
+    }
+    if (active) {
+        QProcess::startDetached("rfkill", {"block", "all"});
+    } else {
+        QProcess::startDetached("rfkill", {"unblock", "all"});
+    }
+}
+
+void SystemController::toggleAirplaneMode()
+{
+    setAirplaneMode(!m_airplaneMode);
+}
+
+void SystemController::updateAirplaneMode()
+{
+    QProcess proc;
+    proc.start("bash", {"-c", "rfkill list | grep -i 'Soft blocked: yes'"});
+    if (proc.waitForFinished(300)) {
+        QString out = proc.readAllStandardOutput().trimmed();
+        bool active = !out.isEmpty();
+        if (active != m_airplaneMode) {
+            m_airplaneMode = active;
+            emit airplaneModeChanged();
+        }
+    }
+}
+
+void SystemController::openClipboard()
+{
+    QProcess::startDetached("bash", {"-c", "cliphist list | rofi -dmenu -p 'Clipboard' | cliphist decode | wl-copy"});
 }
 
 void SystemController::openSettings()

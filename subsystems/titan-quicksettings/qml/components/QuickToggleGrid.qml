@@ -247,19 +247,18 @@ ColumnLayout {
                     height: 68
                     OneUICircleButton {
                         anchors.centerIn: parent
-                        iconGlyph: "\uf023" // VPN lock
-                        label: "VPN"
-                        active: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.vpnActive : false
-                        activeColor: TitanTheme.lavender
+                        iconGlyph: "\uf0ea" // clipboard
+                        label: "Clipboard"
+                        active: false
                         onClicked: {
                             if (typeof systemCtrl !== "undefined" && systemCtrl)
-                                systemCtrl.vpnActive = !systemCtrl.vpnActive
+                                systemCtrl.openClipboard()
                         }
                     }
                 }
             }
 
-            // Row 2: Awake, Virtual input, Screen record, Mobile data
+            // Row 2: Awake, Virtual input, Screen record, Airplane mode
             RowLayout {
                 Layout.fillWidth: true
                 spacing: 0
@@ -300,12 +299,17 @@ ColumnLayout {
                     height: 68
                     OneUICircleButton {
                         anchors.centerIn: parent
-                        iconGlyph: "\uf111" // record
-                        label: "Screen record"
-                        active: false
+                        iconGlyph: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.screenRecordingActive)
+                                   ? "\uf04d" // stop square
+                                   : "\uf111" // record circle
+                        label: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.screenRecordingActive)
+                               ? "Recording"
+                               : "Record"
+                        active: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.screenRecordingActive : false
+                        activeColor: TitanTheme.red
                         onClicked: {
                             if (typeof systemCtrl !== "undefined" && systemCtrl)
-                                systemCtrl.takeScreenshot()
+                                systemCtrl.toggleScreenRecording()
                         }
                     }
                 }
@@ -315,12 +319,13 @@ ColumnLayout {
                     height: 68
                     OneUICircleButton {
                         anchors.centerIn: parent
-                        iconGlyph: "\uf012" // mobile data signal bars
-                        label: "Mobile data"
-                        active: false
+                        iconGlyph: "\uf072" // airplane
+                        label: "Airplane"
+                        active: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.airplaneMode : false
+                        activeColor: TitanTheme.accentBlue
                         onClicked: {
-                            if (typeof networkCtrl !== "undefined" && networkCtrl)
-                                networkCtrl.refresh()
+                            if (typeof systemCtrl !== "undefined" && systemCtrl)
+                                systemCtrl.toggleAirplaneMode()
                         }
                     }
                 }
