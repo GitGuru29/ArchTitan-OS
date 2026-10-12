@@ -142,6 +142,8 @@ ColumnLayout {
         border.color: TitanTheme.borderGlass
         border.width: 1
         clip: true
+        visible: (typeof systemCtrl !== "undefined" && systemCtrl)
+                 ? (systemCtrl.tileVisibilityRevision >= 0 && systemCtrl.getTileVisible("sliders", true)) : true
 
         ColumnLayout {
             id: sliderCol
@@ -180,158 +182,184 @@ ColumnLayout {
         }
     }
 
-    // ── 4. Circular Quick Action Toggles (4x2 Grid) ─────────────────────────
+    // ── 4. Circular Quick Action Toggles (Reflowing Grid) ───────────────────
     Rectangle {
+        id: actionTilesCard
         Layout.fillWidth: true
-        implicitHeight: gridCol.implicitHeight + 22
+        implicitHeight: actionGrid.implicitHeight + 24
         radius: TitanTheme.radiusBento
         color: TitanTheme.bgOneUICard
         border.color: TitanTheme.borderGlass
         border.width: 1
         clip: true
+        visible: (showCapture || showColorPick || showGameMode || showClipboard ||
+                  showCaffeine || showVirtualInput || showRecord || showAirplane)
 
-        ColumnLayout {
-            id: gridCol
+        readonly property bool showCapture: (typeof systemCtrl !== "undefined" && systemCtrl)
+                                            ? (systemCtrl.tileVisibilityRevision >= 0 && systemCtrl.getTileVisible("capture", true)) : true
+        readonly property bool showColorPick: (typeof systemCtrl !== "undefined" && systemCtrl)
+                                              ? (systemCtrl.tileVisibilityRevision >= 0 && systemCtrl.getTileVisible("colorPick", true)) : true
+        readonly property bool showGameMode: (typeof systemCtrl !== "undefined" && systemCtrl)
+                                             ? (systemCtrl.tileVisibilityRevision >= 0 && systemCtrl.getTileVisible("gameMode", true)) : true
+        readonly property bool showClipboard: (typeof systemCtrl !== "undefined" && systemCtrl)
+                                              ? (systemCtrl.tileVisibilityRevision >= 0 && systemCtrl.getTileVisible("clipboard", true)) : true
+        readonly property bool showCaffeine: (typeof systemCtrl !== "undefined" && systemCtrl)
+                                             ? (systemCtrl.tileVisibilityRevision >= 0 && systemCtrl.getTileVisible("caffeine", true)) : true
+        readonly property bool showVirtualInput: (typeof systemCtrl !== "undefined" && systemCtrl)
+                                                 ? (systemCtrl.tileVisibilityRevision >= 0 && systemCtrl.getTileVisible("virtualInput", true)) : true
+        readonly property bool showRecord: (typeof systemCtrl !== "undefined" && systemCtrl)
+                                           ? (systemCtrl.tileVisibilityRevision >= 0 && systemCtrl.getTileVisible("record", true)) : true
+        readonly property bool showAirplane: (typeof systemCtrl !== "undefined" && systemCtrl)
+                                             ? (systemCtrl.tileVisibilityRevision >= 0 && systemCtrl.getTileVisible("airplane", true)) : true
+
+        GridLayout {
+            id: actionGrid
             anchors.fill: parent
             anchors.margins: 12
-            spacing: 12
+            columns: 4
+            rowSpacing: 12
+            columnSpacing: 0
 
-            // Row 1: Capture, Color pick, Game mode, VPN
-            RowLayout {
+            // Capture
+            Item {
+                visible: actionTilesCard.showCapture
                 Layout.fillWidth: true
-                spacing: 0
-
-                Item {
-                    Layout.fillWidth: true
-                    height: 68
-                    OneUICircleButton {
-                        anchors.centerIn: parent
-                        iconGlyph: "\uf030" // camera
-                        label: "Capture"
-                        active: false
-                        onClicked: {
-                            if (typeof systemCtrl !== "undefined" && systemCtrl)
-                                systemCtrl.takeScreenshot()
-                        }
-                    }
-                }
-
-                Item {
-                    Layout.fillWidth: true
-                    height: 68
-                    OneUICircleButton {
-                        anchors.centerIn: parent
-                        iconGlyph: "\uf1fb" // color picker
-                        label: "Color pick"
-                        active: false
-                        onClicked: {
-                            if (typeof systemCtrl !== "undefined" && systemCtrl)
-                                systemCtrl.pickColor()
-                        }
-                    }
-                }
-
-                Item {
-                    Layout.fillWidth: true
-                    height: 68
-                    OneUICircleButton {
-                        anchors.centerIn: parent
-                        iconGlyph: "\uf11b" // game mode
-                        label: "Game mode"
-                        active: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.gameModeActive : false
-                        activeColor: TitanTheme.green
-                        onClicked: {
-                            if (typeof systemCtrl !== "undefined" && systemCtrl)
-                                systemCtrl.gameModeActive = !systemCtrl.gameModeActive
-                        }
-                    }
-                }
-
-                Item {
-                    Layout.fillWidth: true
-                    height: 68
-                    OneUICircleButton {
-                        anchors.centerIn: parent
-                        iconGlyph: "\uf0ea" // clipboard
-                        label: "Clipboard"
-                        active: false
-                        onClicked: {
-                            if (typeof systemCtrl !== "undefined" && systemCtrl)
-                                systemCtrl.openClipboard()
-                        }
+                height: 68
+                OneUICircleButton {
+                    anchors.centerIn: parent
+                    iconGlyph: "\uf030" // camera
+                    label: "Capture"
+                    active: false
+                    onClicked: {
+                        if (typeof systemCtrl !== "undefined" && systemCtrl)
+                            systemCtrl.takeScreenshot()
                     }
                 }
             }
 
-            // Row 2: Awake, Virtual input, Screen record, Airplane mode
-            RowLayout {
+            // Color pick
+            Item {
+                visible: actionTilesCard.showColorPick
                 Layout.fillWidth: true
-                spacing: 0
-
-                Item {
-                    Layout.fillWidth: true
-                    height: 68
-                    OneUICircleButton {
-                        anchors.centerIn: parent
-                        iconGlyph: "\uf0f4" // caffeine
-                        label: "Awake"
-                        active: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.caffeineActive : false
-                        activeColor: TitanTheme.yellow
-                        onClicked: {
-                            if (typeof systemCtrl !== "undefined" && systemCtrl)
-                                systemCtrl.caffeineActive = !systemCtrl.caffeineActive
-                        }
+                height: 68
+                OneUICircleButton {
+                    anchors.centerIn: parent
+                    iconGlyph: "\uf1fb" // color picker
+                    label: "Color pick"
+                    active: false
+                    onClicked: {
+                        if (typeof systemCtrl !== "undefined" && systemCtrl)
+                            systemCtrl.pickColor()
                     }
                 }
+            }
 
-                Item {
-                    Layout.fillWidth: true
-                    height: 68
-                    OneUICircleButton {
-                        anchors.centerIn: parent
-                        iconGlyph: "\uf11c" // keyboard
-                        label: "Virtual input"
-                        active: false
-                        onClicked: {
-                            if (typeof systemCtrl !== "undefined" && systemCtrl)
-                                systemCtrl.toggleVirtualKeyboard()
-                        }
+            // Game mode
+            Item {
+                visible: actionTilesCard.showGameMode
+                Layout.fillWidth: true
+                height: 68
+                OneUICircleButton {
+                    anchors.centerIn: parent
+                    iconGlyph: "\uf11b" // game mode
+                    label: "Game mode"
+                    active: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.gameModeActive : false
+                    activeColor: TitanTheme.green
+                    onClicked: {
+                        if (typeof systemCtrl !== "undefined" && systemCtrl)
+                            systemCtrl.gameModeActive = !systemCtrl.gameModeActive
                     }
                 }
+            }
 
-                Item {
-                    Layout.fillWidth: true
-                    height: 68
-                    OneUICircleButton {
-                        anchors.centerIn: parent
-                        iconGlyph: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.screenRecordingActive)
-                                   ? "\uf04d" // stop square
-                                   : "\uf111" // record circle
-                        label: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.screenRecordingActive)
-                               ? "Recording"
-                               : "Record"
-                        active: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.screenRecordingActive : false
-                        activeColor: TitanTheme.red
-                        onClicked: {
-                            if (typeof systemCtrl !== "undefined" && systemCtrl)
-                                systemCtrl.toggleScreenRecording()
-                        }
+            // Clipboard
+            Item {
+                visible: actionTilesCard.showClipboard
+                Layout.fillWidth: true
+                height: 68
+                OneUICircleButton {
+                    anchors.centerIn: parent
+                    iconGlyph: "\uf0ea" // clipboard
+                    label: "Clipboard"
+                    active: false
+                    onClicked: {
+                        if (typeof systemCtrl !== "undefined" && systemCtrl)
+                            systemCtrl.openClipboard()
                     }
                 }
+            }
 
-                Item {
-                    Layout.fillWidth: true
-                    height: 68
-                    OneUICircleButton {
-                        anchors.centerIn: parent
-                        iconGlyph: "\uf072" // airplane
-                        label: "Airplane"
-                        active: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.airplaneMode : false
-                        activeColor: TitanTheme.accentBlue
-                        onClicked: {
-                            if (typeof systemCtrl !== "undefined" && systemCtrl)
-                                systemCtrl.toggleAirplaneMode()
-                        }
+            // Awake
+            Item {
+                visible: actionTilesCard.showCaffeine
+                Layout.fillWidth: true
+                height: 68
+                OneUICircleButton {
+                    anchors.centerIn: parent
+                    iconGlyph: "\uf0f4" // caffeine
+                    label: "Awake"
+                    active: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.caffeineActive : false
+                    activeColor: TitanTheme.yellow
+                    onClicked: {
+                        if (typeof systemCtrl !== "undefined" && systemCtrl)
+                            systemCtrl.caffeineActive = !systemCtrl.caffeineActive
+                    }
+                }
+            }
+
+            // Virtual input
+            Item {
+                visible: actionTilesCard.showVirtualInput
+                Layout.fillWidth: true
+                height: 68
+                OneUICircleButton {
+                    anchors.centerIn: parent
+                    iconGlyph: "\uf11c" // keyboard
+                    label: "Virtual input"
+                    active: false
+                    onClicked: {
+                        if (typeof systemCtrl !== "undefined" && systemCtrl)
+                            systemCtrl.toggleVirtualKeyboard()
+                    }
+                }
+            }
+
+            // Screen record
+            Item {
+                visible: actionTilesCard.showRecord
+                Layout.fillWidth: true
+                height: 68
+                OneUICircleButton {
+                    anchors.centerIn: parent
+                    iconGlyph: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.screenRecordingActive)
+                               ? "\uf04d" // stop square
+                               : "\uf111" // record circle
+                    label: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.screenRecordingActive)
+                           ? "Recording"
+                           : "Record"
+                    active: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.screenRecordingActive : false
+                    activeColor: TitanTheme.red
+                    onClicked: {
+                        if (typeof systemCtrl !== "undefined" && systemCtrl)
+                            systemCtrl.toggleScreenRecording()
+                    }
+                }
+            }
+
+            // Airplane
+            Item {
+                visible: actionTilesCard.showAirplane
+                Layout.fillWidth: true
+                height: 68
+                OneUICircleButton {
+                    anchors.centerIn: parent
+                    iconGlyph: "\uf072" // airplane
+                    label: "Airplane"
+                    active: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.airplaneMode : false
+                    activeColor: TitanTheme.accentBlue
+                    onClicked: {
+                        if (typeof systemCtrl !== "undefined" && systemCtrl)
+                            systemCtrl.toggleAirplaneMode()
                     }
                 }
             }
@@ -347,6 +375,8 @@ ColumnLayout {
         border.color: TitanTheme.borderGlass
         border.width: 1
         clip: true
+        visible: (typeof systemCtrl !== "undefined" && systemCtrl)
+                 ? (systemCtrl.tileVisibilityRevision >= 0 && systemCtrl.getTileVisible("deviceMedia", true)) : true
 
         // Tactile Liquid Touch: spring bounce on hover and press
         scale: medMa.pressed ? 0.97 : (medMa.containsMouse ? 1.015 : 1.0)
