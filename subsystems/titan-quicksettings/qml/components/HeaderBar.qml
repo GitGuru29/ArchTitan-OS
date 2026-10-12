@@ -14,7 +14,9 @@ RowLayout {
     Layout.preferredHeight: 68
     spacing: 12
 
-    property string userName: "Siluna"
+    property string userName: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.userName)
+                              ? systemCtrl.userName
+                              : "User"
     property bool showNotificationPanel: false
     signal toggleNotificationPanel()
 

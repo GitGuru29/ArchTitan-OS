@@ -4,6 +4,51 @@
 #include <QProcess>
 #include <QDir>
 #include <QDebug>
+#include <QSettings>
+#include <QStandardPaths>
+#include <unistd.h>
+#include <pwd.h>
+
+QString SystemController::userName() const
+{
+    // 1. Check user override in config.ini
+    QString configDir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
+    QSettings cfg(configDir + "/titan-quicksettings/config.ini", QSettings::IniFormat);
+    QString customName = cfg.value("user/name").toString().trimmed();
+    if (!customName.isEmpty()) {
+        return customName;
+    }
+
+    // 2. Check passwd GECOS full name or login username
+    struct passwd *pw = getpwuid(getuid());
+    if (pw) {
+        if (pw->pw_gecos && strlen(pw->pw_gecos) > 0) {
+            QString gecos = QString::fromUtf8(pw->pw_gecos).split(',').first().trimmed();
+            if (!gecos.isEmpty()) {
+                return gecos.split(' ').first();
+            }
+        }
+        if (pw->pw_name && strlen(pw->pw_name) > 0) {
+            QString name = QString::fromUtf8(pw->pw_name).trimmed();
+            if (!name.isEmpty()) {
+                name[0] = name[0].toUpper();
+                return name;
+            }
+        }
+    }
+
+    // 3. Check USER environment variable
+    QByteArray userEnv = qgetenv("USER");
+    if (!userEnv.isEmpty()) {
+        QString name = QString::fromUtf8(userEnv).trimmed();
+        if (!name.isEmpty()) {
+            name[0] = name[0].toUpper();
+            return name;
+        }
+    }
+
+    return QStringLiteral("User");
+}
 
 SystemController::SystemController(QObject *parent)
     : QObject(parent)
