@@ -56,7 +56,19 @@ RowLayout {
         color: TitanTheme.bgOneUITrack
         border.color: TitanTheme.borderGlass
         border.width: 1
-        clip: true
+        scale: mouseArea.pressed ? 1.015 : 1.0
+        Behavior on scale { NumberAnimation { duration: 110; easing.type: Easing.OutQuad } }
+
+        // Liquid Glass Top Rim Line
+        Rectangle {
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: parent.top
+            anchors.leftMargin: 17
+            anchors.rightMargin: 17
+            height: 1
+            color: TitanTheme.borderGlassTop
+        }
 
         // Active fill with One UI 9 gradient
         Rectangle {
@@ -72,6 +84,7 @@ RowLayout {
                 return Math.max(ratio > 0.02 ? 34 : 0, ratio * parent.width);
             }
             radius: 17
+            clip: true
 
             gradient: Gradient {
                 orientation: Gradient.Horizontal
@@ -82,6 +95,31 @@ RowLayout {
             Behavior on width {
                 enabled: !mouseArea.pressed
                 NumberAnimation { duration: 90; easing.type: Easing.OutQuad }
+            }
+
+            // Liquid Glass Upper Specular Gloss
+            Rectangle {
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: parent.top
+                height: parent.height * 0.48
+                radius: parent.radius
+                gradient: Gradient {
+                    GradientStop { position: 0.0; color: "#45FFFFFF" }
+                    GradientStop { position: 1.0; color: "transparent" }
+                }
+            }
+
+            // Liquid Meniscus Tip Light
+            Rectangle {
+                anchors.right: parent.right
+                anchors.rightMargin: 6
+                anchors.verticalCenter: parent.verticalCenter
+                width: 4
+                height: 16
+                radius: 2
+                color: "#66FFFFFF"
+                visible: fillRect.width > 34
             }
         }
 

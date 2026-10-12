@@ -96,7 +96,7 @@ Window {
             spacing: 12
 
             // ═════════════════════════════════════════════════════════════════
-            //  PANEL 1: Quick Settings (Left)
+            //  PANEL 1: Quick Settings (Left) — Liquid Frosted Glass
             // ═════════════════════════════════════════════════════════════════
             Rectangle {
                 id: leftCard
@@ -108,6 +108,30 @@ Window {
                 border.color: TitanTheme.borderGlass
                 border.width: 1
                 clip: true
+
+                // Liquid Glass Specular Gradient Sheen (top ambient refraction)
+                Rectangle {
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.top: parent.top
+                    height: 140
+                    radius: TitanTheme.radiusWindow
+                    gradient: Gradient {
+                        GradientStop { position: 0.0; color: TitanTheme.isDark ? "#1AFFFFFF" : "#60FFFFFF" }
+                        GradientStop { position: 1.0; color: "transparent" }
+                    }
+                }
+
+                // Liquid Glass Top Rim Highlight
+                Rectangle {
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.top: parent.top
+                    anchors.leftMargin: TitanTheme.radiusWindow
+                    anchors.rightMargin: TitanTheme.radiusWindow
+                    height: 1
+                    color: TitanTheme.borderGlassTop
+                }
 
                 ColumnLayout {
                     anchors.fill: parent
@@ -148,7 +172,7 @@ Window {
             }
 
             // ═════════════════════════════════════════════════════════════════
-            //  PANEL 2: Notifications & Media Hub (Right)
+            //  PANEL 2: Notifications & Media Hub (Right) — Liquid Glass
             // ═════════════════════════════════════════════════════════════════
             Rectangle {
                 id: rightCard
@@ -160,6 +184,30 @@ Window {
                 border.color: TitanTheme.borderGlass
                 border.width: 1
                 clip: true
+
+                // Liquid Glass Specular Gradient Sheen
+                Rectangle {
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.top: parent.top
+                    height: 140
+                    radius: TitanTheme.radiusWindow
+                    gradient: Gradient {
+                        GradientStop { position: 0.0; color: TitanTheme.isDark ? "#1AFFFFFF" : "#60FFFFFF" }
+                        GradientStop { position: 1.0; color: "transparent" }
+                    }
+                }
+
+                // Liquid Glass Top Rim Highlight
+                Rectangle {
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.top: parent.top
+                    anchors.leftMargin: TitanTheme.radiusWindow
+                    anchors.rightMargin: TitanTheme.radiusWindow
+                    height: 1
+                    color: TitanTheme.borderGlassTop
+                }
 
                 ColumnLayout {
                     anchors.fill: parent

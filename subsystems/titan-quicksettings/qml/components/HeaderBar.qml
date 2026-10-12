@@ -99,11 +99,28 @@ RowLayout {
             width: 36
             height: 36
             radius: 18
+            clip: true
+            scale: notifMa.pressed ? 0.91 : (notifMa.containsMouse ? 1.08 : 1.0)
+            Behavior on scale { NumberAnimation { duration: 130; easing.type: Easing.OutBack; easing.overshoot: 1.25 } }
             color: headerRoot.showNotificationPanel
                    ? TitanTheme.accentBlue
                    : (notifMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgOneUIPill)
-            border.color: TitanTheme.borderGlass
+            border.color: headerRoot.showNotificationPanel ? TitanTheme.borderActive : TitanTheme.borderGlass
             border.width: 1
+
+            // Liquid Glass Specular Highlight
+            Rectangle {
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.top: parent.top
+                anchors.topMargin: 1
+                width: parent.width - 6
+                height: parent.height * 0.44
+                radius: width / 2
+                gradient: Gradient {
+                    GradientStop { position: 0.0; color: headerRoot.showNotificationPanel ? "#45FFFFFF" : (TitanTheme.isDark ? "#25FFFFFF" : "#70FFFFFF") }
+                    GradientStop { position: 1.0; color: "transparent" }
+                }
+            }
 
             Text {
                 anchors.centerIn: parent
@@ -151,9 +168,26 @@ RowLayout {
             width: 36
             height: 36
             radius: 18
+            clip: true
+            scale: editMa.pressed ? 0.91 : (editMa.containsMouse ? 1.08 : 1.0)
+            Behavior on scale { NumberAnimation { duration: 130; easing.type: Easing.OutBack; easing.overshoot: 1.25 } }
             color: editMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgOneUIPill
-            border.color: TitanTheme.borderGlass
+            border.color: editMa.containsMouse ? TitanTheme.borderHover : TitanTheme.borderGlass
             border.width: 1
+
+            // Liquid Glass Specular Highlight
+            Rectangle {
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.top: parent.top
+                anchors.topMargin: 1
+                width: parent.width - 6
+                height: parent.height * 0.44
+                radius: width / 2
+                gradient: Gradient {
+                    GradientStop { position: 0.0; color: TitanTheme.isDark ? "#25FFFFFF" : "#70FFFFFF" }
+                    GradientStop { position: 1.0; color: "transparent" }
+                }
+            }
 
             Text {
                 anchors.centerIn: parent
@@ -180,9 +214,26 @@ RowLayout {
             width: 36
             height: 36
             radius: 18
+            clip: true
+            scale: setMa.pressed ? 0.91 : (setMa.containsMouse ? 1.08 : 1.0)
+            Behavior on scale { NumberAnimation { duration: 130; easing.type: Easing.OutBack; easing.overshoot: 1.25 } }
             color: setMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgOneUIPill
-            border.color: TitanTheme.borderGlass
+            border.color: setMa.containsMouse ? TitanTheme.borderHover : TitanTheme.borderGlass
             border.width: 1
+
+            // Liquid Glass Specular Highlight
+            Rectangle {
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.top: parent.top
+                anchors.topMargin: 1
+                width: parent.width - 6
+                height: parent.height * 0.44
+                radius: width / 2
+                gradient: Gradient {
+                    GradientStop { position: 0.0; color: TitanTheme.isDark ? "#25FFFFFF" : "#70FFFFFF" }
+                    GradientStop { position: 1.0; color: "transparent" }
+                }
+            }
 
             Text {
                 anchors.centerIn: parent
