@@ -63,7 +63,9 @@ ColumnLayout {
                 height: 72
                 OneUICircleButton {
                     anchors.centerIn: parent
-                    iconGlyph: "\uf186" // moon
+                    iconGlyph: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.themeDark)
+                               ? "\uf186" // moon
+                               : "\uf185" // sun
                     label: "Dark mode"
                     statusText: active ? "On" : "Off"
                     active: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.themeDark : true

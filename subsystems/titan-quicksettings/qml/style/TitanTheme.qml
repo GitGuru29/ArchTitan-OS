@@ -8,28 +8,30 @@ import QtQuick
  * bento-box geometry, continuous squircles, and frosted glass depth.
  */
 QtObject {
+    property bool isDark: true
+
     readonly property string fontFamily: "JetBrainsMono Nerd Font"
 
-    // ── One UI 9.0 Surfaces & Solid Dark Canvas ────────────────────────────
-    readonly property color bgWindow:          "#0B0E14"     // Solid opaque dark backdrop (no ghosting/bleed-through)
-    readonly property color bgSurface:         "#161A26"     // raised bento container
-    readonly property color bgSurfaceAlt:      "#1D2232"     // elevated squircle tile
-    readonly property color bgInset:           "#0E121C"     // recessed track / inset
-    readonly property color bgHover:           "#262D42"     // hover state
-    readonly property color bgPressed:         "#191E2C"     // pressed state
-    readonly property color bgActive:          "#2B7FFF"     // One UI vibrant active blue
+    // ── One UI 9.0 Adaptive Surfaces ───────────────────────────────────────
+    readonly property color bgWindow:          isDark ? "#0B0E14" : "#F4F6F9"     // solid opaque backdrop
+    readonly property color bgSurface:         isDark ? "#161A26" : "#E8ECF2"     // raised bento container
+    readonly property color bgSurfaceAlt:      isDark ? "#1D2232" : "#DFE4EC"     // elevated squircle tile
+    readonly property color bgInset:           isDark ? "#0E121C" : "#E2E8F0"     // recessed track / inset
+    readonly property color bgHover:           isDark ? "#262D42" : "#DCE3EE"     // hover state
+    readonly property color bgPressed:         isDark ? "#191E2C" : "#CBD5E1"     // pressed state
+    readonly property color bgActive:          "#2B7FFF"                          // One UI vibrant active blue
 
-    readonly property color bgOneUICard:       "#1B2030"     // One UI modular bento card
-    readonly property color bgOneUICardAlt:    "#23293D"     // slightly brighter subcard
-    readonly property color bgOneUITrack:      "#222838"     // pill slider inactive track
-    readonly property color bgOneUIPill:       "#2B3248"     // interactive capsule pill
+    readonly property color bgOneUICard:       isDark ? "#1B2030" : "#FFFFFF"     // One UI modular bento card
+    readonly property color bgOneUICardAlt:    isDark ? "#23293D" : "#F1F5F9"     // slightly brighter subcard
+    readonly property color bgOneUITrack:      isDark ? "#222838" : "#E2E8F0"     // pill slider inactive track
+    readonly property color bgOneUIPill:       isDark ? "#2B3248" : "#EDF2F7"     // interactive capsule pill
 
     // ── Borders ─────────────────────────────────────────────────────────────
-    readonly property color borderSubtle:      "#18FFFFFF"   // 9% white hairline
-    readonly property color borderHover:       "#30FFFFFF"   // 19% white
-    readonly property color borderActive:      "#702B7FFF"   // One UI accent glow
-    readonly property color borderGlass:       "#14FFFFFF"   // 8% white glass highlight
-    readonly property color borderOneUIGlass:  "#17FFFFFF"
+    readonly property color borderSubtle:      isDark ? "#18FFFFFF" : "#18000000" // hairline
+    readonly property color borderHover:       isDark ? "#30FFFFFF" : "#30000000"
+    readonly property color borderActive:      "#702B7FFF"                        // One UI accent glow
+    readonly property color borderGlass:       isDark ? "#14FFFFFF" : "#14000000" // glass highlight
+    readonly property color borderOneUIGlass:  isDark ? "#17FFFFFF" : "#17000000"
 
     // ── Accents & Indicators ────────────────────────────────────────────────
     readonly property color accent:            "#2B7FFF"     // One UI 9 Electric Blue
@@ -44,10 +46,10 @@ QtObject {
     readonly property color peach:             "#F97316"     // Night light warm glow
 
     // ── Text & Typography ───────────────────────────────────────────────────
-    readonly property color textPrimary:       "#FFFFFF"     // high-contrast primary
-    readonly property color textSecondary:     "#CBD5E1"     // secondary details
-    readonly property color textMuted:         "#94A3B8"     // descriptions
-    readonly property color textSubtle:        "#64748B"     // timestamps & captions
+    readonly property color textPrimary:       isDark ? "#FFFFFF" : "#0F172A"     // high-contrast primary
+    readonly property color textSecondary:     isDark ? "#CBD5E1" : "#334155"     // secondary details
+    readonly property color textMuted:         isDark ? "#94A3B8" : "#64748B"     // descriptions
+    readonly property color textSubtle:        isDark ? "#64748B" : "#94A3B8"     // timestamps & captions
     readonly property color textOnAccent:      "#FFFFFF"
 
     // ── Type scale ──────────────────────────────────────────────────────────

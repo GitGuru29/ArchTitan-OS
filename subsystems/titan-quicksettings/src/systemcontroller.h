@@ -77,6 +77,9 @@ private:
   void updateUptime();
   void updateDate();
   void updateBrightness();
+  void updateTheme();
+  void updateScreenRecording();
+  void updateAirplaneMode();
 
   QString m_uptime{"Up 0m"};
   QString m_currentDateString;
@@ -85,6 +88,8 @@ private:
   bool m_visualizerActive{true};
   bool m_gameModeActive{false};
   bool m_vpnActive{false};
+  bool m_screenRecordingActive{false};
+  bool m_airplaneMode{false};
   int m_brightness{80};
 
   QTimer *m_timer;

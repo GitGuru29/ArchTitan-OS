@@ -187,6 +187,11 @@ void SystemController::setThemeDark(bool dark)
     QString gtkTheme = dark ? "adw-gtk3-dark" : "adw-gtk3";
     QProcess::startDetached("gsettings", {"set", "org.gnome.desktop.interface", "color-scheme", scheme});
     QProcess::startDetached("gsettings", {"set", "org.gnome.desktop.interface", "gtk-theme", gtkTheme});
+
+    QString cfgDir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
+    QSettings settings(cfgDir + "/archtitan/settings.ini", QSettings::IniFormat);
+    settings.setValue("appearance/colorTheme", dark ? "Dark" : "Light");
+    settings.sync();
 }
 
 void SystemController::updateTheme()
@@ -195,10 +200,16 @@ void SystemController::updateTheme()
     proc.start("gsettings", {"get", "org.gnome.desktop.interface", "color-scheme"});
     if (proc.waitForFinished(300)) {
         QString out = proc.readAllStandardOutput().trimmed();
-        bool isDark = out.contains("prefer-dark");
-        if (isDark != m_themeDark) {
-            m_themeDark = isDark;
-            emit themeDarkChanged();
+        if (out.contains("prefer-light")) {
+            if (m_themeDark != false) {
+                m_themeDark = false;
+                emit themeDarkChanged();
+            }
+        } else if (out.contains("prefer-dark")) {
+            if (m_themeDark != true) {
+                m_themeDark = true;
+                emit themeDarkChanged();
+            }
         }
     }
 }

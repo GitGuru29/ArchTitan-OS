@@ -35,7 +35,8 @@ ColumnLayout {
             width: 72
             height: 28
             radius: 14
-            color: clearMa.containsMouse ? TitanTheme.bgHover : "#253146"
+            visible: (typeof notifModel !== "undefined" && notifModel && notifModel.totalCount > 0)
+            color: clearMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgOneUIPill
             border.color: TitanTheme.borderGlass
             border.width: 1
 
@@ -45,7 +46,7 @@ ColumnLayout {
                 font.family: TitanTheme.fontFamily
                 font.pixelSize: 11
                 font.weight: Font.DemiBold
-                color: TitanTheme.textSecondary
+                color: clearMa.containsMouse ? TitanTheme.red : TitanTheme.textPrimary
             }
 
             MouseArea {
@@ -265,47 +266,6 @@ ColumnLayout {
                         color: TitanTheme.textSubtle
                     }
                 }
-            }
-        }
-    }
-
-    // ── 4. Bottom Expander Pill ("··· More notifications (3) ⌵") ────────────
-    Rectangle {
-        Layout.fillWidth: true
-        height: 42
-        radius: 21
-        color: moreMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgOneUICard
-        border.color: TitanTheme.borderGlass
-        border.width: 1
-
-        RowLayout {
-            anchors.centerIn: parent
-            spacing: 8
-
-            Text {
-                text: "···  More notifications (3)"
-                font.family: TitanTheme.fontFamily
-                font.pixelSize: 11
-                font.weight: Font.DemiBold
-                color: TitanTheme.textSecondary
-            }
-
-            Text {
-                text: "\uf078" // chevron down
-                font.family: TitanTheme.fontFamily
-                font.pixelSize: 10
-                color: TitanTheme.textSubtle
-            }
-        }
-
-        MouseArea {
-            id: moreMa
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: {
-                if (typeof notifListView !== "undefined")
-                    notifListView.positionViewAtEnd()
             }
         }
     }
