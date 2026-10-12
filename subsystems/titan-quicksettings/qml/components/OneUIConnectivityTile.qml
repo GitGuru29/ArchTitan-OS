@@ -12,9 +12,10 @@ Rectangle {
     Layout.fillWidth: true
     Layout.preferredHeight: 74
     radius: TitanTheme.radiusBento
-    color: active ? TitanTheme.accentBlue : TitanTheme.bgOneUICard
-    border.color: active ? TitanTheme.borderActive : TitanTheme.borderGlass
+    color: active ? TitanTheme.accentBlue : (tileMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgOneUICard)
+    border.color: active ? TitanTheme.borderActive : (tileMa.containsMouse ? TitanTheme.borderHover : TitanTheme.borderGlass)
     border.width: 1
+    clip: true
 
     property bool active: false
     property string iconGlyph: "\uf1eb"
@@ -23,6 +24,12 @@ Rectangle {
     property color activeAccent: TitanTheme.accentBlue
 
     signal clicked()
+
+    // Tactile Liquid Touch: spring bounce on hover and press
+    scale: tileMa.pressed ? 0.96 : (tileMa.containsMouse ? 1.02 : 1.0)
+    Behavior on scale {
+        NumberAnimation { duration: 140; easing.type: Easing.OutBack; easing.overshoot: 1.2 }
+    }
 
     Behavior on color { ColorAnimation { duration: 150 } }
 
@@ -84,6 +91,7 @@ Rectangle {
     }
 
     MouseArea {
+        id: tileMa
         anchors.fill: parent
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor

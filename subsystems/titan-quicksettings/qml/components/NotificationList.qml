@@ -70,6 +70,7 @@ ColumnLayout {
         color: TitanTheme.bgOneUICard
         border.color: TitanTheme.borderGlass
         border.width: 1
+        clip: true
 
         RowLayout {
             anchors.fill: parent
@@ -77,21 +78,38 @@ ColumnLayout {
             anchors.rightMargin: 12
             spacing: 12
 
-            // Visualizer / Album Icon
+            // Visualizer / Album Icon Medallion
             Rectangle {
                 width: 38
                 height: 38
-                radius: 10
-                color: "#2C1B4D"
-                border.color: "#4A2882"
+                radius: 12
+                clip: true
+                gradient: Gradient {
+                    GradientStop { position: 0.0; color: "#8B5CF6" }
+                    GradientStop { position: 1.0; color: "#6366F1" }
+                }
+                border.color: "#A78BFA"
                 border.width: 1
+
+                // Glass specular shine on album medallion
+                Rectangle {
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.top: parent.top
+                    height: parent.height * 0.48
+                    radius: parent.radius
+                    gradient: Gradient {
+                        GradientStop { position: 0.0; color: "#45FFFFFF" }
+                        GradientStop { position: 1.0; color: "transparent" }
+                    }
+                }
 
                 Text {
                     anchors.centerIn: parent
                     text: "\uf001" // music glyph
                     font.family: TitanTheme.fontFamily
                     font.pixelSize: 16
-                    color: "#C084FC"
+                    color: "#FFFFFF"
                 }
             }
 
@@ -127,6 +145,8 @@ ColumnLayout {
                     width: 32
                     height: 32
                     radius: 16
+                    scale: playMa.pressed ? 0.90 : (playMa.containsMouse ? 1.08 : 1.0)
+                    Behavior on scale { NumberAnimation { duration: 120 } }
                     color: playMa.containsMouse ? TitanTheme.bgHover : "transparent"
 
                     Text {
@@ -154,6 +174,8 @@ ColumnLayout {
                     width: 32
                     height: 32
                     radius: 16
+                    scale: nextMa.pressed ? 0.90 : (nextMa.containsMouse ? 1.08 : 1.0)
+                    Behavior on scale { NumberAnimation { duration: 120 } }
                     color: nextMa.containsMouse ? TitanTheme.bgHover : "transparent"
 
                     Text {

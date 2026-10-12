@@ -18,6 +18,12 @@ Rectangle {
     border.width: 1
     clip: true
 
+    // Tactile Liquid Touch: spring bounce on hover and press
+    scale: cardMa.pressed ? 0.98 : (cardMa.containsMouse ? 1.01 : 1.0)
+    Behavior on scale {
+        NumberAnimation { duration: 130; easing.type: Easing.OutQuad }
+    }
+
     property int cardIndex: (typeof index !== "undefined") ? index : 0
     property string appNameText: (typeof appName !== "undefined") ? appName : "System"
     property string summaryText: (typeof summary !== "undefined") ? summary : ""

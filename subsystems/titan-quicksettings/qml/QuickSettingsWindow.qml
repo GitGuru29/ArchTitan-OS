@@ -96,7 +96,7 @@ Window {
             spacing: 12
 
             // ═════════════════════════════════════════════════════════════════
-            //  PANEL 1: Quick Settings (Left)
+            //  PANEL 1: Quick Settings (Left) — Liquid Frosted Glass
             // ═════════════════════════════════════════════════════════════════
             Rectangle {
                 id: leftCard
@@ -148,7 +148,7 @@ Window {
             }
 
             // ═════════════════════════════════════════════════════════════════
-            //  PANEL 2: Notifications & Media Hub (Right)
+            //  PANEL 2: Notifications & Media Hub (Right) — Liquid Glass
             // ═════════════════════════════════════════════════════════════════
             Rectangle {
                 id: rightCard

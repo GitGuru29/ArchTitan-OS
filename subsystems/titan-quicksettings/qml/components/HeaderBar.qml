@@ -99,10 +99,13 @@ RowLayout {
             width: 36
             height: 36
             radius: 18
+            clip: true
+            scale: notifMa.pressed ? 0.91 : (notifMa.containsMouse ? 1.08 : 1.0)
+            Behavior on scale { NumberAnimation { duration: 130; easing.type: Easing.OutBack; easing.overshoot: 1.25 } }
             color: headerRoot.showNotificationPanel
                    ? TitanTheme.accentBlue
                    : (notifMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgOneUIPill)
-            border.color: TitanTheme.borderGlass
+            border.color: headerRoot.showNotificationPanel ? TitanTheme.borderActive : TitanTheme.borderGlass
             border.width: 1
 
             Text {
@@ -151,8 +154,11 @@ RowLayout {
             width: 36
             height: 36
             radius: 18
+            clip: true
+            scale: editMa.pressed ? 0.91 : (editMa.containsMouse ? 1.08 : 1.0)
+            Behavior on scale { NumberAnimation { duration: 130; easing.type: Easing.OutBack; easing.overshoot: 1.25 } }
             color: editMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgOneUIPill
-            border.color: TitanTheme.borderGlass
+            border.color: editMa.containsMouse ? TitanTheme.borderHover : TitanTheme.borderGlass
             border.width: 1
 
             Text {
@@ -180,8 +186,11 @@ RowLayout {
             width: 36
             height: 36
             radius: 18
+            clip: true
+            scale: setMa.pressed ? 0.91 : (setMa.containsMouse ? 1.08 : 1.0)
+            Behavior on scale { NumberAnimation { duration: 130; easing.type: Easing.OutBack; easing.overshoot: 1.25 } }
             color: setMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgOneUIPill
-            border.color: TitanTheme.borderGlass
+            border.color: setMa.containsMouse ? TitanTheme.borderHover : TitanTheme.borderGlass
             border.width: 1
 
             Text {

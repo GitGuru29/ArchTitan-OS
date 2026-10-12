@@ -26,9 +26,16 @@ ColumnLayout {
         Layout.preferredHeight: 50
         Layout.alignment: Qt.AlignHCenter
         radius: 25
+        clip: true
         color: buttonRoot.active ? buttonRoot.activeColor : (btnMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgOneUIPill)
         border.color: buttonRoot.active ? TitanTheme.borderActive : (btnMa.containsMouse ? TitanTheme.borderHover : TitanTheme.borderGlass)
         border.width: 1
+
+        // Tactile Liquid Touch: spring bounce on press and hover
+        scale: btnMa.pressed ? 0.91 : (btnMa.containsMouse ? 1.07 : 1.0)
+        Behavior on scale {
+            NumberAnimation { duration: 140; easing.type: Easing.OutBack; easing.overshoot: 1.3 }
+        }
 
         Behavior on color { ColorAnimation { duration: 130 } }
 

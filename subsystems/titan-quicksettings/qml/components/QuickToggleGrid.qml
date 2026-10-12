@@ -50,6 +50,7 @@ ColumnLayout {
         color: TitanTheme.bgOneUICard
         border.color: TitanTheme.borderGlass
         border.width: 1
+        clip: true
 
         RowLayout {
             id: primaryCol
@@ -140,6 +141,7 @@ ColumnLayout {
         color: TitanTheme.bgOneUICard
         border.color: TitanTheme.borderGlass
         border.width: 1
+        clip: true
 
         ColumnLayout {
             id: sliderCol
@@ -186,6 +188,7 @@ ColumnLayout {
         color: TitanTheme.bgOneUICard
         border.color: TitanTheme.borderGlass
         border.width: 1
+        clip: true
 
         ColumnLayout {
             id: gridCol
@@ -343,6 +346,13 @@ ColumnLayout {
         color: medMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgOneUICard
         border.color: TitanTheme.borderGlass
         border.width: 1
+        clip: true
+
+        // Tactile Liquid Touch: spring bounce on hover and press
+        scale: medMa.pressed ? 0.97 : (medMa.containsMouse ? 1.015 : 1.0)
+        Behavior on scale {
+            NumberAnimation { duration: 130; easing.type: Easing.OutQuad }
+        }
 
         RowLayout {
             anchors.fill: parent
@@ -412,6 +422,13 @@ ColumnLayout {
         color: devMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgOneUICard
         border.color: TitanTheme.borderGlass
         border.width: 1
+        clip: true
+
+        // Tactile Liquid Touch: spring bounce on hover and press
+        scale: devMa.pressed ? 0.97 : (devMa.containsMouse ? 1.015 : 1.0)
+        Behavior on scale {
+            NumberAnimation { duration: 130; easing.type: Easing.OutQuad }
+        }
 
         RowLayout {
             anchors.fill: parent

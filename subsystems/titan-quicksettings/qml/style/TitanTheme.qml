@@ -12,26 +12,26 @@ QtObject {
 
     readonly property string fontFamily: "JetBrainsMono Nerd Font"
 
-    // ── One UI 9.0 Adaptive Surfaces ───────────────────────────────────────
-    readonly property color bgWindow:          isDark ? "#0B0E14" : "#F4F6F9"     // solid opaque backdrop
-    readonly property color bgSurface:         isDark ? "#161A26" : "#E8ECF2"     // raised bento container
-    readonly property color bgSurfaceAlt:      isDark ? "#1D2232" : "#DFE4EC"     // elevated squircle tile
-    readonly property color bgInset:           isDark ? "#0E121C" : "#E2E8F0"     // recessed track / inset
-    readonly property color bgHover:           isDark ? "#262D42" : "#DCE3EE"     // hover state
-    readonly property color bgPressed:         isDark ? "#191E2C" : "#CBD5E1"     // pressed state
+    // ── One UI 9.0 Adaptive Surfaces (Liquid Glass Tokens) ─────────────────
+    readonly property color bgWindow:          isDark ? "#B80B0E14" : "#B0F4F6F9" // Liquid frosted glass backdrop (72% dark / 69% light)
+    readonly property color bgSurface:         isDark ? "#70161A26" : "#70E8ECF2"   // raised bento container
+    readonly property color bgSurfaceAlt:      isDark ? "#801D2232" : "#80DFE4EC"   // elevated squircle tile
+    readonly property color bgInset:           isDark ? "#600E121C" : "#60DCE2E8"   // recessed track / inset
+    readonly property color bgHover:           isDark ? "#30FFFFFF" : "#1F000000" // liquid hover glow
+    readonly property color bgPressed:         isDark ? "#20FFFFFF" : "#30000000" // liquid pressed
     readonly property color bgActive:          "#2B7FFF"                          // One UI vibrant active blue
 
-    readonly property color bgOneUICard:       isDark ? "#1B2030" : "#FFFFFF"     // One UI modular bento card
-    readonly property color bgOneUICardAlt:    isDark ? "#23293D" : "#F1F5F9"     // slightly brighter subcard
-    readonly property color bgOneUITrack:      isDark ? "#222838" : "#E2E8F0"     // pill slider inactive track
-    readonly property color bgOneUIPill:       isDark ? "#2B3248" : "#EDF2F7"     // interactive capsule pill
+    readonly property color bgOneUICard:       isDark ? "#66182132" : "#80FFFFFF" // Liquid frosted bento card (translucent in both modes)
+    readonly property color bgOneUICardAlt:    isDark ? "#80202B3F" : "#99FFFFFF" // slightly denser subcard
+    readonly property color bgOneUITrack:      isDark ? "#55101622" : "#55CBD5E1" // liquid pill track
+    readonly property color bgOneUIPill:       isDark ? "#75222E42" : "#70EDF2F7" // interactive capsule pill
 
-    // ── Borders ─────────────────────────────────────────────────────────────
-    readonly property color borderSubtle:      isDark ? "#18FFFFFF" : "#18000000" // hairline
-    readonly property color borderHover:       isDark ? "#30FFFFFF" : "#30000000"
+    // ── Borders & Glass Contours ───────────────────────────────────────────
+    readonly property color borderSubtle:      isDark ? "#18FFFFFF" : "#12000000" // hairline
+    readonly property color borderHover:       isDark ? "#40FFFFFF" : "#30000000"
     readonly property color borderActive:      "#702B7FFF"                        // One UI accent glow
-    readonly property color borderGlass:       isDark ? "#14FFFFFF" : "#14000000" // glass highlight
-    readonly property color borderOneUIGlass:  isDark ? "#17FFFFFF" : "#17000000"
+    readonly property color borderGlass:       isDark ? "#28FFFFFF" : "#1F000000" // liquid glass refraction rim
+    readonly property color borderOneUIGlass:  isDark ? "#28FFFFFF" : "#1F000000"
 
     // ── Accents & Indicators ────────────────────────────────────────────────
     readonly property color accent:            "#2B7FFF"     // One UI 9 Electric Blue
