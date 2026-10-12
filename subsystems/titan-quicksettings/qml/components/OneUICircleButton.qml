@@ -14,6 +14,7 @@ ColumnLayout {
 
     property string iconGlyph: "\uf186"
     property string label: "Dark mode"
+    property string statusText: ""
     property bool active: false
     property color activeColor: TitanTheme.accentBlue
 
@@ -21,10 +22,10 @@ ColumnLayout {
 
     Rectangle {
         id: circle
-        Layout.preferredWidth: 52
-        Layout.preferredHeight: 52
+        Layout.preferredWidth: 50
+        Layout.preferredHeight: 50
         Layout.alignment: Qt.AlignHCenter
-        radius: 26
+        radius: 25
         color: buttonRoot.active ? buttonRoot.activeColor : (btnMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgOneUIPill)
         border.color: buttonRoot.active ? TitanTheme.borderActive : (btnMa.containsMouse ? TitanTheme.borderHover : TitanTheme.borderGlass)
         border.width: 1
@@ -35,7 +36,7 @@ ColumnLayout {
             anchors.centerIn: parent
             text: buttonRoot.iconGlyph
             font.family: TitanTheme.fontFamily
-            font.pixelSize: 19
+            font.pixelSize: 18
             color: buttonRoot.active ? "#FFFFFF" : TitanTheme.textPrimary
         }
 
@@ -48,14 +49,29 @@ ColumnLayout {
         }
     }
 
-    Text {
+    ColumnLayout {
         Layout.alignment: Qt.AlignHCenter
-        text: buttonRoot.label
-        font.family: TitanTheme.fontFamily
-        font.pixelSize: 10
-        font.weight: Font.DemiBold
-        color: buttonRoot.active ? TitanTheme.textPrimary : TitanTheme.textSubtle
-        horizontalAlignment: Text.AlignHCenter
+        spacing: 1
+
+        Text {
+            Layout.alignment: Qt.AlignHCenter
+            text: buttonRoot.label
+            font.family: TitanTheme.fontFamily
+            font.pixelSize: 10
+            font.weight: Font.DemiBold
+            color: buttonRoot.active ? TitanTheme.textPrimary : TitanTheme.textSubtle
+            horizontalAlignment: Text.AlignHCenter
+        }
+
+        Text {
+            visible: buttonRoot.statusText.length > 0
+            Layout.alignment: Qt.AlignHCenter
+            text: buttonRoot.statusText
+            font.family: TitanTheme.fontFamily
+            font.pixelSize: 9
+            color: buttonRoot.active ? TitanTheme.cyan : TitanTheme.textSubtle
+            horizontalAlignment: Text.AlignHCenter
+        }
     }
 
     Accessible.role: Accessible.Button
