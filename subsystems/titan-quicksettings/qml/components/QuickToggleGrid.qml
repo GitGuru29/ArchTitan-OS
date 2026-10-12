@@ -136,7 +136,7 @@ ColumnLayout {
     // ── 3. Thick Pill Sliders Bento (Brightness & Volume) ────────────────────
     Rectangle {
         Layout.fillWidth: true
-        implicitHeight: sliderCol.implicitHeight + 20
+        implicitHeight: sliderCol.implicitHeight + 24
         radius: TitanTheme.radiusBento
         color: TitanTheme.bgOneUICard
         border.color: TitanTheme.borderGlass

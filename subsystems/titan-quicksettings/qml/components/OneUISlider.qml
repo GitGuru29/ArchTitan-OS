@@ -12,7 +12,8 @@ import "../style"
 RowLayout {
     id: sliderRoot
     Layout.fillWidth: true
-    Layout.preferredHeight: 40
+    implicitHeight: 36
+    Layout.preferredHeight: 36
     spacing: 12
 
     property string iconGlyph: "\uf028"
@@ -33,6 +34,7 @@ RowLayout {
     Rectangle {
         Layout.preferredWidth: 36
         Layout.preferredHeight: 36
+        Layout.alignment: Qt.AlignVCenter
         radius: 18
         color: TitanTheme.bgOneUIPill
         border.color: TitanTheme.borderGlass
@@ -51,11 +53,13 @@ RowLayout {
     Rectangle {
         id: track
         Layout.fillWidth: true
-        Layout.preferredHeight: 34
-        radius: 17
+        Layout.preferredHeight: 36
+        Layout.alignment: Qt.AlignVCenter
+        radius: 18
         color: TitanTheme.bgOneUITrack
         border.color: TitanTheme.borderGlass
         border.width: 1
+        clip: true
         scale: mouseArea.pressed ? 1.015 : 1.0
         Behavior on scale { NumberAnimation { duration: 110; easing.type: Easing.OutQuad } }
 
@@ -70,10 +74,9 @@ RowLayout {
                 var span = sliderRoot.to - sliderRoot.from;
                 if (span <= 0) return 0;
                 var ratio = Math.max(0.0, Math.min(1.0, (sliderRoot.value - sliderRoot.from) / span));
-                return Math.max(ratio > 0.02 ? 34 : 0, ratio * parent.width);
+                return Math.max(ratio > 0.01 ? parent.height : 0, ratio * parent.width);
             }
-            radius: 17
-            clip: true
+            radius: parent.radius
 
             gradient: Gradient {
                 orientation: Gradient.Horizontal
@@ -84,19 +87,6 @@ RowLayout {
             Behavior on width {
                 enabled: !mouseArea.pressed
                 NumberAnimation { duration: 90; easing.type: Easing.OutQuad }
-            }
-
-            // Liquid Glass Upper Specular Gloss
-            Rectangle {
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.top: parent.top
-                height: parent.height * 0.48
-                radius: parent.radius
-                gradient: Gradient {
-                    GradientStop { position: 0.0; color: "#45FFFFFF" }
-                    GradientStop { position: 1.0; color: "transparent" }
-                }
             }
         }
 
@@ -124,7 +114,7 @@ RowLayout {
 
     // ── Trailing Percentage Value ───────────────────────────────────────────
     Text {
-        Layout.preferredWidth: 34
+        Layout.preferredWidth: 36
         Layout.alignment: Qt.AlignVCenter
         horizontalAlignment: Text.AlignRight
         text: sliderRoot.muted ? "0%" : (sliderRoot.value + sliderRoot.suffix)
