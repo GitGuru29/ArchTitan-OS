@@ -72,6 +72,15 @@ Rectangle {
                 Layout.fillWidth: true
             }
         }
+
+        // Chevron
+        Text {
+            text: "\uf054"
+            font.family: TitanTheme.fontFamily
+            font.pixelSize: 11
+            color: tileRoot.active ? "#B3FFFFFF" : TitanTheme.textSubtle
+            Layout.alignment: Qt.AlignVCenter
+        }
     }
 
     MouseArea {

@@ -3,14 +3,17 @@ import QtQuick.Layouts
 import "../style"
 
 /**
- * OneUISlider — Samsung One UI 9.0 signature thick pill slider.
+ * OneUISlider — Samsung One UI 9.0 thick pill slider.
  *
- * Full 50px rounded pill bar with embedded reactive glyph and smooth drag.
+ * Left: Round icon medallion.
+ * Center: Thick pill slider with electric blue/violet gradient fill.
+ * Right: Live percentage value.
  */
-Item {
+RowLayout {
     id: sliderRoot
     Layout.fillWidth: true
-    implicitHeight: 50
+    Layout.preferredHeight: 40
+    spacing: 12
 
     property string iconGlyph: "\uf028"
     property int from: 0
@@ -26,16 +29,36 @@ Item {
         sliderRoot.value = Math.max(sliderRoot.from, Math.min(sliderRoot.to, v));
     }
 
+    // ── Leading Round Icon Medallion ─────────────────────────────────────────
+    Rectangle {
+        Layout.preferredWidth: 36
+        Layout.preferredHeight: 36
+        radius: 18
+        color: TitanTheme.bgOneUIPill
+        border.color: TitanTheme.borderGlass
+        border.width: 1
+
+        Text {
+            anchors.centerIn: parent
+            text: sliderRoot.iconGlyph
+            font.family: TitanTheme.fontFamily
+            font.pixelSize: 14
+            color: sliderRoot.muted ? TitanTheme.textSubtle : TitanTheme.textPrimary
+        }
+    }
+
+    // ── Pill Slider Track ───────────────────────────────────────────────────
     Rectangle {
         id: track
-        anchors.fill: parent
-        radius: TitanTheme.radiusSlider
+        Layout.fillWidth: true
+        Layout.preferredHeight: 34
+        radius: 17
         color: TitanTheme.bgOneUITrack
         border.color: TitanTheme.borderGlass
         border.width: 1
         clip: true
 
-        // ── Active fill pill ────────────────────────────────────────────────
+        // Active fill with One UI 9 gradient
         Rectangle {
             id: fillRect
             anchors.left: parent.left
@@ -46,48 +69,23 @@ Item {
                 var span = sliderRoot.to - sliderRoot.from;
                 if (span <= 0) return 0;
                 var ratio = Math.max(0.0, Math.min(1.0, (sliderRoot.value - sliderRoot.from) / span));
-                // Ensure pill has minimum width for its circular cap once started
-                return Math.max(ratio > 0.02 ? 46 : 0, ratio * parent.width);
+                return Math.max(ratio > 0.02 ? 34 : 0, ratio * parent.width);
             }
-            radius: TitanTheme.radiusSlider
-            color: sliderRoot.muted ? TitanTheme.textSubtle : sliderRoot.fillAccent
+            radius: 17
+
+            gradient: Gradient {
+                orientation: Gradient.Horizontal
+                GradientStop { position: 0.0; color: sliderRoot.muted ? TitanTheme.textSubtle : "#3B82F6" }
+                GradientStop { position: 1.0; color: sliderRoot.muted ? TitanTheme.textSubtle : "#6366F1" }
+            }
 
             Behavior on width {
                 enabled: !mouseArea.pressed
                 NumberAnimation { duration: 90; easing.type: Easing.OutQuad }
             }
-            Behavior on color { ColorAnimation { duration: 150 } }
         }
 
-        // ── Embedded Leading Icon ───────────────────────────────────────────
-        Text {
-            id: iconText
-            anchors.left: parent.left
-            anchors.leftMargin: 18
-            anchors.verticalCenter: parent.verticalCenter
-            text: sliderRoot.iconGlyph
-            font.family: TitanTheme.fontFamily
-            font.pixelSize: 18
-            color: (fillRect.width > 36 && !sliderRoot.muted) ? "#FFFFFF" : TitanTheme.textMuted
-            z: 2
-
-            Behavior on color { ColorAnimation { duration: 120 } }
-        }
-
-        // ── Embedded Value / Status Text ────────────────────────────────────
-        Text {
-            anchors.right: parent.right
-            anchors.rightMargin: 18
-            anchors.verticalCenter: parent.verticalCenter
-            text: sliderRoot.muted ? "MUTED" : (sliderRoot.value + sliderRoot.suffix)
-            font.family: TitanTheme.fontFamily
-            font.pixelSize: TitanTheme.sizeSmall
-            font.weight: Font.DemiBold
-            color: (fillRect.width > (parent.width - 60) && !sliderRoot.muted) ? "#FFFFFF" : TitanTheme.textMuted
-            z: 2
-        }
-
-        // ── Interactive Drag & Click Area ───────────────────────────────────
+        // Interactive Drag & Click Area
         MouseArea {
             id: mouseArea
             anchors.fill: parent
@@ -107,6 +105,18 @@ Item {
                 if (pressed) updateValue(mouse);
             }
         }
+    }
+
+    // ── Trailing Percentage Value ───────────────────────────────────────────
+    Text {
+        Layout.preferredWidth: 34
+        Layout.alignment: Qt.AlignVCenter
+        horizontalAlignment: Text.AlignRight
+        text: sliderRoot.muted ? "0%" : (sliderRoot.value + sliderRoot.suffix)
+        font.family: TitanTheme.fontFamily
+        font.pixelSize: 11
+        font.weight: Font.DemiBold
+        color: TitanTheme.textMuted
     }
 
     Accessible.role: Accessible.Slider

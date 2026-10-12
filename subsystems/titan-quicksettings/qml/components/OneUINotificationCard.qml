@@ -30,21 +30,35 @@ Rectangle {
 
     readonly property color typeColor: {
         switch (iconTypeVal) {
-        case "wifi":        return TitanTheme.teal;
-        case "antigravity": return TitanTheme.accentBlue;
-        case "terminal":    return TitanTheme.green;
-        case "message":     return TitanTheme.yellow;
-        default:            return TitanTheme.accentBlue;
+        case "update":      return "#2563EB"; // Blue
+        case "terminal":    return "#16A34A"; // Green
+        case "github":      return "#7C3AED"; // Purple
+        case "youtube":     return "#DC2626"; // Red
+        case "download":    return "#0284C7"; // Sky
+        case "calendar":    return "#8B5CF6"; // Violet
+        case "telegram":    return "#0EA5E9"; // Cyan
+        case "battery":     return "#10B981"; // Emerald
+        case "weather":     return "#38BDF8"; // Sky blue
+        case "wifi":        return "#14B8A6"; // Teal
+        case "antigravity": return "#2563EB";
+        default:            return "#2563EB";
         }
     }
 
     readonly property string typeGlyph: {
         switch (iconTypeVal) {
+        case "update":      return "\uf013"; // cog / update
+        case "terminal":    return "\uf120"; // terminal >_
+        case "github":      return "\uf09b"; // github
+        case "youtube":     return "\uf16a"; // youtube play
+        case "download":    return "\uf019"; // download
+        case "calendar":    return "\uf133"; // calendar
+        case "telegram":    return "\uf1d8"; // paper airplane
+        case "battery":     return "\uf240"; // battery
+        case "weather":     return "\uf6c4"; // cloud-sun
         case "wifi":        return "\uf1eb";
         case "antigravity": return "▲";
-        case "terminal":    return "\uf120";
-        case "message":     return "\uf075";
-        default:            return "\uf075";
+        default:            return "\uf0f3"; // bell
         }
     }
 
@@ -54,35 +68,33 @@ Rectangle {
         id: mainLayout
         anchors.fill: parent
         anchors.margins: 12
-        spacing: 8
+        spacing: 6
 
         // ── Card Header ─────────────────────────────────────────────────────
         RowLayout {
             Layout.fillWidth: true
-            spacing: 10
+            spacing: 12
 
             // App Icon Medallion
             Rectangle {
-                width: 32
-                height: 32
-                radius: 16
-                color: Qt.rgba(typeColor.r, typeColor.g, typeColor.b, 0.18)
-                border.color: Qt.rgba(typeColor.r, typeColor.g, typeColor.b, 0.40)
-                border.width: 1
+                width: 36
+                height: 36
+                radius: 18
+                color: cardRoot.typeColor
 
                 Text {
                     anchors.centerIn: parent
                     text: cardRoot.typeGlyph
                     font.family: TitanTheme.fontFamily
-                    font.pixelSize: 13
-                    color: cardRoot.typeColor
+                    font.pixelSize: 15
+                    color: "#FFFFFF"
                 }
             }
 
-            // App Name & Date
+            // App Name & Summary Body
             ColumnLayout {
                 Layout.fillWidth: true
-                spacing: 1
+                spacing: 2
 
                 RowLayout {
                     spacing: 6
@@ -96,77 +108,65 @@ Rectangle {
                     }
 
                     Text {
-                        text: "• " + cardRoot.dateText
+                        text: cardRoot.dateText
                         font.family: TitanTheme.fontFamily
                         font.pixelSize: 10
                         color: TitanTheme.textSubtle
                     }
                 }
-            }
-
-            // Group count pill if multiple notifications exist
-            Rectangle {
-                visible: cardRoot.countVal > 1
-                height: 20
-                width: groupCountText.implicitWidth + 14
-                radius: 10
-                color: TitanTheme.bgOneUIPill
-
-                RowLayout {
-                    anchors.centerIn: parent
-                    spacing: 4
-                    Text {
-                        id: groupCountText
-                        text: "+" + cardRoot.countVal
-                        font.family: TitanTheme.fontFamily
-                        font.pixelSize: 10
-                        font.weight: Font.Bold
-                        color: TitanTheme.accentBlue
-                    }
-                    Text {
-                        text: cardRoot.expandedVal ? "\uf077" : "\uf078"
-                        font.family: TitanTheme.fontFamily
-                        font.pixelSize: 8
-                        color: TitanTheme.textSubtle
-                    }
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        if (typeof notifModel !== "undefined" && notifModel) {
-                            notifModel.toggleExpanded(cardRoot.cardIndex);
-                        }
-                    }
-                }
-            }
-
-            // Dismiss Button
-            Rectangle {
-                width: 24
-                height: 24
-                radius: 12
-                color: dismissMa.containsMouse ? TitanTheme.red : "transparent"
 
                 Text {
-                    anchors.centerIn: parent
-                    text: "\uf00d"
+                    text: cardRoot.summaryText.length > 0 ? cardRoot.summaryText : cardRoot.bodyText
                     font.family: TitanTheme.fontFamily
                     font.pixelSize: 11
-                    color: dismissMa.containsMouse ? "#FFFFFF" : TitanTheme.textSubtle
+                    color: TitanTheme.textMuted
+                    elide: Text.ElideRight
+                    Layout.fillWidth: true
                 }
+            }
 
-                MouseArea {
-                    id: dismissMa
+            // Right Chevron or Thumbnail
+            Item {
+                Layout.preferredWidth: 24
+                Layout.preferredHeight: 24
+                Layout.alignment: Qt.AlignVCenter
+
+                // Dismiss button on hover
+                Rectangle {
                     anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        if (typeof notifModel !== "undefined" && notifModel) {
-                            notifModel.dismissGroup(cardRoot.cardIndex);
+                    radius: 12
+                    visible: cardMa.containsMouse
+                    color: dismissMa.containsMouse ? TitanTheme.red : TitanTheme.bgOneUIPill
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "\uf00d"
+                        font.family: TitanTheme.fontFamily
+                        font.pixelSize: 10
+                        color: "#FFFFFF"
+                    }
+
+                    MouseArea {
+                        id: dismissMa
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            if (typeof notifModel !== "undefined" && notifModel) {
+                                notifModel.dismissGroup(cardRoot.cardIndex);
+                            }
                         }
                     }
+                }
+
+                // Default chevron when not hovered
+                Text {
+                    anchors.centerIn: parent
+                    visible: !cardMa.containsMouse
+                    text: "\uf054"
+                    font.family: TitanTheme.fontFamily
+                    font.pixelSize: 10
+                    color: TitanTheme.textSubtle
                 }
             }
         }

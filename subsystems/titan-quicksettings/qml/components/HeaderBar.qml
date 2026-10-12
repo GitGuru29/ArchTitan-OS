@@ -5,99 +5,200 @@ import "../style"
 /**
  * HeaderBar — Samsung One UI 9.0 session header.
  *
- * Left: Bold clock and date with uptime indicator.
- * Right: Quick action pills (Power, Settings, Refresh).
+ * Left: Bold clock, date, and user greeting ("Good evening, Siluna 🌙").
+ * Right: Quick edit and settings action buttons.
  */
 RowLayout {
     id: headerRoot
     Layout.fillWidth: true
-    Layout.preferredHeight: 52
+    Layout.preferredHeight: 68
     spacing: 12
+
+    property string userName: "Siluna"
+    property bool showNotificationPanel: false
+    signal toggleNotificationPanel()
+
+    function getGreeting() {
+        var h = new Date().getHours();
+        var period = "Good evening";
+        var icon = "🌙";
+        if (h >= 5 && h < 12) {
+            period = "Good morning";
+            icon = "☀️";
+        } else if (h >= 12 && h < 17) {
+            period = "Good afternoon";
+            icon = "🌤️";
+        } else if (h >= 17 && h < 22) {
+            period = "Good evening";
+            icon = "🌙";
+        } else {
+            period = "Good night";
+            icon = "🌙";
+        }
+        return period + ", " + userName + " " + icon;
+    }
 
     // ── Clock & Date Cluster ────────────────────────────────────────────────
     ColumnLayout {
-        spacing: 1
+        spacing: 2
         Layout.alignment: Qt.AlignVCenter
 
         RowLayout {
             spacing: 6
+            Layout.alignment: Qt.AlignLeft
 
             Text {
                 id: clockTime
-                text: "21:45"
+                text: "23:03"
                 font.family: TitanTheme.fontFamily
-                font.pixelSize: 22
+                font.pixelSize: 34
                 font.weight: Font.Bold
                 color: TitanTheme.textPrimary
             }
 
             Text {
                 id: clockSeconds
-                text: ""
+                text: "40"
                 font.family: TitanTheme.fontFamily
-                font.pixelSize: 11
+                font.pixelSize: 12
                 color: TitanTheme.textSubtle
                 Layout.alignment: Qt.AlignBaseline
             }
         }
 
-        RowLayout {
-            spacing: 6
+        Text {
+            id: dateLabel
+            text: "Sun, Oct 11"
+            font.family: TitanTheme.fontFamily
+            font.pixelSize: 13
+            font.weight: Font.DemiBold
+            color: TitanTheme.textSecondary
+        }
 
-            Text {
-                id: dateLabel
-                text: "Saturday, Oct 11"
-                font.family: TitanTheme.fontFamily
-                font.pixelSize: 11
-                color: TitanTheme.textSecondary
-            }
-
-            Text {
-                text: "• " + ((typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.uptime : "Up 0m")
-                font.family: TitanTheme.fontFamily
-                font.pixelSize: 10
-                color: TitanTheme.textSubtle
-            }
+        Text {
+            id: greetingLabel
+            text: headerRoot.getGreeting()
+            font.family: TitanTheme.fontFamily
+            font.pixelSize: 12
+            color: TitanTheme.textMuted
         }
     }
 
     Item { Layout.fillWidth: true }
 
-    // ── One UI Action Pills ─────────────────────────────────────────────────
+    // ── One UI Action Buttons (Notifications, Edit, Settings) ─────────────
     RowLayout {
         spacing: 8
-        Layout.alignment: Qt.AlignVCenter
+        Layout.alignment: Qt.AlignTop
+        Layout.topMargin: 4
 
-        // Refresh all
-        IconButton {
-            source: "\uf021"
-            tip: "Refresh status"
-            onClicked: {
-                if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.refresh();
-                if (typeof networkCtrl !== "undefined" && networkCtrl) networkCtrl.refresh();
-                if (typeof bluetoothCtrl !== "undefined" && bluetoothCtrl) bluetoothCtrl.refresh();
-                if (typeof audioCtrl !== "undefined" && audioCtrl) audioCtrl.refresh();
+        // Notification toggle button
+        Rectangle {
+            width: 36
+            height: 36
+            radius: 18
+            color: headerRoot.showNotificationPanel
+                   ? TitanTheme.accentBlue
+                   : (notifMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgOneUIPill)
+            border.color: TitanTheme.borderGlass
+            border.width: 1
+
+            Text {
+                anchors.centerIn: parent
+                text: "\uf0f3" // bell
+                font.family: TitanTheme.fontFamily
+                font.pixelSize: 14
+                color: headerRoot.showNotificationPanel ? "#FFFFFF" : TitanTheme.textPrimary
+            }
+
+            // Badge count
+            Rectangle {
+                visible: (typeof notifModel !== "undefined" && notifModel && notifModel.totalCount > 0)
+                width: 14
+                height: 14
+                radius: 7
+                color: TitanTheme.red
+                anchors.top: parent.top
+                anchors.right: parent.right
+                anchors.topMargin: -2
+                anchors.rightMargin: -2
+
+                Text {
+                    anchors.centerIn: parent
+                    text: (typeof notifModel !== "undefined" && notifModel) ? notifModel.totalCount : ""
+                    font.family: TitanTheme.fontFamily
+                    font.pixelSize: 8
+                    font.weight: Font.Bold
+                    color: "#FFFFFF"
+                }
+            }
+
+            MouseArea {
+                id: notifMa
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                    headerRoot.toggleNotificationPanel();
+                }
+            }
+        }
+
+        // Edit button
+        Rectangle {
+            width: 36
+            height: 36
+            radius: 18
+            color: editMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgOneUIPill
+            border.color: TitanTheme.borderGlass
+            border.width: 1
+
+            Text {
+                anchors.centerIn: parent
+                text: "\uf044" // pencil edit
+                font.family: TitanTheme.fontFamily
+                font.pixelSize: 14
+                color: TitanTheme.textPrimary
+            }
+
+            MouseArea {
+                id: editMa
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                    if (typeof systemCtrl !== "undefined" && systemCtrl)
+                        systemCtrl.refresh();
+                }
             }
         }
 
         // Settings Gear
-        IconButton {
-            source: "\uf013"
-            tip: "System Settings"
-            onClicked: {
-                if (typeof systemCtrl !== "undefined" && systemCtrl)
-                    systemCtrl.openSettings();
-            }
-        }
+        Rectangle {
+            width: 36
+            height: 36
+            radius: 18
+            color: setMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgOneUIPill
+            border.color: TitanTheme.borderGlass
+            border.width: 1
 
-        // Power Menu
-        IconButton {
-            source: "\uf011"
-            tip: "Power menu"
-            destructive: true
-            onClicked: {
-                if (typeof systemCtrl !== "undefined" && systemCtrl)
-                    systemCtrl.openPowerMenu();
+            Text {
+                anchors.centerIn: parent
+                text: "\uf013" // gear
+                font.family: TitanTheme.fontFamily
+                font.pixelSize: 14
+                color: TitanTheme.textPrimary
+            }
+
+            MouseArea {
+                id: setMa
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                    if (typeof systemCtrl !== "undefined" && systemCtrl)
+                        systemCtrl.openSettings();
+                }
             }
         }
     }
@@ -118,6 +219,7 @@ RowLayout {
             var days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
             var months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
             dateLabel.text = days[d.getDay()] + ", " + months[d.getMonth()] + " " + d.getDate();
+            greetingLabel.text = headerRoot.getGreeting();
         }
     }
 }
