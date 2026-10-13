@@ -22,5 +22,6 @@
         <file>qml/components/OneUISegmentTab.qml</file>
         <file>qml/components/OneUINotificationCard.qml</file>
         <file>qml/components/QuickSettingsCustomizer.qml</file>
+        <file>qml/components/OneUIPowerMenu.qml</file>
     </qresource>
 </RCC>

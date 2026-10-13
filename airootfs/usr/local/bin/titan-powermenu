@@ -20,14 +20,13 @@ CHOSEN=$(printf '%b\n' "$LOCK" "$SLEEP" "$LOGOUT" "$REBOOT" "$SHUTDOWN" | rofi \
 
 case "$CHOSEN" in
     *"Lock"*)
-        if [ -d /run/archiso ]; then exit 0; fi
-        loginctl lock-session
+        loginctl lock-session || hyprlock || true
         ;;
     *"Sleep"*)
         systemctl suspend
         ;;
     *"Logout"*)
-        hyprctl dispatch exit 0
+        hyprctl dispatch exit || killall Hyprland || loginctl terminate-user "$USER"
         ;;
     *"Reboot"*)
         systemctl reboot

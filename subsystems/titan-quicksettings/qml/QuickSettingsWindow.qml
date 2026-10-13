@@ -26,6 +26,7 @@ Window {
     property bool drawerOpen: false
     property bool showNotificationPanel: false
     property bool editMode: false
+    property bool showPowerMenu: false
 
     onShowNotificationPanelChanged: {
         rootWindow.width = showNotificationPanel ? 870 : 420;
@@ -46,6 +47,7 @@ Window {
     function closeDrawer() {
         drawerOpen = false;
         editMode = false;
+        showPowerMenu = false;
         closeTimer.start();
     }
 
@@ -70,7 +72,15 @@ Window {
     Item {
         anchors.fill: parent
         focus: true
-        Keys.onEscapePressed: closeDrawer()
+        Keys.onEscapePressed: {
+            if (showPowerMenu) {
+                showPowerMenu = false;
+            } else if (editMode) {
+                editMode = false;
+            } else {
+                closeDrawer();
+            }
+        }
     }
 
     // ── Dual Bento Drawer Body (Slides in from right) ─────────────────────────
@@ -116,12 +126,20 @@ Window {
                     anchors.margins: 14
                     spacing: 12
 
-                    // Session Header (Large Clock, Date, Greeting, Edit, Settings)
+                    // Session Header (Large Clock, Date, Greeting, Edit, Settings, Power)
                     HeaderBar {
                         showNotificationPanel: rootWindow.showNotificationPanel
                         editMode: rootWindow.editMode
+                        showPowerMenu: rootWindow.showPowerMenu
                         onToggleNotificationPanel: rootWindow.showNotificationPanel = !rootWindow.showNotificationPanel
-                        onToggleEditMode: rootWindow.editMode = !rootWindow.editMode
+                        onToggleEditMode: {
+                            rootWindow.editMode = !rootWindow.editMode;
+                            if (rootWindow.editMode) rootWindow.showPowerMenu = false;
+                        }
+                        onTogglePowerMenu: {
+                            rootWindow.showPowerMenu = !rootWindow.showPowerMenu;
+                            if (rootWindow.showPowerMenu) rootWindow.editMode = false;
+                        }
                     }
 
                     // Scrollable Bento Controls vs Edit Customizer View
@@ -167,6 +185,15 @@ Window {
                             }
                         }
                     }
+                }
+
+                // ── One UI Power & Session Overlay ───────────────────────
+                OneUIPowerMenu {
+                    id: powerMenuOverlay
+                    anchors.fill: parent
+                    visible: rootWindow.showPowerMenu
+                    z: 99
+                    onCloseRequested: rootWindow.showPowerMenu = false
                 }
             }
 

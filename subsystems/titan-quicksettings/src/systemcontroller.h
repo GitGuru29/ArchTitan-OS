@@ -58,6 +58,11 @@ public slots:
   void refresh();
   void openSettings();
   void openPowerMenu();
+  void lockSession();
+  void suspendSession();
+  void logoutSession();
+  void rebootSystem();
+  void poweroffSystem();
   void takeScreenshot();
   void pickColor();
   void toggleVirtualKeyboard();

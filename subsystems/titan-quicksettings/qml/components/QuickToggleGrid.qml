@@ -520,4 +520,84 @@ ColumnLayout {
             }
         }
     }
+
+    // ── 6. Power & Session Bento Tile ───────────────────────────────────────
+    Rectangle {
+        Layout.fillWidth: true
+        height: 50
+        radius: 20
+        color: pwrTileMa.containsMouse ? Qt.rgba(0.94, 0.27, 0.27, 0.16) : TitanTheme.bgOneUICard
+        border.color: pwrTileMa.containsMouse ? Qt.rgba(0.94, 0.27, 0.27, 0.45) : TitanTheme.borderGlass
+        border.width: 1
+        clip: true
+
+        // Tactile Liquid Touch: spring bounce on hover and press
+        scale: pwrTileMa.pressed ? 0.97 : (pwrTileMa.containsMouse ? 1.015 : 1.0)
+        Behavior on scale {
+            NumberAnimation { duration: 130; easing.type: Easing.OutQuad }
+        }
+
+        RowLayout {
+            anchors.fill: parent
+            anchors.leftMargin: 14
+            anchors.rightMargin: 14
+            spacing: 10
+
+            Rectangle {
+                width: 32
+                height: 32
+                radius: 16
+                color: Qt.rgba(0.94, 0.27, 0.27, 0.2)
+
+                Text {
+                    anchors.centerIn: parent
+                    text: "\uf011" // power
+                    font.family: TitanTheme.fontFamily
+                    font.pixelSize: 13
+                    color: TitanTheme.red
+                }
+            }
+
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: 1
+
+                Text {
+                    text: "Power menu"
+                    font.family: TitanTheme.fontFamily
+                    font.pixelSize: 12
+                    font.weight: Font.DemiBold
+                    color: TitanTheme.textPrimary
+                }
+
+                Text {
+                    text: "Lock, sleep, restart or power off"
+                    font.family: TitanTheme.fontFamily
+                    font.pixelSize: 10
+                    color: TitanTheme.textSubtle
+                }
+            }
+
+            Text {
+                text: "\uf054"
+                font.family: TitanTheme.fontFamily
+                font.pixelSize: 10
+                color: TitanTheme.textSubtle
+            }
+        }
+
+        MouseArea {
+            id: pwrTileMa
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: {
+                if (typeof rootWindow !== "undefined" && rootWindow) {
+                    rootWindow.showPowerMenu = true;
+                } else if (typeof systemCtrl !== "undefined" && systemCtrl) {
+                    systemCtrl.openPowerMenu();
+                }
+            }
+        }
+    }
 }

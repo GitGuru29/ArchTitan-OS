@@ -340,6 +340,32 @@ void SystemController::openPowerMenu()
     QProcess::startDetached("titan-powermenu", {});
 }
 
+void SystemController::lockSession()
+{
+    QProcess::startDetached("bash", {"-c", "loginctl lock-session || hyprlock || swaylock || true"});
+}
+
+void SystemController::suspendSession()
+{
+    QProcess::startDetached("systemctl", {"suspend"});
+}
+
+void SystemController::logoutSession()
+{
+    // Gracefully exit Hyprland session and return to SDDM login screen
+    QProcess::startDetached("bash", {"-c", "hyprctl dispatch exit || killall Hyprland || loginctl terminate-user $USER"});
+}
+
+void SystemController::rebootSystem()
+{
+    QProcess::startDetached("systemctl", {"reboot"});
+}
+
+void SystemController::poweroffSystem()
+{
+    QProcess::startDetached("systemctl", {"poweroff"});
+}
+
 void SystemController::takeScreenshot()
 {
     QProcess::startDetached("bash", {"-c", "grim -g \"$(slurp)\" - | wl-copy"});

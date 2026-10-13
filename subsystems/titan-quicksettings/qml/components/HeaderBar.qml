@@ -21,6 +21,8 @@ RowLayout {
     signal toggleNotificationPanel()
     property bool editMode: false
     signal toggleEditMode()
+    property bool showPowerMenu: false
+    signal togglePowerMenu()
 
     function getGreeting() {
         var h = new Date().getHours();
@@ -85,6 +87,8 @@ RowLayout {
             font.family: TitanTheme.fontFamily
             font.pixelSize: 12
             color: TitanTheme.textMuted
+            elide: Text.ElideRight
+            Layout.maximumWidth: 190
         }
     }
 
@@ -214,6 +218,41 @@ RowLayout {
                 onClicked: {
                     if (typeof systemCtrl !== "undefined" && systemCtrl)
                         systemCtrl.openSettings();
+                }
+            }
+        }
+
+        // Power Button
+        Rectangle {
+            width: 36
+            height: 36
+            radius: 18
+            clip: true
+            scale: pwrMa.pressed ? 0.91 : (pwrMa.containsMouse ? 1.08 : 1.0)
+            Behavior on scale { NumberAnimation { duration: 130; easing.type: Easing.OutBack; easing.overshoot: 1.25 } }
+            color: headerRoot.showPowerMenu
+                   ? TitanTheme.red
+                   : (pwrMa.containsMouse ? Qt.rgba(0.94, 0.27, 0.27, 0.22) : TitanTheme.bgOneUIPill)
+            border.color: headerRoot.showPowerMenu
+                          ? TitanTheme.red
+                          : (pwrMa.containsMouse ? Qt.rgba(0.94, 0.27, 0.27, 0.5) : TitanTheme.borderGlass)
+            border.width: 1
+
+            Text {
+                anchors.centerIn: parent
+                text: "\uf011" // power-off glyph
+                font.family: TitanTheme.fontFamily
+                font.pixelSize: 14
+                color: headerRoot.showPowerMenu ? "#FFFFFF" : (pwrMa.containsMouse ? TitanTheme.red : TitanTheme.textPrimary)
+            }
+
+            MouseArea {
+                id: pwrMa
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                    headerRoot.togglePowerMenu();
                 }
             }
         }
