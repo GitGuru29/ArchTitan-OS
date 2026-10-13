@@ -47,6 +47,7 @@ file_permissions=(
   ["/usr/local/bin/archtitan-postinstall"]="0:0:755"
   ["/etc/systemd/system/archtitan-postinstall@.service"]="0:0:644"
   ["/usr/local/bin/titan-media-hud"]="0:0:755"
+  ["/usr/local/bin/titan-audio-monitor"]="0:0:755"
   ["/usr/local/bin/titan-hud-context"]="0:0:755"
   ["/usr/local/bin/titan-hud-gpu"]="0:0:755"
   ["/usr/local/bin/titan-powermenu"]="0:0:755"

@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# ArchTitan OS — Lightweight Audio State Monitor for SDDM Ring Visualizer
+# Writes /tmp/titan-music-state.json when audio or MPRIS music is playing.
+# ==============================================================================
+
+STATE_FILE="/tmp/titan-music-state.json"
+
+check_audio() {
+    # 1. Check MPRIS players (Spotify, playerctld, browser, mpv, etc.)
+    if command -v playerctl >/dev/null 2>&1; then
+        if playerctl -a status 2>/dev/null | grep -iq "Playing"; then
+            return 0
+        fi
+    fi
+
+    # 2. Check ALSA / PipeWire hardware playback stream state
+    if grep -q "RUNNING" /proc/asound/card*/pcm*p/sub*/status 2>/dev/null; then
+        return 0
+    fi
+
+    return 1
+}
+
+prev_state=""
+while true; do
+    if check_audio; then
+        current_state="true"
+    else
+        current_state="false"
+    fi
+
+    if [[ "$current_state" != "$prev_state" ]]; then
+        echo "{\"playing\": ${current_state}}" > "${STATE_FILE}.tmp"
+        chmod 666 "${STATE_FILE}.tmp" 2>/dev/null || true
+        mv -f "${STATE_FILE}.tmp" "${STATE_FILE}"
+        prev_state="$current_state"
+    fi
+
+    sleep 1
+done
