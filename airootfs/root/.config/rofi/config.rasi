@@ -20,4 +20,4 @@ configuration {
     steal-focus:         false;
 }
 
-@theme "/root/.config/rofi/spotlight.rasi"
+@theme "~/.config/rofi/spotlight.rasi"

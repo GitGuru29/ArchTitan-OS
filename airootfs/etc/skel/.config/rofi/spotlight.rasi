@@ -1,176 +1,175 @@
 /* ============================================================
- * ArchTitan OS — Spotlight Search Theme for Rofi
- * Tested against rofi 2.0.0 rasi parser
+ * ArchTitan OS — Raycast-style Spotlight Search Theme for Rofi
+ * Modern frosted obsidian glass card with crisp typography
  * ============================================================ */
 
 * {
-    /* Colors: #AARRGGBB argb format */
-    bg-dark:        #E012121C;
-    bg-selected:    #407AA2F7;
-    bg-hover:       #1F7AA2F7;
-    border-accent:  #737AA2F7;
-    border-subtle:  #14FFFFFF;
-    text-primary:   #DCDCEB;
-    text-secondary: #96A0BE;
+    bg-card:        #E80B0E14;
+    bg-input:       rgba(255, 255, 255, 0.05);
+    bg-selected:    rgba(122, 162, 247, 0.18);
+    bg-hover:       rgba(255, 255, 255, 0.04);
+    border-accent:  rgba(122, 162, 247, 0.45);
+    border-subtle:  rgba(255, 255, 255, 0.08);
+    text-primary:   #E2E8F0;
+    text-secondary: #94A3B8;
     text-accent:    #7AA2F7;
-    text-dim:       #646991;
-    scrollbar-clr:  #597AA2F7;
+    text-dim:       #64748B;
+    scrollbar-clr:  rgba(122, 162, 247, 0.4);
 
-    background-color:   transparent;
-    text-color:         #DCDCEB;
-    font:               "Inter 12";
-    border:             0px;
-    margin:             0px;
-    padding:            0px;
-    spacing:            0px;
+    background-color: transparent;
+    text-color:       #E2E8F0;
+    font:             "Inter, sans-serif 12";
+    border:           0px;
+    margin:           0px;
+    padding:          0px;
+    spacing:          0px;
 }
 
-/* ── Root window ───────────────────────────────────────────── */
+/* ── Root Window ───────────────────────────────────────────── */
 window {
-    location:           center;
-    anchor:             center;
-    width:              640px;
-    border-radius:      18px;
-    background-color:   #E012121C;
-    border:             1px;
-    border-color:       #737AA2F7;
+    location:         center;
+    anchor:           center;
+    width:            660px;
+    border-radius:    20px;
+    background-color: #E80B0E14;
+    border:           1px;
+    border-color:     rgba(122, 162, 247, 0.35);
 }
 
-/* ── Main layout ────────────────────────────────────────────── */
+/* ── Main Layout ────────────────────────────────────────────── */
 mainbox {
-    background-color:   transparent;
-    children:           [ inputbar, message, listview ];
-    padding:            0px;
-    spacing:            0px;
+    background-color: transparent;
+    children:         [ inputbar, message, listview, mode-switcher ];
+    padding:          16px;
+    spacing:          12px;
 }
 
-/* ── Search bar ─────────────────────────────────────────────── */
+/* ── Search Input Field ─────────────────────────────────────── */
 inputbar {
-    background-color:   transparent;
-    padding:            22px 20px 18px 20px;
-    spacing:            12px;
-    children:           [ prompt, entry ];
-    border:             0px 0px 1px 0px;
-    border-color:       #14FFFFFF;
+    background-color: rgba(255, 255, 255, 0.045);
+    border-radius:    14px;
+    border:           1px;
+    border-color:     rgba(255, 255, 255, 0.08);
+    padding:          12px 16px;
+    spacing:          12px;
+    children:         [ prompt, entry ];
 }
 
 prompt {
-    background-color:   transparent;
-    text-color:         #7AA2F7;
-    font:               "Inter Bold 13";
-    padding:            2px 0px 0px 6px;
-    vertical-align:     0.5;
+    background-color: transparent;
+    text-color:       #7AA2F7;
+    font:             "JetBrainsMono Nerd Font 14";
+    vertical-align:   0.5;
 }
 
 entry {
-    background-color:   transparent;
-    text-color:         #DCDCEB;
-    placeholder-color:  #646991;
-    placeholder:        "Search apps, files, commands…";
-    font:               "Inter 14";
-    padding:            0px;
-    cursor:             text;
-    vertical-align:     0.5;
+    background-color:  transparent;
+    text-color:        #E2E8F0;
+    placeholder-color: #64748B;
+    placeholder:       "Search applications, files, commands...";
+    font:              "Inter 13";
+    cursor:            text;
+    vertical-align:    0.5;
 }
 
-/* ── Message ────────────────────────────────────────────────── */
+/* ── Message (e.g. error or info) ───────────────────────────── */
 message {
-    background-color:   transparent;
-    padding:            8px 24px 0px 24px;
+    background-color: transparent;
+    padding:          6px 12px;
 }
 
 textbox {
-    text-color:         #96A0BE;
-    font:               "Inter 11";
-    background-color:   transparent;
+    text-color:       #94A3B8;
+    font:             "Inter 11";
+    background-color: transparent;
 }
 
-/* ── Results list ───────────────────────────────────────────── */
+/* ── Results List ───────────────────────────────────────────── */
 listview {
-    background-color:   transparent;
-    padding:            10px 8px 10px 8px;
-    spacing:            2px;
-    lines:              8;
-    columns:            1;
-    scrollbar:          true;
-    fixed-height:       false;
-    dynamic:            true;
-    cycle:              false;
+    background-color: transparent;
+    padding:          4px 0px;
+    spacing:          4px;
+    lines:            7;
+    columns:          1;
+    scrollbar:        true;
+    fixed-height:     false;
+    dynamic:          true;
+    cycle:            false;
 }
 
-/* ── Result row ─────────────────────────────────────────────── */
+/* ── Result Row Element ─────────────────────────────────────── */
 element {
-    background-color:   transparent;
-    padding:            10px 16px;
-    border-radius:      10px;
-    spacing:            12px;
-    orientation:        horizontal;
-    children:           [ element-icon, element-text ];
-    cursor:             pointer;
+    background-color: transparent;
+    padding:          10px 14px;
+    border-radius:    12px;
+    spacing:          14px;
+    orientation:      horizontal;
+    children:         [ element-icon, element-text ];
+    cursor:           pointer;
+    border:           1px;
+    border-color:     transparent;
 }
 
 element-icon {
-    size:               28px;
-    background-color:   transparent;
-    vertical-align:     0.5;
-    cursor:             pointer;
+    size:             34px;
+    background-color: transparent;
+    vertical-align:   0.5;
+    cursor:           pointer;
 }
 
 element-text {
-    background-color:   transparent;
-    text-color:         #DCDCEB;
-    font:               "Inter 12";
-    vertical-align:     0.5;
-    cursor:             pointer;
-    /* NOTE: highlight only accepts literal keywords + literal hex — no @vars, no > child combinator */
-    highlight:          bold #7AA2F7;
+    background-color: transparent;
+    text-color:       #E2E8F0;
+    font:             "Inter 12.5";
+    vertical-align:   0.5;
+    cursor:           pointer;
+    highlight:        bold #7AA2F7;
 }
 
-/* Selected row — use descendant selectors (space), NOT child combinator (>) */
+/* Selected Element */
 element.selected.normal,
 element.selected.urgent,
 element.selected.active {
-    background-color:   #407AA2F7;
-    border:             1px;
-    border-color:       #737AA2F7;
+    background-color: rgba(122, 162, 247, 0.18);
+    border:           1px;
+    border-color:     rgba(122, 162, 247, 0.50);
 }
 
 element.selected.normal element-text,
 element.selected.urgent element-text,
 element.selected.active element-text {
-    text-color:         #DCDCEB;
+    text-color: #FFFFFF;
 }
 
 /* ── Scrollbar ──────────────────────────────────────────────── */
 scrollbar {
-    width:              4px;
-    handle-width:       4px;
-    handle-color:       #597AA2F7;
-    background-color:   transparent;
-    border:             0px;
-    margin:             4px 4px 4px 0px;
-    border-radius:      4px;
+    width:            4px;
+    handle-width:     4px;
+    handle-color:     rgba(122, 162, 247, 0.4);
+    background-color: transparent;
+    border-radius:    4px;
+    margin:           0px 0px 0px 6px;
 }
 
-/* ── Mode switcher ──────────────────────────────────────────── */
+/* ── Mode Switcher & Footer ─────────────────────────────────── */
 mode-switcher {
-    background-color:   transparent;
-    border:             1px 0px 0px 0px;
-    border-color:       #14FFFFFF;
-    padding:            8px 12px;
-    spacing:            6px;
+    background-color: transparent;
+    border:           1px 0px 0px 0px;
+    border-color:     rgba(255, 255, 255, 0.08);
+    padding:          10px 6px 2px 6px;
+    spacing:          8px;
 }
 
 button {
-    background-color:   transparent;
-    text-color:         #646991;
-    font:               "Inter 10";
-    padding:            4px 10px;
-    border-radius:      6px;
-    cursor:             pointer;
+    background-color: transparent;
+    text-color:       #64748B;
+    font:             "Inter 10.5";
+    padding:          5px 12px;
+    border-radius:    8px;
+    cursor:           pointer;
 }
 
 button.selected {
-    background-color:   #1F7AA2F7;
-    text-color:         #7AA2F7;
+    background-color: rgba(122, 162, 247, 0.2);
+    text-color:       #7AA2F7;
 }
