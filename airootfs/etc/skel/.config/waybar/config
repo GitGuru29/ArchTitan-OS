@@ -70,8 +70,9 @@
     },
 
     "clock": {
-        "format"         : "{:%H:%M}",
-        "format-alt"     : "{:%H:%M:%S}",
+        "format"         : "󰥔  {:%H:%M}",
+        "format-alt"     : "󰃭  {:%a, %b %d}  󰥔  {:%H:%M:%S}",
+        "on-click"       : "titan-quicksettings --toggle",
         "tooltip-format" : "<tt><big>{calendar}</big></tt>",
         "calendar": {
             "mode"      : "month",
@@ -89,15 +90,15 @@
 
     "temperature": {
         "critical-threshold": 80,
-        "format"            : "󰔏  {temperatureC}°C",
-        "format-critical"   : "󰔏  {temperatureC}°C",
+        "format"            : "󰔏 {temperatureC}°C",
+        "format-critical"   : "󰔏 {temperatureC}°C",
         "interval"          : 3,
         "tooltip"           : false
     },
 
     "pulseaudio": {
-        "format"        : "󰕾  {volume}%",
-        "format-muted"  : "󰖁  Muted",
+        "format"        : "󰕾 {volume}%",
+        "format-muted"  : "󰖁 Muted",
         "on-click"      : "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
         "on-right-click": "pavucontrol",
         "tooltip"       : false
@@ -114,10 +115,11 @@
 
     "battery": {
         "states"          : { "good": 95, "warning": 30, "critical": 15 },
-        "format"          : "󰁹  {capacity}%",
-        "format-charging" : "󰂄  {capacity}%",
-        "format-plugged"  : "󰚥  {capacity}%",
-        "format-full"     : "󰁹  100%",
+        "format"          : "{icon} {capacity}%",
+        "format-icons"    : ["󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"],
+        "format-charging" : "󰂄 {capacity}%",
+        "format-plugged"  : "󰚥 {capacity}%",
+        "format-full"     : "󰁹 100%",
         "format-not-found": "",
         "interval"        : 10,
         "tooltip-format"  : "{timeTo} · {capacity}%\nPower: {power:.1f}W"
@@ -125,7 +127,7 @@
 
     "custom/notification": {
         "tooltip": false,
-        "format": " 󱅫 ",
+        "format": "󰍜",
         "on-click": "titan-quicksettings --toggle"
     },
 
