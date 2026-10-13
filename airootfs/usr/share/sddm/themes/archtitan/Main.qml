@@ -1,7 +1,6 @@
-import QtQuick 2.15
-import QtQuick.Controls 2.15
+import QtQuick
+import QtQuick.Controls
 import Qt5Compat.GraphicalEffects
-import SddmComponents 2.0
 
 Rectangle {
     id: root
@@ -10,8 +9,6 @@ Rectangle {
     color: "#1A1B26"
 
     property string defaultUsername: ""
-
-    TextConstants { id: textConstants }
 
     // Background Image
     Image {
@@ -205,6 +202,7 @@ Rectangle {
                 height: 48
                 font.pointSize: 13
                 font.weight: Font.Bold
+                font.letterSpacing: 1
                 font.family: "JetBrainsMono Nerd Font"
 
                 contentItem: Text {
@@ -213,7 +211,6 @@ Rectangle {
                     color: "#FFFFFF"
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
-                    font.letterSpacing: 1
                 }
 
                 background: Rectangle {
