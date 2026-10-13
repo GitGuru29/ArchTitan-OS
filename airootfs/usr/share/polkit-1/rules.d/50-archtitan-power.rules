@@ -1,0 +1,12 @@
+// Allow desktop users to poweroff, reboot, suspend, and hibernate without password
+// even if other sessions (e.g. SDDM greeter) are running or inhibitors are present.
+polkit.addRule(function(action, subject) {
+    if (action.id.indexOf("org.freedesktop.login1.") === 0 &&
+        (action.id.indexOf("power-off") !== -1 ||
+         action.id.indexOf("reboot") !== -1 ||
+         action.id.indexOf("suspend") !== -1 ||
+         action.id.indexOf("hibernate") !== -1 ||
+         action.id.indexOf("lock") !== -1)) {
+        return polkit.Result.YES;
+    }
+});
