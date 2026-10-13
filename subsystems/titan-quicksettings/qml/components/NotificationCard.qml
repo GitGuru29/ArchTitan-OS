@@ -1,12 +1,19 @@
 import QtQuick
 import QtQuick.Layouts
-import QtQuick.Controls
+import "../style"
 
+/**
+ * NotificationCard — grouped notification row.
+ *
+ * Color-coded per source icon type, expands to reveal full text, and exposes
+ * a dismiss affordance on hover.  Pure view: all mutations happen through
+ * notifServer slots.
+ */
 Rectangle {
     id: cardRoot
     width: parent ? parent.width : 390
-    height: expanded ? 116 : 68
-    radius: 14
+    height: expanded ? 126 : 72
+    radius: TitanTheme.radiusControl
 
     property var modelItem: (typeof modelData !== "undefined") ? modelData : null
     property int cardIndex: (typeof index !== "undefined") ? index : 0
@@ -19,127 +26,173 @@ Rectangle {
     readonly property string iconTypeStr: (modelItem && modelItem.iconType) ? modelItem.iconType : ""
     property bool expanded: modelItem ? (modelItem.expanded || false) : false
 
-    color: cardMa.containsMouse ? "#1E2230" : "#171A24"
-    border.color: cardMa.containsMouse ? "#3038BDF8" : "#14FFFFFF"
+    readonly property color typeColor: {
+        switch (iconTypeStr) {
+        case "wifi":        return TitanTheme.teal;
+        case "antigravity": return TitanTheme.accent;
+        case "terminal":    return TitanTheme.green;
+        case "message":     return TitanTheme.yellow;
+        default:            return TitanTheme.lavender;
+        }
+    }
+
+    property string typeGlyph: {
+        switch (iconTypeStr) {
+        case "wifi":        return "\uf1eb";         // wifi
+        case "antigravity": return "▲";
+        case "terminal":    return "\uf120";         // terminal
+        case "message":     return "\uf075";         // comment
+        default:            return "\uf075";
+        }
+    }
+
+    color: cardMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgSurfaceAlt
+    border.color: cardMa.containsMouse ? TitanTheme.borderHover : TitanTheme.borderSubtle
     border.width: 1
 
+    Behavior on color { ColorAnimation { duration: 130 } }
     Behavior on height {
         NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
     }
 
+    // Color accent blade
+    Rectangle {
+        width: 3
+        height: parent.height - 16
+        radius: 1.5
+        x: 8
+        anchors.verticalCenter: parent.verticalCenter
+        color: cardRoot.typeColor
+        opacity: cardMa.containsMouse ? 1.0 : 0.7
+    }
+
     RowLayout {
         anchors.fill: parent
-        anchors.margins: 10
+        anchors.leftMargin: 18
+        anchors.rightMargin: 12
+        anchors.topMargin: 10
+        anchors.bottomMargin: 10
         spacing: 10
 
-        // Circular App Icon Badge
+        // App icon medallion
         Rectangle {
             width: 36; height: 36; radius: 18
-            color: (cardRoot.iconTypeStr === "antigravity") ? "#111420" :
-                   (cardRoot.iconTypeStr === "wifi") ? "#0C2433" : "#0E2234"
-            border.color: (cardRoot.iconTypeStr === "antigravity") ? "#38BDF8" : "#20FFFFFF"
+            color: Qt.rgba(typeColor.r, typeColor.g, typeColor.b, 0.14)
+            border.color: Qt.rgba(typeColor.r, typeColor.g, typeColor.b, 0.45)
             border.width: 1
 
             Text {
                 anchors.centerIn: parent
-                text: {
-                    if (cardRoot.iconTypeStr === "wifi") return "📶";
-                    if (cardRoot.iconTypeStr === "antigravity") return "▲";
-                    if (cardRoot.iconTypeStr === "terminal") return "💻";
-                    return "💬";
-                }
+                text: cardRoot.typeGlyph
+                font.family: TitanTheme.fontFamily
                 font.pixelSize: 14
-                color: "#38BDF8"
-                font.bold: true
+                font.bold: cardRoot.iconTypeStr === "antigravity"
+                color: cardRoot.typeColor
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
             }
         }
 
-        // Notification Content
+        // Content column
         ColumnLayout {
             Layout.fillWidth: true
+            Layout.alignment: Qt.AlignVCenter
             spacing: 2
 
-            // Header row: App Name, Date, Count Badge
+            // Header: app, date, count
             RowLayout {
                 Layout.fillWidth: true
                 spacing: 6
 
                 Text {
                     text: cardRoot.appNameStr
-                    font.family: "Outfit, Inter, sans-serif"
-                    font.pixelSize: 11
+                    font.family: TitanTheme.fontFamily
+                    font.pixelSize: TitanTheme.sizeSmall
                     font.weight: Font.DemiBold
-                    color: "#CBD5E1"
+                    color: TitanTheme.textSecondary
+                    elide: Text.ElideRight
+                    Layout.fillWidth: true
                 }
-
-                Item { Layout.fillWidth: true }
 
                 Text {
                     text: cardRoot.dateStrVal
-                    font.family: "Outfit, Inter, sans-serif"
+                    font.family: TitanTheme.fontFamily
                     font.pixelSize: 10
-                    color: "#64748B"
+                    color: TitanTheme.textSubtle
                 }
 
-                // Expandable Count Badge
+                // Count + chevron pill
                 Rectangle {
-                    height: 18
-                    width: countText.contentWidth + 16
-                    radius: 9
-                    color: "#242838"
+                    height: 20
+                    width: countText.implicitWidth + 16
+                    radius: 10
+                    color: cardMa.containsMouse ? TitanTheme.bgPressed : TitanTheme.bgInset
+
                     RowLayout {
                         anchors.centerIn: parent
-                        spacing: 3
+                        spacing: 4
+
                         Text {
                             id: countText
-                            text: cardRoot.countVal + ""
+                            text: cardRoot.countVal.toLocaleString()
+                            font.family: TitanTheme.fontFamily
                             font.pixelSize: 10
                             font.weight: Font.Bold
-                            color: "#94A3B8"
+                            color: TitanTheme.textSecondary
                         }
                         Text {
-                            text: cardRoot.expanded ? "▴" : "▾"
+                            text: cardRoot.expanded ? "\uf077" : "\uf078"  // chevron up / down
+                            font.family: TitanTheme.fontFamily
                             font.pixelSize: 9
-                            color: "#94A3B8"
+                            color: TitanTheme.textMuted
                         }
-                    }
-                    MouseArea {
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: if (typeof notifServer !== "undefined" && notifServer) notifServer.toggleExpanded(cardRoot.cardIndex)
                     }
                 }
             }
 
-            // Primary Text
+            // Primary line
             Text {
                 text: cardRoot.primaryTextStr
-                font.family: "Outfit, Inter, sans-serif"
-                font.pixelSize: 12
-                font.weight: Font.Bold
-                color: "#FFFFFF"
-                elide: Text.ElideRight
                 Layout.fillWidth: true
+                font.family: TitanTheme.fontFamily
+                font.pixelSize: TitanTheme.sizeBody
+                font.weight: Font.Bold
+                color: TitanTheme.textPrimary
+                elide: Text.ElideRight
             }
 
-            // Secondary Text
+            // Secondary line
             Text {
                 text: cardRoot.secondaryTextStr
-                font.family: "Outfit, Inter, sans-serif"
-                font.pixelSize: 11
-                color: "#94A3B8"
+                Layout.fillWidth: true
+                font.family: TitanTheme.fontFamily
+                font.pixelSize: TitanTheme.sizeSmall
+                color: TitanTheme.textMuted
                 elide: cardRoot.expanded ? Text.ElideNone : Text.ElideRight
                 wrapMode: cardRoot.expanded ? Text.Wrap : Text.NoWrap
-                Layout.fillWidth: true
+                maximumLineCount: cardRoot.expanded ? 3 : 1
+                clip: true
             }
         }
 
-        // Dismiss button on hover
-        Rectangle {
-            width: 22; height: 22; radius: 11
-            color: dismissMa.containsMouse ? "#471D22" : "transparent"
+        // Dismiss
+        Item {
+            width: 24; height: 24
             visible: cardMa.containsMouse
-            Text { anchors.centerIn: parent; text: "×"; color: "#F87171"; font.pixelSize: 14; font.bold: true }
+
+            Rectangle {
+                width: 22; height: 22; radius: 11
+                color: dismissMa.containsMouse ? TitanTheme.red : "transparent"
+                anchors.centerIn: parent
+
+                Text {
+                    anchors.centerIn: parent
+                    text: "\uf00d"   // times
+                    font.family: TitanTheme.fontFamily
+                    font.pixelSize: 11
+                    color: dismissMa.containsMouse ? TitanTheme.accentText : TitanTheme.textMuted
+                }
+            }
             MouseArea {
                 id: dismissMa
                 anchors.fill: parent
@@ -147,6 +200,8 @@ Rectangle {
                 cursorShape: Qt.PointingHandCursor
                 onClicked: if (typeof notifServer !== "undefined" && notifServer) notifServer.dismissAt(cardRoot.cardIndex)
             }
+            Accessible.role: Accessible.Button
+            Accessible.name: "Dismiss"
         }
     }
 
@@ -157,4 +212,7 @@ Rectangle {
         propagateComposedEvents: true
         onClicked: if (typeof notifServer !== "undefined" && notifServer) notifServer.toggleExpanded(cardRoot.cardIndex)
     }
+
+    Accessible.role: Accessible.Button
+    Accessible.name: appNameStr
 }

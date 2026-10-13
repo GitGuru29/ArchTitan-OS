@@ -16,8 +16,8 @@
 // recompiling. Restart the daemon after saving.
 static QString configPath()
 {
-    return QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation)
-           + "/config.ini";
+    return QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation)
+           + "/titan-quicksettings/config.ini";
 }
 
 static void ensureDefaultConfig()
@@ -27,10 +27,19 @@ static void ensureDefaultConfig()
     if (!QFile::exists(path)) {
         QSettings cfg(path, QSettings::IniFormat);
         cfg.beginGroup("layout");
-        cfg.setValue("top_margin",    0);   // px above panel (0 = use exclusive zone)
-        cfg.setValue("right_margin",  6);   // px from right screen edge
-        cfg.setValue("panel_width",   420); // panel width in px
-        cfg.setValue("panel_height",  860); // panel height in px
+        // Layout metrics:
+        //   top_margin:        px below bar surface (4 snaps cleanly below waybar)
+        //   bottom_margin:     px from screen foot / workspace bottom edge (default 8)
+        //   right_margin:      px from right screen edge (default 8)
+        //   panel_width:       drawer width in px (default 420)
+        //   panel_height:      fallback height in px (used if stretch_to_bottom=false)
+        //   stretch_to_bottom: stretch drawer from bar to workspace foot (default true)
+        cfg.setValue("top_margin",        4);
+        cfg.setValue("bottom_margin",      8);
+        cfg.setValue("right_margin",       8);
+        cfg.setValue("panel_width",      420);
+        cfg.setValue("panel_height",     860);
+        cfg.setValue("stretch_to_bottom", true);
         cfg.endGroup();
         cfg.sync();
         std::cout << "[titan-qs] Created default config: "
@@ -40,9 +49,11 @@ static void ensureDefaultConfig()
 
 struct LayoutConfig {
     int topMargin;
+    int bottomMargin;
     int rightMargin;
     int panelWidth;
     int panelHeight;
+    bool stretchToBottom;
 };
 
 static LayoutConfig readConfig()
@@ -50,10 +61,12 @@ static LayoutConfig readConfig()
     QSettings cfg(configPath(), QSettings::IniFormat);
     cfg.beginGroup("layout");
     LayoutConfig lc;
-    lc.topMargin   = cfg.value("top_margin",    0).toInt();
-    lc.rightMargin = cfg.value("right_margin",  6).toInt();
-    lc.panelWidth  = cfg.value("panel_width",   420).toInt();
-    lc.panelHeight = cfg.value("panel_height",  860).toInt();
+    lc.topMargin        = cfg.value("top_margin",        4).toInt();
+    lc.bottomMargin     = cfg.value("bottom_margin",      8).toInt();
+    lc.rightMargin      = cfg.value("right_margin",       8).toInt();
+    lc.panelWidth       = cfg.value("panel_width",      420).toInt();
+    lc.panelHeight      = cfg.value("panel_height",     860).toInt();
+    lc.stretchToBottom  = cfg.value("stretch_to_bottom", true).toBool();
     cfg.endGroup();
     return lc;
 }
@@ -69,9 +82,7 @@ static LayoutConfig readConfig()
 
 int main(int argc, char *argv[])
 {
-    // Low-memory footprint configuration (~10-15 MB RSS)
-    qputenv("QSG_RENDER_LOOP", "basic");
-    qputenv("QT_QUICK_BACKEND", "software");
+    // Wayland configuration & GPU rendering (software backend can be set via env var if needed)
     qputenv("QML_DISABLE_DISK_CACHE", "1");
     qputenv("QT_QPA_PLATFORM", "wayland;xcb");
     qputenv("QT_WAYLAND_DISABLE_WINDOWDECORATION", "1");
@@ -105,10 +116,12 @@ int main(int argc, char *argv[])
                 cfg.beginGroup("layout");
                 QString key = parts[0].trimmed();
                 int val = parts[1].trimmed().toInt();
-                if (key == "top")    cfg.setValue("top_margin",    val);
-                if (key == "right")  cfg.setValue("right_margin",  val);
-                if (key == "width")  cfg.setValue("panel_width",   val);
-                if (key == "height") cfg.setValue("panel_height",  val);
+                if (key == "top")    cfg.setValue("top_margin",        val);
+                if (key == "bottom") cfg.setValue("bottom_margin",     val);
+                if (key == "right")  cfg.setValue("right_margin",      val);
+                if (key == "width")  cfg.setValue("panel_width",       val);
+                if (key == "height") cfg.setValue("panel_height",      val);
+                if (key == "stretch")cfg.setValue("stretch_to_bottom", (val != 0));
                 cfg.endGroup(); cfg.sync();
                 std::cout << "[titan-qs] Set " << key.toStdString()
                           << " = " << val << " in " << configPath().toStdString()
@@ -119,10 +132,12 @@ int main(int argc, char *argv[])
             ensureDefaultConfig();
             std::cout << "Config: " << configPath().toStdString() << "\n";
             auto lc = readConfig();
-            std::cout << "  top_margin    = " << lc.topMargin   << "\n"
-                      << "  right_margin  = " << lc.rightMargin << "\n"
-                      << "  panel_width   = " << lc.panelWidth  << "\n"
-                      << "  panel_height  = " << lc.panelHeight << "\n";
+            std::cout << "  top_margin        = " << lc.topMargin       << "\n"
+                      << "  bottom_margin     = " << lc.bottomMargin    << "\n"
+                      << "  right_margin      = " << lc.rightMargin     << "\n"
+                      << "  panel_width       = " << lc.panelWidth      << "\n"
+                      << "  panel_height      = " << lc.panelHeight     << "\n"
+                      << "  stretch_to_bottom = " << (lc.stretchToBottom ? "true" : "false") << "\n";
             return 0;
         }
     }
@@ -174,6 +189,7 @@ int main(int argc, char *argv[])
     context->setContextProperty("audioCtrl", &audioCtrl);
     context->setContextProperty("nightLightCtrl", &nightCtrl);
     context->setContextProperty("notifServer", &notifServer);
+    context->setContextProperty("notifModel", notifServer.model());
 
     const QUrl url(QStringLiteral("qrc:/qml/QuickSettingsWindow.qml"));
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
@@ -190,22 +206,50 @@ int main(int argc, char *argv[])
         auto *layerWindow = LayerShellQt::Window::get(window);
         if (layerWindow) {
             auto lc = readConfig();
-            // Anchor Top+Right only (no Bottom) so the window uses its natural
-            // QML height. top_margin=0 means: let the bar's exclusive zone
-            // position us automatically. Increase top_margin in config.ini
-            // if you see a gap, decrease if the panel overlaps the bar.
-            layerWindow->setAnchors(LayerShellQt::Window::Anchors(LayerShellQt::Window::AnchorTop | LayerShellQt::Window::AnchorRight));
+
+            int screenHeight = QGuiApplication::primaryScreen()
+                                   ? QGuiApplication::primaryScreen()->geometry().height()
+                                   : 1080;
+            int availHeight = QGuiApplication::primaryScreen()
+                                  ? QGuiApplication::primaryScreen()->availableGeometry().height()
+                                  : screenHeight;
+
+            int targetHeight = lc.panelHeight;
+            if (lc.stretchToBottom) {
+                // Stretch to foot of desktop workspace:
+                // Anchor Top + Right + Bottom so Hyprland pins both edges.
+                // Distance to workspace foot is availableGeometry height minus margins.
+                targetHeight = qMax(480, availHeight - lc.topMargin - lc.bottomMargin);
+
+                layerWindow->setAnchors(LayerShellQt::Window::Anchors(
+                    LayerShellQt::Window::AnchorTop |
+                    LayerShellQt::Window::AnchorRight |
+                    LayerShellQt::Window::AnchorBottom
+                ));
+                layerWindow->setMargins(QMargins(0, lc.topMargin, lc.rightMargin, lc.bottomMargin));
+            } else {
+                targetHeight = qMax(460, qMin(lc.panelHeight, availHeight - 56));
+
+                layerWindow->setAnchors(LayerShellQt::Window::Anchors(
+                    LayerShellQt::Window::AnchorTop |
+                    LayerShellQt::Window::AnchorRight
+                ));
+                layerWindow->setMargins(QMargins(0, lc.topMargin, lc.rightMargin, 0));
+            }
+
             layerWindow->setLayer(LayerShellQt::Window::LayerOverlay);
-            layerWindow->setMargins(QMargins(0, lc.topMargin, lc.rightMargin, 0));
-            layerWindow->setExclusiveZone(-1); // respect bar's exclusive zone
+            layerWindow->setExclusiveZone(0); // 0 = don't claim space, still respect bar
             layerWindow->setKeyboardInteractivity(LayerShellQt::Window::KeyboardInteractivityOnDemand);
             layerWindow->setScope("titan-quicksettings");
-            // Apply panel dimensions from config
+
             window->setWidth(lc.panelWidth);
-            window->setHeight(lc.panelHeight);
+            window->setHeight(targetHeight);
+
             std::cout << "[titan-qs] Layout: top=" << lc.topMargin
+                      << " bottom=" << (lc.stretchToBottom ? lc.bottomMargin : 0)
                       << " right=" << lc.rightMargin
-                      << " size=" << lc.panelWidth << "x" << lc.panelHeight << "\n";
+                      << " size=" << lc.panelWidth << "x" << targetHeight
+                      << " (stretchToBottom=" << (lc.stretchToBottom ? "true" : "false") << ")\n";
         }
 
         QObject::connect(&ipc, &IpcServer::toggleRequested, window, [window]() {

@@ -1,115 +1,241 @@
 import QtQuick
 import QtQuick.Layouts
-import QtQuick.Controls
+import "../style"
 
+/**
+ * HeaderBar — Samsung One UI 9.0 session header.
+ *
+ * Left: Bold clock, date, and user greeting ("Good evening, Siluna 🌙").
+ * Right: Quick edit and settings action buttons.
+ */
 RowLayout {
     id: headerRoot
     Layout.fillWidth: true
-    Layout.preferredHeight: 38
-    spacing: 8
+    Layout.preferredHeight: 68
+    spacing: 12
 
-    // ArchTitan Logo + Uptime Badge
-    Rectangle {
-        Layout.preferredHeight: 34
-        Layout.preferredWidth: 106
-        radius: 17
-        color: "#1C202C"
-        border.color: "#20FFFFFF"
-        border.width: 1
+    property string userName: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.userName)
+                              ? systemCtrl.userName
+                              : "User"
+    property bool showNotificationPanel: false
+    signal toggleNotificationPanel()
+    property bool editMode: false
+    signal toggleEditMode()
+
+    function getGreeting() {
+        var h = new Date().getHours();
+        var period = "Good evening";
+        var icon = "🌙";
+        if (h >= 5 && h < 12) {
+            period = "Good morning";
+            icon = "☀️";
+        } else if (h >= 12 && h < 17) {
+            period = "Good afternoon";
+            icon = "🌤️";
+        } else if (h >= 17 && h < 22) {
+            period = "Good evening";
+            icon = "🌙";
+        } else {
+            period = "Good night";
+            icon = "🌙";
+        }
+        return period + ", " + userName + " " + icon;
+    }
+
+    // ── Clock & Date Cluster ────────────────────────────────────────────────
+    ColumnLayout {
+        spacing: 2
+        Layout.alignment: Qt.AlignVCenter
 
         RowLayout {
-            anchors.centerIn: parent
-            spacing: 7
+            spacing: 6
+            Layout.alignment: Qt.AlignLeft
 
-            // ArchTitan Delta Icon
-            Canvas {
-                Layout.preferredWidth: 16
-                Layout.preferredHeight: 16
-                onPaint: {
-                    var ctx = getContext("2d");
-                    ctx.clearRect(0, 0, width, height);
-                    ctx.beginPath();
-                    ctx.moveTo(width * 0.5, 2);
-                    ctx.lineTo(width - 2, height - 2);
-                    ctx.lineTo(width * 0.65, height - 2);
-                    ctx.lineTo(width * 0.5, height * 0.52);
-                    ctx.lineTo(width * 0.35, height - 2);
-                    ctx.lineTo(2, height - 2);
-                    ctx.closePath();
-                    ctx.fillStyle = "#38BDF8";
-                    ctx.fill();
-                }
+            Text {
+                id: clockTime
+                text: "23:03"
+                font.family: TitanTheme.fontFamily
+                font.pixelSize: 34
+                font.weight: Font.Bold
+                color: TitanTheme.textPrimary
             }
 
             Text {
-                text: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.uptime : "Up 25m"
-                font.family: "Outfit, Inter, sans-serif"
-                font.pixelSize: 13
-                font.weight: Font.DemiBold
-                color: "#FFFFFF"
+                id: clockSeconds
+                text: "40"
+                font.family: TitanTheme.fontFamily
+                font.pixelSize: 12
+                color: TitanTheme.textSubtle
+                Layout.alignment: Qt.AlignBaseline
             }
+        }
+
+        Text {
+            id: dateLabel
+            text: "Sun, Oct 11"
+            font.family: TitanTheme.fontFamily
+            font.pixelSize: 13
+            font.weight: Font.DemiBold
+            color: TitanTheme.textSecondary
+        }
+
+        Text {
+            id: greetingLabel
+            text: headerRoot.getGreeting()
+            font.family: TitanTheme.fontFamily
+            font.pixelSize: 12
+            color: TitanTheme.textMuted
         }
     }
 
     Item { Layout.fillWidth: true }
 
-    // Header Action Buttons
+    // ── One UI Action Buttons (Notifications, Edit, Settings) ─────────────
     RowLayout {
-        spacing: 6
+        spacing: 8
+        Layout.alignment: Qt.AlignTop
+        Layout.topMargin: 4
 
-        // Edit Button
+        // Notification toggle button
         Rectangle {
-            width: 32; height: 32; radius: 16
-            color: editMa.containsMouse ? "#2A3042" : "#1A1D27"
-            Text { anchors.centerIn: parent; text: "✎"; color: "#94A3B8"; font.pixelSize: 14 }
-            MouseArea { id: editMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor }
-        }
+            width: 36
+            height: 36
+            radius: 18
+            clip: true
+            scale: notifMa.pressed ? 0.91 : (notifMa.containsMouse ? 1.08 : 1.0)
+            Behavior on scale { NumberAnimation { duration: 130; easing.type: Easing.OutBack; easing.overshoot: 1.25 } }
+            color: headerRoot.showNotificationPanel
+                   ? TitanTheme.accentBlue
+                   : (notifMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgOneUIPill)
+            border.color: headerRoot.showNotificationPanel ? TitanTheme.borderActive : TitanTheme.borderGlass
+            border.width: 1
 
-        // Refresh Button
-        Rectangle {
-            width: 32; height: 32; radius: 16
-            color: refreshMa.containsMouse ? "#2A3042" : "#1A1D27"
-            Text { anchors.centerIn: parent; text: "↻"; color: "#94A3B8"; font.pixelSize: 15 }
+            Text {
+                anchors.centerIn: parent
+                text: "\uf0f3" // bell
+                font.family: TitanTheme.fontFamily
+                font.pixelSize: 14
+                color: headerRoot.showNotificationPanel ? "#FFFFFF" : TitanTheme.textPrimary
+            }
+
+            // Badge count
+            Rectangle {
+                visible: (typeof notifModel !== "undefined" && notifModel && notifModel.totalCount > 0)
+                width: 14
+                height: 14
+                radius: 7
+                color: TitanTheme.red
+                anchors.top: parent.top
+                anchors.right: parent.right
+                anchors.topMargin: -2
+                anchors.rightMargin: -2
+
+                Text {
+                    anchors.centerIn: parent
+                    text: (typeof notifModel !== "undefined" && notifModel) ? notifModel.totalCount : ""
+                    font.family: TitanTheme.fontFamily
+                    font.pixelSize: 8
+                    font.weight: Font.Bold
+                    color: "#FFFFFF"
+                }
+            }
+
             MouseArea {
-                id: refreshMa
+                id: notifMa
                 anchors.fill: parent
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
                 onClicked: {
-                    if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.refresh();
-                    if (typeof networkCtrl !== "undefined" && networkCtrl) networkCtrl.refresh();
-                    if (typeof bluetoothCtrl !== "undefined" && bluetoothCtrl) bluetoothCtrl.refresh();
-                    if (typeof audioCtrl !== "undefined" && audioCtrl) audioCtrl.refresh();
+                    headerRoot.toggleNotificationPanel();
                 }
             }
         }
 
-        // Settings Button
+        // Edit button (Toggles Quick Panel Customizer)
         Rectangle {
-            width: 32; height: 32; radius: 16
-            color: setMa.containsMouse ? "#2A3042" : "#1A1D27"
-            Text { anchors.centerIn: parent; text: "⚙"; color: "#94A3B8"; font.pixelSize: 15 }
+            width: 36
+            height: 36
+            radius: 18
+            clip: true
+            scale: editMa.pressed ? 0.91 : (editMa.containsMouse ? 1.08 : 1.0)
+            Behavior on scale { NumberAnimation { duration: 130; easing.type: Easing.OutBack; easing.overshoot: 1.25 } }
+            color: headerRoot.editMode
+                   ? TitanTheme.accentBlue
+                   : (editMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgOneUIPill)
+            border.color: headerRoot.editMode
+                          ? TitanTheme.borderActive
+                          : (editMa.containsMouse ? TitanTheme.borderHover : TitanTheme.borderGlass)
+            border.width: 1
+
+            Text {
+                anchors.centerIn: parent
+                text: headerRoot.editMode ? "\uf00c" : "\uf044" // checkmark when in edit mode, pencil normally
+                font.family: TitanTheme.fontFamily
+                font.pixelSize: 14
+                color: headerRoot.editMode ? "#FFFFFF" : TitanTheme.textPrimary
+            }
+
+            MouseArea {
+                id: editMa
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                    headerRoot.toggleEditMode();
+                }
+            }
+        }
+
+        // Settings Gear
+        Rectangle {
+            width: 36
+            height: 36
+            radius: 18
+            clip: true
+            scale: setMa.pressed ? 0.91 : (setMa.containsMouse ? 1.08 : 1.0)
+            Behavior on scale { NumberAnimation { duration: 130; easing.type: Easing.OutBack; easing.overshoot: 1.25 } }
+            color: setMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgOneUIPill
+            border.color: setMa.containsMouse ? TitanTheme.borderHover : TitanTheme.borderGlass
+            border.width: 1
+
+            Text {
+                anchors.centerIn: parent
+                text: "\uf013" // gear
+                font.family: TitanTheme.fontFamily
+                font.pixelSize: 14
+                color: TitanTheme.textPrimary
+            }
+
             MouseArea {
                 id: setMa
                 anchors.fill: parent
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
-                onClicked: if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.openSettings()
+                onClicked: {
+                    if (typeof systemCtrl !== "undefined" && systemCtrl)
+                        systemCtrl.openSettings();
+                }
             }
         }
+    }
 
-        // Power Button
-        Rectangle {
-            width: 32; height: 32; radius: 16
-            color: pwrMa.containsMouse ? "#3A2024" : "#1A1D27"
-            Text { anchors.centerIn: parent; text: "⏻"; color: pwrMa.containsMouse ? "#F87171" : "#94A3B8"; font.pixelSize: 15 }
-            MouseArea {
-                id: pwrMa
-                anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.openPowerMenu()
-            }
+    // Tick the clock every second
+    Timer {
+        interval: 1000
+        repeat: true
+        running: true
+        triggeredOnStart: true
+        onTriggered: {
+            var d = new Date();
+            var hh = ("0" + d.getHours()).slice(-2);
+            var mm = ("0" + d.getMinutes()).slice(-2);
+            var ss = ("0" + d.getSeconds()).slice(-2);
+            clockTime.text = hh + ":" + mm;
+            clockSeconds.text = ss;
+            var days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+            var months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            dateLabel.text = days[d.getDay()] + ", " + months[d.getMonth()] + " " + d.getDate();
+            greetingLabel.text = headerRoot.getGreeting();
         }
     }
 }

@@ -1,217 +1,523 @@
 import QtQuick
 import QtQuick.Layouts
-import QtQuick.Controls
+import "../style"
 
-Rectangle {
-    id: gridContainer
+/**
+ * QuickToggleGrid — Samsung One UI 9.0 Bento-Box Quick Settings cluster.
+ *
+ * Squircles, thick pill sliders, and circular action toggles matching the One UI 9.0 design.
+ */
+ColumnLayout {
+    id: bentoRoot
     Layout.fillWidth: true
-    Layout.preferredHeight: 250
-    radius: 18
-    color: "#141722"
-    border.color: "#18FFFFFF"
-    border.width: 1
+    spacing: 12
 
-    ColumnLayout {
-        anchors.fill: parent
-        anchors.margins: 12
-        spacing: 9
+    // ── 1. Top Connectivity Bento (Wi-Fi & Bluetooth) ────────────────────────
+    RowLayout {
+        Layout.fillWidth: true
+        spacing: 10
 
-        // ROW 1: Internet Pill, Bluetooth Pill, Caffeine
-        RowLayout {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 46
-            spacing: 8
-
-            LargeToggleTile {
-                active: typeof networkCtrl !== "undefined" && networkCtrl && networkCtrl.wifiEnabled
-                iconText: "📶"
-                titleText: "Internet"
-                statusText: (typeof networkCtrl !== "undefined" && networkCtrl) ? networkCtrl.ssid : "moto g24 power"
-                onClicked: if (typeof networkCtrl !== "undefined" && networkCtrl) networkCtrl.toggleWifi()
-            }
-
-            LargeToggleTile {
-                active: typeof bluetoothCtrl !== "undefined" && bluetoothCtrl && bluetoothCtrl.powered
-                iconText: "ᛒ"
-                titleText: "Bluetooth"
-                statusText: (typeof bluetoothCtrl !== "undefined" && bluetoothCtrl) ? bluetoothCtrl.statusText : "Not connected"
-                onClicked: if (typeof bluetoothCtrl !== "undefined" && bluetoothCtrl) bluetoothCtrl.toggleBluetooth()
-            }
-
-            // Caffeine Mini Button
-            Rectangle {
-                width: 46; height: 46; radius: 23
-                color: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.caffeineActive) ? "#38BDF8" : "#1F2330"
-                border.color: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.caffeineActive) ? "#38BDF8" : "#20FFFFFF"
-                border.width: 1
-
-                Text {
-                    anchors.centerIn: parent
-                    text: "☕"
-                    font.pixelSize: 16
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.caffeineActive = !systemCtrl.caffeineActive
-                }
+        OneUIConnectivityTile {
+            active: (typeof networkCtrl !== "undefined" && networkCtrl) ? networkCtrl.wifiEnabled : false
+            iconGlyph: "\uf1eb"
+            title: "Wi-Fi"
+            subtitle: (typeof networkCtrl !== "undefined" && networkCtrl && networkCtrl.wifiEnabled)
+                      ? networkCtrl.ssid : "Disconnected"
+            onClicked: {
+                if (typeof networkCtrl !== "undefined" && networkCtrl)
+                    networkCtrl.toggleWifi()
             }
         }
 
-        // ROW 2: Mic Mute Button, Audio Output Pill, Night Light Pill
-        RowLayout {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 46
-            spacing: 8
+        OneUIConnectivityTile {
+            active: (typeof bluetoothCtrl !== "undefined" && bluetoothCtrl) ? bluetoothCtrl.powered : false
+            iconGlyph: "\uf294"
+            title: "Bluetooth"
+            subtitle: (typeof bluetoothCtrl !== "undefined" && bluetoothCtrl && bluetoothCtrl.powered)
+                      ? bluetoothCtrl.statusText : "Off"
+            onClicked: {
+                if (typeof bluetoothCtrl !== "undefined" && bluetoothCtrl)
+                    bluetoothCtrl.toggleBluetooth()
+            }
+        }
+    }
 
-            // Mic Muted Pill Button
+    // ── 2. Primary 4-Toggle Card (Dark mode, Eye shield, DND, Mic mute) ──────
+    Rectangle {
+        Layout.fillWidth: true
+        implicitHeight: primaryCol.implicitHeight + 20
+        radius: TitanTheme.radiusBento
+        color: TitanTheme.bgOneUICard
+        border.color: TitanTheme.borderGlass
+        border.width: 1
+        clip: true
+
+        RowLayout {
+            id: primaryCol
+            anchors.fill: parent
+            anchors.margins: 12
+            spacing: 0
+
+            // Dark Mode
+            Item {
+                Layout.fillWidth: true
+                height: 72
+                OneUICircleButton {
+                    anchors.centerIn: parent
+                    iconGlyph: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.themeDark)
+                               ? "\uf186" // moon
+                               : "\uf185" // sun
+                    label: "Dark mode"
+                    statusText: active ? "On" : "Off"
+                    active: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.themeDark : true
+                    onClicked: {
+                        if (typeof systemCtrl !== "undefined" && systemCtrl)
+                            systemCtrl.themeDark = !systemCtrl.themeDark
+                    }
+                }
+            }
+
+            // Eye Shield
+            Item {
+                Layout.fillWidth: true
+                height: 72
+                OneUICircleButton {
+                    anchors.centerIn: parent
+                    iconGlyph: "\uf06e" // eye
+                    label: "Eye shield"
+                    statusText: active ? "On" : "Off"
+                    active: (typeof nightLightCtrl !== "undefined" && nightLightCtrl) ? nightLightCtrl.active : false
+                    activeColor: TitanTheme.accentBlue
+                    onClicked: {
+                        if (typeof nightLightCtrl !== "undefined" && nightLightCtrl)
+                            nightLightCtrl.toggleNightLight()
+                    }
+                }
+            }
+
+            // Do Not Disturb
+            Item {
+                Layout.fillWidth: true
+                height: 72
+                OneUICircleButton {
+                    anchors.centerIn: parent
+                    iconGlyph: "\uf05e" // ban / dnd
+                    label: "Do not disturb"
+                    statusText: active ? "On" : "Off"
+                    active: (typeof notifServer !== "undefined" && notifServer) ? notifServer.dndActive : false
+                    activeColor: TitanTheme.accentBlue
+                    onClicked: {
+                        if (typeof notifServer !== "undefined" && notifServer)
+                            notifServer.toggleDnd()
+                    }
+                }
+            }
+
+            // Mic Mute
+            Item {
+                Layout.fillWidth: true
+                height: 72
+                OneUICircleButton {
+                    anchors.centerIn: parent
+                    iconGlyph: (typeof audioCtrl !== "undefined" && audioCtrl && audioCtrl.sourceMuted) ? "\uf131" : "\uf130"
+                    label: "Mic mute"
+                    statusText: active ? "On" : "Off"
+                    active: (typeof audioCtrl !== "undefined" && audioCtrl) ? audioCtrl.sourceMuted : false
+                    activeColor: TitanTheme.red
+                    onClicked: {
+                        if (typeof audioCtrl !== "undefined" && audioCtrl)
+                            audioCtrl.toggleSourceMute()
+                    }
+                }
+            }
+        }
+    }
+
+    // ── 3. Thick Pill Sliders Bento (Brightness & Volume) ────────────────────
+    Rectangle {
+        Layout.fillWidth: true
+        implicitHeight: sliderCol.implicitHeight + 24
+        radius: TitanTheme.radiusBento
+        color: TitanTheme.bgOneUICard
+        border.color: TitanTheme.borderGlass
+        border.width: 1
+        clip: true
+        visible: (typeof systemCtrl !== "undefined" && systemCtrl)
+                 ? (systemCtrl.tileVisibilityRevision >= 0 && systemCtrl.getTileVisible("sliders", true)) : true
+
+        ColumnLayout {
+            id: sliderCol
+            anchors.fill: parent
+            anchors.margins: 12
+            spacing: 10
+
+            // Display Brightness Slider
+            OneUISlider {
+                iconGlyph: "\uf185" // sun
+                from: 0
+                to: 100
+                value: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.brightness : 80
+                fillAccent: TitanTheme.accentBlue
+                onChanged: (v) => {
+                    if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.setBrightness(v)
+                }
+            }
+
+            // Sound Volume Slider
+            OneUISlider {
+                iconGlyph: {
+                    if (muted) return "\uf026";
+                    if (value <= 30) return "\uf027";
+                    return "\uf028";
+                }
+                from: 0
+                to: 100
+                value: (typeof audioCtrl !== "undefined" && audioCtrl) ? audioCtrl.sinkVolume : 60
+                muted: typeof audioCtrl !== "undefined" && audioCtrl && audioCtrl.sinkMuted
+                fillAccent: TitanTheme.accentBlue
+                onChanged: (v) => {
+                    if (typeof audioCtrl !== "undefined" && audioCtrl) audioCtrl.setVolume(v)
+                }
+            }
+        }
+    }
+
+    // ── 4. Circular Quick Action Toggles (Reflowing Grid) ───────────────────
+    Rectangle {
+        id: actionTilesCard
+        Layout.fillWidth: true
+        implicitHeight: actionGrid.implicitHeight + 24
+        radius: TitanTheme.radiusBento
+        color: TitanTheme.bgOneUICard
+        border.color: TitanTheme.borderGlass
+        border.width: 1
+        clip: true
+        visible: (showCapture || showColorPick || showGameMode || showClipboard ||
+                  showCaffeine || showVirtualInput || showRecord || showAirplane)
+
+        readonly property bool showCapture: (typeof systemCtrl !== "undefined" && systemCtrl)
+                                            ? (systemCtrl.tileVisibilityRevision >= 0 && systemCtrl.getTileVisible("capture", true)) : true
+        readonly property bool showColorPick: (typeof systemCtrl !== "undefined" && systemCtrl)
+                                              ? (systemCtrl.tileVisibilityRevision >= 0 && systemCtrl.getTileVisible("colorPick", true)) : true
+        readonly property bool showGameMode: (typeof systemCtrl !== "undefined" && systemCtrl)
+                                             ? (systemCtrl.tileVisibilityRevision >= 0 && systemCtrl.getTileVisible("gameMode", true)) : true
+        readonly property bool showClipboard: (typeof systemCtrl !== "undefined" && systemCtrl)
+                                              ? (systemCtrl.tileVisibilityRevision >= 0 && systemCtrl.getTileVisible("clipboard", true)) : true
+        readonly property bool showCaffeine: (typeof systemCtrl !== "undefined" && systemCtrl)
+                                             ? (systemCtrl.tileVisibilityRevision >= 0 && systemCtrl.getTileVisible("caffeine", true)) : true
+        readonly property bool showVirtualInput: (typeof systemCtrl !== "undefined" && systemCtrl)
+                                                 ? (systemCtrl.tileVisibilityRevision >= 0 && systemCtrl.getTileVisible("virtualInput", true)) : true
+        readonly property bool showRecord: (typeof systemCtrl !== "undefined" && systemCtrl)
+                                           ? (systemCtrl.tileVisibilityRevision >= 0 && systemCtrl.getTileVisible("record", true)) : true
+        readonly property bool showAirplane: (typeof systemCtrl !== "undefined" && systemCtrl)
+                                             ? (systemCtrl.tileVisibilityRevision >= 0 && systemCtrl.getTileVisible("airplane", true)) : true
+
+        GridLayout {
+            id: actionGrid
+            anchors.fill: parent
+            anchors.margins: 12
+            columns: 4
+            rowSpacing: 12
+            columnSpacing: 0
+
+            // Capture
+            Item {
+                visible: actionTilesCard.showCapture
+                Layout.fillWidth: true
+                height: 68
+                OneUICircleButton {
+                    anchors.centerIn: parent
+                    iconGlyph: "\uf030" // camera
+                    label: "Capture"
+                    active: false
+                    onClicked: {
+                        if (typeof systemCtrl !== "undefined" && systemCtrl)
+                            systemCtrl.takeScreenshot()
+                    }
+                }
+            }
+
+            // Color pick
+            Item {
+                visible: actionTilesCard.showColorPick
+                Layout.fillWidth: true
+                height: 68
+                OneUICircleButton {
+                    anchors.centerIn: parent
+                    iconGlyph: "\uf1fb" // color picker
+                    label: "Color pick"
+                    active: false
+                    onClicked: {
+                        if (typeof systemCtrl !== "undefined" && systemCtrl)
+                            systemCtrl.pickColor()
+                    }
+                }
+            }
+
+            // Game mode
+            Item {
+                visible: actionTilesCard.showGameMode
+                Layout.fillWidth: true
+                height: 68
+                OneUICircleButton {
+                    anchors.centerIn: parent
+                    iconGlyph: "\uf11b" // game mode
+                    label: "Game mode"
+                    active: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.gameModeActive : false
+                    activeColor: TitanTheme.green
+                    onClicked: {
+                        if (typeof systemCtrl !== "undefined" && systemCtrl)
+                            systemCtrl.gameModeActive = !systemCtrl.gameModeActive
+                    }
+                }
+            }
+
+            // Clipboard
+            Item {
+                visible: actionTilesCard.showClipboard
+                Layout.fillWidth: true
+                height: 68
+                OneUICircleButton {
+                    anchors.centerIn: parent
+                    iconGlyph: "\uf0ea" // clipboard
+                    label: "Clipboard"
+                    active: false
+                    onClicked: {
+                        if (typeof systemCtrl !== "undefined" && systemCtrl)
+                            systemCtrl.openClipboard()
+                    }
+                }
+            }
+
+            // Awake
+            Item {
+                visible: actionTilesCard.showCaffeine
+                Layout.fillWidth: true
+                height: 68
+                OneUICircleButton {
+                    anchors.centerIn: parent
+                    iconGlyph: "\uf0f4" // caffeine
+                    label: "Awake"
+                    active: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.caffeineActive : false
+                    activeColor: TitanTheme.yellow
+                    onClicked: {
+                        if (typeof systemCtrl !== "undefined" && systemCtrl)
+                            systemCtrl.caffeineActive = !systemCtrl.caffeineActive
+                    }
+                }
+            }
+
+            // Virtual input
+            Item {
+                visible: actionTilesCard.showVirtualInput
+                Layout.fillWidth: true
+                height: 68
+                OneUICircleButton {
+                    anchors.centerIn: parent
+                    iconGlyph: "\uf11c" // keyboard
+                    label: "Virtual input"
+                    active: false
+                    onClicked: {
+                        if (typeof systemCtrl !== "undefined" && systemCtrl)
+                            systemCtrl.toggleVirtualKeyboard()
+                    }
+                }
+            }
+
+            // Screen record
+            Item {
+                visible: actionTilesCard.showRecord
+                Layout.fillWidth: true
+                height: 68
+                OneUICircleButton {
+                    anchors.centerIn: parent
+                    iconGlyph: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.screenRecordingActive)
+                               ? "\uf04d" // stop square
+                               : "\uf111" // record circle
+                    label: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.screenRecordingActive)
+                           ? "Recording"
+                           : "Record"
+                    active: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.screenRecordingActive : false
+                    activeColor: TitanTheme.red
+                    onClicked: {
+                        if (typeof systemCtrl !== "undefined" && systemCtrl)
+                            systemCtrl.toggleScreenRecording()
+                    }
+                }
+            }
+
+            // Airplane
+            Item {
+                visible: actionTilesCard.showAirplane
+                Layout.fillWidth: true
+                height: 68
+                OneUICircleButton {
+                    anchors.centerIn: parent
+                    iconGlyph: "\uf072" // airplane
+                    label: "Airplane"
+                    active: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.airplaneMode : false
+                    activeColor: TitanTheme.accentBlue
+                    onClicked: {
+                        if (typeof systemCtrl !== "undefined" && systemCtrl)
+                            systemCtrl.toggleAirplaneMode()
+                    }
+                }
+            }
+        }
+    }
+
+    // ── 5. Bottom Device & Media Control Tiles ──────────────────────────────
+    Rectangle {
+        Layout.fillWidth: true
+        height: 50
+        radius: 20
+        color: medMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgOneUICard
+        border.color: TitanTheme.borderGlass
+        border.width: 1
+        clip: true
+        visible: (typeof systemCtrl !== "undefined" && systemCtrl)
+                 ? (systemCtrl.tileVisibilityRevision >= 0 && systemCtrl.getTileVisible("deviceMedia", true)) : true
+
+        // Tactile Liquid Touch: spring bounce on hover and press
+        scale: medMa.pressed ? 0.97 : (medMa.containsMouse ? 1.015 : 1.0)
+        Behavior on scale {
+            NumberAnimation { duration: 130; easing.type: Easing.OutQuad }
+        }
+
+        RowLayout {
+            anchors.fill: parent
+            anchors.leftMargin: 14
+            anchors.rightMargin: 14
+            spacing: 10
+
             Rectangle {
-                width: 46; height: 46; radius: 23
-                color: (typeof audioCtrl !== "undefined" && audioCtrl && !audioCtrl.sourceMuted) ? "#38BDF8" : "#1F2330"
-                border.color: (typeof audioCtrl !== "undefined" && audioCtrl && !audioCtrl.sourceMuted) ? "#38BDF8" : "#20FFFFFF"
-                border.width: 1
+                width: 32
+                height: 32
+                radius: 16
+                color: TitanTheme.bgOneUIPill
 
                 Text {
                     anchors.centerIn: parent
-                    text: (typeof audioCtrl !== "undefined" && audioCtrl && audioCtrl.sourceMuted) ? "🎙✕" : "🎙"
+                    text: "\uf001" // music
+                    font.family: TitanTheme.fontFamily
+                    font.pixelSize: 13
+                    color: TitanTheme.accentBlue
+                }
+            }
+
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: 1
+
+                Text {
+                    text: "Media output"
+                    font.family: TitanTheme.fontFamily
+                    font.pixelSize: 12
+                    font.weight: Font.DemiBold
+                    color: TitanTheme.textPrimary
+                }
+
+                Text {
+                    text: "No device connected"
+                    font.family: TitanTheme.fontFamily
+                    font.pixelSize: 10
+                    color: TitanTheme.textSubtle
+                }
+            }
+
+            Text {
+                text: "\uf054"
+                font.family: TitanTheme.fontFamily
+                font.pixelSize: 10
+                color: TitanTheme.textSubtle
+            }
+        }
+
+        MouseArea {
+            id: medMa
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: {
+                if (typeof systemCtrl !== "undefined" && systemCtrl)
+                    systemCtrl.openMediaWidget()
+            }
+        }
+    }
+
+    Rectangle {
+        Layout.fillWidth: true
+        height: 50
+        radius: 20
+        color: devMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgOneUICard
+        border.color: TitanTheme.borderGlass
+        border.width: 1
+        clip: true
+
+        // Tactile Liquid Touch: spring bounce on hover and press
+        scale: devMa.pressed ? 0.97 : (devMa.containsMouse ? 1.015 : 1.0)
+        Behavior on scale {
+            NumberAnimation { duration: 130; easing.type: Easing.OutQuad }
+        }
+
+        RowLayout {
+            anchors.fill: parent
+            anchors.leftMargin: 14
+            anchors.rightMargin: 14
+            spacing: 10
+
+            Rectangle {
+                width: 32
+                height: 32
+                radius: 16
+                color: TitanTheme.bgOneUIPill
+
+                Text {
+                    anchors.centerIn: parent
+                    text: "\uf10b" // mobile / device
+                    font.family: TitanTheme.fontFamily
                     font.pixelSize: 14
-                    color: (typeof audioCtrl !== "undefined" && audioCtrl && !audioCtrl.sourceMuted) ? "#0A1322" : "#FFFFFF"
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: if (typeof audioCtrl !== "undefined" && audioCtrl) audioCtrl.toggleSourceMute()
+                    color: TitanTheme.textSecondary
                 }
             }
 
-            LargeToggleTile {
-                active: typeof audioCtrl !== "undefined" && audioCtrl && !audioCtrl.sinkMuted
-                iconText: (typeof audioCtrl !== "undefined" && audioCtrl && audioCtrl.sinkMuted) ? "🔇" : "🔊"
-                titleText: "Audio output"
-                statusText: (typeof audioCtrl !== "undefined" && audioCtrl) ? audioCtrl.statusText : "Muted"
-                onClicked: if (typeof audioCtrl !== "undefined" && audioCtrl) audioCtrl.toggleSinkMute()
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: 1
+
+                Text {
+                    text: "Device control"
+                    font.family: TitanTheme.fontFamily
+                    font.pixelSize: 12
+                    font.weight: Font.DemiBold
+                    color: TitanTheme.textPrimary
+                }
+
+                Text {
+                    text: "Manage connected devices"
+                    font.family: TitanTheme.fontFamily
+                    font.pixelSize: 10
+                    color: TitanTheme.textSubtle
+                }
             }
 
-            LargeToggleTile {
-                active: typeof nightLightCtrl !== "undefined" && nightLightCtrl && nightLightCtrl.active
-                iconText: "🌙"
-                titleText: "Night Light"
-                statusText: (typeof nightLightCtrl !== "undefined" && nightLightCtrl) ? nightLightCtrl.statusText : "Inactive"
-                onClicked: if (typeof nightLightCtrl !== "undefined" && nightLightCtrl) nightLightCtrl.toggleNightLight()
-            }
-        }
-
-        // ROW 3: 5 Squircle Action Buttons
-        RowLayout {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 44
-            spacing: 8
-
-            // 1. Contrast/Theme
-            Rectangle {
-                Layout.fillWidth: true; Layout.preferredHeight: 44; radius: 22
-                color: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.themeDark) ? "#38BDF8" : "#1F2330"
-                Text { anchors.centerIn: parent; text: "◑"; font.pixelSize: 18; color: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.themeDark) ? "#0A1322" : "#FFFFFF" }
-                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.themeDark = !systemCtrl.themeDark }
-            }
-
-            // 2. Audio Visualizer
-            Rectangle {
-                Layout.fillWidth: true; Layout.preferredHeight: 44; radius: 22
-                color: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.visualizerActive) ? "#38BDF8" : "#1F2330"
-                Text { anchors.centerIn: parent; text: "ılı"; font.pixelSize: 18; font.bold: true; color: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.visualizerActive) ? "#0A1322" : "#FFFFFF" }
-                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.visualizerActive = !systemCtrl.visualizerActive }
-            }
-
-            // 3. Waves / Ambient
-            Rectangle {
-                Layout.fillWidth: true; Layout.preferredHeight: 44; radius: 22
-                color: "#1F2330"
-                Text { anchors.centerIn: parent; text: "≈"; font.pixelSize: 20; color: "#FFFFFF" }
-                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor }
-            }
-
-            // 4. VPN Lock
-            Rectangle {
-                Layout.fillWidth: true; Layout.preferredHeight: 44; radius: 22
-                color: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.vpnActive) ? "#38BDF8" : "#1F2330"
-                Text { anchors.centerIn: parent; text: "☁🔒"; font.pixelSize: 14; color: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.vpnActive) ? "#0A1322" : "#FFFFFF" }
-                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.vpnActive = !systemCtrl.vpnActive }
-            }
-
-            // 5. Game Mode
-            Rectangle {
-                Layout.fillWidth: true; Layout.preferredHeight: 44; radius: 22
-                color: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.gameModeActive) ? "#38BDF8" : "#1F2330"
-                Text { anchors.centerIn: parent; text: "🎮"; font.pixelSize: 16 }
-                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.gameModeActive = !systemCtrl.gameModeActive }
+            Text {
+                text: "\uf054"
+                font.family: TitanTheme.fontFamily
+                font.pixelSize: 10
+                color: TitanTheme.textSubtle
             }
         }
 
-        // ROW 4: 5 Squircle Action Buttons
-        RowLayout {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 44
-            spacing: 8
-
-            // 1. Screenshot
-            Rectangle {
-                Layout.fillWidth: true; Layout.preferredHeight: 44; radius: 22
-                color: "#1F2330"
-                Text { anchors.centerIn: parent; text: "⛶"; font.pixelSize: 18; color: "#FFFFFF" }
-                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.takeScreenshot() }
+        MouseArea {
+            id: devMa
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: {
+                if (typeof systemCtrl !== "undefined" && systemCtrl)
+                    systemCtrl.openSettings()
             }
-
-            // 2. Color Picker
-            Rectangle {
-                Layout.fillWidth: true; Layout.preferredHeight: 44; radius: 22
-                color: "#1F2330"
-                Text { anchors.centerIn: parent; text: "💉"; font.pixelSize: 15 }
-                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.pickColor() }
-            }
-
-            // 3. Virtual Keyboard
-            Rectangle {
-                Layout.fillWidth: true; Layout.preferredHeight: 44; radius: 22
-                color: "#1F2330"
-                Text { anchors.centerIn: parent; text: "⌨"; font.pixelSize: 17; color: "#FFFFFF" }
-                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.toggleVirtualKeyboard() }
-            }
-
-            // 4. Notifications Bell
-            Rectangle {
-                Layout.fillWidth: true; Layout.preferredHeight: 44; radius: 22
-                color: (typeof notifServer !== "undefined" && notifServer && !notifServer.dndActive) ? "#38BDF8" : "#1F2330"
-                Text { anchors.centerIn: parent; text: "🔔"; font.pixelSize: 15; color: (typeof notifServer !== "undefined" && notifServer && !notifServer.dndActive) ? "#0A1322" : "#FFFFFF" }
-                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: if (typeof notifServer !== "undefined" && notifServer) notifServer.toggleDnd() }
-            }
-
-            // 5. Music Widget
-            Rectangle {
-                Layout.fillWidth: true; Layout.preferredHeight: 44; radius: 22
-                color: "#1F2330"
-                Text { anchors.centerIn: parent; text: "🎵"; font.pixelSize: 16 }
-                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.openMediaWidget() }
-            }
-        }
-
-        // ROW 5: Bottom Mic Mute Button
-        RowLayout {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 38
-            spacing: 8
-
-            Rectangle {
-                width: 44; height: 38; radius: 19
-                color: "#1F2330"
-                border.color: "#20FFFFFF"
-                border.width: 1
-                Text { anchors.centerIn: parent; text: "🕬"; font.pixelSize: 16; color: "#FFFFFF" }
-                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: if (typeof audioCtrl !== "undefined" && audioCtrl) audioCtrl.toggleSourceMute() }
-            }
-            Item { Layout.fillWidth: true }
         }
     }
 }

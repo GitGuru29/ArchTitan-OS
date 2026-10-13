@@ -1,23 +1,22 @@
 #pragma once
 
 #include <QObject>
-#include <QVariantList>
-#include <QVariantMap>
 #include <QDBusContext>
+#include "notificationmodel.h"
 
 class NotificationServer : public QObject, protected QDBusContext
 {
     Q_OBJECT
     Q_CLASSINFO("D-Bus Interface", "org.freedesktop.Notifications")
-    Q_PROPERTY(QVariantList notifications READ notifications NOTIFY notificationsChanged)
+    Q_PROPERTY(NotificationModel* model READ model CONSTANT)
     Q_PROPERTY(int totalCount READ totalCount NOTIFY totalCountChanged)
     Q_PROPERTY(bool dndActive READ dndActive WRITE setDndActive NOTIFY dndActiveChanged)
 
 public:
     explicit NotificationServer(QObject *parent = nullptr);
 
-    QVariantList notifications() const { return m_notifications; }
-    int totalCount() const { return m_totalCount; }
+    NotificationModel* model() const { return m_model; }
+    int totalCount() const { return m_model ? m_model->totalCount() : 0; }
     bool dndActive() const { return m_dndActive; }
     void setDndActive(bool dnd);
 
@@ -37,18 +36,13 @@ public slots:
     void GetServerInformation(QString &name, QString &vendor, QString &version, QString &spec_version);
 
 signals:
-    void notificationsChanged();
     void totalCountChanged();
     void dndActiveChanged();
     void NotificationClosed(uint id, uint reason);
     void ActionInvoked(uint id, const QString &action_key);
 
 private:
-    void initDefaultNotifications();
-    void recalculateCount();
-
-    QVariantList m_notifications;
-    int m_totalCount{8967};
+    NotificationModel *m_model{nullptr};
     bool m_dndActive{false};
     uint m_nextId{100};
 };
