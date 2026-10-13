@@ -10,3 +10,5 @@ ConfigFile=theme.conf
 TranslationsDirectory=translations
 Theme-Id=archtitan
 Theme-API=2.0
+QtVersion=6
+Type=sddm-theme
