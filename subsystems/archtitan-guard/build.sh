@@ -6,7 +6,8 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 AIROOT_LIB="${REPO_ROOT}/airootfs/usr/lib/archtitan"
 
 cd "${SCRIPT_DIR}"
-gcc -O2 -s -Wall -o archtitan-guard main.c
+gcc -O2 -static -s -Wall -o archtitan-guard main.c
 
 mkdir -p "${AIROOT_LIB}"
 install -Dm755 archtitan-guard "${AIROOT_LIB}/archtitan-guard"
+install -Dm755 archtitan-guard "${REPO_ROOT}/airootfs/usr/share/archtitan/immutable/archtitan-guard"
