@@ -5,6 +5,8 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
+# Emit build/compile_commands.json so clangd/IDE can resolve Qt include paths
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Quick Qml DBus Network Widgets)
 find_package(LayerShellQt REQUIRED)

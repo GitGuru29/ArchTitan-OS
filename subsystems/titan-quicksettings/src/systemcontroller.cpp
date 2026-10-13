@@ -331,7 +331,8 @@ void SystemController::openClipboard()
 
 void SystemController::openSettings()
 {
-    QProcess::startDetached("archtitan-settings", {});
+    // Launch ArchTitan Settings with graceful fallbacks
+    QProcess::startDetached("bash", {"-c", "archtitan-settings || gnome-control-center || systemsettings || xfce4-settings-manager"});
 }
 
 void SystemController::openPowerMenu()
@@ -357,4 +358,31 @@ void SystemController::toggleVirtualKeyboard()
 void SystemController::openMediaWidget()
 {
     QProcess::startDetached("titan-bar-media", {});
+}
+
+bool SystemController::getTileVisible(const QString &tileKey, bool defaultVal) const
+{
+    QString cfgDir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
+    QSettings settings(cfgDir + "/archtitan/settings.ini", QSettings::IniFormat);
+    return settings.value("quicksettings/" + tileKey, defaultVal).toBool();
+}
+
+void SystemController::setTileVisible(const QString &tileKey, bool visible)
+{
+    QString cfgDir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
+    QSettings settings(cfgDir + "/archtitan/settings.ini", QSettings::IniFormat);
+    settings.setValue("quicksettings/" + tileKey, visible);
+    settings.sync();
+    m_tileVisibilityRevision++;
+    emit tileVisibilityChanged();
+}
+
+void SystemController::resetTileVisibility()
+{
+    QString cfgDir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
+    QSettings settings(cfgDir + "/archtitan/settings.ini", QSettings::IniFormat);
+    settings.remove("quicksettings");
+    settings.sync();
+    m_tileVisibilityRevision++;
+    emit tileVisibilityChanged();
 }

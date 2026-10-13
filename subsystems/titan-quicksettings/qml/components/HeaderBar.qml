@@ -19,6 +19,8 @@ RowLayout {
                               : "User"
     property bool showNotificationPanel: false
     signal toggleNotificationPanel()
+    property bool editMode: false
+    signal toggleEditMode()
 
     function getGreeting() {
         var h = new Date().getHours();
@@ -149,7 +151,7 @@ RowLayout {
             }
         }
 
-        // Edit button
+        // Edit button (Toggles Quick Panel Customizer)
         Rectangle {
             width: 36
             height: 36
@@ -157,16 +159,20 @@ RowLayout {
             clip: true
             scale: editMa.pressed ? 0.91 : (editMa.containsMouse ? 1.08 : 1.0)
             Behavior on scale { NumberAnimation { duration: 130; easing.type: Easing.OutBack; easing.overshoot: 1.25 } }
-            color: editMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgOneUIPill
-            border.color: editMa.containsMouse ? TitanTheme.borderHover : TitanTheme.borderGlass
+            color: headerRoot.editMode
+                   ? TitanTheme.accentBlue
+                   : (editMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgOneUIPill)
+            border.color: headerRoot.editMode
+                          ? TitanTheme.borderActive
+                          : (editMa.containsMouse ? TitanTheme.borderHover : TitanTheme.borderGlass)
             border.width: 1
 
             Text {
                 anchors.centerIn: parent
-                text: "\uf044" // pencil edit
+                text: headerRoot.editMode ? "\uf00c" : "\uf044" // checkmark when in edit mode, pencil normally
                 font.family: TitanTheme.fontFamily
                 font.pixelSize: 14
-                color: TitanTheme.textPrimary
+                color: headerRoot.editMode ? "#FFFFFF" : TitanTheme.textPrimary
             }
 
             MouseArea {
@@ -175,8 +181,7 @@ RowLayout {
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
                 onClicked: {
-                    if (typeof systemCtrl !== "undefined" && systemCtrl)
-                        systemCtrl.refresh();
+                    headerRoot.toggleEditMode();
                 }
             }
         }

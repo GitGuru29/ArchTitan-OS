@@ -21,5 +21,6 @@
         <file>qml/components/OneUICircleButton.qml</file>
         <file>qml/components/OneUISegmentTab.qml</file>
         <file>qml/components/OneUINotificationCard.qml</file>
+        <file>qml/components/QuickSettingsCustomizer.qml</file>
     </qresource>
 </RCC>

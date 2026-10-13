@@ -25,6 +25,7 @@ Window {
 
     property bool drawerOpen: false
     property bool showNotificationPanel: false
+    property bool editMode: false
 
     onShowNotificationPanelChanged: {
         rootWindow.width = showNotificationPanel ? 870 : 420;
@@ -44,6 +45,7 @@ Window {
 
     function closeDrawer() {
         drawerOpen = false;
+        editMode = false;
         closeTimer.start();
     }
 
@@ -117,31 +119,52 @@ Window {
                     // Session Header (Large Clock, Date, Greeting, Edit, Settings)
                     HeaderBar {
                         showNotificationPanel: rootWindow.showNotificationPanel
+                        editMode: rootWindow.editMode
                         onToggleNotificationPanel: rootWindow.showNotificationPanel = !rootWindow.showNotificationPanel
+                        onToggleEditMode: rootWindow.editMode = !rootWindow.editMode
                     }
 
-                    // Scrollable Bento Controls
+                    // Scrollable Bento Controls vs Edit Customizer View
                     Flickable {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         contentWidth: width
-                        contentHeight: Math.max(height, bentoContent.implicitHeight)
+                        contentHeight: Math.max(height, currentContent.implicitHeight)
                         clip: true
                         boundsBehavior: Flickable.StopAtBounds
 
-                        ColumnLayout {
-                            id: bentoContent
+                        Item {
+                            id: currentContent
                             width: parent.width
-                            height: Math.max(parent.height, implicitHeight)
-                            spacing: 12
+                            implicitHeight: rootWindow.editMode ? customizerView.implicitHeight : bentoContent.implicitHeight
 
-                            QuickToggleGrid {}
+                            // Normal Bento Quick Settings
+                            ColumnLayout {
+                                id: bentoContent
+                                width: parent.width
+                                visible: !rootWindow.editMode
+                                opacity: visible ? 1.0 : 0.0
+                                Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                                spacing: 12
 
-                            Item {
-                                Layout.fillHeight: true
+                                QuickToggleGrid {}
+
+                                Item {
+                                    Layout.fillHeight: true
+                                }
+
+                                CalendarFooter {}
                             }
 
-                            CalendarFooter {}
+                            // One UI 9 Edit Quick Panel Customizer View
+                            QuickSettingsCustomizer {
+                                id: customizerView
+                                width: parent.width
+                                visible: rootWindow.editMode
+                                opacity: visible ? 1.0 : 0.0
+                                Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                                onDoneRequested: rootWindow.editMode = false
+                            }
                         }
                     }
                 }

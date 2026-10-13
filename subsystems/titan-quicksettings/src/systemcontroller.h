@@ -25,6 +25,7 @@ class SystemController : public QObject {
   Q_PROPERTY(bool airplaneMode READ airplaneMode WRITE setAirplaneMode NOTIFY
                  airplaneModeChanged)
   Q_PROPERTY(int brightness READ brightness NOTIFY brightnessChanged)
+  Q_PROPERTY(int tileVisibilityRevision READ tileVisibilityRevision NOTIFY tileVisibilityChanged)
 
 public:
   explicit SystemController(QObject *parent = nullptr);
@@ -40,6 +41,7 @@ public:
   bool screenRecordingActive() const { return m_screenRecordingActive; }
   bool airplaneMode() const { return m_airplaneMode; }
   int brightness() const { return m_brightness; }
+  int tileVisibilityRevision() const { return m_tileVisibilityRevision; }
 
   void setCaffeineActive(bool active);
   void setThemeDark(bool dark);
@@ -47,6 +49,10 @@ public:
   void setGameModeActive(bool active);
   void setVpnActive(bool active);
   void setAirplaneMode(bool active);
+
+  Q_INVOKABLE bool getTileVisible(const QString &tileKey, bool defaultVal = true) const;
+  Q_INVOKABLE void setTileVisible(const QString &tileKey, bool visible);
+  Q_INVOKABLE void resetTileVisibility();
 
 public slots:
   void refresh();
@@ -72,6 +78,7 @@ signals:
   void screenRecordingActiveChanged();
   void airplaneModeChanged();
   void brightnessChanged();
+  void tileVisibilityChanged();
 
 private:
   void updateUptime();
@@ -91,6 +98,7 @@ private:
   bool m_screenRecordingActive{false};
   bool m_airplaneMode{false};
   int m_brightness{80};
+  int m_tileVisibilityRevision{0};
 
   QTimer *m_timer;
 };
