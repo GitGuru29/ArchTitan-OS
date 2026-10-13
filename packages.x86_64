@@ -69,6 +69,8 @@ hyperv
 
 # ── Desktop & Window Manager (Hyprland Stack) ─────────────────────────────────
 hyprland
+hypridle
+hyprlock
 waybar
 kitty
 rofi-wayland
@@ -144,6 +146,7 @@ fd
 tree
 jq
 strace
+psmisc
 pv
 wget
 curl

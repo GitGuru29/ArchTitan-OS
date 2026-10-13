@@ -342,28 +342,28 @@ void SystemController::openPowerMenu()
 
 void SystemController::lockSession()
 {
-    QProcess::startDetached("bash", {"-c", "loginctl lock-session || hyprlock || swaylock || true"});
+    QProcess::startDetached("bash", {"-c", "pidof hyprlock || hyprlock || swaylock -f -c 0b0e14 || loginctl lock-session"});
 }
 
 void SystemController::suspendSession()
 {
-    QProcess::startDetached("systemctl", {"suspend"});
+    QProcess::startDetached("bash", {"-c", "systemctl suspend -i || loginctl suspend || sudo systemctl suspend -i"});
 }
 
 void SystemController::logoutSession()
 {
     // Gracefully exit Hyprland session and return to SDDM login screen
-    QProcess::startDetached("bash", {"-c", "hyprctl dispatch exit || killall Hyprland || loginctl terminate-user $USER"});
+    QProcess::startDetached("bash", {"-c", "hyprctl dispatch exit || pkill -u \"$USER\" -x Hyprland || killall -u \"$USER\" Hyprland || loginctl terminate-session \"${XDG_SESSION_ID}\" || loginctl terminate-user \"$USER\""});
 }
 
 void SystemController::rebootSystem()
 {
-    QProcess::startDetached("systemctl", {"reboot"});
+    QProcess::startDetached("bash", {"-c", "systemctl reboot -i || loginctl reboot || sudo reboot || reboot"});
 }
 
 void SystemController::poweroffSystem()
 {
-    QProcess::startDetached("systemctl", {"poweroff"});
+    QProcess::startDetached("bash", {"-c", "systemctl poweroff -i || loginctl poweroff || sudo poweroff || poweroff"});
 }
 
 void SystemController::takeScreenshot()

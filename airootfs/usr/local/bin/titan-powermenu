@@ -20,18 +20,18 @@ CHOSEN=$(printf '%b\n' "$LOCK" "$SLEEP" "$LOGOUT" "$REBOOT" "$SHUTDOWN" | rofi \
 
 case "$CHOSEN" in
     *"Lock"*)
-        loginctl lock-session || hyprlock || true
+        pidof hyprlock || hyprlock || swaylock -f -c 0b0e14 || loginctl lock-session
         ;;
     *"Sleep"*)
-        systemctl suspend
+        systemctl suspend -i || loginctl suspend || sudo systemctl suspend -i
         ;;
     *"Logout"*)
-        hyprctl dispatch exit || killall Hyprland || loginctl terminate-user "$USER"
+        hyprctl dispatch exit || pkill -u "$USER" -x Hyprland || killall -u "$USER" Hyprland || loginctl terminate-session "${XDG_SESSION_ID}" || loginctl terminate-user "$USER"
         ;;
     *"Reboot"*)
-        systemctl reboot
+        systemctl reboot -i || loginctl reboot || sudo reboot || reboot
         ;;
     *"Shutdown"*)
-        systemctl poweroff
+        systemctl poweroff -i || loginctl poweroff || sudo poweroff || poweroff
         ;;
 esac

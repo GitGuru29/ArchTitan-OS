@@ -78,4 +78,6 @@ file_permissions=(
   ["/var/titan-sandbox/apps"]="0:0:1777"
   # GRUB theme for the installed system (used by Calamares bootloader module)
   ["/usr/share/grub/themes/archtitan"]="0:0:755"
+  # Polkit power rules
+  ["/usr/share/polkit-1/rules.d/50-archtitan-power.rules"]="0:0:644"
 )
