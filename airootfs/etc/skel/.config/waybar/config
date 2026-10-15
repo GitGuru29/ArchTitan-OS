@@ -65,7 +65,7 @@
     },
 
     "custom/separator": {
-        "format" : "<span color='#1f202e'>│</span>",
+        "format" : "<span color='#313244'>│</span>",
         "tooltip": false
     },
 
