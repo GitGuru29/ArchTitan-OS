@@ -449,11 +449,11 @@ void TabWidget::onTabBarContextMenu(const QPoint &pos)
     auto *menu = new QMenu(m_tabBar);
     menu->setStyleSheet(QStringLiteral(R"(
         QMenu {
-            background: #090e1c;
-            border: 1px solid rgba(56, 189, 248, 0.25);
+            background: #11111b;
+            border: 1px solid rgba(137, 180, 250, 0.25);
             border-radius: 8px;
             padding: 5px;
-            color: #e2e8f0;
+            color: #cdd6f4;
             font-size: 12px;
         }
         QMenu::item {
@@ -461,8 +461,8 @@ void TabWidget::onTabBarContextMenu(const QPoint &pos)
             border-radius: 5px;
         }
         QMenu::item:selected {
-            background: rgba(56, 189, 248, 0.15);
-            color: #38bdf8;
+            background: rgba(137, 180, 250, 0.15);
+            color: #89b4fa;
         }
     )"));
 

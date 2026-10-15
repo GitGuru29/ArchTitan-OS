@@ -37,5 +37,8 @@ target_link_libraries(titanbrowser PRIVATE
     Qt6::Svg
 )
 
+target_include_directories(titanbrowser PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/../titan-ui/include")
+
 install(TARGETS titanbrowser DESTINATION /usr/local/bin)
 install(FILES resources/titanbrowser.desktop DESTINATION /usr/share/applications)

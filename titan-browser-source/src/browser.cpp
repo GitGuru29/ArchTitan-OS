@@ -3,6 +3,7 @@
 #include "addressbar.h"
 #include "adblocker.h"
 #include "profilemanager.h"
+#include "TitanPalette.h"
 
 #include <QDialog>
 #include <QFormLayout>
@@ -43,23 +44,23 @@ static const char *kSettingsUrl = "titan://settings";
 static const char *kTheme = R"(
 /* Global Window Container */
 QMainWindow, QWidget#CentralContainer {
-    background: #060812;
-    color: #e2e8f0;
+    background: #11111b;
+    color: #cdd6f4;
     font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     font-size: 13px;
 }
 
 /* ── 1. Top Chrome Container ─────────────────────────────────────────────── */
 QWidget#TopChrome {
-    background: #070b14;
-    border-bottom: 1px solid rgba(56, 189, 248, 0.16);
+    background: #11111b;
+    border-bottom: 1px solid rgba(137, 180, 250, 0.16);
 }
 
 QToolTip {
-    background: #091022;
-    border: 1px solid rgba(56, 189, 248, 0.35);
+    background: #181825;
+    border: 1px solid rgba(137, 180, 250, 0.35);
     border-radius: 6px;
-    color: #f1f5f9;
+    color: #cdd6f4;
     padding: 4px 8px;
     font-size: 11px;
     font-family: "Inter", sans-serif;
@@ -67,7 +68,7 @@ QToolTip {
 
 /* ── Top Tab Strip Bar (38px) ── */
 QWidget#TopBar {
-    background: #060913;
+    background: #11111b;
     min-height: 38px;
     max-height: 38px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.04);
@@ -85,11 +86,11 @@ QTabBar {
 }
 
 QTabBar::tab {
-    background: rgba(12, 19, 36, 0.5);
+    background: rgba(17, 17, 27, 0.5);
     border: 1px solid rgba(255, 255, 255, 0.05);
     border-top: 2px solid transparent;
     border-radius: 6px;
-    color: #94a3b8;
+    color: #a6adc8;
     padding: 0 10px;
     margin: 0 2px;
     font-size: 12px;
@@ -100,17 +101,17 @@ QTabBar::tab {
 }
 
 QTabBar::tab:selected {
-    background: #111a2e;
-    border: 1px solid rgba(56, 189, 248, 0.35);
-    border-top: 2px solid #38bdf8;
-    color: #ffffff;
+    background: #181825;
+    border: 1px solid rgba(137, 180, 250, 0.35);
+    border-top: 2px solid #89b4fa;
+    color: #cdd6f4;
     font-weight: 600;
 }
 
 QTabBar::tab:hover:!selected {
-    background: rgba(18, 30, 56, 0.7);
-    border-color: rgba(56, 189, 248, 0.2);
-    color: #e2e8f0;
+    background: rgba(24, 24, 37, 0.7);
+    border-color: rgba(137, 180, 250, 0.2);
+    color: #cdd6f4;
 }
 
 QTabBar::close-button {
@@ -120,15 +121,15 @@ QTabBar::close-button {
     border-radius: 3px;
 }
 QTabBar::close-button:hover {
-    background: rgba(239, 68, 68, 0.35);
-    color: #ffffff;
+    background: rgba(243, 139, 168, 0.35);
+    color: #cdd6f4;
 }
 
 QToolButton#AddTabButton {
     background: transparent;
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 6px;
-    color: #94a3b8;
+    color: #a6adc8;
     padding: 0;
     margin: 0;
     min-width: 26px;
@@ -137,16 +138,16 @@ QToolButton#AddTabButton {
     max-height: 26px;
 }
 QToolButton#AddTabButton:hover {
-    background: rgba(56, 189, 248, 0.15);
-    border-color: #38bdf8;
-    color: #38bdf8;
+    background: rgba(137, 180, 250, 0.15);
+    border-color: #89b4fa;
+    color: #89b4fa;
 }
 
 /* Window Controls */
 QToolButton#WinBtn {
     background: transparent;
     border: none;
-    color: #64748b;
+    color: #7f849c;
     font-size: 11px;
     min-width: 28px;
     max-width: 28px;
@@ -158,12 +159,12 @@ QToolButton#WinBtn {
 }
 QToolButton#WinBtn:hover {
     background: rgba(255, 255, 255, 0.08);
-    color: #f8fafc;
+    color: #cdd6f4;
 }
 QToolButton#WinBtnClose {
     background: transparent;
     border: none;
-    color: #64748b;
+    color: #7f849c;
     font-size: 11px;
     min-width: 28px;
     max-width: 28px;
@@ -174,13 +175,13 @@ QToolButton#WinBtnClose {
     padding: 0;
 }
 QToolButton#WinBtnClose:hover {
-    background: #ef4444;
-    color: #ffffff;
+    background: #f38ba8;
+    color: #cdd6f4;
 }
 
 /* ── 2. Unified Navigation Toolbar (42px) ──────────────────────────────── */
 QWidget#NavBar {
-    background: #070b14;
+    background: #11111b;
     min-height: 42px;
     max-height: 42px;
 }
@@ -191,49 +192,49 @@ QToolButton#NavBtn {
     border-radius: 6px;
     padding: 0;
     margin: 0;
-    color: #94a3b8;
+    color: #a6adc8;
     min-width: 30px;
     min-height: 30px;
     max-width: 30px;
     max-height: 30px;
 }
 QToolButton#NavBtn:hover {
-    background: rgba(56, 189, 248, 0.12);
-    color: #ffffff;
+    background: rgba(137, 180, 250, 0.12);
+    color: #cdd6f4;
 }
 QToolButton#NavBtn:disabled {
-    color: rgba(148, 163, 184, 0.25);
+    color: rgba(166, 173, 200, 0.25);
 }
 
 /* Omnibox / Search Capsule */
 QLineEdit#AddressBar {
-    background: #091022;
-    border: 1px solid rgba(56, 189, 248, 0.18);
+    background: #181825;
+    border: 1px solid rgba(137, 180, 250, 0.18);
     border-radius: 8px;
-    color: #f1f5f9;
+    color: #cdd6f4;
     padding: 0 10px;
     font-size: 13px;
-    selection-background-color: #0284c7;
+    selection-background-color: #89b4fa;
     min-height: 32px;
     max-height: 32px;
     height: 32px;
 }
 QLineEdit#AddressBar:hover {
-    background: #0c1428;
-    border-color: rgba(56, 189, 248, 0.32);
+    background: #181825;
+    border-color: rgba(137, 180, 250, 0.32);
 }
 QLineEdit#AddressBar:focus {
-    background: #0f1a34;
-    border: 1px solid #38bdf8;
-    color: #ffffff;
+    background: #181825;
+    border: 1px solid #89b4fa;
+    color: #cdd6f4;
 }
 
 /* Action Badges & Buttons in Toolbar */
 QToolButton#ShieldBadgeBtn {
-    background: rgba(34, 197, 94, 0.1);
-    border: 1px solid rgba(34, 197, 94, 0.25);
+    background: rgba(166, 227, 161, 0.1);
+    border: 1px solid rgba(166, 227, 161, 0.25);
     border-radius: 6px;
-    color: #22c55e;
+    color: #a6e3a1;
     font-size: 11px;
     font-weight: 600;
     padding: 0 10px;
@@ -243,15 +244,15 @@ QToolButton#ShieldBadgeBtn {
     margin: 0;
 }
 QToolButton#ShieldBadgeBtn:hover {
-    background: rgba(34, 197, 94, 0.2);
-    border-color: #22c55e;
+    background: rgba(166, 227, 161, 0.2);
+    border-color: #a6e3a1;
 }
 
 QToolButton#DevBadgeBtn {
-    background: rgba(56, 189, 248, 0.08);
-    border: 1px solid rgba(56, 189, 248, 0.2);
+    background: rgba(137, 180, 250, 0.08);
+    border: 1px solid rgba(137, 180, 250, 0.2);
     border-radius: 6px;
-    color: #38bdf8;
+    color: #89b4fa;
     font-size: 11px;
     font-weight: 600;
     padding: 0 10px;
@@ -261,15 +262,15 @@ QToolButton#DevBadgeBtn {
     margin: 0;
 }
 QToolButton#DevBadgeBtn:hover {
-    background: rgba(56, 189, 248, 0.18);
-    border-color: #38bdf8;
+    background: rgba(137, 180, 250, 0.18);
+    border-color: #89b4fa;
 }
 
 QToolButton#AvatarBtn {
-    background: qlineargradient(x1:0,y1:0,x2:1,y2:1, stop:0 #7c3aed, stop:1 #4f46e5);
-    border: 1px solid rgba(192, 132, 252, 0.3);
+    background: qlineargradient(x1:0,y1:0,x2:1,y2:1, stop:0 #cba6f7, stop:1 #cba6f7);
+    border: 1px solid rgba(203, 166, 247, 0.3);
     border-radius: 14px;
-    color: #ffffff;
+    color: #cdd6f4;
     font-weight: 700;
     font-size: 11px;
     min-width: 28px;
@@ -280,7 +281,7 @@ QToolButton#AvatarBtn {
     padding: 0;
 }
 QToolButton#AvatarBtn:hover {
-    border-color: #a855f7;
+    border-color: #cba6f7;
 }
 
 /* ── 4. Progress Bar & Floating Widgets ──────────────────────────────── */
@@ -291,34 +292,34 @@ QProgressBar {
 }
 QProgressBar::chunk {
     background: qlineargradient(x1:0,y1:0,x2:1,y2:0,
-        stop:0 #38bdf8, stop:0.5 #0ea5e9, stop:1 #818cf8);
+        stop:0 #89b4fa, stop:0.5 #89b4fa, stop:1 #cba6f7);
 }
 
 /* Find Bar */
 QWidget#FindBar {
-    background: #0b1222;
-    border-bottom: 1px solid rgba(56, 189, 248, 0.3);
+    background: #11111b;
+    border-bottom: 1px solid rgba(137, 180, 250, 0.3);
     padding: 4px 12px;
 }
 QLineEdit#FindEdit {
-    background: #070b17;
+    background: #11111b;
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 5px;
-    color: #f8fafc;
+    color: #cdd6f4;
     padding: 3px 8px;
     font-size: 12px;
     min-width: 180px;
 }
 QLineEdit#FindEdit:focus {
-    border-color: #38bdf8;
+    border-color: #89b4fa;
 }
 
 /* Toast Notification */
 QLabel#ToastLabel {
-    background: rgba(11, 18, 34, 0.95);
-    border: 1px solid rgba(56, 189, 248, 0.4);
+    background: rgba(17, 17, 27, 0.95);
+    border: 1px solid rgba(137, 180, 250, 0.4);
     border-radius: 8px;
-    color: #f8fafc;
+    color: #cdd6f4;
     font-size: 12px;
     font-weight: 600;
     padding: 8px 16px;
@@ -326,11 +327,11 @@ QLabel#ToastLabel {
 
 /* Menus & Popups */
 QMenu {
-    background: #090e1c;
-    border: 1px solid rgba(56, 189, 248, 0.25);
+    background: #11111b;
+    border: 1px solid rgba(137, 180, 250, 0.25);
     border-radius: 8px;
     padding: 6px;
-    color: #e2e8f0;
+    color: #cdd6f4;
     font-size: 12px;
 }
 QMenu::item {
@@ -338,8 +339,8 @@ QMenu::item {
     border-radius: 5px;
 }
 QMenu::item:selected {
-    background: rgba(56, 189, 248, 0.15);
-    color: #38bdf8;
+    background: rgba(137, 180, 250, 0.15);
+    color: #89b4fa;
 }
 QMenu::separator {
     height: 1px;
@@ -349,10 +350,10 @@ QMenu::separator {
 
 /* Tooltips */
 QToolTip {
-    background: #0b1120;
-    border: 1px solid rgba(56, 189, 248, 0.3);
+    background: #11111b;
+    border: 1px solid rgba(137, 180, 250, 0.3);
     border-radius: 5px;
-    color: #ffffff;
+    color: #cdd6f4;
     padding: 4px 8px;
     font-size: 11px;
 }
@@ -925,7 +926,7 @@ void Browser::setupFindBar(QVBoxLayout *layout)
     findLayout->addWidget(m_findEdit);
 
     m_findCountLabel = new QLabel(QStringLiteral(""), m_findBar);
-    m_findCountLabel->setStyleSheet(QStringLiteral("color: #94a3b8; font-size: 11px; font-weight: 500;"));
+    m_findCountLabel->setStyleSheet(QStringLiteral("color: #a6adc8; font-size: 11px; font-weight: 500;"));
     findLayout->addWidget(m_findCountLabel);
 
     m_findPrevBtn = new QToolButton(m_findBar);
@@ -1185,11 +1186,11 @@ void Browser::onTabSearchClicked()
     auto *menu = new QMenu(this);
     menu->setStyleSheet(QStringLiteral(R"(
         QMenu {
-            background: rgba(6, 12, 28, 0.95);
-            border: 1px solid rgba(56, 189, 248, 0.35);
+            background: rgba(17, 17, 27, 0.95);
+            border: 1px solid rgba(137, 180, 250, 0.35);
             border-radius: 10px;
             padding: 8px;
-            color: #f0f6fc;
+            color: #cdd6f4;
             font-family: "Outfit", -apple-system, sans-serif;
             min-width: 300px;
         }
@@ -1200,12 +1201,12 @@ void Browser::onTabSearchClicked()
             margin: 2px 0;
         }
         QMenu::item:selected {
-            background: rgba(56, 189, 248, 0.2);
-            color: #38bdf8;
+            background: rgba(137, 180, 250, 0.2);
+            color: #89b4fa;
         }
         QMenu::separator {
             height: 1px;
-            background: rgba(56, 189, 248, 0.15);
+            background: rgba(137, 180, 250, 0.15);
             margin: 6px 4px;
         }
     )"));
@@ -1467,11 +1468,11 @@ void Browser::onCommandPaletteClicked()
     auto *menu = new QMenu(this);
     menu->setStyleSheet(QStringLiteral(R"(
         QMenu {
-            background: #091022;
-            border: 1px solid rgba(56, 189, 248, 0.35);
+            background: #181825;
+            border: 1px solid rgba(137, 180, 250, 0.35);
             border-radius: 10px;
             padding: 6px;
-            color: #f1f5f9;
+            color: #cdd6f4;
             font-size: 13px;
         }
         QMenu::item {
@@ -1480,8 +1481,8 @@ void Browser::onCommandPaletteClicked()
             margin: 2px 4px;
         }
         QMenu::item:selected {
-            background: rgba(56, 189, 248, 0.16);
-            color: #38bdf8;
+            background: rgba(137, 180, 250, 0.16);
+            color: #89b4fa;
         }
         QMenu::separator {
             height: 1px;
@@ -1529,11 +1530,11 @@ void Browser::updateProfileAvatar()
     if (!p.email.isEmpty()) tip += QStringLiteral(" (%1)").arg(p.email);
     m_avatarBtn->setToolTip(tip);
 
-    QString color = p.avatarColor.isEmpty() ? QStringLiteral("#38bdf8") : p.avatarColor;
+    QString color = p.avatarColor.isEmpty() ? QStringLiteral("#89b4fa") : p.avatarColor;
     m_avatarBtn->setStyleSheet(QStringLiteral(R"(
         QToolButton#AvatarBtn {
             background-color: %1;
-            color: #ffffff;
+            color: #cdd6f4;
             font-weight: 700;
             font-size: 11px;
             border-radius: 12px;
@@ -1546,7 +1547,7 @@ void Browser::updateProfileAvatar()
             margin: 0 4px;
         }
         QToolButton#AvatarBtn:hover {
-            border: 1.5px solid #ffffff;
+            border: 1.5px solid #cdd6f4;
         }
     )").arg(color));
 }
@@ -1568,38 +1569,38 @@ void Browser::showAddProfileDialog()
     dlg.setFixedSize(360, 240);
     dlg.setStyleSheet(QStringLiteral(R"(
         QDialog {
-            background: #090e1c;
-            color: #f1f5f9;
+            background: #11111b;
+            color: #cdd6f4;
             font-family: 'Inter', sans-serif;
         }
-        QLabel { color: #94a3b8; font-size: 12px; }
+        QLabel { color: #a6adc8; font-size: 12px; }
         QLineEdit {
-            background: #0e172e;
-            border: 1px solid rgba(56, 189, 248, 0.3);
+            background: #181825;
+            border: 1px solid rgba(137, 180, 250, 0.3);
             border-radius: 6px;
-            color: #ffffff;
+            color: #cdd6f4;
             padding: 6px 10px;
             font-size: 13px;
         }
-        QLineEdit:focus { border-color: #38bdf8; }
+        QLineEdit:focus { border-color: #89b4fa; }
         QComboBox {
-            background: #0e172e;
-            border: 1px solid rgba(56, 189, 248, 0.3);
+            background: #181825;
+            border: 1px solid rgba(137, 180, 250, 0.3);
             border-radius: 6px;
-            color: #ffffff;
+            color: #cdd6f4;
             padding: 6px 10px;
         }
         QPushButton {
-            background: rgba(56, 189, 248, 0.15);
-            border: 1px solid rgba(56, 189, 248, 0.4);
+            background: rgba(137, 180, 250, 0.15);
+            border: 1px solid rgba(137, 180, 250, 0.4);
             border-radius: 6px;
-            color: #38bdf8;
+            color: #89b4fa;
             padding: 6px 14px;
             font-weight: 600;
         }
         QPushButton:hover {
-            background: #38bdf8;
-            color: #060812;
+            background: #89b4fa;
+            color: #11111b;
         }
     )"));
 
@@ -1612,12 +1613,12 @@ void Browser::showAddProfileDialog()
     form->addRow(QStringLiteral("Profile Name:"), nameEdit);
 
     auto *colorCombo = new QComboBox(&dlg);
-    colorCombo->addItem(QStringLiteral("Cyan (#38bdf8)"), QStringLiteral("#38bdf8"));
-    colorCombo->addItem(QStringLiteral("Emerald Green (#22c55e)"), QStringLiteral("#22c55e"));
-    colorCombo->addItem(QStringLiteral("Rose Red (#ef4444)"), QStringLiteral("#ef4444"));
-    colorCombo->addItem(QStringLiteral("Purple (#a78bfa)"), QStringLiteral("#a78bfa"));
-    colorCombo->addItem(QStringLiteral("Amber (#f59e0b)"), QStringLiteral("#f59e0b"));
-    colorCombo->addItem(QStringLiteral("Sky Blue (#0ea5e9)"), QStringLiteral("#0ea5e9"));
+    colorCombo->addItem(QStringLiteral("Cyan (#89b4fa)"), QStringLiteral("#89b4fa"));
+    colorCombo->addItem(QStringLiteral("Emerald Green (#a6e3a1)"), QStringLiteral("#a6e3a1"));
+    colorCombo->addItem(QStringLiteral("Rose Red (#f38ba8)"), QStringLiteral("#f38ba8"));
+    colorCombo->addItem(QStringLiteral("Purple (#cba6f7)"), QStringLiteral("#cba6f7"));
+    colorCombo->addItem(QStringLiteral("Amber (#f9e2af)"), QStringLiteral("#f9e2af"));
+    colorCombo->addItem(QStringLiteral("Sky Blue (#89b4fa)"), QStringLiteral("#89b4fa"));
     form->addRow(QStringLiteral("Avatar Color:"), colorCombo);
 
     auto *emailEdit = new QLineEdit(&dlg);
@@ -1650,38 +1651,38 @@ void Browser::showEditProfileDialog()
     dlg.setFixedSize(360, 240);
     dlg.setStyleSheet(QStringLiteral(R"(
         QDialog {
-            background: #090e1c;
-            color: #f1f5f9;
+            background: #11111b;
+            color: #cdd6f4;
             font-family: 'Inter', sans-serif;
         }
-        QLabel { color: #94a3b8; font-size: 12px; }
+        QLabel { color: #a6adc8; font-size: 12px; }
         QLineEdit {
-            background: #0e172e;
-            border: 1px solid rgba(56, 189, 248, 0.3);
+            background: #181825;
+            border: 1px solid rgba(137, 180, 250, 0.3);
             border-radius: 6px;
-            color: #ffffff;
+            color: #cdd6f4;
             padding: 6px 10px;
             font-size: 13px;
         }
-        QLineEdit:focus { border-color: #38bdf8; }
+        QLineEdit:focus { border-color: #89b4fa; }
         QComboBox {
-            background: #0e172e;
-            border: 1px solid rgba(56, 189, 248, 0.3);
+            background: #181825;
+            border: 1px solid rgba(137, 180, 250, 0.3);
             border-radius: 6px;
-            color: #ffffff;
+            color: #cdd6f4;
             padding: 6px 10px;
         }
         QPushButton {
-            background: rgba(56, 189, 248, 0.15);
-            border: 1px solid rgba(56, 189, 248, 0.4);
+            background: rgba(137, 180, 250, 0.15);
+            border: 1px solid rgba(137, 180, 250, 0.4);
             border-radius: 6px;
-            color: #38bdf8;
+            color: #89b4fa;
             padding: 6px 14px;
             font-weight: 600;
         }
         QPushButton:hover {
-            background: #38bdf8;
-            color: #060812;
+            background: #89b4fa;
+            color: #11111b;
         }
     )"));
 
@@ -1694,12 +1695,12 @@ void Browser::showEditProfileDialog()
     form->addRow(QStringLiteral("Profile Name:"), nameEdit);
 
     auto *colorCombo = new QComboBox(&dlg);
-    colorCombo->addItem(QStringLiteral("Cyan (#38bdf8)"), QStringLiteral("#38bdf8"));
-    colorCombo->addItem(QStringLiteral("Emerald Green (#22c55e)"), QStringLiteral("#22c55e"));
-    colorCombo->addItem(QStringLiteral("Rose Red (#ef4444)"), QStringLiteral("#ef4444"));
-    colorCombo->addItem(QStringLiteral("Purple (#a78bfa)"), QStringLiteral("#a78bfa"));
-    colorCombo->addItem(QStringLiteral("Amber (#f59e0b)"), QStringLiteral("#f59e0b"));
-    colorCombo->addItem(QStringLiteral("Sky Blue (#0ea5e9)"), QStringLiteral("#0ea5e9"));
+    colorCombo->addItem(QStringLiteral("Cyan (#89b4fa)"), QStringLiteral("#89b4fa"));
+    colorCombo->addItem(QStringLiteral("Emerald Green (#a6e3a1)"), QStringLiteral("#a6e3a1"));
+    colorCombo->addItem(QStringLiteral("Rose Red (#f38ba8)"), QStringLiteral("#f38ba8"));
+    colorCombo->addItem(QStringLiteral("Purple (#cba6f7)"), QStringLiteral("#cba6f7"));
+    colorCombo->addItem(QStringLiteral("Amber (#f9e2af)"), QStringLiteral("#f9e2af"));
+    colorCombo->addItem(QStringLiteral("Sky Blue (#89b4fa)"), QStringLiteral("#89b4fa"));
     for (int i = 0; i < colorCombo->count(); ++i) {
         if (colorCombo->itemData(i).toString() == cur.avatarColor) {
             colorCombo->setCurrentIndex(i);
@@ -1739,11 +1740,11 @@ void Browser::onProfileClicked()
     auto *menu = new QMenu(this);
     menu->setStyleSheet(QStringLiteral(R"(
         QMenu {
-            background: #090e1c;
-            border: 1px solid rgba(56, 189, 248, 0.25);
+            background: #11111b;
+            border: 1px solid rgba(137, 180, 250, 0.25);
             border-radius: 10px;
             padding: 8px;
-            color: #e2e8f0;
+            color: #cdd6f4;
             font-size: 12.5px;
             font-family: 'Inter', sans-serif;
         }
@@ -1752,8 +1753,8 @@ void Browser::onProfileClicked()
             border-radius: 6px;
         }
         QMenu::item:selected {
-            background: rgba(56, 189, 248, 0.16);
-            color: #38bdf8;
+            background: rgba(137, 180, 250, 0.16);
+            color: #89b4fa;
         }
         QMenu::separator {
             height: 1px;
@@ -1974,8 +1975,55 @@ void Browser::onLoadFinished(bool ok)
             }
             addHistoryRecord(v->title(), v->url());
         }
+    } else if (auto *v = currentView()) {
+        const QString scheme = v->url().scheme();
+        if (scheme == QLatin1String("http") || scheme == QLatin1String("https"))
+            showLoadError(v->url());
     }
     updateNavigationButtons();
+}
+
+void Browser::showLoadError(const QUrl &url)
+{
+    QWebEngineView *view = currentView();
+    if (!view)
+        return;
+
+    const QString failed = url.toString().toHtmlEscaped();
+    const QString html = QStringLiteral(
+        "<!doctype html><html><head><meta charset=\"utf-8\">"
+        "<style>"
+        "html,body{height:100%%;margin:0}"
+        "body{background:%1;color:%2;font-family:'Inter','Noto Sans',sans-serif;"
+        "display:flex;align-items:center;justify-content:center}"
+        ".card{max-width:420px;padding:40px;border-radius:20px;background:%3;"
+        "border:1px solid %4;text-align:center}"
+        ".badge{width:64px;height:64px;margin:0 auto 20px;border-radius:16px;"
+        "background:%5;border:1px solid %6;display:flex;align-items:center;"
+        "justify-content:center;font-size:28px;color:%6}"
+        "h1{font-size:18px;margin:0 0 8px;font-weight:600}"
+        "p{font-size:13px;color:%7;margin:0 0 6px}"
+        "code{font-size:11px;color:%7;word-break:break-all}"
+        "a{display:inline-block;margin-top:20px;padding:10px 20px;border-radius:12px;"
+        "background:%6;color:%8;text-decoration:none;font-weight:600;font-size:13px}"
+        "</style></head><body><div class=\"card\">"
+        "<div class=\"badge\">&#9888;</div>"
+        "<h1>This page couldn't be loaded</h1>"
+        "<p>Check your connection and try again.</p>"
+        "<code>%9</code>"
+        "<a href=\"%9\">Try again</a>"
+        "</div></body></html>")
+        .arg(TitanPalette::hex(TitanPalette::crust()),
+             TitanPalette::hex(TitanPalette::textHigh()),
+             TitanPalette::hex(TitanPalette::base()),
+             TitanPalette::hex(TitanPalette::border()),
+             TitanPalette::hex(TitanPalette::surface0()),
+             TitanPalette::hex(TitanPalette::danger()),
+             TitanPalette::hex(TitanPalette::textLow()),
+             TitanPalette::hex(TitanPalette::crust()),
+             failed);
+
+    view->setHtml(html, url);
 }
 
 void Browser::onTitleChanged(const QString &title)

@@ -107,6 +107,7 @@ private:
     void loadPersistentUserData();
     void savePersistentUserData();
     QWebEngineView *currentView() const;
+    void showLoadError(const QUrl &url);
 
     // Main top chrome container (auto-hides on startpage)
     QWidget        *m_topChrome        = nullptr;
