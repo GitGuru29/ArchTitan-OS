@@ -1,5 +1,6 @@
 #include "gui.h"
 #include "sysinfo.h"
+#include "TitanPalette.h"
 
 #include <QApplication>
 #include <QClipboard>
@@ -26,22 +27,25 @@
 #include <algorithm>
 
 // ── Color palette ─────────────────────────────────────────────────────────────
+static inline QString hx(const QColor &c) { return TitanPalette::hex(c); }
+static inline QString hxa(const QColor &c, double a) { return TitanPalette::hexa(TitanPalette::alpha(c, a)); }
+
 namespace C {
-    static const QColor bg          {0x0b, 0x0d, 0x14, 0xf6};
-    static const QColor card        {0x12, 0x14, 0x22};
-    static const QColor border      {0x24, 0x27, 0x3d};
-    static const QColor text        {0xcd, 0xd6, 0xf4};
-    static const QColor textSub     {0xa6, 0xad, 0xc8};
-    static const QColor muted       {0x58, 0x5b, 0x70};
-    static const QColor cyan        {0x89, 0xdc, 0xeb};
-    static const QColor blue        {0x89, 0xb4, 0xfa};
-    static const QColor green       {0xa6, 0xe3, 0xa1};
-    static const QColor yellow      {0xf9, 0xe2, 0xaf};
-    static const QColor red         {0xf3, 0x8b, 0xa8};
-    static const QColor purple      {0xcb, 0xa6, 0xf7};
-    static const QColor peach       {0xfa, 0xb3, 0x87};
-    static const QColor sapphire    {0x74, 0xc7, 0xec};
-    static const QColor teal        {0x94, 0xe2, 0xd5};
+    static const QColor bg          = TitanPalette::alpha(TitanPalette::crust(), 0.96);
+    static const QColor card        = TitanPalette::mantle();
+    static const QColor border      = TitanPalette::border();
+    static const QColor text        = TitanPalette::textHigh();
+    static const QColor textSub     = TitanPalette::textMid();
+    static const QColor muted       = TitanPalette::surface2();
+    static const QColor cyan        = TitanPalette::teal();
+    static const QColor blue        = TitanPalette::accent();
+    static const QColor green       = TitanPalette::success();
+    static const QColor yellow      = TitanPalette::warning();
+    static const QColor red         = TitanPalette::danger();
+    static const QColor purple      = TitanPalette::mauve();
+    static const QColor peach       = TitanPalette::peach();
+    static const QColor sapphire    = TitanPalette::info();
+    static const QColor teal        = TitanPalette::teal();
 }
 
 // ── Low-level sysfs/procfs reader ─────────────────────────────────────────────
@@ -124,12 +128,15 @@ Gui::Gui(QWidget *parent) : QWidget(parent)
     root->setStyleSheet(
         QStringLiteral(
             "QWidget#root {"
-            " background: rgba(12, 14, 22, 0.95);"
+            " background: %1;"
             " border-radius: 18px;"
-            " border: 1px solid rgba(137, 180, 250, 0.3);"
+            " border: 1px solid %2;"
             "}"
-            "QLabel { font-family: %1; color: #cdd6f4; }"
-        ).arg(monoFont)
+            "QLabel { font-family: %3; color: %4; }"
+        ).arg(hxa(TitanPalette::crust(), 0.95),
+              hxa(TitanPalette::accent(), 0.3),
+              monoFont,
+              hx(TitanPalette::textHigh()))
     );
 
     auto *rootLayout = new QVBoxLayout(root);
@@ -145,11 +152,12 @@ Gui::Gui(QWidget *parent) : QWidget(parent)
     header->setStyleSheet(
         QStringLiteral(
             "QWidget#header {"
-            " background: rgba(18, 20, 34, 0.85);"
+            " background: %1;"
             " border-top-left-radius: 18px; border-top-right-radius: 18px;"
-            " border-bottom: 1px solid #24273d;"
+            " border-bottom: 1px solid %2;"
             "}"
-        )
+        ).arg(hxa(TitanPalette::mantle(), 0.85),
+              hx(TitanPalette::border()))
     );
 
     auto *hdrLayout = new QHBoxLayout(header);
@@ -160,7 +168,9 @@ Gui::Gui(QWidget *parent) : QWidget(parent)
     auto *logoBadge = new QLabel(header);
     logoBadge->setFixedSize(48, 48);
     {
-        QPixmap px(QStringLiteral("/home/msfvenom/custom-os-build/assets/logo.png"));
+        QPixmap px(QStringLiteral(":/assets/logo.png"));
+        if (px.isNull())
+            px.load(QStringLiteral("/usr/share/pixmaps/archtitan-reticle-logo.png"));
         if (!px.isNull())
             logoBadge->setPixmap(px.scaled(48, 48, Qt::KeepAspectRatio, Qt::SmoothTransformation));
         else
@@ -180,15 +190,17 @@ Gui::Gui(QWidget *parent) : QWidget(parent)
     titleLbl->setTextFormat(Qt::RichText);
     titleLbl->setText(
         QStringLiteral(
-            "<span style='color:#cdd6f4; font-size:21px; font-weight:bold;'>TITAN</span>"
-            "<span style='color:#89dceb; font-size:21px; font-weight:bold;'>FETCH</span>"
-            "<span style='color:#585b70; font-size:11px; margin-left:8px; font-weight:bold;'> SYSTEM HUD</span>"
-        )
+            "<span style='color:%1; font-size:21px; font-weight:bold;'>TITAN</span>"
+            "<span style='color:%2; font-size:21px; font-weight:bold;'>FETCH</span>"
+            "<span style='color:%3; font-size:11px; margin-left:8px; font-weight:bold;'> SYSTEM HUD</span>"
+        ).arg(hx(TitanPalette::textHigh()),
+              hx(TitanPalette::teal()),
+              hx(TitanPalette::surface2()))
     );
     titleVL->addWidget(titleLbl);
 
     auto *userHostLbl = new QLabel(QStringLiteral("%1@%2").arg(d.user, d.host), titleW);
-    userHostLbl->setStyleSheet(QStringLiteral("color: #a6adc8; font-size: 12px; font-weight: 500;"));
+    userHostLbl->setStyleSheet(QStringLiteral("color: %1; font-size: 12px; font-weight: 500;").arg(hx(TitanPalette::textMid())));
     titleVL->addWidget(userHostLbl);
 
     hdrLayout->addWidget(titleW, 1, Qt::AlignVCenter);
@@ -198,14 +210,16 @@ Gui::Gui(QWidget *parent) : QWidget(parent)
     m_thmBadge->setFixedHeight(32);
     m_thmBadge->setStyleSheet(
         QStringLiteral(
-            "background: rgba(137, 220, 235, 0.12);"
-            "color: #89dceb;"
-            "border: 1px solid rgba(137, 220, 235, 0.35);"
+            "background: %1;"
+            "color: %2;"
+            "border: 1px solid %3;"
             "border-radius: 16px;"
             "padding: 0 16px;"
             "font-size: 11px;"
             "font-weight: bold;"
-        )
+        ).arg(hxa(TitanPalette::teal(), 0.12),
+              hx(TitanPalette::teal()),
+              hxa(TitanPalette::teal(), 0.35))
     );
     m_thmBadge->setText(QStringLiteral("● THM: ACTIVE"));
     hdrLayout->addWidget(m_thmBadge, 0, Qt::AlignVCenter);
@@ -216,9 +230,12 @@ Gui::Gui(QWidget *parent) : QWidget(parent)
     btnMin->setCursor(Qt::PointingHandCursor);
     btnMin->setStyleSheet(
         QStringLiteral(
-            "QPushButton { background: #1a1c2e; color: #a6adc8; border-radius: 16px; border: 1px solid #292c45; font-size: 16px; }"
-            "QPushButton:hover { background: #292c45; color: #cdd6f4; }"
-        )
+            "QPushButton { background: %1; color: %2; border-radius: 16px; border: 1px solid %3; font-size: 16px; }"
+            "QPushButton:hover { background: %3; color: %4; }"
+        ).arg(hx(TitanPalette::base()),
+              hx(TitanPalette::textMid()),
+              hx(TitanPalette::surface0()),
+              hx(TitanPalette::textHigh()))
     );
     connect(btnMin, &QPushButton::clicked, this, &QWidget::showMinimized);
     hdrLayout->addWidget(btnMin, 0, Qt::AlignVCenter);
@@ -228,9 +245,12 @@ Gui::Gui(QWidget *parent) : QWidget(parent)
     btnClose->setCursor(Qt::PointingHandCursor);
     btnClose->setStyleSheet(
         QStringLiteral(
-            "QPushButton { background: rgba(243, 139, 168, 0.15); color: #f38ba8; border-radius: 16px; border: 1px solid rgba(243, 139, 168, 0.35); font-size: 18px; font-weight: bold; }"
-            "QPushButton:hover { background: #f38ba8; color: #11111b; }"
-        )
+            "QPushButton { background: %1; color: %2; border-radius: 16px; border: 1px solid %3; font-size: 18px; font-weight: bold; }"
+            "QPushButton:hover { background: %2; color: %4; }"
+        ).arg(hxa(TitanPalette::danger(), 0.15),
+              hx(TitanPalette::danger()),
+              hxa(TitanPalette::danger(), 0.35),
+              hx(TitanPalette::crust()))
     );
     connect(btnClose, &QPushButton::clicked, this, &QWidget::close);
     hdrLayout->addWidget(btnClose, 0, Qt::AlignVCenter);
@@ -259,7 +279,7 @@ Gui::Gui(QWidget *parent) : QWidget(parent)
     // System Overview Card
     auto *sysCard = new QWidget(leftCol);
     sysCard->setStyleSheet(
-        QStringLiteral("QWidget { background: #121422; border-radius: 14px; border: 1px solid #24273d; }")
+        QStringLiteral("QWidget { background: %1; border-radius: 14px; border: 1px solid %2; }").arg(hx(TitanPalette::mantle()), hx(TitanPalette::border()))
     );
     auto *sysVL = new QVBoxLayout(sysCard);
     sysVL->setContentsMargins(18, 16, 18, 16);
@@ -267,7 +287,7 @@ Gui::Gui(QWidget *parent) : QWidget(parent)
 
     auto *sysHdr = new QLabel(QStringLiteral("SYSTEM SPECIFICATIONS"), sysCard);
     sysHdr->setStyleSheet(
-        QStringLiteral("color: #89b4fa; font-size: 11px; font-weight: bold; letter-spacing: 1.5px; border: none;")
+        QStringLiteral("color: %1; font-size: 11px; font-weight: bold; letter-spacing: 1.5px; border: none;").arg(hx(TitanPalette::accent()))
     );
     sysVL->addWidget(sysHdr);
 
@@ -280,11 +300,11 @@ Gui::Gui(QWidget *parent) : QWidget(parent)
 
         auto *lbl = new QLabel(QStringLiteral("%1 %2").arg(icon, label), row);
         lbl->setFixedWidth(120);
-        lbl->setStyleSheet(QStringLiteral("color: #585b70; font-size: 12px; border: none;"));
+        lbl->setStyleSheet(QStringLiteral("color: %1; font-size: 12px; border: none;").arg(hx(TitanPalette::surface2())));
         hl->addWidget(lbl);
 
         auto *valLbl = new QLabel(val, row);
-        valLbl->setStyleSheet(QStringLiteral("color: #cdd6f4; font-size: 12px; font-weight: 500; border: none;"));
+        valLbl->setStyleSheet(QStringLiteral("color: %1; font-size: 12px; font-weight: 500; border: none;").arg(hx(TitanPalette::textHigh())));
         valLbl->setTextInteractionFlags(Qt::TextSelectableByMouse);
         hl->addWidget(valLbl, 1);
 
@@ -312,10 +332,10 @@ Gui::Gui(QWidget *parent) : QWidget(parent)
     uptHL->setSpacing(8);
     auto *uptName = new QLabel(QStringLiteral("󱑂 Uptime"), uptRow);
     uptName->setFixedWidth(120);
-    uptName->setStyleSheet(QStringLiteral("color: #585b70; font-size: 12px; border: none;"));
+    uptName->setStyleSheet(QStringLiteral("color: %1; font-size: 12px; border: none;").arg(hx(TitanPalette::surface2())));
     uptHL->addWidget(uptName);
     m_uptimeLbl = new QLabel(uptimeVal, uptRow);
-    m_uptimeLbl->setStyleSheet(QStringLiteral("color: #cdd6f4; font-size: 12px; font-weight: 500; border: none;"));
+    m_uptimeLbl->setStyleSheet(QStringLiteral("color: %1; font-size: 12px; font-weight: 500; border: none;").arg(hx(TitanPalette::textHigh())));
     uptHL->addWidget(m_uptimeLbl, 1);
     sysVL->addWidget(uptRow);
 
@@ -329,7 +349,7 @@ Gui::Gui(QWidget *parent) : QWidget(parent)
     // Toolchain Status Card
     auto *devCard = new QWidget(leftCol);
     devCard->setStyleSheet(
-        QStringLiteral("QWidget { background: #121422; border-radius: 14px; border: 1px solid #24273d; }")
+        QStringLiteral("QWidget { background: %1; border-radius: 14px; border: 1px solid %2; }").arg(hx(TitanPalette::mantle()), hx(TitanPalette::border()))
     );
     auto *devVL = new QVBoxLayout(devCard);
     devVL->setContentsMargins(18, 16, 18, 16);
@@ -337,7 +357,7 @@ Gui::Gui(QWidget *parent) : QWidget(parent)
 
     auto *devHdr = new QLabel(QStringLiteral("DEVELOPER TOOLCHAIN"), devCard);
     devHdr->setStyleSheet(
-        QStringLiteral("color: #cba6f7; font-size: 11px; font-weight: bold; letter-spacing: 1.5px; border: none;")
+        QStringLiteral("color: %1; font-size: 11px; font-weight: bold; letter-spacing: 1.5px; border: none;").arg(hx(TitanPalette::mauve()))
     );
     devVL->addWidget(devHdr);
 
@@ -372,8 +392,10 @@ Gui::Gui(QWidget *parent) : QWidget(parent)
         );
         badge->setStyleSheet(
             t.installed
-                ? QStringLiteral("color: #a6e3a1; font-size: 11px; background: rgba(166, 227, 161, 0.12); border: 1px solid rgba(166, 227, 161, 0.25); border-radius: 6px; padding: 5px 8px; font-weight: 500;")
-                : QStringLiteral("color: #585b70; font-size: 11px; background: rgba(88, 91, 112, 0.1); border: 1px solid rgba(88, 91, 112, 0.2); border-radius: 6px; padding: 5px 8px;")
+                ? QStringLiteral("color: %1; font-size: 11px; background: %2; border: 1px solid %3; border-radius: 6px; padding: 5px 8px; font-weight: 500;")
+                      .arg(hx(TitanPalette::success()), hxa(TitanPalette::success(), 0.12), hxa(TitanPalette::success(), 0.25))
+                : QStringLiteral("color: %1; font-size: 11px; background: %2; border: 1px solid %3; border-radius: 6px; padding: 5px 8px;")
+                      .arg(hx(TitanPalette::surface2()), hxa(TitanPalette::surface2(), 0.1), hxa(TitanPalette::surface2(), 0.2))
         );
         gridL->addWidget(badge, rowIdx, colIdx);
         colIdx++;
@@ -386,14 +408,14 @@ Gui::Gui(QWidget *parent) : QWidget(parent)
     auto *palCard = new QWidget(leftCol);
     palCard->setFixedHeight(50);
     palCard->setStyleSheet(
-        QStringLiteral("QWidget { background: #121422; border-radius: 14px; border: 1px solid #24273d; }")
+        QStringLiteral("QWidget { background: %1; border-radius: 14px; border: 1px solid %2; }").arg(hx(TitanPalette::mantle()), hx(TitanPalette::border()))
     );
     auto *palHL = new QHBoxLayout(palCard);
     palHL->setContentsMargins(18, 0, 18, 0);
     palHL->setSpacing(8);
 
     auto *palLbl = new QLabel(QStringLiteral("THEME ACCENTS"), palCard);
-    palLbl->setStyleSheet(QStringLiteral("color: #585b70; font-size: 10px; font-weight: bold; border: none;"));
+    palLbl->setStyleSheet(QStringLiteral("color: %1; font-size: 10px; font-weight: bold; border: none;").arg(hx(TitanPalette::surface2())));
     palHL->addWidget(palLbl);
     palHL->addStretch();
 
@@ -401,7 +423,7 @@ Gui::Gui(QWidget *parent) : QWidget(parent)
     for (const auto &c : colors) {
         auto *dot = new QLabel(palCard);
         dot->setFixedSize(16, 16);
-        dot->setStyleSheet(QStringLiteral("background: %1; border-radius: 8px; border: none;").arg(c.name()));
+        dot->setStyleSheet(QStringLiteral("background: %1; border-radius: 8px; border: none;").arg(hx(c)));
         palHL->addWidget(dot);
     }
     leftVL->addWidget(palCard);
@@ -420,7 +442,7 @@ Gui::Gui(QWidget *parent) : QWidget(parent)
     // Live CPU Telemetry & Core Matrix
     auto *cpuCard = new QWidget(rightCol);
     cpuCard->setStyleSheet(
-        QStringLiteral("QWidget { background: #121422; border-radius: 14px; border: 1px solid #24273d; }")
+        QStringLiteral("QWidget { background: %1; border-radius: 14px; border: 1px solid %2; }").arg(hx(TitanPalette::mantle()), hx(TitanPalette::border()))
     );
     auto *cpuVL = new QVBoxLayout(cpuCard);
     cpuVL->setContentsMargins(18, 16, 18, 16);
@@ -433,13 +455,13 @@ Gui::Gui(QWidget *parent) : QWidget(parent)
 
     auto *cpuHdr = new QLabel(QStringLiteral("CPU CORE MATRIX & LOAD"), cpuTopRow);
     cpuHdr->setStyleSheet(
-        QStringLiteral("color: #89dceb; font-size: 11px; font-weight: bold; letter-spacing: 1.5px; border: none;")
+        QStringLiteral("color: %1; font-size: 11px; font-weight: bold; letter-spacing: 1.5px; border: none;").arg(hx(TitanPalette::teal()))
     );
     cpuTopHL->addWidget(cpuHdr);
     cpuTopHL->addStretch();
 
     m_cpuTempLbl = new QLabel(QStringLiteral("TEMP: --°C"), cpuTopRow);
-    m_cpuTempLbl->setStyleSheet(QStringLiteral("color: #fab387; font-size: 11px; font-weight: bold; border: none;"));
+    m_cpuTempLbl->setStyleSheet(QStringLiteral("color: %1; font-size: 11px; font-weight: bold; border: none;").arg(hx(TitanPalette::peach())));
     cpuTopHL->addWidget(m_cpuTempLbl);
     cpuVL->addWidget(cpuTopRow);
 
@@ -448,7 +470,7 @@ Gui::Gui(QWidget *parent) : QWidget(parent)
         if (k == QLatin1String("CPU")) { cpuModelStr = v; break; }
     }
     m_cpuModelLbl = new QLabel(cpuModelStr.isEmpty() ? QStringLiteral("Processor") : cpuModelStr, cpuCard);
-    m_cpuModelLbl->setStyleSheet(QStringLiteral("color: #a6adc8; font-size: 12px; border: none;"));
+    m_cpuModelLbl->setStyleSheet(QStringLiteral("color: %1; font-size: 12px; border: none;").arg(hx(TitanPalette::textMid())));
     cpuVL->addWidget(m_cpuModelLbl);
 
     // Overall CPU Load
@@ -459,7 +481,7 @@ Gui::Gui(QWidget *parent) : QWidget(parent)
 
     m_cpuUsageLbl = new QLabel(QStringLiteral("0%"), overallW);
     m_cpuUsageLbl->setFixedWidth(42);
-    m_cpuUsageLbl->setStyleSheet(QStringLiteral("color: #89dceb; font-weight: bold; font-size: 12px; border: none;"));
+    m_cpuUsageLbl->setStyleSheet(QStringLiteral("color: %1; font-weight: bold; font-size: 12px; border: none;").arg(hx(TitanPalette::teal())));
     overallHL->addWidget(m_cpuUsageLbl);
 
     m_cpuOverallBar = new QProgressBar(overallW);
@@ -467,9 +489,11 @@ Gui::Gui(QWidget *parent) : QWidget(parent)
     m_cpuOverallBar->setTextVisible(false);
     m_cpuOverallBar->setStyleSheet(
         QStringLiteral(
-            "QProgressBar { background: #1a1c2e; border-radius: 4px; border: none; }"
-            "QProgressBar::chunk { background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #89b4fa, stop:1 #89dceb); border-radius: 4px; }"
-        )
+            "QProgressBar { background: %1; border-radius: 4px; border: none; }"
+            "QProgressBar::chunk { background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 %2, stop:1 %3); border-radius: 4px; }"
+        ).arg(hx(TitanPalette::base()),
+              hx(TitanPalette::accent()),
+              hx(TitanPalette::teal()))
     );
     m_cpuOverallBar->setRange(0, 100);
     m_cpuOverallBar->setValue(0);
@@ -495,7 +519,7 @@ Gui::Gui(QWidget *parent) : QWidget(parent)
 
         auto *cLbl = new QLabel(QStringLiteral("C%1").arg(i), cW);
         cLbl->setFixedWidth(22);
-        cLbl->setStyleSheet(QStringLiteral("color: #585b70; font-size: 10px; font-weight: bold; border: none;"));
+        cLbl->setStyleSheet(QStringLiteral("color: %1; font-size: 10px; font-weight: bold; border: none;").arg(hx(TitanPalette::surface2())));
         chl->addWidget(cLbl);
 
         chl->addWidget(m_coreBars[i], 1);
@@ -514,7 +538,7 @@ Gui::Gui(QWidget *parent) : QWidget(parent)
     // Memory & Swap Card
     auto *memCard = new QWidget(rightCol);
     memCard->setStyleSheet(
-        QStringLiteral("QWidget { background: #121422; border-radius: 14px; border: 1px solid #24273d; }")
+        QStringLiteral("QWidget { background: %1; border-radius: 14px; border: 1px solid %2; }").arg(hx(TitanPalette::mantle()), hx(TitanPalette::border()))
     );
     auto *memVL = new QVBoxLayout(memCard);
     memVL->setContentsMargins(18, 16, 18, 16);
@@ -522,7 +546,7 @@ Gui::Gui(QWidget *parent) : QWidget(parent)
 
     auto *memHdr = new QLabel(QStringLiteral("MEMORY & SWAP GAUGES"), memCard);
     memHdr->setStyleSheet(
-        QStringLiteral("color: #a6e3a1; font-size: 11px; font-weight: bold; letter-spacing: 1.5px; border: none;")
+        QStringLiteral("color: %1; font-size: 11px; font-weight: bold; letter-spacing: 1.5px; border: none;").arg(hx(TitanPalette::success()))
     );
     memVL->addWidget(memHdr);
 
@@ -534,11 +558,11 @@ Gui::Gui(QWidget *parent) : QWidget(parent)
 
     auto *memTitle = new QLabel(QStringLiteral("RAM"), memRow);
     memTitle->setFixedWidth(50);
-    memTitle->setStyleSheet(QStringLiteral("color: #a6adc8; font-size: 12px; font-weight: bold; border: none;"));
+    memTitle->setStyleSheet(QStringLiteral("color: %1; font-size: 12px; font-weight: bold; border: none;").arg(hx(TitanPalette::textMid())));
     memHL->addWidget(memTitle);
 
     m_memUsageLbl = new QLabel(QStringLiteral("%1 MiB / %2 MiB").arg(d.memUsedMiB).arg(d.memTotalMiB), memRow);
-    m_memUsageLbl->setStyleSheet(QStringLiteral("color: #cdd6f4; font-size: 11px; border: none;"));
+    m_memUsageLbl->setStyleSheet(QStringLiteral("color: %1; font-size: 11px; border: none;").arg(hx(TitanPalette::textHigh())));
     memHL->addWidget(m_memUsageLbl, 1, Qt::AlignRight);
     memVL->addWidget(memRow);
 
@@ -547,9 +571,11 @@ Gui::Gui(QWidget *parent) : QWidget(parent)
     m_memBar->setTextVisible(false);
     m_memBar->setStyleSheet(
         QStringLiteral(
-            "QProgressBar { background: #1a1c2e; border-radius: 4px; border: none; }"
-            "QProgressBar::chunk { background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #a6e3a1, stop:1 #89dceb); border-radius: 4px; }"
-        )
+            "QProgressBar { background: %1; border-radius: 4px; border: none; }"
+            "QProgressBar::chunk { background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 %2, stop:1 %3); border-radius: 4px; }"
+        ).arg(hx(TitanPalette::base()),
+              hx(TitanPalette::success()),
+              hx(TitanPalette::teal()))
     );
     m_memBar->setRange(0, 100);
     int memPct = (d.memTotalMiB > 0) ? static_cast<int>((d.memUsedMiB * 100) / d.memTotalMiB) : 0;
@@ -564,11 +590,11 @@ Gui::Gui(QWidget *parent) : QWidget(parent)
 
     auto *swapTitle = new QLabel(QStringLiteral("SWAP"), swapRow);
     swapTitle->setFixedWidth(50);
-    swapTitle->setStyleSheet(QStringLiteral("color: #a6adc8; font-size: 12px; font-weight: bold; border: none;"));
+    swapTitle->setStyleSheet(QStringLiteral("color: %1; font-size: 12px; font-weight: bold; border: none;").arg(hx(TitanPalette::textMid())));
     swapHL->addWidget(swapTitle);
 
     m_swapUsageLbl = new QLabel(QStringLiteral("0 MiB / 0 MiB"), swapRow);
-    m_swapUsageLbl->setStyleSheet(QStringLiteral("color: #cdd6f4; font-size: 11px; border: none;"));
+    m_swapUsageLbl->setStyleSheet(QStringLiteral("color: %1; font-size: 11px; border: none;").arg(hx(TitanPalette::textHigh())));
     swapHL->addWidget(m_swapUsageLbl, 1, Qt::AlignRight);
     memVL->addWidget(swapRow);
 
@@ -577,9 +603,10 @@ Gui::Gui(QWidget *parent) : QWidget(parent)
     m_swapBar->setTextVisible(false);
     m_swapBar->setStyleSheet(
         QStringLiteral(
-            "QProgressBar { background: #1a1c2e; border-radius: 4px; border: none; }"
-            "QProgressBar::chunk { background: #cba6f7; border-radius: 4px; }"
-        )
+            "QProgressBar { background: %1; border-radius: 4px; border: none; }"
+            "QProgressBar::chunk { background: %2; border-radius: 4px; }"
+        ).arg(hx(TitanPalette::base()),
+              hx(TitanPalette::mauve()))
     );
     m_swapBar->setRange(0, 100);
     m_swapBar->setValue(0);
@@ -590,7 +617,7 @@ Gui::Gui(QWidget *parent) : QWidget(parent)
     // Storage & Network
     auto *diskCard = new QWidget(rightCol);
     diskCard->setStyleSheet(
-        QStringLiteral("QWidget { background: #121422; border-radius: 14px; border: 1px solid #24273d; }")
+        QStringLiteral("QWidget { background: %1; border-radius: 14px; border: 1px solid %2; }").arg(hx(TitanPalette::mantle()), hx(TitanPalette::border()))
     );
     auto *diskVL = new QVBoxLayout(diskCard);
     diskVL->setContentsMargins(18, 12, 18, 12);
@@ -603,13 +630,13 @@ Gui::Gui(QWidget *parent) : QWidget(parent)
 
     auto *diskLbl = new QLabel(QStringLiteral("STORAGE (/) & NETWORK"), diskCard);
     diskLbl->setStyleSheet(
-        QStringLiteral("color: #fab387; font-size: 11px; font-weight: bold; letter-spacing: 1.5px; border: none;")
+        QStringLiteral("color: %1; font-size: 11px; font-weight: bold; letter-spacing: 1.5px; border: none;").arg(hx(TitanPalette::peach()))
     );
     diskHL->addWidget(diskLbl);
     diskHL->addStretch();
 
     m_diskUsageLbl = new QLabel(QStringLiteral("%1 GiB / %2 GiB").arg(d.diskUsedGiB).arg(d.diskTotalGiB), diskCard);
-    m_diskUsageLbl->setStyleSheet(QStringLiteral("color: #cdd6f4; font-size: 11px; border: none;"));
+    m_diskUsageLbl->setStyleSheet(QStringLiteral("color: %1; font-size: 11px; border: none;").arg(hx(TitanPalette::textHigh())));
     diskHL->addWidget(m_diskUsageLbl);
     diskVL->addWidget(diskHdrRow);
 
@@ -618,9 +645,10 @@ Gui::Gui(QWidget *parent) : QWidget(parent)
     m_diskBar->setTextVisible(false);
     m_diskBar->setStyleSheet(
         QStringLiteral(
-            "QProgressBar { background: #1a1c2e; border-radius: 3px; border: none; }"
-            "QProgressBar::chunk { background: #fab387; border-radius: 3px; }"
-        )
+            "QProgressBar { background: %1; border-radius: 3px; border: none; }"
+            "QProgressBar::chunk { background: %2; border-radius: 3px; }"
+        ).arg(hx(TitanPalette::base()),
+              hx(TitanPalette::peach()))
     );
     m_diskBar->setRange(0, 100);
     int diskPct = (d.diskTotalGiB > 0) ? static_cast<int>((d.diskUsedGiB * 100) / d.diskTotalGiB) : 0;
@@ -641,9 +669,12 @@ Gui::Gui(QWidget *parent) : QWidget(parent)
     btnSettings->setFixedHeight(38);
     btnSettings->setStyleSheet(
         QStringLiteral(
-            "QPushButton { background: #181a2e; color: #89b4fa; border: 1px solid rgba(137, 180, 250, 0.35); border-radius: 8px; font-weight: bold; font-size: 11px; }"
-            "QPushButton:hover { background: #89b4fa; color: #11111b; }"
-        )
+            "QPushButton { background: %1; color: %2; border: 1px solid %3; border-radius: 8px; font-weight: bold; font-size: 11px; }"
+            "QPushButton:hover { background: %2; color: %4; }"
+        ).arg(hx(TitanPalette::base()),
+              hx(TitanPalette::accent()),
+              hxa(TitanPalette::accent(), 0.35),
+              hx(TitanPalette::crust()))
     );
     connect(btnSettings, &QPushButton::clicked, this, []() {
         QProcess::startDetached(QStringLiteral("archtitan-settings"), QStringList());
@@ -655,9 +686,12 @@ Gui::Gui(QWidget *parent) : QWidget(parent)
     btnThm->setFixedHeight(38);
     btnThm->setStyleSheet(
         QStringLiteral(
-            "QPushButton { background: #181a2e; color: #89dceb; border: 1px solid rgba(137, 220, 235, 0.35); border-radius: 8px; font-weight: bold; font-size: 11px; }"
-            "QPushButton:hover { background: #89dceb; color: #11111b; }"
-        )
+            "QPushButton { background: %1; color: %2; border: 1px solid %3; border-radius: 8px; font-weight: bold; font-size: 11px; }"
+            "QPushButton:hover { background: %2; color: %4; }"
+        ).arg(hx(TitanPalette::base()),
+              hx(TitanPalette::teal()),
+              hxa(TitanPalette::teal(), 0.35),
+              hx(TitanPalette::crust()))
     );
     connect(btnThm, &QPushButton::clicked, this, []() {
         QProcess::startDetached(QStringLiteral("kitty"), QStringList() << QStringLiteral("titan-hwm") << QStringLiteral("metrics"));
@@ -669,9 +703,12 @@ Gui::Gui(QWidget *parent) : QWidget(parent)
     m_btnCopy->setFixedHeight(38);
     m_btnCopy->setStyleSheet(
         QStringLiteral(
-            "QPushButton { background: #181a2e; color: #a6e3a1; border: 1px solid rgba(166, 227, 161, 0.35); border-radius: 8px; font-weight: bold; font-size: 11px; }"
-            "QPushButton:hover { background: #a6e3a1; color: #11111b; }"
-        )
+            "QPushButton { background: %1; color: %2; border: 1px solid %3; border-radius: 8px; font-weight: bold; font-size: 11px; }"
+            "QPushButton:hover { background: %2; color: %4; }"
+        ).arg(hx(TitanPalette::base()),
+              hx(TitanPalette::success()),
+              hxa(TitanPalette::success(), 0.35),
+              hx(TitanPalette::crust()))
     );
     connect(m_btnCopy, &QPushButton::clicked, this, &Gui::copySysInfoToClipboard);
     actHL->addWidget(m_btnCopy);
@@ -707,9 +744,10 @@ void Gui::initLiveCpu()
         bar->setTextVisible(false);
         bar->setStyleSheet(
             QStringLiteral(
-                "QProgressBar { background: #1a1c2e; border-radius: 3px; border: none; }"
-                "QProgressBar::chunk { background: #89dceb; border-radius: 3px; }"
-            )
+                "QProgressBar { background: %1; border-radius: 3px; border: none; }"
+                "QProgressBar::chunk { background: %2; border-radius: 3px; }"
+            ).arg(hx(TitanPalette::base()),
+                  hx(TitanPalette::teal()))
         );
         bar->setRange(0, 100);
         bar->setValue(0);
@@ -717,7 +755,7 @@ void Gui::initLiveCpu()
 
         auto *pctLbl = new QLabel(QStringLiteral("0%"), this);
         pctLbl->setFixedWidth(28);
-        pctLbl->setStyleSheet(QStringLiteral("color: #a6adc8; font-size: 10px; border: none;"));
+        pctLbl->setStyleSheet(QStringLiteral("color: %1; font-size: 10px; border: none;").arg(hx(TitanPalette::textMid())));
         m_corePctLabels.push_back(pctLbl);
     }
 }
@@ -817,21 +855,23 @@ void Gui::updateThmStatus()
         const QString prof = st.toUpper();
         m_thmBadge->setText(QStringLiteral("● THM: %1").arg(prof));
 
+        const QString badgeFmt =
+            QStringLiteral("background: %1; color: %2; border: 1px solid %3; border-radius: 16px; padding: 0 16px; font-size: 11px; font-weight: bold;");
         if (prof.contains(QLatin1String("SYSTEM"))) {
             m_thmBadge->setStyleSheet(
-                QStringLiteral("background: rgba(203, 166, 247, 0.15); color: #cba6f7; border: 1px solid rgba(203, 166, 247, 0.35); border-radius: 16px; padding: 0 16px; font-size: 11px; font-weight: bold;")
+                badgeFmt.arg(hxa(TitanPalette::mauve(), 0.15), hx(TitanPalette::mauve()), hxa(TitanPalette::mauve(), 0.35))
             );
         } else if (prof.contains(QLatin1String("WEB"))) {
             m_thmBadge->setStyleSheet(
-                QStringLiteral("background: rgba(137, 220, 235, 0.15); color: #89dceb; border: 1px solid rgba(137, 220, 235, 0.35); border-radius: 16px; padding: 0 16px; font-size: 11px; font-weight: bold;")
+                badgeFmt.arg(hxa(TitanPalette::teal(), 0.15), hx(TitanPalette::teal()), hxa(TitanPalette::teal(), 0.35))
             );
         } else if (prof.contains(QLatin1String("ANDROID"))) {
             m_thmBadge->setStyleSheet(
-                QStringLiteral("background: rgba(166, 227, 161, 0.15); color: #a6e3a1; border: 1px solid rgba(166, 227, 161, 0.35); border-radius: 16px; padding: 0 16px; font-size: 11px; font-weight: bold;")
+                badgeFmt.arg(hxa(TitanPalette::success(), 0.15), hx(TitanPalette::success()), hxa(TitanPalette::success(), 0.35))
             );
         } else {
             m_thmBadge->setStyleSheet(
-                QStringLiteral("background: rgba(137, 180, 250, 0.15); color: #89b4fa; border: 1px solid rgba(137, 180, 250, 0.35); border-radius: 16px; padding: 0 16px; font-size: 11px; font-weight: bold;")
+                badgeFmt.arg(hxa(TitanPalette::accent(), 0.15), hx(TitanPalette::accent()), hxa(TitanPalette::accent(), 0.35))
             );
         }
     } else {
@@ -868,8 +908,8 @@ void Gui::paintEvent(QPaintEvent *)
 
     QPainterPath path;
     path.addRoundedRect(rect(), 18, 18);
-    p.setPen(QPen(QColor(0x89, 0xb4, 0xfa, 70), 1));
-    p.setBrush(QColor(0x0c, 0x0e, 0x16, 246));
+    p.setPen(QPen(TitanPalette::alpha(TitanPalette::accent(), 70.0 / 255.0), 1));
+    p.setBrush(TitanPalette::alpha(TitanPalette::crust(), 246.0 / 255.0));
     p.drawPath(path);
 }
 
