@@ -51,6 +51,8 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("bash -c 'sleep 3 && titan-media-hud'")
     hl.exec_cmd("titan-wallpaper-restore")
     hl.exec_cmd("bash -c 'sleep 3 && titan-quicksettings --daemon'")
+    hl.exec_cmd("titan-hotzones")
+    hl.exec_cmd("titan-zone-osd")
     hl.exec_cmd("/usr/lib/polkit-kde-authentication-agent-1")
     hl.exec_cmd("xdg-user-dirs-update")
 
@@ -143,6 +145,30 @@ hl.bind(mainMod .. " + ALT + S", hl.dsp.window.move({ workspace = "special:magic
 -- Mouse bindings
 hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true })
 hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
+
+-------------------
+---- GESTURES ----
+-------------------
+
+-- Touchpad gestures on Hyprland's native engine (no third-party plugin).
+-- 3-finger horizontal -> workspace prev/next (native 1:1 slide animation).
+hl.gesture({ fingers = 3, direction = "horizontal", action = "workspace" })
+
+-- 3-finger down -> close the active window.
+hl.gesture({ fingers = 3, direction = "down", action = "close" })
+
+-- 3-finger up -> overview/search. Hyprland has no native Expo without a
+-- plugin, so this reuses the same search UI as Super+Tab.
+hl.gesture({ fingers = 3, direction = "up", action = function()
+    hl.exec_cmd(sandboxed .. " " .. menu)
+end })
+
+-- 4-finger up -> toggle the scratchpad.
+hl.gesture({ fingers = 4, direction = "up", action = "special", workspace_name = "magic" })
+
+-- 4-finger down -> show desktop. Hyprland has no native minimise-all, so this
+-- toggles a dedicated "showdesktop" special workspace.
+hl.gesture({ fingers = 4, direction = "down", action = "special", workspace_name = "showdesktop" })
 
 -----------------------
 ---- LOOK AND FEEL ----
@@ -290,9 +316,25 @@ hl.window_rule({
     opacity = "1.0",
 })
 
+-------------------
+---- LAYER RULES ----
+-------------------
+
+-- Frosted-glass surfaces. (On Hyprland >= 0.55 these live here, not in
+-- hyprland.conf -- the .lua file supersedes .conf entirely.)
+hl.layer_rule({ match = { namespace = "^waybar$" }, blur = true, ignore_alpha = 0 })
+hl.layer_rule({ match = { namespace = "^rofi$" }, blur = true, ignore_alpha = 0 })
+hl.layer_rule({ match = { namespace = "^swaync-control-center$" }, blur = true, ignore_alpha = 0 })
+hl.layer_rule({ match = { namespace = "^swaync-notification-window$" }, blur = true, ignore_alpha = 0 })
+hl.layer_rule({ match = { namespace = "^titan-quicksettings$" }, blur = true, ignore_alpha = 0.5 })
+hl.layer_rule({ match = { namespace = "^titan-quicksettings-blur$" }, blur = true, ignore_alpha = 0.5 })
+
+-- Hot-zone / gesture OSD overlay. Full-screen and input-transparent; opacity is
+-- animated inside the surface, so suppress the compositor's map/unmap fade.
+hl.layer_rule({ name = "titan-zone-osd", match = { namespace = "^titan-zone-osd$" }, no_anim = true })
+
 -- ArchTitan Media Island -- SUPER+M toggle (uses LayerShellQt, no window rules needed)
 hl.bind(mainMod .. " + M", hl.dsp.exec_cmd("titan-bar-media"))  -- Jump Waybar center viewport to Media page
-
 -- Media keys (XF86)
 hl.bind("XF86AudioPlay",         hl.dsp.exec_cmd("playerctl play-pause"))
 hl.bind("XF86AudioNext",         hl.dsp.exec_cmd("playerctl next"))
