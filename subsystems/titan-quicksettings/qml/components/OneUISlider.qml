@@ -43,7 +43,7 @@ RowLayout {
         Text {
             anchors.centerIn: parent
             text: sliderRoot.iconGlyph
-            font.family: TitanTheme.fontFamily
+            font.family: TitanTheme.monoFamily
             font.pixelSize: 14
             color: sliderRoot.muted ? TitanTheme.textSubtle : TitanTheme.textPrimary
         }
@@ -80,8 +80,8 @@ RowLayout {
 
             gradient: Gradient {
                 orientation: Gradient.Horizontal
-                GradientStop { position: 0.0; color: sliderRoot.muted ? TitanTheme.textSubtle : "#3B82F6" }
-                GradientStop { position: 1.0; color: sliderRoot.muted ? TitanTheme.textSubtle : "#6366F1" }
+                GradientStop { position: 0.0; color: sliderRoot.muted ? TitanTheme.textSubtle : TitanTheme.accent }
+                GradientStop { position: 1.0; color: sliderRoot.muted ? TitanTheme.textSubtle : TitanTheme.lavender }
             }
 
             Behavior on width {

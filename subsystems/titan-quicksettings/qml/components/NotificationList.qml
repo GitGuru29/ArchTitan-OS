@@ -85,10 +85,10 @@ ColumnLayout {
                 radius: 12
                 clip: true
                 gradient: Gradient {
-                    GradientStop { position: 0.0; color: "#8B5CF6" }
-                    GradientStop { position: 1.0; color: "#6366F1" }
+                    GradientStop { position: 0.0; color: TitanTheme.lavender }
+                    GradientStop { position: 1.0; color: TitanTheme.accent }
                 }
-                border.color: "#A78BFA"
+                border.color: TitanTheme.lavender
                 border.width: 1
 
                 // Glass specular shine on album medallion
@@ -99,7 +99,7 @@ ColumnLayout {
                     height: parent.height * 0.48
                     radius: parent.radius
                     gradient: Gradient {
-                        GradientStop { position: 0.0; color: "#45FFFFFF" }
+                        GradientStop { position: 0.0; color: Qt.rgba(1, 1, 1, 0.27) }
                         GradientStop { position: 1.0; color: "transparent" }
                     }
                 }
@@ -107,9 +107,9 @@ ColumnLayout {
                 Text {
                     anchors.centerIn: parent
                     text: "\uf001" // music glyph
-                    font.family: TitanTheme.fontFamily
+                    font.family: TitanTheme.monoFamily
                     font.pixelSize: 16
-                    color: "#FFFFFF"
+                    color: TitanTheme.accentText
                 }
             }
 
@@ -152,7 +152,7 @@ ColumnLayout {
                     Text {
                         anchors.centerIn: parent
                         text: "\uf04c" // pause
-                        font.family: TitanTheme.fontFamily
+                        font.family: TitanTheme.monoFamily
                         font.pixelSize: 13
                         color: TitanTheme.textPrimary
                     }
@@ -181,7 +181,7 @@ ColumnLayout {
                     Text {
                         anchors.centerIn: parent
                         text: "\uf051" // next
-                        font.family: TitanTheme.fontFamily
+                        font.family: TitanTheme.monoFamily
                         font.pixelSize: 13
                         color: TitanTheme.textPrimary
                     }
@@ -266,7 +266,7 @@ ColumnLayout {
                     Text {
                         text: "\uf0f3" // bell
                         Layout.alignment: Qt.AlignHCenter
-                        font.family: TitanTheme.fontFamily
+                        font.family: TitanTheme.monoFamily
                         font.pixelSize: 24
                         color: TitanTheme.textSubtle
                     }

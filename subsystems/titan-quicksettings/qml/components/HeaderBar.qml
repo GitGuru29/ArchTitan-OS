@@ -117,7 +117,7 @@ RowLayout {
             Text {
                 anchors.centerIn: parent
                 text: "\uf0f3" // bell
-                font.family: TitanTheme.fontFamily
+                font.family: TitanTheme.monoFamily
                 font.pixelSize: 14
                 color: headerRoot.showNotificationPanel ? "#FFFFFF" : TitanTheme.textPrimary
             }
@@ -174,7 +174,7 @@ RowLayout {
             Text {
                 anchors.centerIn: parent
                 text: headerRoot.editMode ? "\uf00c" : "\uf044" // checkmark when in edit mode, pencil normally
-                font.family: TitanTheme.fontFamily
+                font.family: TitanTheme.monoFamily
                 font.pixelSize: 14
                 color: headerRoot.editMode ? "#FFFFFF" : TitanTheme.textPrimary
             }
@@ -205,7 +205,7 @@ RowLayout {
             Text {
                 anchors.centerIn: parent
                 text: "\uf013" // gear
-                font.family: TitanTheme.fontFamily
+                font.family: TitanTheme.monoFamily
                 font.pixelSize: 14
                 color: TitanTheme.textPrimary
             }
@@ -232,18 +232,18 @@ RowLayout {
             Behavior on scale { NumberAnimation { duration: 130; easing.type: Easing.OutBack; easing.overshoot: 1.25 } }
             color: headerRoot.showPowerMenu
                    ? TitanTheme.red
-                   : (pwrMa.containsMouse ? Qt.rgba(0.94, 0.27, 0.27, 0.22) : TitanTheme.bgOneUIPill)
+                   : (pwrMa.containsMouse ? Qt.rgba(TitanTheme.red.r, TitanTheme.red.g, TitanTheme.red.b, 0.22) : TitanTheme.bgOneUIPill)
             border.color: headerRoot.showPowerMenu
                           ? TitanTheme.red
-                          : (pwrMa.containsMouse ? Qt.rgba(0.94, 0.27, 0.27, 0.5) : TitanTheme.borderGlass)
+                          : (pwrMa.containsMouse ? Qt.rgba(TitanTheme.red.r, TitanTheme.red.g, TitanTheme.red.b, 0.5) : TitanTheme.borderGlass)
             border.width: 1
 
             Text {
                 anchors.centerIn: parent
                 text: "\uf011" // power-off glyph
-                font.family: TitanTheme.fontFamily
+                font.family: TitanTheme.monoFamily
                 font.pixelSize: 14
-                color: headerRoot.showPowerMenu ? "#FFFFFF" : (pwrMa.containsMouse ? TitanTheme.red : TitanTheme.textPrimary)
+                color: headerRoot.showPowerMenu ? TitanTheme.accentText : (pwrMa.containsMouse ? TitanTheme.red : TitanTheme.textPrimary)
             }
 
             MouseArea {

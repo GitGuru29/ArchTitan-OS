@@ -16,7 +16,7 @@ Text {
 
     text: source
     color: iconRoot.tint
-    font.family: TitanTheme.fontFamily
+    font.family: TitanTheme.monoFamily
     font.pixelSize: glyphSize
     horizontalAlignment: Text.AlignHCenter
     verticalAlignment: Text.AlignVCenter

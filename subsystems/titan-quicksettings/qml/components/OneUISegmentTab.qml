@@ -43,7 +43,7 @@ Rectangle {
 
                     Text {
                         text: "\uf013" // cogs / sliders
-                        font.family: TitanTheme.fontFamily
+                        font.family: TitanTheme.monoFamily
                         font.pixelSize: 13
                         color: tabRoot.currentIndex === 0 ? "#FFFFFF" : TitanTheme.textSubtle
                     }
@@ -87,7 +87,7 @@ Rectangle {
 
                     Text {
                         text: "\uf0f3" // bell
-                        font.family: TitanTheme.fontFamily
+                        font.family: TitanTheme.monoFamily
                         font.pixelSize: 13
                         color: tabRoot.currentIndex === 1 ? "#FFFFFF" : TitanTheme.textSubtle
                     }

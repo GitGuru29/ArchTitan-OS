@@ -64,7 +64,7 @@ ColumnLayout {
                 Text {
                     anchors.centerIn: parent
                     text: "\uf0e2" // undo / reset
-                    font.family: TitanTheme.fontFamily
+                    font.family: TitanTheme.monoFamily
                     font.pixelSize: 12
                     color: TitanTheme.textMuted
                 }
@@ -86,7 +86,7 @@ ColumnLayout {
                 implicitWidth: doneLabel.implicitWidth + 24
                 height: 32
                 radius: 16
-                color: doneMa.pressed ? "#1E5FCC" : (doneMa.containsMouse ? "#3B82F6" : TitanTheme.accentBlue)
+                color: doneMa.pressed ? Qt.darker(TitanTheme.accent, 1.2) : (doneMa.containsMouse ? Qt.lighter(TitanTheme.accent, 1.1) : TitanTheme.accentBlue)
                 border.color: TitanTheme.borderActive
                 border.width: 1
                 scale: doneMa.pressed ? 0.95 : 1.0
@@ -98,9 +98,9 @@ ColumnLayout {
 
                     Text {
                         text: "\uf00c" // checkmark
-                        font.family: TitanTheme.fontFamily
+                        font.family: TitanTheme.monoFamily
                         font.pixelSize: 12
-                        color: "#FFFFFF"
+                        color: TitanTheme.accentText
                     }
 
                     Text {
@@ -109,7 +109,7 @@ ColumnLayout {
                         font.family: TitanTheme.fontFamily
                         font.pixelSize: 12
                         font.weight: Font.Bold
-                        color: "#FFFFFF"
+                        color: TitanTheme.accentText
                     }
                 }
 
@@ -189,7 +189,7 @@ ColumnLayout {
                             Text {
                                 anchors.centerIn: parent
                                 text: modelData.icon
-                                font.family: TitanTheme.fontFamily
+                                font.family: TitanTheme.monoFamily
                                 font.pixelSize: 13
                                 color: isTileActive ? TitanTheme.textPrimary : TitanTheme.textSubtle
                             }
@@ -314,7 +314,7 @@ ColumnLayout {
                             Text {
                                 anchors.centerIn: parent
                                 text: modelData.icon
-                                font.family: TitanTheme.fontFamily
+                                font.family: TitanTheme.monoFamily
                                 font.pixelSize: 13
                                 color: isTileActive ? TitanTheme.textPrimary : TitanTheme.textSubtle
                             }

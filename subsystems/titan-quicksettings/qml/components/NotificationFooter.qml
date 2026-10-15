@@ -35,7 +35,7 @@ RowLayout {
 
             Text {
                 text: footerRoot.dndActive ? "\uf1f6" : "\uf0f3"
-                font.family: TitanTheme.fontFamily
+                font.family: TitanTheme.monoFamily
                 font.pixelSize: 12
                 color: footerRoot.dndActive ? "#FFFFFF" : TitanTheme.textSubtle
             }
@@ -78,7 +78,7 @@ RowLayout {
 
             Text {
                 text: "\uf1f8" // trash
-                font.family: TitanTheme.fontFamily
+                font.family: TitanTheme.monoFamily
                 font.pixelSize: 11
                 color: clearMa.containsMouse ? TitanTheme.red : TitanTheme.textSubtle
             }
