@@ -12,7 +12,7 @@ struct UserProfile
 {
     QString   id;
     QString   name;
-    QString   avatarColor; // e.g. "#38bdf8", "#22c55e", "#ef4444", "#a78bfa", "#f59e0b"
+    QString   avatarColor; // e.g. "#89b4fa", "#a6e3a1", "#f38ba8", "#cba6f7", "#f9e2af"
     QString   avatarIcon;  // e.g. "user", "briefcase", "code", "gamepad", "globe"
     QString   email;       // e.g. "user@gmail.com" (optional)
     bool      isDefault = false;

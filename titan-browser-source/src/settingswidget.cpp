@@ -18,18 +18,18 @@ void SettingsWidget::setupUi()
 {
     setStyleSheet(QStringLiteral(R"(
         QWidget#SettingsWidget {
-            background-color: #060812;
-            color: #f8fafc;
+            background-color: #11111b;
+            color: #cdd6f4;
             font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
         QListWidget {
-            background: #04060d;
+            background: #11111b;
             border-right: 1px solid rgba(255, 255, 255, 0.07);
             border-top: none;
             border-bottom: none;
             border-left: none;
             padding: 18px 8px;
-            color: #94a3b8;
+            color: #a6adc8;
             font-size: 13px;
             font-weight: 500;
         }
@@ -40,11 +40,11 @@ void SettingsWidget::setupUi()
         }
         QListWidget::item:hover {
             background: rgba(255, 255, 255, 0.04);
-            color: #ffffff;
+            color: #cdd6f4;
         }
         QListWidget::item:selected {
-            background: rgba(56, 189, 248, 0.15);
-            color: #38bdf8;
+            background: rgba(137, 180, 250, 0.15);
+            color: #89b4fa;
             font-weight: 600;
         }
         QScrollArea {
@@ -52,26 +52,26 @@ void SettingsWidget::setupUi()
             border: none;
         }
         QComboBox {
-            background: #0d1528;
+            background: #181825;
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 6px;
-            color: #f8fafc;
+            color: #cdd6f4;
             padding: 6px 12px;
             font-size: 12.5px;
             min-width: 220px;
         }
-        QComboBox:focus { border-color: #38bdf8; }
+        QComboBox:focus { border-color: #89b4fa; }
         QComboBox QAbstractItemView {
-            background: #090e1c;
-            color: #f8fafc;
-            selection-background-color: rgba(56, 189, 248, 0.2);
-            border: 1px solid rgba(56, 189, 248, 0.3);
+            background: #11111b;
+            color: #cdd6f4;
+            selection-background-color: rgba(137, 180, 250, 0.2);
+            border: 1px solid rgba(137, 180, 250, 0.3);
             padding: 4px;
         }
         QCheckBox {
             spacing: 8px;
             font-size: 13px;
-            color: #f8fafc;
+            color: #cdd6f4;
         }
         QCheckBox::indicator {
             width: 38px;
@@ -80,34 +80,34 @@ void SettingsWidget::setupUi()
             background: rgba(255, 255, 255, 0.12);
         }
         QCheckBox::indicator:checked {
-            background: #38bdf8;
+            background: #89b4fa;
         }
         QPushButton.ActionBtn {
             background: rgba(255, 255, 255, 0.08);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 6px;
-            color: #ffffff;
+            color: #cdd6f4;
             font-size: 12px;
             font-weight: 600;
             padding: 6px 14px;
         }
         QPushButton.ActionBtn:hover {
-            background: rgba(56, 189, 248, 0.18);
-            border-color: #38bdf8;
-            color: #38bdf8;
+            background: rgba(137, 180, 250, 0.18);
+            border-color: #89b4fa;
+            color: #89b4fa;
         }
         QPushButton.DangerBtn {
-            background: rgba(239, 68, 68, 0.15);
-            border: 1px solid rgba(239, 68, 68, 0.3);
+            background: rgba(243, 139, 168, 0.15);
+            border: 1px solid rgba(243, 139, 168, 0.3);
             border-radius: 6px;
-            color: #ef4444;
+            color: #f38ba8;
             font-size: 12px;
             font-weight: 600;
             padding: 6px 14px;
         }
         QPushButton.DangerBtn:hover {
-            background: #ef4444;
-            color: #ffffff;
+            background: #f38ba8;
+            color: #cdd6f4;
         }
     )"));
 
@@ -165,11 +165,11 @@ static QWidget *createPageContainer(const QString &title, const QString &sub, QV
     layout->setAlignment(Qt::AlignTop);
 
     auto *titleLabel = new QLabel(title, widget);
-    titleLabel->setStyleSheet(QStringLiteral("font-size: 22px; font-weight: 700; color: #ffffff;"));
+    titleLabel->setStyleSheet(QStringLiteral("font-size: 22px; font-weight: 700; color: #cdd6f4;"));
     layout->addWidget(titleLabel);
 
     auto *subLabel = new QLabel(sub, widget);
-    subLabel->setStyleSheet(QStringLiteral("font-size: 13px; color: #64748b; margin-top: -18px; margin-bottom: 8px;"));
+    subLabel->setStyleSheet(QStringLiteral("font-size: 13px; color: #7f849c; margin-top: -18px; margin-bottom: 8px;"));
     layout->addWidget(subLabel);
 
     contentOut = layout;
@@ -182,7 +182,7 @@ static QWidget *createSettingsCard()
     auto *card = new QWidget();
     card->setStyleSheet(QStringLiteral(R"(
         QWidget {
-            background: #0a0f1d;
+            background: #11111b;
             border: 1px solid rgba(255, 255, 255, 0.07);
             border-radius: 10px;
         }
@@ -205,12 +205,12 @@ static void addSettingRow(QVBoxLayout *cardLayout, const QString &label, const Q
     vLayout->setSpacing(2);
 
     auto *lLabel = new QLabel(label, infoBox);
-    lLabel->setStyleSheet(QStringLiteral("font-size: 13.5px; font-weight: 600; color: #ffffff;"));
+    lLabel->setStyleSheet(QStringLiteral("font-size: 13.5px; font-weight: 600; color: #cdd6f4;"));
     vLayout->addWidget(lLabel);
 
     if (!desc.isEmpty()) {
         auto *dLabel = new QLabel(desc, infoBox);
-        dLabel->setStyleSheet(QStringLiteral("font-size: 11.5px; color: #64748b;"));
+        dLabel->setStyleSheet(QStringLiteral("font-size: 11.5px; color: #7f849c;"));
         vLayout->addWidget(dLabel);
     }
 
@@ -271,7 +271,7 @@ QWidget *SettingsWidget::createAppearancePage()
                 border: 2px solid %2;
                 border-radius: 8px;
                 padding: 16px 12px;
-                color: #ffffff;
+                color: #cdd6f4;
                 font-weight: 600;
                 font-size: 12.5px;
                 min-width: 120px;
@@ -285,10 +285,10 @@ QWidget *SettingsWidget::createAppearancePage()
         grid->addWidget(btn, 0, col);
     };
 
-    addThemeCard(0, QStringLiteral("Obsidian Dark"), QStringLiteral("#38bdf8"), QStringLiteral("#060812"));
-    addThemeCard(1, QStringLiteral("Midnight Neon"), QStringLiteral("#818cf8"), QStringLiteral("#090e24"));
-    addThemeCard(2, QStringLiteral("AMOLED Black"),  QStringLiteral("#22c55e"), QStringLiteral("#000000"));
-    addThemeCard(3, QStringLiteral("Frost Light"),   QStringLiteral("#94a3b8"), QStringLiteral("#f8fafc"));
+    addThemeCard(0, QStringLiteral("Obsidian Dark"), QStringLiteral("#89b4fa"), QStringLiteral("#11111b"));
+    addThemeCard(1, QStringLiteral("Midnight Neon"), QStringLiteral("#cba6f7"), QStringLiteral("#11111b"));
+    addThemeCard(2, QStringLiteral("AMOLED Black"),  QStringLiteral("#a6e3a1"), QStringLiteral("#000000"));
+    addThemeCard(3, QStringLiteral("Frost Light"),   QStringLiteral("#a6adc8"), QStringLiteral("#cdd6f4"));
 
     cLayout->addLayout(grid);
     layout->addWidget(card);
@@ -389,7 +389,7 @@ QWidget *SettingsWidget::createAIPage()
     addSettingRow(cLayout, QStringLiteral("AI Provider"), QStringLiteral("Engine used to generate responses and code insights"), combo);
 
     auto *keyLabel = new QLabel(QStringLiteral("Ctrl + K"));
-    keyLabel->setStyleSheet(QStringLiteral("background: rgba(255,255,255,0.08); padding: 3px 8px; border-radius: 4px; color: #38bdf8; font-weight: 600;"));
+    keyLabel->setStyleSheet(QStringLiteral("background: rgba(255,255,255,0.08); padding: 3px 8px; border-radius: 4px; color: #89b4fa; font-weight: 600;"));
     addSettingRow(cLayout, QStringLiteral("Keyboard Trigger"), QStringLiteral("Opens the Titan AI Assistant flyout"), keyLabel);
 
     layout->addWidget(card);
@@ -411,15 +411,15 @@ QWidget *SettingsWidget::createShortcutsPage()
     table->setSelectionMode(QAbstractItemView::NoSelection);
     table->setStyleSheet(QStringLiteral(R"(
         QTableWidget {
-            background: #0a0f1d;
+            background: #11111b;
             border: 1px solid rgba(255, 255, 255, 0.07);
             border-radius: 8px;
-            color: #ffffff;
+            color: #cdd6f4;
             gridline-color: rgba(255, 255, 255, 0.05);
         }
         QHeaderView::section {
-            background: #080d1a;
-            color: #64748b;
+            background: #11111b;
+            color: #7f849c;
             font-size: 11px;
             font-weight: 700;
             padding: 8px;

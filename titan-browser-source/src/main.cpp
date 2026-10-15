@@ -1,7 +1,9 @@
 #include "browser.h"
 #include "adblocker.h"
 #include "profilemanager.h"
+#include "TitanPalette.h"
 #include <QApplication>
+#include <QPalette>
 #include <QWebEngineProfile>
 #include <QWebEngineSettings>
 #include <QWebEngineCookieStore>
@@ -36,6 +38,30 @@ int main(int argc, char *argv[])
             "--disable-features=VaapiVideoDecoder,UseChromeOSDirectVideoDecoder");
 
     QApplication app(argc, argv);
+
+    // ── Shared ArchTitan design-system palette (TitanPalette) ─────────────
+    // Qt stylesheets have no variables, so the QSS below inlines the same TDL
+    // values; this QPalette keeps every default-styled widget/menu/dialog and
+    // the wallpaper-adaptive accent in sync with the rest of the OS.
+    {
+        QPalette pal = app.palette();
+        pal.setColor(QPalette::Window,          TitanPalette::crust());
+        pal.setColor(QPalette::WindowText,      TitanPalette::textHigh());
+        pal.setColor(QPalette::Base,            TitanPalette::mantle());
+        pal.setColor(QPalette::AlternateBase,   TitanPalette::base());
+        pal.setColor(QPalette::Text,            TitanPalette::textHigh());
+        pal.setColor(QPalette::PlaceholderText, TitanPalette::textLow());
+        pal.setColor(QPalette::Button,          TitanPalette::mantle());
+        pal.setColor(QPalette::ButtonText,      TitanPalette::textHigh());
+        pal.setColor(QPalette::BrightText,      TitanPalette::danger());
+        pal.setColor(QPalette::Highlight,       TitanPalette::accent());
+        pal.setColor(QPalette::HighlightedText, TitanPalette::accentFg());
+        pal.setColor(QPalette::ToolTipBase,     TitanPalette::mantle());
+        pal.setColor(QPalette::ToolTipText,     TitanPalette::textHigh());
+        pal.setColor(QPalette::Link,            TitanPalette::accent());
+        pal.setColor(QPalette::LinkVisited,     TitanPalette::mauve());
+        app.setPalette(pal);
+    }
 
     // ── Enforce Default English (en-US) Locale & Optimize Profile ─────────
     auto *profile = QWebEngineProfile::defaultProfile();

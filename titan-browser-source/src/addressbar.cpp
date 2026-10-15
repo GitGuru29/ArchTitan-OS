@@ -21,24 +21,24 @@ AddressBar::AddressBar(QWidget *parent) : QLineEdit(parent)
 
     setStyleSheet(QStringLiteral(R"(
         QLineEdit {
-            background: #091022;
-            border: 1px solid rgba(56, 189, 248, 0.18);
+            background: #181825;
+            border: 1px solid rgba(137, 180, 250, 0.18);
             border-radius: 8px;
-            color: #f1f5f9;
+            color: #cdd6f4;
             padding: 4px 10px 4px 8px;
             font-size: 13px;
             font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            selection-background-color: rgba(56, 189, 248, 0.35);
+            selection-background-color: rgba(137, 180, 250, 0.35);
             min-height: 26px;
         }
         QLineEdit:hover {
-            background: #0c152a;
-            border-color: rgba(56, 189, 248, 0.35);
+            background: #181825;
+            border-color: rgba(137, 180, 250, 0.35);
         }
         QLineEdit:focus {
-            background: #0e1a34;
-            border: 1px solid #38bdf8;
-            color: #ffffff;
+            background: #181825;
+            border: 1px solid #89b4fa;
+            color: #cdd6f4;
         }
     )"));
 
