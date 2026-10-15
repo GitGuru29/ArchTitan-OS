@@ -74,120 +74,120 @@ Rectangle {
         is24Hour: root.is24Hour
     }
 
-    // ── Left-Center: Minimalist Futuristic Auth Form ─────────────────
-    Item {
+    // ── Left-Center: Frosted Glass Auth Card ─────────────────────────
+    Rectangle {
         id: authCard
         anchors.left: parent.left
         anchors.leftMargin: parent.width * 0.09
         anchors.top: rollerClock.bottom
-        anchors.topMargin: 56
-        width: 320
-        height: 300
-
-        // Active Focus Indicator Pill (slides vertically between focused fields)
-        Rectangle {
-            id: focusPill
-            x: -16
-            width: 3
-            height: 38
-            radius: 1.5
-            color: "#FFFFFF"
-            visible: usernameField.activeFocus || passwordField.activeFocus
-
-            y: usernameField.activeFocus ? usernameField.y : passwordField.y
-            Behavior on y {
-                NumberAnimation { duration: 180; easing.type: Easing.OutQuad }
-            }
-        }
+        anchors.topMargin: 48
+        width: 350
+        height: 320
+        radius: 16
+        color: Qt.rgba(0.04, 0.05, 0.08, 0.78)
+        border.width: 1
+        border.color: Qt.rgba(0.48, 0.64, 0.97, 0.28)
 
         Column {
             anchors.fill: parent
-            spacing: 24
+            anchors.margins: 24
+            spacing: 16
 
-            // Branding Label: ARCHTITAN
-            Text {
-                text: "ARCHTITAN"
-                color: "#7E8597"
-                font.pixelSize: 12
-                font.weight: Font.DemiBold
-                font.letterSpacing: 4
-                font.family: "JetBrainsMono Nerd Font"
+            // Card Header: Branding & Security Badge
+            Row {
+                width: parent.width
+                height: 18
+
+                Text {
+                    text: "ARCHTITAN"
+                    color: "#7E8597"
+                    font.pixelSize: 11
+                    font.weight: Font.DemiBold
+                    font.letterSpacing: 3
+                    font.family: "JetBrainsMono Nerd Font"
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+
+                Item {
+                    id: headerSpacer
+                    width: parent.width - 90 - badgeText.implicitWidth
+                    height: 1
+                }
+
+                Text {
+                    id: badgeText
+                    text: "󰌾 SECURED"
+                    color: "#4A5164"
+                    font.pixelSize: 9
+                    font.weight: Font.Bold
+                    font.letterSpacing: 1.5
+                    font.family: "JetBrainsMono Nerd Font"
+                    anchors.verticalCenter: parent.verticalCenter
+                }
             }
 
-            // Username Field with Minimal Underline
-            Item {
+            // Username Field Inside Glass Card
+            Rectangle {
                 width: parent.width
                 height: 44
+                radius: 10
+                color: usernameField.activeFocus ? Qt.rgba(0.08, 0.10, 0.15, 0.95) : Qt.rgba(0.06, 0.08, 0.12, 0.75)
+                border.width: 1
+                border.color: usernameField.activeFocus ? "#7AA2F7" : Qt.rgba(1, 1, 1, 0.08)
+                Behavior on border.color { ColorAnimation { duration: 150 } }
 
                 TextField {
                     id: usernameField
                     anchors.fill: parent
+                    anchors.leftMargin: 14
+                    anchors.rightMargin: 14
                     placeholderText: "User name"
                     placeholderTextColor: "#4A5164"
                     text: (typeof userModel !== "undefined" && userModel.lastUser) ? userModel.lastUser : ""
-                    font.pixelSize: 14
+                    font.pixelSize: 13
                     font.family: "JetBrainsMono Nerd Font"
                     color: "#F0F3FA"
                     verticalAlignment: Text.AlignVCenter
-                    leftPadding: 0
-                    rightPadding: 0
-
-                    background: Rectangle {
-                        color: "transparent"
-                        Rectangle {
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            anchors.bottom: parent.bottom
-                            height: usernameField.activeFocus ? 1.5 : 1
-                            color: usernameField.activeFocus ? "#DCE2EE" : "#2A2F3D"
-                            Behavior on color { ColorAnimation { duration: 150 } }
-                        }
-                    }
+                    background: null
 
                     Keys.onReturnPressed: passwordField.forceActiveFocus()
                 }
             }
 
-            // Password Field with Minimal Underline
-            Item {
+            // Password Field Inside Glass Card
+            Rectangle {
                 width: parent.width
                 height: 44
+                radius: 10
+                color: passwordField.activeFocus ? Qt.rgba(0.08, 0.10, 0.15, 0.95) : Qt.rgba(0.06, 0.08, 0.12, 0.75)
+                border.width: 1
+                border.color: passwordField.activeFocus ? "#7AA2F7" : Qt.rgba(1, 1, 1, 0.08)
+                Behavior on border.color { ColorAnimation { duration: 150 } }
 
                 TextField {
                     id: passwordField
                     anchors.fill: parent
+                    anchors.leftMargin: 14
+                    anchors.rightMargin: 14
                     placeholderText: "Password"
                     placeholderTextColor: "#4A5164"
                     echoMode: TextInput.Password
-                    font.pixelSize: 14
+                    font.pixelSize: 13
                     font.family: "JetBrainsMono Nerd Font"
                     color: "#F0F3FA"
                     verticalAlignment: Text.AlignVCenter
-                    leftPadding: 0
-                    rightPadding: 0
-
-                    background: Rectangle {
-                        color: "transparent"
-                        Rectangle {
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            anchors.bottom: parent.bottom
-                            height: passwordField.activeFocus ? 1.5 : 1
-                            color: passwordField.activeFocus ? "#DCE2EE" : "#2A2F3D"
-                            Behavior on color { ColorAnimation { duration: 150 } }
-                        }
-                    }
+                    background: null
 
                     Keys.onReturnPressed: root.triggerLogin()
                 }
             }
 
-            Item { height: 4 }
+            Item { height: 2 }
 
             // High-Contrast Solid White Button: ENTER SESSION
             Button {
                 id: enterButton
-                width: 250
+                width: parent.width
                 height: 42
                 font.pixelSize: 11
                 font.weight: Font.Bold
@@ -203,7 +203,7 @@ Rectangle {
                 }
 
                 background: Rectangle {
-                    radius: 2
+                    radius: 8
                     color: enterButton.pressed ? "#CBD5E1" : (enterButton.hovered ? "#F8FAFC" : "#FFFFFF")
                     Behavior on color { ColorAnimation { duration: 120 } }
                 }
@@ -222,86 +222,9 @@ Rectangle {
                 font.family: "JetBrainsMono Nerd Font"
                 visible: text.length > 0
                 opacity: text.length > 0 ? 1.0 : 0.0
+                horizontalAlignment: Text.AlignHCenter
+                width: parent.width
                 Behavior on opacity { NumberAnimation { duration: 200 } }
-            }
-        }
-    }
-
-    // ── Bottom-Left: Session Selector ─────────────────────────────────
-    Row {
-        anchors.left: parent.left
-        anchors.leftMargin: parent.width * 0.09
-        anchors.bottom: parent.bottom
-        anchors.bottomMargin: 24
-        spacing: 8
-
-        Text {
-            text: "SESSION"
-            color: "#4B5264"
-            font.pixelSize: 10
-            font.weight: Font.Bold
-            font.letterSpacing: 1.5
-            font.family: "JetBrainsMono Nerd Font"
-            anchors.verticalCenter: parent.verticalCenter
-        }
-
-        ComboBox {
-            id: sessionCombo
-            width: 140
-            height: 28
-            model: (typeof sessionModel !== "undefined") ? sessionModel : ["Hyprland"]
-            currentIndex: (typeof sessionModel !== "undefined") ? sessionModel.lastIndex : 0
-            textRole: "name"
-            font.pixelSize: 10
-            font.family: "JetBrainsMono Nerd Font"
-
-            contentItem: Text {
-                text: sessionCombo.displayText
-                color: "#8E98AC"
-                font: sessionCombo.font
-                verticalAlignment: Text.AlignVCenter
-                leftPadding: 6
-            }
-
-            background: Rectangle {
-                radius: 4
-                color: "#12141A"
-                border.width: 1
-                border.color: "#242834"
-            }
-
-            popup: Popup {
-                y: -implicitHeight - 4
-                width: sessionCombo.width
-                implicitHeight: contentItem.implicitHeight + 10
-                padding: 4
-                background: Rectangle {
-                    radius: 6
-                    color: "#12141A"
-                    border.width: 1
-                    border.color: "#2E3444"
-                }
-                contentItem: ListView {
-                    clip: true
-                    implicitHeight: contentHeight
-                    model: sessionCombo.popup.visible ? sessionCombo.delegateModel : null
-                }
-            }
-
-            delegate: ItemDelegate {
-                width: sessionCombo.width
-                height: 28
-                contentItem: Text {
-                    text: model.name ? model.name : modelData
-                    color: highlighted ? "#FFFFFF" : "#8E98AC"
-                    font.pixelSize: 10
-                    font.family: "JetBrainsMono Nerd Font"
-                    verticalAlignment: Text.AlignVCenter
-                }
-                background: Rectangle {
-                    color: highlighted ? "#1E222D" : "transparent"
-                    radius: 3
-                }
             }
         }
     }
@@ -424,9 +347,27 @@ Rectangle {
     }
 
     // ── SDDM Authentication Handlers ──────────────────────────────────
+    readonly property int hyprlandSessionIndex: {
+        if (typeof sessionModel === "undefined" || !sessionModel) return 0
+        try {
+            var count = (typeof sessionModel.rowCount === "function") ? sessionModel.rowCount() : (sessionModel.count || 0)
+            for (var i = 0; i < count; ++i) {
+                var sName = ""
+                if (typeof sessionModel.get === "function") {
+                    var s = sessionModel.get(i)
+                    sName = s ? (s.name || s.file || "") : ""
+                }
+                if (sName.toLowerCase().indexOf("hyprland") !== -1) {
+                    return i
+                }
+            }
+        } catch (e) {}
+        return (typeof sessionModel.lastIndex !== "undefined" && sessionModel.lastIndex >= 0) ? sessionModel.lastIndex : 0
+    }
+
     function triggerLogin() {
-        if (typeof sddm !== "undefined" && typeof sessionModel !== "undefined") {
-            sddm.login(usernameField.text, passwordField.text, sessionCombo.currentIndex)
+        if (typeof sddm !== "undefined") {
+            sddm.login(usernameField.text, passwordField.text, root.hyprlandSessionIndex)
         }
     }
 

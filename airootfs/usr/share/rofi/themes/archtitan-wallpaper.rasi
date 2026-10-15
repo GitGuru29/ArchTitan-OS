@@ -13,8 +13,8 @@
     overlay1: #7f849c;
     text:     #cdd6f4;
     subtext0: #a6adc8;
-    subtext1: #bac2de;
-    lavender: #b4befe;
+    subtext1: #cdd6f4;
+    lavender: #cba6f7;
     blue:     #89b4fa;
     mauve:    #cba6f7;
     peach:    #fab387;
@@ -30,7 +30,7 @@ window {
     width:            960px;
     border-radius:    20px;
     border:           1px solid;
-    border-color:     #b4befe2e;
+    border-color:     #cba6f72e;
     background-color: #11111beb;
     padding:          24px;
     location:         center;
@@ -48,7 +48,7 @@ inputbar {
     background-color: #31324499;
     border-radius:    12px;
     border:           1px solid;
-    border-color:     #b4befe1f;
+    border-color:     #cba6f71f;
     padding:          10px 16px;
     spacing:          10px;
     children:         [ prompt, entry ];

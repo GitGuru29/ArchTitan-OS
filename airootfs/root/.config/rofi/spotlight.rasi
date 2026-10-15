@@ -1,23 +1,23 @@
 /* ============================================================
  * ArchTitan OS — Raycast-style Spotlight Search Theme for Rofi
- * Modern frosted obsidian glass card with crisp typography
+ * Catppuccin Mocha frosted obsidian glass card, crisp typography
  * ============================================================ */
 
 * {
-    bg-card:        #E80B0E14;
+    bg-card:        #11111BE8;
     bg-input:       rgba(255, 255, 255, 0.05);
-    bg-selected:    rgba(122, 162, 247, 0.18);
+    bg-selected:    rgba(137, 180, 250, 0.18);
     bg-hover:       rgba(255, 255, 255, 0.04);
-    border-accent:  rgba(122, 162, 247, 0.45);
+    border-accent:  rgba(137, 180, 250, 0.45);
     border-subtle:  rgba(255, 255, 255, 0.08);
-    text-primary:   #E2E8F0;
-    text-secondary: #94A3B8;
-    text-accent:    #7AA2F7;
-    text-dim:       #64748B;
-    scrollbar-clr:  rgba(122, 162, 247, 0.4);
+    text-primary:   #CDD6F4;
+    text-secondary: #A6ADC8;
+    text-accent:    #89B4FA;
+    text-dim:       #6C7086;
+    scrollbar-clr:  rgba(137, 180, 250, 0.4);
 
     background-color: transparent;
-    text-color:       #E2E8F0;
+    text-color:       #CDD6F4;
     font:             "Inter, sans-serif 12";
     border:           0px;
     margin:           0px;
@@ -31,9 +31,9 @@ window {
     anchor:           center;
     width:            660px;
     border-radius:    20px;
-    background-color: #E80B0E14;
+    background-color: #11111BE8;
     border:           1px;
-    border-color:     rgba(122, 162, 247, 0.35);
+    border-color:     rgba(137, 180, 250, 0.35);
 }
 
 /* ── Main Layout ────────────────────────────────────────────── */
@@ -57,15 +57,15 @@ inputbar {
 
 prompt {
     background-color: transparent;
-    text-color:       #7AA2F7;
+    text-color:       #89B4FA;
     font:             "JetBrainsMono Nerd Font 14";
     vertical-align:   0.5;
 }
 
 entry {
     background-color:  transparent;
-    text-color:        #E2E8F0;
-    placeholder-color: #64748B;
+    text-color:        #CDD6F4;
+    placeholder-color: #6C7086;
     placeholder:       "Search applications, files, commands...";
     font:              "Inter 13";
     cursor:            text;
@@ -79,7 +79,7 @@ message {
 }
 
 textbox {
-    text-color:       #94A3B8;
+    text-color:       #A6ADC8;
     font:             "Inter 11";
     background-color: transparent;
 }
@@ -119,20 +119,20 @@ element-icon {
 
 element-text {
     background-color: transparent;
-    text-color:       #E2E8F0;
+    text-color:       #CDD6F4;
     font:             "Inter 12.5";
     vertical-align:   0.5;
     cursor:           pointer;
-    highlight:        bold #7AA2F7;
+    highlight:        bold #89B4FA;
 }
 
 /* Selected Element */
 element.selected.normal,
 element.selected.urgent,
 element.selected.active {
-    background-color: rgba(122, 162, 247, 0.18);
+    background-color: rgba(137, 180, 250, 0.18);
     border:           1px;
-    border-color:     rgba(122, 162, 247, 0.50);
+    border-color:     rgba(137, 180, 250, 0.50);
 }
 
 element.selected.normal element-text,
@@ -145,7 +145,7 @@ element.selected.active element-text {
 scrollbar {
     width:            4px;
     handle-width:     4px;
-    handle-color:     rgba(122, 162, 247, 0.4);
+    handle-color:     rgba(137, 180, 250, 0.4);
     background-color: transparent;
     border-radius:    4px;
     margin:           0px 0px 0px 6px;
@@ -162,7 +162,7 @@ mode-switcher {
 
 button {
     background-color: transparent;
-    text-color:       #64748B;
+    text-color:       #6C7086;
     font:             "Inter 10.5";
     padding:          5px 12px;
     border-radius:    8px;
@@ -170,6 +170,6 @@ button {
 }
 
 button.selected {
-    background-color: rgba(122, 162, 247, 0.2);
-    text-color:       #7AA2F7;
+    background-color: rgba(137, 180, 250, 0.2);
+    text-color:       #89B4FA;
 }
