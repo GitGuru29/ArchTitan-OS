@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import ArchTitan.Media 1.0
 import ".."
+import ArchTitan.TitanUI
 
 /**
  * MediaPage — Primary HUD Carousel Page
@@ -45,8 +46,8 @@ Item {
                     height: 14
                     width: playerTag.implicitWidth + 8
                     radius: 7
-                    color: "#1889B4FA"
-                    border.color: "#3089B4FA"
+                    color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.09)
+                    border.color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.19)
                     border.width: 1
 
                     Text {
@@ -56,7 +57,7 @@ Item {
                         font.family: "JetBrainsMono Nerd Font"
                         font.pixelSize: 8
                         font.weight: Font.Bold
-                        color: "#89B4FA"
+                        color: TitanTheme.accent
                     }
                 }
 
@@ -66,7 +67,7 @@ Item {
                     font.family: "JetBrainsMono Nerd Font"
                     font.pixelSize: 13
                     font.weight: Font.Bold
-                    color: "#CDD6F4"
+                    color: TitanTheme.textHigh
                     elide: Text.ElideRight
                     maximumLineCount: 1
                 }
@@ -79,7 +80,7 @@ Item {
                       (Mpris && Mpris.album.length > 0 ? " — " + Mpris.album : "")
                 font.family: "JetBrainsMono Nerd Font"
                 font.pixelSize: 11
-                color: "#A6ADC8"
+                color: TitanTheme.textMid
                 elide: Text.ElideRight
                 maximumLineCount: 1
             }
@@ -104,8 +105,8 @@ Item {
                         radius: 1.5
                         gradient: Gradient {
                             orientation: Gradient.Horizontal
-                            GradientStop { position: 0.0; color: "#74C7EC" }
-                            GradientStop { position: 1.0; color: "#89B4FA" }
+                            GradientStop { position: 0.0; color: "#89b4fa" }
+                            GradientStop { position: 1.0; color: TitanTheme.accent }
                         }
                     }
 
@@ -129,7 +130,7 @@ Item {
                     font.family: "JetBrainsMono Nerd Font"
                     font.pixelSize: 9
                     font.weight: Font.DemiBold
-                    color: "#89B4FA"
+                    color: TitanTheme.accent
                 }
             }
         }
@@ -150,7 +151,7 @@ Item {
                     Rectangle {
                         width: 2.5
                         radius: 1.25
-                        color: (index % 2 === 0) ? "#89B4FA" : "#74C7EC"
+                        color: (index % 2 === 0) ? TitanTheme.accent : "#89b4fa"
                         height: 8
                         anchors.verticalCenter: parent ? parent.verticalCenter : undefined
 

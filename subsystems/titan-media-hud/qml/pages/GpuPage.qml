@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import ArchTitan.Media 1.0
+import ArchTitan.TitanUI
 
 /**
  * GpuPage — GPU Hardware Telemetry & Utilization
@@ -23,15 +24,15 @@ Item {
             Layout.preferredWidth: 46
             Layout.preferredHeight: 46
             radius: 12
-            color: "#18CBA6F7"
-            border.color: "#40CBA6F7"
+            color: Qt.rgba(TitanTheme.mauve.r, TitanTheme.mauve.g, TitanTheme.mauve.b, 0.09)
+            border.color: Qt.rgba(TitanTheme.mauve.r, TitanTheme.mauve.g, TitanTheme.mauve.b, 0.25)
             border.width: 1.5
 
             Text {
                 anchors.centerIn: parent
                 text: "🖥"
                 font.pixelSize: 22
-                color: "#CBA6F7"
+                color: TitanTheme.mauve
             }
 
             Rectangle {
@@ -39,7 +40,7 @@ Item {
                 anchors.margins: -3
                 radius: parent.radius + 3
                 color: "transparent"
-                border.color: "#30CBA6F7"
+                border.color: Qt.rgba(TitanTheme.mauve.r, TitanTheme.mauve.g, TitanTheme.mauve.b, 0.19)
                 border.width: 1
             }
         }
@@ -57,8 +58,8 @@ Item {
                     height: 14
                     width: tagText.implicitWidth + 10
                     radius: 7
-                    color: "#20CBA6F7"
-                    border.color: "#40CBA6F7"
+                    color: Qt.rgba(TitanTheme.mauve.r, TitanTheme.mauve.g, TitanTheme.mauve.b, 0.13)
+                    border.color: Qt.rgba(TitanTheme.mauve.r, TitanTheme.mauve.g, TitanTheme.mauve.b, 0.25)
                     border.width: 1
 
                     Text {
@@ -69,7 +70,7 @@ Item {
                         font.pixelSize: 8
                         font.weight: Font.Bold
                         font.letterSpacing: 0.8
-                        color: "#CBA6F7"
+                        color: TitanTheme.mauve
                     }
                 }
 
@@ -88,7 +89,7 @@ Item {
                 text: (System ? System.gpuTempFormatted : "48°C") + " • " + (System ? System.gpuUsage : 34) + "% utilization"
                 font.family: "JetBrainsMono Nerd Font"
                 font.pixelSize: 11
-                color: "#A6ADC8"
+                color: TitanTheme.textMid
                 elide: Text.ElideRight
             }
         }

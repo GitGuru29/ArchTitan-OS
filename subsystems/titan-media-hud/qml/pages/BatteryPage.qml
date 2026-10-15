@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import ArchTitan.Media 1.0
+import ArchTitan.TitanUI
 
 /**
  * BatteryPage — Hardware Battery Status & Temperature
@@ -23,15 +24,15 @@ Item {
             Layout.preferredWidth: 46
             Layout.preferredHeight: 46
             radius: 12
-            color: "#18F9E2AF"
-            border.color: "#40F9E2AF"
+            color: Qt.rgba(TitanTheme.warning.r, TitanTheme.warning.g, TitanTheme.warning.b, 0.09)
+            border.color: Qt.rgba(TitanTheme.warning.r, TitanTheme.warning.g, TitanTheme.warning.b, 0.25)
             border.width: 1.5
 
             Text {
                 anchors.centerIn: parent
                 text: "🔋"
                 font.pixelSize: 22
-                color: "#F9E2AF"
+                color: TitanTheme.warning
             }
 
             Rectangle {
@@ -39,7 +40,7 @@ Item {
                 anchors.margins: -3
                 radius: parent.radius + 3
                 color: "transparent"
-                border.color: "#30F9E2AF"
+                border.color: Qt.rgba(TitanTheme.warning.r, TitanTheme.warning.g, TitanTheme.warning.b, 0.19)
                 border.width: 1
             }
         }
@@ -57,8 +58,8 @@ Item {
                     height: 14
                     width: tagText.implicitWidth + 10
                     radius: 7
-                    color: "#20F9E2AF"
-                    border.color: "#40F9E2AF"
+                    color: Qt.rgba(TitanTheme.warning.r, TitanTheme.warning.g, TitanTheme.warning.b, 0.13)
+                    border.color: Qt.rgba(TitanTheme.warning.r, TitanTheme.warning.g, TitanTheme.warning.b, 0.25)
                     border.width: 1
 
                     Text {
@@ -69,7 +70,7 @@ Item {
                         font.pixelSize: 8
                         font.weight: Font.Bold
                         font.letterSpacing: 0.8
-                        color: "#F9E2AF"
+                        color: TitanTheme.warning
                     }
                 }
 
@@ -85,7 +86,7 @@ Item {
                     text: "• " + (System ? System.batteryTempFormatted : "37°C")
                     font.family: "JetBrainsMono Nerd Font"
                     font.pixelSize: 11
-                    color: "#CDD6F4"
+                    color: TitanTheme.textHigh
                 }
             }
 
@@ -94,7 +95,7 @@ Item {
                 text: (System ? System.batteryStatus : "Discharging") + " • " + (System ? System.batteryHealth : "Good health")
                 font.family: "JetBrainsMono Nerd Font"
                 font.pixelSize: 11
-                color: "#A6ADC8"
+                color: TitanTheme.textMid
                 elide: Text.ElideRight
             }
         }

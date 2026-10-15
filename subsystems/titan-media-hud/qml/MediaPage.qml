@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import ArchTitan.Media 1.0
+import ArchTitan.TitanUI
 
 /**
  * ExpandedView — Full media island with large art, metadata, progress,
@@ -46,8 +47,8 @@ Item {
                     height: 16
                     width: badgeText.implicitWidth + 10
                     radius: 8
-                    color: "#1889B4FA"
-                    border.color: "#3089B4FA"
+                    color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.09)
+                    border.color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.19)
                     border.width: 1
 
                     Text {
@@ -58,7 +59,7 @@ Item {
                         font.pixelSize: 8
                         font.weight: Font.Bold
                         font.letterSpacing: 0.8
-                        color: "#89B4FA"
+                        color: TitanTheme.accent
                     }
                 }
 
@@ -70,7 +71,7 @@ Item {
                     font.family: "JetBrainsMono Nerd Font"
                     font.pixelSize: 14
                     font.weight: Font.Bold
-                    color: "#CDD6F4"
+                    color: TitanTheme.textHigh
                     elide: Text.ElideRight
                     maximumLineCount: 1
                     opacity: titleFader.fadeValue
@@ -96,7 +97,7 @@ Item {
                     text: Mpris ? Mpris.artist : ""
                     font.family: "JetBrainsMono Nerd Font"
                     font.pixelSize: 11
-                    color: "#A6ADC8"
+                    color: TitanTheme.textMid
                     elide: Text.ElideRight
                     maximumLineCount: 1
                 }
@@ -107,7 +108,7 @@ Item {
                     text: Mpris && Mpris.album ? Mpris.album : ""
                     font.family: "JetBrainsMono Nerd Font"
                     font.pixelSize: 10
-                    color: "#585B70"
+                    color: TitanTheme.surface2
                     elide: Text.ElideRight
                     maximumLineCount: 1
                     visible: text.length > 0
@@ -124,7 +125,7 @@ Item {
                 font.family: "JetBrainsMono Nerd Font"
                 font.pixelSize: 10
                 font.weight: Font.DemiBold
-                color: "#89B4FA"
+                color: TitanTheme.accent
             }
 
             Item { Layout.fillWidth: true }
@@ -133,7 +134,7 @@ Item {
                 text: Mpris ? Mpris.lengthText : "0:00"
                 font.family: "JetBrainsMono Nerd Font"
                 font.pixelSize: 10
-                color: "#585B70"
+                color: TitanTheme.surface2
                 visible: Mpris ? Mpris.length > 0 : false
             }
         }
@@ -199,8 +200,8 @@ Item {
                 height: 16
                 width: profileText.implicitWidth + 16
                 radius: 8
-                color: "#1074C7EC"
-                border.color: "#2074C7EC"
+                color: "#1089b4fa"
+                border.color: "#2089b4fa"
                 border.width: 1
 
                 Text {
@@ -209,7 +210,7 @@ Item {
                     text: "🎵 " + AudioProfile.profileName
                     font.family: "JetBrainsMono Nerd Font"
                     font.pixelSize: 9
-                    color: "#74C7EC"
+                    color: "#89b4fa"
                 }
             }
 

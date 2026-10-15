@@ -1,4 +1,5 @@
 import QtQuick
+import ArchTitan.TitanUI
 
 /**
  * TransportButton — Tactile, modern circular playback button with
@@ -27,22 +28,22 @@ Item {
         // Gradient for primary (Play/Pause) vs sleek glass for others
         gradient: isPrimary ? primaryGradient : null
         color: {
-            if (isPrimary) return "#89B4FA"
-            if (isActive) return btnArea.containsMouse ? "#3589B4FA" : "#2089B4FA"
+            if (isPrimary) return TitanTheme.accent
+            if (isActive) return btnArea.containsMouse ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.21) : Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.13)
             return btnArea.containsMouse ? "#24FFFFFF" : "#12FFFFFF"
         }
 
         border.color: {
-            if (isPrimary) return "#B4BEFE"
-            if (isActive) return "#89B4FA"
+            if (isPrimary) return "#cba6f7"
+            if (isActive) return TitanTheme.accent
             return btnArea.containsMouse ? "#40FFFFFF" : "#18FFFFFF"
         }
         border.width: 1
 
         Gradient {
             id: primaryGradient
-            GradientStop { position: 0.0; color: btnArea.containsMouse ? "#B4BEFE" : "#89B4FA" }
-            GradientStop { position: 1.0; color: btnArea.containsMouse ? "#89B4FA" : "#74C7EC" }
+            GradientStop { position: 0.0; color: btnArea.containsMouse ? "#cba6f7" : TitanTheme.accent }
+            GradientStop { position: 1.0; color: btnArea.containsMouse ? TitanTheme.accent : "#89b4fa" }
         }
 
         // Tactile press & hover scale
@@ -57,7 +58,7 @@ Item {
             anchors.margins: -3
             radius: width / 2
             color: "transparent"
-            border.color: "#6089B4FA"
+            border.color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.38)
             border.width: 1.5
             visible: isPrimary && btnArea.containsMouse
             opacity: btnArea.containsMouse ? 0.8 : 0.0
@@ -74,9 +75,9 @@ Item {
             font.pixelSize: btnRoot.iconSize
             font.weight: Font.Bold
             color: {
-                if (isPrimary) return "#11111B" // Dark icon on bright sapphire
-                if (isActive) return "#89B4FA"
-                return btnArea.containsMouse ? "#FFFFFF" : "#CDD6F4"
+                if (isPrimary) return TitanTheme.bg0 // Dark icon on bright sapphire
+                if (isActive) return TitanTheme.accent
+                return btnArea.containsMouse ? "#FFFFFF" : TitanTheme.textHigh
             }
         }
 

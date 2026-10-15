@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import ArchTitan.Media 1.0
+import ArchTitan.TitanUI
 
 /**
  * ExpandedView — Full Dynamic Island card with rich album artwork,
@@ -46,8 +47,8 @@ Item {
                         height: 16
                         width: badgeText.implicitWidth + 12
                         radius: 8
-                        color: "#1889B4FA"
-                        border.color: "#3089B4FA"
+                        color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.09)
+                        border.color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.19)
                         border.width: 1
 
                         Text {
@@ -58,7 +59,7 @@ Item {
                             font.pixelSize: 8
                             font.weight: Font.Bold
                             font.letterSpacing: 0.8
-                            color: "#89B4FA"
+                            color: TitanTheme.accent
                         }
                     }
 
@@ -75,7 +76,7 @@ Item {
                             anchors.centerIn: parent
                             text: "✕"
                             font.pixelSize: 10
-                            color: closeArea.containsMouse ? "#FFFFFF" : "#A6ADC8"
+                            color: closeArea.containsMouse ? "#FFFFFF" : TitanTheme.textMid
                         }
 
                         MouseArea {
@@ -106,7 +107,7 @@ Item {
                     text: Mpris && Mpris.artist.length > 0 ? Mpris.artist : "ArchTitan Audio"
                     font.family: "JetBrainsMono Nerd Font"
                     font.pixelSize: 11
-                    color: "#BAC2DE"
+                    color: "#cdd6f4"
                     elide: Text.ElideRight
                     maximumLineCount: 1
                 }
@@ -117,7 +118,7 @@ Item {
                     text: Mpris && Mpris.album.length > 0 ? Mpris.album : ""
                     font.family: "JetBrainsMono Nerd Font"
                     font.pixelSize: 10
-                    color: "#6C7086"
+                    color: TitanTheme.surface3
                     elide: Text.ElideRight
                     maximumLineCount: 1
                     visible: text.length > 0
@@ -141,7 +142,7 @@ Item {
                 font.family: "JetBrainsMono Nerd Font"
                 font.pixelSize: 10
                 font.weight: Font.DemiBold
-                color: "#89B4FA"
+                color: TitanTheme.accent
             }
 
             Item { Layout.fillWidth: true }
@@ -150,7 +151,7 @@ Item {
                 text: Mpris ? Mpris.lengthText : "0:00"
                 font.family: "JetBrainsMono Nerd Font"
                 font.pixelSize: 10
-                color: "#6C7086"
+                color: TitanTheme.surface3
                 visible: Mpris ? Mpris.length > 0 : false
             }
         }
@@ -213,8 +214,8 @@ Item {
                 height: 16
                 width: profileText.implicitWidth + 14
                 radius: 8
-                color: "#1274C7EC"
-                border.color: "#2574C7EC"
+                color: "#1289b4fa"
+                border.color: "#2589b4fa"
                 border.width: 1
 
                 Text {
@@ -223,7 +224,7 @@ Item {
                     text: "🎵 " + AudioProfile.profileName
                     font.family: "JetBrainsMono Nerd Font"
                     font.pixelSize: 9
-                    color: "#74C7EC"
+                    color: "#89b4fa"
                 }
             }
 
