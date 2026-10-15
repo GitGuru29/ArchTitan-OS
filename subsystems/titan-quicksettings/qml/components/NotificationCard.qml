@@ -142,7 +142,7 @@ Rectangle {
                         }
                         Text {
                             text: cardRoot.expanded ? "\uf077" : "\uf078"  // chevron up / down
-                            font.family: TitanTheme.fontFamily
+                            font.family: TitanTheme.monoFamily
                             font.pixelSize: 9
                             color: TitanTheme.textMuted
                         }
@@ -188,7 +188,7 @@ Rectangle {
                 Text {
                     anchors.centerIn: parent
                     text: "\uf00d"   // times
-                    font.family: TitanTheme.fontFamily
+                    font.family: TitanTheme.monoFamily
                     font.pixelSize: 11
                     color: dismissMa.containsMouse ? TitanTheme.accentText : TitanTheme.textMuted
                 }

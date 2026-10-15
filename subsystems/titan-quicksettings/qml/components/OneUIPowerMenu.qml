@@ -16,7 +16,7 @@ import "../style"
 Rectangle {
     id: powerRoot
     radius: TitanTheme.radiusWindow
-    color: TitanTheme.isDark ? "#E60B0E14" : "#EAF4F6F9"
+    color: TitanTheme.bgMenu
     border.color: TitanTheme.borderGlass
     border.width: 1
     clip: true
@@ -43,14 +43,14 @@ Rectangle {
                 width: 38
                 height: 38
                 radius: 19
-                color: Qt.rgba(0.94, 0.27, 0.27, 0.18)
-                border.color: Qt.rgba(0.94, 0.27, 0.27, 0.35)
+                color: Qt.rgba(TitanTheme.red.r, TitanTheme.red.g, TitanTheme.red.b, 0.18)
+                border.color: Qt.rgba(TitanTheme.red.r, TitanTheme.red.g, TitanTheme.red.b, 0.35)
                 border.width: 1
 
                 Text {
                     anchors.centerIn: parent
                     text: "\uf011" // power icon
-                    font.family: TitanTheme.fontFamily
+                    font.family: TitanTheme.monoFamily
                     font.pixelSize: 16
                     color: TitanTheme.red
                 }
@@ -90,7 +90,7 @@ Rectangle {
                 Text {
                     anchors.centerIn: parent
                     text: "\uf00d" // times / close
-                    font.family: TitanTheme.fontFamily
+                    font.family: TitanTheme.monoFamily
                     font.pixelSize: 13
                     color: TitanTheme.textPrimary
                 }
@@ -117,8 +117,8 @@ Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 70
                 radius: TitanTheme.radiusCard
-                color: pwrMa.containsMouse ? Qt.rgba(0.94, 0.27, 0.27, 0.16) : TitanTheme.bgOneUICard
-                border.color: pwrMa.containsMouse ? Qt.rgba(0.94, 0.27, 0.27, 0.5) : TitanTheme.borderGlass
+                color: pwrMa.containsMouse ? Qt.rgba(TitanTheme.red.r, TitanTheme.red.g, TitanTheme.red.b, 0.16) : TitanTheme.bgOneUICard
+                border.color: pwrMa.containsMouse ? Qt.rgba(TitanTheme.red.r, TitanTheme.red.g, TitanTheme.red.b, 0.5) : TitanTheme.borderGlass
                 border.width: 1
                 scale: pwrMa.pressed ? 0.97 : (pwrMa.containsMouse ? 1.015 : 1.0)
                 Behavior on scale { NumberAnimation { duration: 130; easing.type: Easing.OutQuad } }
@@ -132,12 +132,12 @@ Rectangle {
                         width: 44
                         height: 44
                         radius: 22
-                        color: "#EF4444"
+                        color: TitanTheme.red
 
                         Text {
                             anchors.centerIn: parent
                             text: "\uf011" // power
-                            font.family: TitanTheme.fontFamily
+                            font.family: TitanTheme.monoFamily
                             font.pixelSize: 18
                             color: "#FFFFFF"
                         }
@@ -165,7 +165,7 @@ Rectangle {
 
                     Text {
                         text: "\uf054"
-                        font.family: TitanTheme.fontFamily
+                        font.family: TitanTheme.monoFamily
                         font.pixelSize: 11
                         color: TitanTheme.textSubtle
                     }
@@ -191,8 +191,8 @@ Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 70
                 radius: TitanTheme.radiusCard
-                color: rbtMa.containsMouse ? Qt.rgba(0.06, 0.73, 0.51, 0.16) : TitanTheme.bgOneUICard
-                border.color: rbtMa.containsMouse ? Qt.rgba(0.06, 0.73, 0.51, 0.5) : TitanTheme.borderGlass
+                color: rbtMa.containsMouse ? Qt.rgba(TitanTheme.green.r, TitanTheme.green.g, TitanTheme.green.b, 0.16) : TitanTheme.bgOneUICard
+                border.color: rbtMa.containsMouse ? Qt.rgba(TitanTheme.green.r, TitanTheme.green.g, TitanTheme.green.b, 0.5) : TitanTheme.borderGlass
                 border.width: 1
                 scale: rbtMa.pressed ? 0.97 : (rbtMa.containsMouse ? 1.015 : 1.0)
                 Behavior on scale { NumberAnimation { duration: 130; easing.type: Easing.OutQuad } }
@@ -206,12 +206,12 @@ Rectangle {
                         width: 44
                         height: 44
                         radius: 22
-                        color: "#10B981"
+                        color: TitanTheme.green
 
                         Text {
                             anchors.centerIn: parent
                             text: "\uf01e" // refresh / reboot
-                            font.family: TitanTheme.fontFamily
+                            font.family: TitanTheme.monoFamily
                             font.pixelSize: 18
                             color: "#FFFFFF"
                         }
@@ -239,7 +239,7 @@ Rectangle {
 
                     Text {
                         text: "\uf054"
-                        font.family: TitanTheme.fontFamily
+                        font.family: TitanTheme.monoFamily
                         font.pixelSize: 11
                         color: TitanTheme.textSubtle
                     }
@@ -265,8 +265,8 @@ Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 70
                 radius: TitanTheme.radiusCard
-                color: lckMa.containsMouse ? Qt.rgba(0.23, 0.51, 0.96, 0.16) : TitanTheme.bgOneUICard
-                border.color: lckMa.containsMouse ? Qt.rgba(0.23, 0.51, 0.96, 0.5) : TitanTheme.borderGlass
+                color: lckMa.containsMouse ? Qt.rgba(TitanTheme.accentBlue.r, TitanTheme.accentBlue.g, TitanTheme.accentBlue.b, 0.16) : TitanTheme.bgOneUICard
+                border.color: lckMa.containsMouse ? Qt.rgba(TitanTheme.accentBlue.r, TitanTheme.accentBlue.g, TitanTheme.accentBlue.b, 0.5) : TitanTheme.borderGlass
                 border.width: 1
                 scale: lckMa.pressed ? 0.97 : (lckMa.containsMouse ? 1.015 : 1.0)
                 Behavior on scale { NumberAnimation { duration: 130; easing.type: Easing.OutQuad } }
@@ -280,12 +280,12 @@ Rectangle {
                         width: 44
                         height: 44
                         radius: 22
-                        color: "#3B82F6"
+                        color: TitanTheme.accentBlue
 
                         Text {
                             anchors.centerIn: parent
                             text: "\uf023" // lock
-                            font.family: TitanTheme.fontFamily
+                            font.family: TitanTheme.monoFamily
                             font.pixelSize: 18
                             color: "#FFFFFF"
                         }
@@ -313,7 +313,7 @@ Rectangle {
 
                     Text {
                         text: "\uf054"
-                        font.family: TitanTheme.fontFamily
+                        font.family: TitanTheme.monoFamily
                         font.pixelSize: 11
                         color: TitanTheme.textSubtle
                     }
@@ -339,8 +339,8 @@ Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 70
                 radius: TitanTheme.radiusCard
-                color: suspMa.containsMouse ? Qt.rgba(0.55, 0.36, 0.96, 0.16) : TitanTheme.bgOneUICard
-                border.color: suspMa.containsMouse ? Qt.rgba(0.55, 0.36, 0.96, 0.5) : TitanTheme.borderGlass
+                color: suspMa.containsMouse ? Qt.rgba(TitanTheme.lavender.r, TitanTheme.lavender.g, TitanTheme.lavender.b, 0.16) : TitanTheme.bgOneUICard
+                border.color: suspMa.containsMouse ? Qt.rgba(TitanTheme.lavender.r, TitanTheme.lavender.g, TitanTheme.lavender.b, 0.5) : TitanTheme.borderGlass
                 border.width: 1
                 scale: suspMa.pressed ? 0.97 : (suspMa.containsMouse ? 1.015 : 1.0)
                 Behavior on scale { NumberAnimation { duration: 130; easing.type: Easing.OutQuad } }
@@ -354,12 +354,12 @@ Rectangle {
                         width: 44
                         height: 44
                         radius: 22
-                        color: "#8B5CF6"
+                        color: TitanTheme.lavender
 
                         Text {
                             anchors.centerIn: parent
                             text: "\uf186" // moon
-                            font.family: TitanTheme.fontFamily
+                            font.family: TitanTheme.monoFamily
                             font.pixelSize: 18
                             color: "#FFFFFF"
                         }
@@ -387,7 +387,7 @@ Rectangle {
 
                     Text {
                         text: "\uf054"
-                        font.family: TitanTheme.fontFamily
+                        font.family: TitanTheme.monoFamily
                         font.pixelSize: 11
                         color: TitanTheme.textSubtle
                     }
@@ -413,8 +413,8 @@ Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 70
                 radius: TitanTheme.radiusCard
-                color: lgoMa.containsMouse ? Qt.rgba(0.96, 0.62, 0.04, 0.16) : TitanTheme.bgOneUICard
-                border.color: lgoMa.containsMouse ? Qt.rgba(0.96, 0.62, 0.04, 0.5) : TitanTheme.borderGlass
+                color: lgoMa.containsMouse ? Qt.rgba(TitanTheme.yellow.r, TitanTheme.yellow.g, TitanTheme.yellow.b, 0.16) : TitanTheme.bgOneUICard
+                border.color: lgoMa.containsMouse ? Qt.rgba(TitanTheme.yellow.r, TitanTheme.yellow.g, TitanTheme.yellow.b, 0.5) : TitanTheme.borderGlass
                 border.width: 1
                 scale: lgoMa.pressed ? 0.97 : (lgoMa.containsMouse ? 1.015 : 1.0)
                 Behavior on scale { NumberAnimation { duration: 130; easing.type: Easing.OutQuad } }
@@ -428,12 +428,12 @@ Rectangle {
                         width: 44
                         height: 44
                         radius: 22
-                        color: "#F59E0B"
+                        color: TitanTheme.yellow
 
                         Text {
                             anchors.centerIn: parent
                             text: "\uf2f5" // sign-out
-                            font.family: TitanTheme.fontFamily
+                            font.family: TitanTheme.monoFamily
                             font.pixelSize: 18
                             color: "#FFFFFF"
                         }
@@ -461,7 +461,7 @@ Rectangle {
 
                     Text {
                         text: "\uf054"
-                        font.family: TitanTheme.fontFamily
+                        font.family: TitanTheme.monoFamily
                         font.pixelSize: 11
                         color: TitanTheme.textSubtle
                     }
@@ -506,7 +506,7 @@ Rectangle {
 
                     Text {
                         text: "\uf2d0" // window / expand
-                        font.family: TitanTheme.fontFamily
+                        font.family: TitanTheme.monoFamily
                         font.pixelSize: 12
                         color: TitanTheme.textSecondary
                     }

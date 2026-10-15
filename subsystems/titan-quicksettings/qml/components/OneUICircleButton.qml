@@ -42,7 +42,7 @@ ColumnLayout {
         Text {
             anchors.centerIn: parent
             text: buttonRoot.iconGlyph
-            font.family: TitanTheme.fontFamily
+            font.family: TitanTheme.monoFamily
             font.pixelSize: 18
             color: buttonRoot.active ? "#FFFFFF" : TitanTheme.textPrimary
         }

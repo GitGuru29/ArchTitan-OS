@@ -51,7 +51,7 @@ Rectangle {
             Text {
                 anchors.centerIn: parent
                 text: tileRoot.iconGlyph
-                font.family: TitanTheme.fontFamily
+                font.family: TitanTheme.monoFamily
                 font.pixelSize: 18
                 color: tileRoot.active ? "#FFFFFF" : TitanTheme.textMuted
             }
@@ -83,7 +83,7 @@ Rectangle {
         // Chevron
         Text {
             text: "\uf054"
-            font.family: TitanTheme.fontFamily
+            font.family: TitanTheme.monoFamily
             font.pixelSize: 11
             color: tileRoot.active ? "#B3FFFFFF" : TitanTheme.textSubtle
             Layout.alignment: Qt.AlignVCenter

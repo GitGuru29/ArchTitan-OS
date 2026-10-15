@@ -89,7 +89,7 @@ Rectangle {
         // Active check affordance
         Text {
             text: pillRoot.active ? "\uf00c" : ""
-            font.family: TitanTheme.fontFamily
+            font.family: TitanTheme.monoFamily
             font.pixelSize: 10
             color: active ? TitanTheme.accentText : "transparent"
             visible: pillRoot.active

@@ -147,7 +147,7 @@ Rectangle {
                     Text {
                         anchors.centerIn: parent
                         text: "\uf00d"
-                        font.family: TitanTheme.fontFamily
+                        font.family: TitanTheme.monoFamily
                         font.pixelSize: 10
                         color: "#FFFFFF"
                     }
@@ -170,7 +170,7 @@ Rectangle {
                     anchors.centerIn: parent
                     visible: !cardMa.containsMouse
                     text: "\uf054"
-                    font.family: TitanTheme.fontFamily
+                    font.family: TitanTheme.monoFamily
                     font.pixelSize: 10
                     color: TitanTheme.textSubtle
                 }

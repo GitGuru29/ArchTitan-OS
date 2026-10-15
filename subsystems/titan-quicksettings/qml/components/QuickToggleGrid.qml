@@ -399,7 +399,7 @@ ColumnLayout {
                 Text {
                     anchors.centerIn: parent
                     text: "\uf001" // music
-                    font.family: TitanTheme.fontFamily
+                    font.family: TitanTheme.monoFamily
                     font.pixelSize: 13
                     color: TitanTheme.accentBlue
                 }
@@ -427,7 +427,7 @@ ColumnLayout {
 
             Text {
                 text: "\uf054"
-                font.family: TitanTheme.fontFamily
+                font.family: TitanTheme.monoFamily
                 font.pixelSize: 10
                 color: TitanTheme.textSubtle
             }
@@ -475,7 +475,7 @@ ColumnLayout {
                 Text {
                     anchors.centerIn: parent
                     text: "\uf10b" // mobile / device
-                    font.family: TitanTheme.fontFamily
+                    font.family: TitanTheme.monoFamily
                     font.pixelSize: 14
                     color: TitanTheme.textSecondary
                 }
@@ -503,7 +503,7 @@ ColumnLayout {
 
             Text {
                 text: "\uf054"
-                font.family: TitanTheme.fontFamily
+                font.family: TitanTheme.monoFamily
                 font.pixelSize: 10
                 color: TitanTheme.textSubtle
             }
@@ -526,8 +526,8 @@ ColumnLayout {
         Layout.fillWidth: true
         height: 50
         radius: 20
-        color: pwrTileMa.containsMouse ? Qt.rgba(0.94, 0.27, 0.27, 0.16) : TitanTheme.bgOneUICard
-        border.color: pwrTileMa.containsMouse ? Qt.rgba(0.94, 0.27, 0.27, 0.45) : TitanTheme.borderGlass
+        color: pwrTileMa.containsMouse ? Qt.rgba(TitanTheme.red.r, TitanTheme.red.g, TitanTheme.red.b, 0.16) : TitanTheme.bgOneUICard
+        border.color: pwrTileMa.containsMouse ? Qt.rgba(TitanTheme.red.r, TitanTheme.red.g, TitanTheme.red.b, 0.45) : TitanTheme.borderGlass
         border.width: 1
         clip: true
 
@@ -547,12 +547,12 @@ ColumnLayout {
                 width: 32
                 height: 32
                 radius: 16
-                color: Qt.rgba(0.94, 0.27, 0.27, 0.2)
+                color: Qt.rgba(TitanTheme.red.r, TitanTheme.red.g, TitanTheme.red.b, 0.2)
 
                 Text {
                     anchors.centerIn: parent
                     text: "\uf011" // power
-                    font.family: TitanTheme.fontFamily
+                    font.family: TitanTheme.monoFamily
                     font.pixelSize: 13
                     color: TitanTheme.red
                 }
@@ -580,7 +580,7 @@ ColumnLayout {
 
             Text {
                 text: "\uf054"
-                font.family: TitanTheme.fontFamily
+                font.family: TitanTheme.monoFamily
                 font.pixelSize: 10
                 color: TitanTheme.textSubtle
             }

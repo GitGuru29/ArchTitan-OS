@@ -1,56 +1,64 @@
 pragma Singleton
 import QtQuick
+import ArchTitan.TitanUI as TDL
 
 /**
- * TitanTheme — ArchTitan design tokens with Samsung One UI 9.0 styling.
+ * TitanTheme — ArchTitan Quick Settings token adapter.
  *
- * Merges the clean Catppuccin Mocha contrast with Samsung One UI 9.0
- * bento-box geometry, continuous squircles, and frosted glass depth.
+ * This singleton preserves the historical One UI-shaped token names used by
+ * the Quick Settings QML, but sources every value from the shared
+ * ArchTitan.TitanUI "Titan Design Language" singletons (Catppuccin Mocha base +
+ * wallpaper-adaptive accent). Keeping the adapter removes ~4k lines of local
+ * palette duplication while letting every component stay untouched.
+ *
+ * Import: `import "../style"` (unqualified `TitanTheme.*`).
  */
 QtObject {
-    property bool isDark: true
+    readonly property bool isDark: true
 
-    readonly property string fontFamily: "JetBrainsMono Nerd Font"
+    readonly property string fontFamily: TDL.TitanTheme.fontFamily
+    readonly property string monoFamily: TDL.TitanTheme.monoFamily
 
-    // ── One UI 9.0 Adaptive Surfaces (Liquid Glass Tokens) ─────────────────
-    readonly property color bgWindow:          isDark ? "#B80B0E14" : "#B0F4F6F9" // Liquid frosted glass backdrop (72% dark / 69% light)
-    readonly property color bgSurface:         isDark ? "#70161A26" : "#70E8ECF2"   // raised bento container
-    readonly property color bgSurfaceAlt:      isDark ? "#801D2232" : "#80DFE4EC"   // elevated squircle tile
-    readonly property color bgInset:           isDark ? "#600E121C" : "#60DCE2E8"   // recessed track / inset
-    readonly property color bgHover:           isDark ? "#30FFFFFF" : "#1F000000" // liquid hover glow
-    readonly property color bgPressed:         isDark ? "#20FFFFFF" : "#30000000" // liquid pressed
-    readonly property color bgActive:          "#2B7FFF"                          // One UI vibrant active blue
+    // ── Window / bento surfaces ────────────────────────────────────────────
+    readonly property color bgWindow:          TDL.TitanTheme.bg1        // translucent window shell
+    readonly property color bgSurface:         TDL.TitanTheme.bg2        // raised container
+    readonly property color bgSurfaceAlt:      TDL.TitanTheme.bg3        // elevated squircle tile
+    readonly property color bgInset:           TDL.TitanTheme.bgInset    // recessed track
+    readonly property color bgHover:           TDL.TitanTheme.borderHover
+    readonly property color bgPressed:         Qt.rgba(1, 1, 1, 0.12)
+    readonly property color bgActive:          TDL.TitanTheme.accent
 
-    readonly property color bgOneUICard:       isDark ? "#66182132" : "#80FFFFFF" // Liquid frosted bento card (translucent in both modes)
-    readonly property color bgOneUICardAlt:    isDark ? "#80202B3F" : "#99FFFFFF" // slightly denser subcard
-    readonly property color bgOneUITrack:      isDark ? "#55101622" : "#55CBD5E1" // liquid pill track
-    readonly property color bgOneUIPill:       isDark ? "#75222E42" : "#70EDF2F7" // interactive capsule pill
+    readonly property color bgOneUICard:       TDL.TitanTheme.glassCard  // frosted bento card
+    readonly property color bgOneUICardAlt:    TDL.TitanTheme.bg4
+    readonly property color bgOneUITrack:      TDL.TitanTheme.bgInset
+    readonly property color bgOneUIPill:       TDL.TitanTheme.bg4
+    readonly property color bgMenu:            Qt.rgba(TDL.TitanTheme.bg0.r, TDL.TitanTheme.bg0.g, TDL.TitanTheme.bg0.b, 0.90) // power menu scrim
 
-    // ── Borders & Glass Contours ───────────────────────────────────────────
-    readonly property color borderSubtle:      isDark ? "#18FFFFFF" : "#12000000" // hairline
-    readonly property color borderHover:       isDark ? "#40FFFFFF" : "#30000000"
-    readonly property color borderActive:      "#702B7FFF"                        // One UI accent glow
-    readonly property color borderGlass:       isDark ? "#28FFFFFF" : "#1F000000" // liquid glass refraction rim
-    readonly property color borderOneUIGlass:  isDark ? "#28FFFFFF" : "#1F000000"
+    // ── Borders & glass contours ───────────────────────────────────────────
+    readonly property color borderSubtle:      TDL.TitanTheme.borderSubtle
+    readonly property color borderHover:       TDL.TitanTheme.borderHover
+    readonly property color borderActive:      TDL.TitanTheme.accentEdge
+    readonly property color borderGlass:       TDL.TitanTheme.borderHover
+    readonly property color borderOneUIGlass:  TDL.TitanTheme.borderHover
 
-    // ── Accents & Indicators ────────────────────────────────────────────────
-    readonly property color accent:            "#2B7FFF"     // One UI 9 Electric Blue
-    readonly property color accentBlue:        "#2B7FFF"
-    readonly property color accentText:        "#FFFFFF"     // white text on vibrant pill
-    readonly property color cyan:              "#38BDF8"     // electric cyan
-    readonly property color green:             "#10B981"     // One UI emerald active
-    readonly property color red:               "#EF4444"     // One UI crimson alert
-    readonly property color yellow:            "#F59E0B"     // One UI amber
-    readonly property color teal:              "#14B8A6"
-    readonly property color lavender:          "#818CF8"
-    readonly property color peach:             "#F97316"     // Night light warm glow
+    // ── Accents & indicators ───────────────────────────────────────────────
+    readonly property color accent:            TDL.TitanTheme.accent
+    readonly property color accentBlue:        TDL.TitanTheme.accent
+    readonly property color accentText:        TDL.TitanTheme.accentFg
+    readonly property color cyan:              TDL.TitanTheme.teal
+    readonly property color green:             TDL.TitanTheme.success
+    readonly property color red:               TDL.TitanTheme.danger
+    readonly property color yellow:            TDL.TitanTheme.warning
+    readonly property color teal:              TDL.TitanTheme.teal
+    readonly property color lavender:          TDL.TitanTheme.mauve
+    readonly property color peach:             TDL.TitanTheme.peach
 
-    // ── Text & Typography ───────────────────────────────────────────────────
-    readonly property color textPrimary:       isDark ? "#FFFFFF" : "#0F172A"     // high-contrast primary
-    readonly property color textSecondary:     isDark ? "#CBD5E1" : "#334155"     // secondary details
-    readonly property color textMuted:         isDark ? "#94A3B8" : "#64748B"     // descriptions
-    readonly property color textSubtle:        isDark ? "#64748B" : "#94A3B8"     // timestamps & captions
-    readonly property color textOnAccent:      "#FFFFFF"
+    // ── Text & typography ──────────────────────────────────────────────────
+    readonly property color textPrimary:       TDL.TitanTheme.textHigh
+    readonly property color textSecondary:     TDL.TitanTheme.textMid
+    readonly property color textMuted:         TDL.TitanTheme.textLow
+    readonly property color textSubtle:        TDL.TitanTheme.textLow
+    readonly property color textOnAccent:      TDL.TitanTheme.accentFg
 
     // ── Type scale ──────────────────────────────────────────────────────────
     readonly property int sizeClock:    32
@@ -60,15 +68,15 @@ QtObject {
     readonly property int sizeSmall:    11
     readonly property int sizeCaption:  9
 
-    // ── One UI Geometry & Radii ─────────────────────────────────────────────
-    readonly property int radiusWindow:    28    // main overlay rounded corner
-    readonly property int radiusBento:     24    // modular bento cards
-    readonly property int radiusCard:      20    // notification & inner cards
-    readonly property int radiusControl:   16    // small buttons
-    readonly property int radiusSlider:    26    // thick pill slider
-    readonly property int radiusCircle:    26    // circular quick toggle buttons (52px)
-    readonly property int radiusPill:      24    // segmented pill
-    readonly property int radiusIcon:      20
+    // ── One UI geometry & radii ─────────────────────────────────────────────
+    readonly property int radiusWindow:     TDL.TitanTheme.radiusWindow
+    readonly property int radiusBento:      TDL.TitanTheme.radiusBento
+    readonly property int radiusCard:       TDL.TitanTheme.radiusCard
+    readonly property int radiusControl:    TDL.TitanTheme.radiusControl
+    readonly property int radiusSlider:     TDL.TitanTheme.radiusSlider
+    readonly property int radiusCircle:     TDL.TitanTheme.radiusSlider
+    readonly property int radiusPill:       TDL.TitanTheme.radiusBento
+    readonly property int radiusIcon:       TDL.TitanTheme.radiusCard
 
     readonly property int spacing:         10
     readonly property int panelPadding:    14

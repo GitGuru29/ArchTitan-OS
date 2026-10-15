@@ -65,7 +65,7 @@ Rectangle {
 
                 Text {
                     text: "\uf133" // calendar
-                    font.family: TitanTheme.fontFamily
+                    font.family: TitanTheme.monoFamily
                     font.pixelSize: 13
                     color: TitanTheme.accentBlue
                 }
@@ -84,7 +84,7 @@ Rectangle {
 
                 Text {
                     text: expanded ? "\uf077" : "\uf078" // chevron up / down
-                    font.family: TitanTheme.fontFamily
+                    font.family: TitanTheme.monoFamily
                     font.pixelSize: 10
                     color: TitanTheme.textSubtle
                 }
