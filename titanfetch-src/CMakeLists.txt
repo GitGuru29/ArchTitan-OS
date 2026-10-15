@@ -15,7 +15,12 @@ add_executable(titanfetch
     cli.cpp
     gui.cpp
     sysinfo.cpp
+    resources.qrc
 )
 
 target_link_libraries(titanfetch PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets)
+
+# Shared ArchTitan design-system palette (header-only; see titan-ui/include).
+target_include_directories(titanfetch PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/../titan-ui/include")
 

@@ -1,4 +1,5 @@
 #include "sysinfo.h"
+#include "TitanPalette.h"
 
 #include <QFile>
 #include <QDir>
@@ -416,11 +417,11 @@ static void scanHyprFile(const QString &path, const QString &hyprDir,
 
 // Catppuccin Mocha fallback palette (used to pad if Hyprland gives < 5 colors)
 static const QList<QColor> kCatppuccinFallbacks = {
-    QColor(0x89, 0xb4, 0xfa),  // blue
-    QColor(0xcb, 0xa6, 0xf7),  // mauve/purple
-    QColor(0xa6, 0xe3, 0xa1),  // green
-    QColor(0xf9, 0xe2, 0xaf),  // yellow
-    QColor(0xf3, 0x8b, 0xa8),  // red/pink
+    TitanPalette::info(),     // blue
+    TitanPalette::mauve(),    // mauve/purple
+    TitanPalette::success(),  // green
+    TitanPalette::warning(),  // yellow
+    TitanPalette::danger(),   // red/pink
 };
 
 static QList<QColor> readHyprlandAccents()
