@@ -1,5 +1,6 @@
 import QtQuick
 import ArchTitan.Media 1.0
+import ArchTitan.TitanUI
 
 /**
  * ProgressViz — "Pulse River" progress visualization.
@@ -67,8 +68,8 @@ Item {
         radius: 1
         gradient: Gradient {
             orientation: Gradient.Horizontal
-            GradientStop { position: 0.0; color: "#74C7EC" }
-            GradientStop { position: 1.0; color: "#89B4FA" }
+            GradientStop { position: 0.0; color: "#89b4fa" }
+            GradientStop { position: 1.0; color: TitanTheme.accent }
         }
     }
 
@@ -111,9 +112,9 @@ Item {
                 color: {
                     if (isNearHead) return "#FFFFFF"
                     if (isPlayed) {
-                        return (dotFrac / Math.max(0.01, vizRoot.progress) < 0.5) ? "#74C7EC" : "#89B4FA"
+                        return (dotFrac / Math.max(0.01, vizRoot.progress) < 0.5) ? "#89b4fa" : TitanTheme.accent
                     }
-                    return distFromHead < 0.15 ? "#585B70" : "#313244"
+                    return distFromHead < 0.15 ? TitanTheme.surface2 : TitanTheme.bg4
                 }
 
                 opacity: {
@@ -137,7 +138,7 @@ Item {
         color: "#FFFFFF"
         x: Math.max(0, Math.min(vizRoot.width - width, (vizRoot.progress * vizRoot.width) - (width / 2)))
         anchors.verticalCenter: parent.verticalCenter
-        border.color: "#89B4FA"
+        border.color: TitanTheme.accent
         border.width: 2
 
         // Outer glow
@@ -147,7 +148,7 @@ Item {
             height: parent.height + 8
             radius: width / 2
             color: "transparent"
-            border.color: "#6089B4FA"
+            border.color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.38)
             border.width: 1.5
             visible: vizRoot.playing
 
@@ -171,7 +172,7 @@ Item {
         width: 2
         height: parent.height + 4
         radius: 1
-        color: "#B4BEFE"
+        color: "#cba6f7"
         visible: seekArea.containsMouse
         x: Math.max(0, Math.min(vizRoot.width - width, seekArea.mouseX - 1))
         anchors.verticalCenter: parent.verticalCenter

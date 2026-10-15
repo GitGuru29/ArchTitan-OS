@@ -3,6 +3,7 @@ import QtQuick.Window
 import QtQuick.Controls
 import QtQuick.Layouts
 import ArchTitan.Media 1.0
+import ArchTitan.TitanUI
 
 Window {
     id: root
@@ -15,14 +16,14 @@ Window {
     // ─── CONSTANTS ────────────────────────────────────────────────────────────
     readonly property int compactHeight: 58
     readonly property int expandedHeight: 210
-    readonly property color bgColor: "#EB11111B"   // Catppuccin Crust 92%
-    readonly property color borderColor: "#2489B4FA" // Sapphire 14%
-    readonly property color accentPrimary: "#89B4FA"
-    readonly property color accentSecondary: "#74C7EC"
-    readonly property color textPrimary: "#CDD6F4"
-    readonly property color textSecondary: "#A6ADC8"
-    readonly property color textDim: "#585B70"
-    readonly property color surfaceColor: "#1E1E2E"
+    readonly property color bgColor: Qt.rgba(TitanTheme.bg0.r, TitanTheme.bg0.g, TitanTheme.bg0.b, 0.92)   // Catppuccin Crust 92%
+    readonly property color borderColor: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.14) // Sapphire 14%
+    readonly property color accentPrimary: TitanTheme.accent
+    readonly property color accentSecondary: "#89b4fa"
+    readonly property color textPrimary: TitanTheme.textHigh
+    readonly property color textSecondary: TitanTheme.textMid
+    readonly property color textDim: TitanTheme.surface2
+    readonly property color surfaceColor: TitanTheme.bg3
 
     // ─── KEYBOARD HANDLING ────────────────────────────────────────────────────
     Item {

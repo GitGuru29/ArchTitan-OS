@@ -1,5 +1,6 @@
 import QtQuick
 import ArchTitan.Media 1.0
+import ArchTitan.TitanUI
 
 /**
  * AlbumArt — Rounded album artwork with smooth crossfade,
@@ -23,7 +24,7 @@ Item {
         height: artRoot.artSize + 6
         radius: artRoot.cornerRadius + 3
         color: "transparent"
-        border.color: "#6089B4FA"
+        border.color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.38)
         border.width: 1.5
         visible: artRoot.showGlow && (Mpris && Mpris.isPlaying)
         opacity: 0.0
@@ -42,8 +43,8 @@ Item {
         anchors.fill: parent
         radius: artRoot.cornerRadius
         clip: true
-        color: "#181825"
-        border.color: (Mpris && Mpris.isPlaying) ? "#3589B4FA" : "#20FFFFFF"
+        color: TitanTheme.mantle
+        border.color: (Mpris && Mpris.isPlaying) ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.21) : "#20FFFFFF"
         border.width: 1
 
         // ── FALLBACK (sleek dark gradient + music icon) ──────────────────
@@ -54,16 +55,16 @@ Item {
             visible: !currentArt.visible || currentArt.status !== Image.Ready
 
             gradient: Gradient {
-                GradientStop { position: 0.0; color: "#2E303E" }
-                GradientStop { position: 0.5; color: "#1E1E2E" }
-                GradientStop { position: 1.0; color: "#11111B" }
+                GradientStop { position: 0.0; color: "#313244" }
+                GradientStop { position: 0.5; color: TitanTheme.bg3 }
+                GradientStop { position: 1.0; color: TitanTheme.bg0 }
             }
 
             Text {
                 anchors.centerIn: parent
                 text: "♫"
                 font.pixelSize: Math.max(12, Math.round(artRoot.artSize * 0.36))
-                color: (Mpris && Mpris.isPlaying) ? "#89B4FA" : "#585B70"
+                color: (Mpris && Mpris.isPlaying) ? TitanTheme.accent : TitanTheme.surface2
                 opacity: 0.85
 
                 // Subtle pulse when playing without art

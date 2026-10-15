@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import ArchTitan.Media 1.0
+import ArchTitan.TitanUI
 
 /**
  * PowerPage — Power Profile Page for HUD Carousel
@@ -24,15 +25,15 @@ Item {
             Layout.preferredWidth: 46
             Layout.preferredHeight: 46
             radius: 12
-            color: "#1874C7EC"
-            border.color: "#4074C7EC"
+            color: "#1889b4fa"
+            border.color: "#4089b4fa"
             border.width: 1.5
 
             Text {
                 anchors.centerIn: parent
                 text: System ? System.powerProfileIcon : "⚡"
                 font.pixelSize: 22
-                color: "#74C7EC"
+                color: "#89b4fa"
             }
 
             // Glow aura
@@ -41,7 +42,7 @@ Item {
                 anchors.margins: -3
                 radius: parent.radius + 3
                 color: "transparent"
-                border.color: "#3074C7EC"
+                border.color: "#3089b4fa"
                 border.width: 1
             }
         }
@@ -59,8 +60,8 @@ Item {
                     height: 14
                     width: tagText.implicitWidth + 10
                     radius: 7
-                    color: "#2074C7EC"
-                    border.color: "#4074C7EC"
+                    color: "#2089b4fa"
+                    border.color: "#4089b4fa"
                     border.width: 1
 
                     Text {
@@ -71,7 +72,7 @@ Item {
                         font.pixelSize: 8
                         font.weight: Font.Bold
                         font.letterSpacing: 0.8
-                        color: "#74C7EC"
+                        color: "#89b4fa"
                     }
                 }
 
@@ -90,7 +91,7 @@ Item {
                 text: System ? System.powerProfileDesc : "Optimized for performance and efficiency"
                 font.family: "JetBrainsMono Nerd Font"
                 font.pixelSize: 11
-                color: "#A6ADC8"
+                color: TitanTheme.textMid
                 elide: Text.ElideRight
             }
         }
