@@ -2,19 +2,20 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls.Basic
 import ArchTitanSettings
+import ArchTitan.TitanUI
 
 ScrollView {
     id: root
     contentWidth: -1
     ScrollBar.vertical.policy: ScrollBar.AsNeeded
 
-    property color textHigh: isDarkTheme ? "#FFFFFF" : "#111111"
-    property color textMid:  isDarkTheme ? "#CCCCCC" : "#444444"
-    property color textSub:  isDarkTheme ? "#A0A0A8" : "#666666"
-    property color textLow:  isDarkTheme ? "#808088" : "#888888"
-    property color accent:   SettingsBackend.accentColor
-    property color green:    "#4CAF82"
-    property color red:      "#E05C6A"
+    property color textHigh: TitanTheme.textHigh
+    property color textMid:  TitanTheme.textMid
+    property color textSub:  TitanTheme.textLow
+    property color textLow:  TitanTheme.textLow
+    property color accent:   TitanTheme.accent
+    property color green:    TitanTheme.success
+    property color red:      TitanTheme.danger
 
     ColumnLayout {
         width: root.availableWidth
@@ -43,7 +44,7 @@ ScrollView {
             Layout.fillWidth: true
             Layout.leftMargin: 24; Layout.rightMargin: 24
             height: 76; radius: 10
-            color: isDarkTheme ? "#1A1A1E" : globalBg3
+            color: TitanTheme.bg3
             border.width: 1; border.color: globalBorder1
 
             RowLayout {
@@ -245,7 +246,7 @@ ScrollView {
                         // Clickable delay selector button
                         Rectangle {
                             height: 28; width: 56; radius: 6
-                            color: isDarkTheme ? "#222228" : "#E8E8EE"
+                            color: TitanTheme.surface0
                             border.width: 1; border.color: globalBorder0
 
                             Text {
@@ -401,9 +402,9 @@ ScrollView {
                         // Lock screen button
                         Rectangle {
                             Layout.fillWidth: true; height: 48; radius: 8
-                            color: lockArea.containsMouse ? (isDarkTheme ? "#2A2A30" : "#E5E5EB") : (isDarkTheme ? "#1E1E22" : globalBg4)
+                            color: lockArea.containsMouse ? TitanTheme.surface1 : TitanTheme.bg4
                             border.width: 1; border.color: globalBorder0
-                            Behavior on color { ColorAnimation { duration: 120 } }
+                            Behavior on color { ColorAnimation { duration: TitanTheme.durFast } }
 
                             Text {
                                 anchors.centerIn: parent
@@ -423,9 +424,9 @@ ScrollView {
                         // Change password button
                         Rectangle {
                             Layout.fillWidth: true; height: 48; radius: 8
-                            color: pwdArea.containsMouse ? (isDarkTheme ? "#2A2A30" : "#E5E5EB") : (isDarkTheme ? "#1E1E22" : globalBg4)
+                            color: pwdArea.containsMouse ? TitanTheme.surface1 : TitanTheme.bg4
                             border.width: 1; border.color: globalBorder0
-                            Behavior on color { ColorAnimation { duration: 120 } }
+                            Behavior on color { ColorAnimation { duration: TitanTheme.durFast } }
 
                             Text {
                                 anchors.centerIn: parent
@@ -486,8 +487,8 @@ ScrollView {
                             Rectangle {
                                 height: 24; width: badgeText.implicitWidth + 20; radius: 6
                                 color: modelData.enabled 
-                                       ? (isDarkTheme ? "#152E22" : "#E6F4EA") 
-                                       : (isDarkTheme ? "#2E181A" : "#FCE8E6")
+                                       ? Qt.rgba(TitanTheme.success.r, TitanTheme.success.g, TitanTheme.success.b, 0.15)
+                                       : Qt.rgba(TitanTheme.danger.r, TitanTheme.danger.g, TitanTheme.danger.b, 0.15)
 
                                 Text {
                                     id: badgeText
@@ -542,9 +543,9 @@ ScrollView {
                     // Open sandbox shell button
                     Rectangle {
                         Layout.fillWidth: true; height: 44; radius: 8
-                        color: shellArea.containsMouse ? (isDarkTheme ? "#243248" : "#DCE8FE") : (isDarkTheme ? "#1A2436" : "#EDF3FE")
+                        color: shellArea.containsMouse ? TitanTheme.accentSoft : TitanTheme.accentSofter
                         border.width: 1; border.color: Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.4)
-                        Behavior on color { ColorAnimation { duration: 120 } }
+                        Behavior on color { ColorAnimation { duration: TitanTheme.durFast } }
 
                         Text {
                             anchors.centerIn: parent

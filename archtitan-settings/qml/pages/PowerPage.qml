@@ -2,20 +2,21 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls.Basic
 import ArchTitanSettings
+import ArchTitan.TitanUI
 
 ScrollView {
     id: root
     contentWidth: -1
     ScrollBar.vertical.policy: ScrollBar.AsNeeded
 
-    property color textHigh: isDarkTheme ? "#FFFFFF" : "#111111"
-    property color textMid:  isDarkTheme ? "#CCCCCC" : "#444444"
-    property color textSub:  isDarkTheme ? "#A0A0A8" : "#666666"
-    property color textLow:  isDarkTheme ? "#808088" : "#888888"
-    property color accent:   SettingsBackend.accentColor
-    property color green:    "#4CAF82"
-    property color orange:   "#D4853A"
-    property color red:      "#E05C6A"
+    property color textHigh: TitanTheme.textHigh
+    property color textMid:  TitanTheme.textMid
+    property color textSub:  TitanTheme.textLow
+    property color textLow:  TitanTheme.textLow
+    property color accent:   TitanTheme.accent
+    property color green:    TitanTheme.success
+    property color orange:   TitanTheme.warning
+    property color red:      TitanTheme.danger
 
     readonly property var screenOffOptions: [
         { label: "1m",  val: 60 },
@@ -103,7 +104,7 @@ ScrollView {
             Layout.fillWidth: true
             Layout.leftMargin: 24; Layout.rightMargin: 24
             height: 76; radius: 10
-            color: isDarkTheme ? "#1A1A1E" : globalBg3
+            color: TitanTheme.bg3
             border.width: 1; border.color: globalBorder1
 
             RowLayout {
@@ -278,9 +279,9 @@ ScrollView {
 
                         Repeater {
                             model: [
-                                { name: "Power Saver", label: "Power saver", desc: "Maximize battery", accent: "#4CAF82" },
-                                { name: "Balanced",    label: "Balanced",    desc: "Smart performance", accent: "#4C8BF5" },
-                                { name: "Performance", label: "Performance", desc: "Max CPU",           accent: "#D4853A" }
+                                { name: "Power Saver", label: "Power saver", desc: "Maximize battery", accent: TitanTheme.success },
+                                { name: "Balanced",    label: "Balanced",    desc: "Smart performance", accent: TitanTheme.info },
+                                { name: "Performance", label: "Performance", desc: "Max CPU",           accent: TitanTheme.danger }
                             ]
                             delegate: Rectangle {
                                 Layout.fillWidth: true
@@ -289,12 +290,12 @@ ScrollView {
                                 property bool sel: SettingsBackend.powerProfile === modelData.name
 
                                 color: sel 
-                                       ? Qt.tint(isDarkTheme ? "#1A1A1E" : "#FFFFFF", Qt.rgba(Qt.color(modelData.accent).r, Qt.color(modelData.accent).g, Qt.color(modelData.accent).b, isDarkTheme ? 0.25 : 0.12)) 
-                                       : (isDarkTheme ? "#1E1E22" : globalBg4)
+                                       ? Qt.tint(TitanTheme.bg3, Qt.rgba(Qt.color(modelData.accent).r, Qt.color(modelData.accent).g, Qt.color(modelData.accent).b, 0.25)) 
+                                       : TitanTheme.bg4
                                 border.width: sel ? 2 : 1
                                 border.color: sel ? modelData.accent : globalBorder0
-                                Behavior on color       { ColorAnimation { duration: 180 } }
-                                Behavior on border.color{ ColorAnimation { duration: 180 } }
+                                Behavior on color       { ColorAnimation { duration: TitanTheme.durBase } }
+                                Behavior on border.color{ ColorAnimation { duration: TitanTheme.durBase } }
 
                                 ColumnLayout {
                                     anchors.centerIn: parent
@@ -362,7 +363,7 @@ ScrollView {
                                     width: optLabel1.implicitWidth + 32
                                     radius: 8
                                     property bool sel: SettingsBackend.screenTimeout === modelData.val
-                                    color: sel ? root.accent : (isDarkTheme ? "#222228" : "#E8E8EE")
+                                    color: sel ? root.accent : TitanTheme.surface0
                                     border.width: 1
                                     border.color: sel ? root.accent : globalBorder0
                                     Behavior on color { ColorAnimation { duration: 120 } }
@@ -373,7 +374,7 @@ ScrollView {
                                         text: modelData.label
                                         font { pixelSize: 13; family: "Inter" }
                                         font.weight: sel ? Font.Medium : Font.Normal
-                                        color: sel ? "#FFFFFF" : root.textMid
+                                        color: sel ? TitanTheme.accentFg : root.textMid
                                     }
 
                                     MouseArea {
@@ -409,7 +410,7 @@ ScrollView {
                                     width: optLabel2.implicitWidth + 32
                                     radius: 8
                                     property bool sel: SettingsBackend.suspendTimeout === modelData.val
-                                    color: sel ? root.accent : (isDarkTheme ? "#222228" : "#E8E8EE")
+                                    color: sel ? root.accent : TitanTheme.surface0
                                     border.width: 1
                                     border.color: sel ? root.accent : globalBorder0
                                     Behavior on color { ColorAnimation { duration: 120 } }
@@ -420,7 +421,7 @@ ScrollView {
                                         text: modelData.label
                                         font { pixelSize: 13; family: "Inter" }
                                         font.weight: sel ? Font.Medium : Font.Normal
-                                        color: sel ? "#FFFFFF" : root.textMid
+                                        color: sel ? TitanTheme.accentFg : root.textMid
                                     }
 
                                     MouseArea {
@@ -497,14 +498,14 @@ ScrollView {
                         Layout.fillWidth: true
                         height: 80; radius: 8
                         color: SystemInfo.batteryCharging 
-                                ? (isDarkTheme ? "#152E22" : Qt.rgba(0.30, 0.69, 0.51, 0.20))
-                                : (isDarkTheme ? "#1E1E22" : globalBg4)
+                                ? Qt.rgba(TitanTheme.success.r, TitanTheme.success.g, TitanTheme.success.b, 0.15)
+                                : TitanTheme.bg4
                         border.width: 1
                         border.color: SystemInfo.batteryCharging 
-                                ? "#388E62" 
+                                ? TitanTheme.success 
                                 : globalBorder0
-                        Behavior on color { ColorAnimation { duration: 300 } }
-                        Behavior on border.color { ColorAnimation { duration: 300 } }
+                        Behavior on color { ColorAnimation { duration: TitanTheme.durSlow } }
+                        Behavior on border.color { ColorAnimation { duration: TitanTheme.durSlow } }
 
                         ColumnLayout {
                             anchors.centerIn: parent

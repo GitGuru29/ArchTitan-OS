@@ -1,11 +1,12 @@
 import QtQuick
 import QtQuick.Controls.Basic
 import ArchTitanSettings
+import ArchTitan.TitanUI
 
 Slider {
     id: root
-    property color trackColor: globalBorder0
-    property color fillColor:  "#4C8BF5"
+    property color trackColor: TitanTheme.border
+    property color fillColor:  TitanTheme.accent
 
     implicitHeight: 20
 
@@ -18,7 +19,7 @@ Slider {
             width: parent.width; height: 4; radius: 2
             color: root.trackColor
             border.width: 1
-            border.color: globalBorder1
+            border.color: TitanTheme.borderSubtle
         }
 
         // Fill

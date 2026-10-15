@@ -1,9 +1,10 @@
 import QtQuick
 import ArchTitanSettings
+import ArchTitan.TitanUI
 
 Rectangle {
     property string text: "Active"
-    property color  statusColor: "#4CAF82"
+    property color  statusColor: TitanTheme.success
 
     height: 20
     radius: 10

@@ -2,18 +2,19 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls.Basic
 import ArchTitanSettings
+import ArchTitan.TitanUI
 
 ScrollView {
     id: root
     contentWidth: -1
     ScrollBar.vertical.policy: ScrollBar.AsNeeded
 
-    property color textHigh:  globalTextHigh
-    property color textMid:   globalTextMid
-    property color textLow:   globalTextLow
-    property color accent:    SettingsBackend.accentColor
-    property color green:     "#4CAF82"
-    property color orange:    "#D4853A"
+    property color textHigh:  TitanTheme.textHigh
+    property color textMid:   TitanTheme.textMid
+    property color textLow:   TitanTheme.textLow
+    property color accent:    TitanTheme.accent
+    property color green:     TitanTheme.success
+    property color orange:    TitanTheme.warning
 
     readonly property var accentColors: [
         "#4C8BF5", "#00D2D3", "#9575CD", "#66BB6A",
@@ -372,7 +373,7 @@ ScrollView {
                                 text: modelData
                                 font { pixelSize: 12; family: modelData }
                                 font.weight: SettingsBackend.fontFamily === modelData ? Font.Medium : Font.Normal
-                                color: SettingsBackend.fontFamily === modelData ? "#FFFFFF" : root.textMid
+                                color: SettingsBackend.fontFamily === modelData ? TitanTheme.accentFg : root.textMid
                             }
 
                             MouseArea {

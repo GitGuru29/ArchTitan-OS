@@ -1,12 +1,13 @@
 import QtQuick
 import QtQuick.Controls.Basic
 import ArchTitanSettings
+import ArchTitan.TitanUI
 
 Switch {
     id: root
 
-    property color onColor:  "#4C8BF5"
-    property color offColor: globalBorder0
+    property color onColor:  TitanTheme.accent
+    property color offColor: TitanTheme.surface0
 
     implicitWidth: 44
     implicitHeight: 24
@@ -17,18 +18,18 @@ Switch {
         radius: height / 2
         color: root.checked ? root.onColor : root.offColor
         border.width: 1
-        border.color: root.checked ? "transparent" : globalBorder1
+        border.color: root.checked ? "transparent" : TitanTheme.border
 
-        Behavior on color { ColorAnimation { duration: 180 } }
+        Behavior on color { ColorAnimation { duration: TitanTheme.durBase } }
 
         // Knob
         Rectangle {
             width: 18; height: 18
             radius: 9
-            color: "#FFFFFF"
+            color: root.checked ? TitanTheme.accentFg : TitanTheme.textHigh
             anchors.verticalCenter: parent.verticalCenter
             x: root.checked ? parent.width - width - 3 : 3
-            Behavior on x { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+            Behavior on x { NumberAnimation { duration: TitanTheme.durBase; easing.type: Easing.OutCubic } }
 
             // Subtle drop shadow imitation
             Rectangle {
@@ -36,7 +37,7 @@ Switch {
                 radius: parent.radius
                 color: "transparent"
                 border.width: 1
-                border.color: "#00000020"
+                border.color: Qt.rgba(0, 0, 0, 0.13)
             }
         }
     }

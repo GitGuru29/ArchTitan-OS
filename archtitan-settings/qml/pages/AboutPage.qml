@@ -2,17 +2,18 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls.Basic
 import ArchTitanSettings
+import ArchTitan.TitanUI
 
 ScrollView {
     id: root
     contentWidth: -1
     ScrollBar.vertical.policy: ScrollBar.AsNeeded
 
-    property color textHigh: isDarkTheme ? "#FFFFFF" : "#111111"
-    property color textMid:  isDarkTheme ? "#CCCCCC" : "#444444"
-    property color textSub:  isDarkTheme ? "#A0A0A8" : "#666666"
-    property color textLow:  isDarkTheme ? "#808088" : "#888888"
-    property color accent:   SettingsBackend.accentColor
+    property color textHigh: TitanTheme.textHigh
+    property color textMid:  TitanTheme.textMid
+    property color textSub:  TitanTheme.textLow
+    property color textLow:  TitanTheme.textLow
+    property color accent:   TitanTheme.accent
 
     ColumnLayout {
         width: root.availableWidth
@@ -81,7 +82,7 @@ ScrollView {
                     Layout.fillWidth: true
                     height: 76
                     radius: 10
-                    color: isDarkTheme ? "#1A1A1E" : globalBg3
+                    color: TitanTheme.bg3
                     border.width: 1
                     border.color: globalBorder1
 
@@ -116,7 +117,7 @@ ScrollView {
             Layout.fillWidth: true
             Layout.leftMargin: 24; Layout.rightMargin: 24
             radius: 10
-            color: isDarkTheme ? "#1A1A1E" : globalBg3
+            color: TitanTheme.bg3
             border.width: 1; border.color: globalBorder1
             implicitHeight: sysInfoCol.implicitHeight + 36
 
@@ -258,7 +259,7 @@ ScrollView {
             Layout.fillWidth: true
             Layout.leftMargin: 24; Layout.rightMargin: 24
             radius: 10
-            color: isDarkTheme ? "#1A1A1E" : globalBg3
+            color: TitanTheme.bg3
             border.width: 1; border.color: globalBorder1
             implicitHeight: techStackCol.implicitHeight + 36
 
@@ -291,7 +292,7 @@ ScrollView {
                         delegate: Rectangle {
                             height: 30; radius: 15
                             width: chipLabel.implicitWidth + 24
-                            color: isDarkTheme ? "#24242A" : "#E8E8EE"
+                            color: TitanTheme.surface0
                             border.width: 1
                             border.color: globalBorder0
 
@@ -325,10 +326,10 @@ ScrollView {
                 delegate: Rectangle {
                     Layout.fillWidth: true
                     height: 48; radius: 8
-                    color: linkArea.containsMouse ? (isDarkTheme ? "#282830" : "#E2E2E8") : (isDarkTheme ? "#1A1A1E" : globalBg3)
+                    color: linkArea.containsMouse ? TitanTheme.surface1 : TitanTheme.bg3
                     border.width: 1
                     border.color: globalBorder1
-                    Behavior on color { ColorAnimation { duration: 120 } }
+                    Behavior on color { ColorAnimation { duration: TitanTheme.durFast } }
 
                     Text {
                         anchors.centerIn: parent

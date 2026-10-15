@@ -2,16 +2,17 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls.Basic
 import ArchTitanSettings
+import ArchTitan.TitanUI
 
 ScrollView {
     id: root
     contentWidth: -1
     ScrollBar.vertical.policy: ScrollBar.AsNeeded
 
-    property color textHigh: globalTextHigh
-    property color textMid:  globalTextMid
-    property color textLow:  globalTextLow
-    property color accent:   SettingsBackend.accentColor
+    property color textHigh: TitanTheme.textHigh
+    property color textMid:  TitanTheme.textMid
+    property color textLow:  TitanTheme.textLow
+    property color accent:   TitanTheme.accent
 
     ColumnLayout {
         width: root.availableWidth
