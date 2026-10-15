@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Effects
 import ArchTitanSettings
+import ArchTitan.TitanUI
 
 Item {
     id: root
@@ -23,9 +24,9 @@ Item {
         }
         radius: 9
         color: root.active 
-               ? Qt.rgba(0.298, 0.545, 0.96, 0.16)
-               : (hover.containsMouse ? Qt.rgba(1, 1, 1, 0.05) : "transparent")
-        Behavior on color { ColorAnimation { duration: 120 } }
+               ? TitanTheme.accentSoft
+               : (hover.containsMouse ? TitanTheme.bg4 : "transparent")
+        Behavior on color { ColorAnimation { duration: TitanTheme.durFast } }
     }
 
     RowLayout {
@@ -55,9 +56,9 @@ Item {
                 source: iconImg
                 colorization: 1.0
                 colorizationColor: root.active 
-                                   ? "#7cb0ff" 
-                                   : (hover.containsMouse ? "#d0d5e0" : "#9aa2b1")
-                Behavior on colorizationColor { ColorAnimation { duration: 120 } }
+                                   ? TitanTheme.accent 
+                                   : (hover.containsMouse ? TitanTheme.textHigh : TitanTheme.textMid)
+                Behavior on colorizationColor { ColorAnimation { duration: TitanTheme.durFast } }
             }
         }
 
@@ -69,9 +70,9 @@ Item {
                 family: "Inter"
             }
             color: root.active 
-                   ? "#f2f4f8" 
-                   : (hover.containsMouse ? "#d0d5e0" : "#9aa2b1")
-            Behavior on color { ColorAnimation { duration: 120 } }
+                   ? TitanTheme.textHigh 
+                   : (hover.containsMouse ? TitanTheme.textHigh : TitanTheme.textMid)
+            Behavior on color { ColorAnimation { duration: TitanTheme.durFast } }
             Layout.fillWidth: true
         }
     }

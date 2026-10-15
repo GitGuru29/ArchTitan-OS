@@ -1,31 +1,27 @@
 #!/usr/bin/env bash
-# ArchTitan Settings — Quick Build Script
+# ArchTitan Settings — build & package into the airootfs tree.
+#
+# The app depends on the shared ArchTitan.TitanUI QML module at runtime.
+# Build that first with ../titan-ui/build.sh (or the ISO build) so the module
+# is installed under usr/lib/qt6/qml.
 set -e
 
-PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
-BUILD_DIR="$PROJECT_DIR/build"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BUILD_DIR="${SCRIPT_DIR}/build"
+AIROOT="${SCRIPT_DIR}/../airootfs"
+BIN="${BUILD_DIR}/archtitan-settings"
 
-echo "╔══════════════════════════════════════╗"
-echo "║  ArchTitan Settings — Build          ║"
-echo "╚══════════════════════════════════════╝"
-echo ""
+echo "=== Building ArchTitan Settings ==="
+mkdir -p "${BUILD_DIR}"
+cmake -S "${SCRIPT_DIR}" -B "${BUILD_DIR}" \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_INSTALL_PREFIX=/usr
+cmake --build "${BUILD_DIR}" -j"$(nproc)"
 
-# Ensure build dir exists
-mkdir -p "$BUILD_DIR"
-cd "$BUILD_DIR"
-
-# Configure
-echo "→ Configuring with CMake..."
-cmake .. \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_INSTALL_PREFIX=/usr
-
-# Build
-echo "→ Building..."
-make -j$(nproc)
-
-echo ""
-echo "✓ Build complete!"
-echo "  Binary: $BUILD_DIR/archtitan-settings"
-echo ""
-echo "  Run with: $BUILD_DIR/archtitan-settings"
+echo "=== Installing into airootfs ==="
+install -Dm755 "${BIN}" "${AIROOT}/usr/bin/archtitan-settings"
+install -Dm755 "${BIN}" "${AIROOT}/usr/local/bin/archtitan-settings"
+echo "  -> ${AIROOT}/usr/bin/archtitan-settings"
+echo "  -> ${AIROOT}/usr/local/bin/archtitan-settings"
+echo "! Remember to run ../titan-ui/build.sh if the TitanUI module changed."
+echo "✓ ArchTitan Settings built and installed into airootfs."

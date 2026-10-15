@@ -2,18 +2,19 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls.Basic
 import ArchTitanSettings
+import ArchTitan.TitanUI
 
 Item {
     id: pageRoot
     anchors.fill: parent
 
-    property color textHigh: globalTextHigh
-    property color textMid:  globalTextMid
-    property color textLow:  globalTextLow
-    property color accent:   SettingsBackend.accentColor
-    property color green:    "#4CAF82"
-    property color red:      "#E05C6A"
-    property color orange:   "#D4853A"
+    property color textHigh: TitanTheme.textHigh
+    property color textMid:  TitanTheme.textMid
+    property color textLow:  TitanTheme.textLow
+    property color accent:   TitanTheme.accent
+    property color green:    TitanTheme.success
+    property color red:      TitanTheme.danger
+    property color orange:   TitanTheme.warning
 
     // Toast state
     property string toastText: ""
@@ -481,8 +482,8 @@ Item {
                             // Disconnect Button
                             Rectangle {
                                 Layout.fillWidth: true; height: 40; radius: 8
-                                color: "#2B1619"
-                                border.width: 1; border.color: "#4A2227"
+                                color: Qt.rgba(TitanTheme.danger.r, TitanTheme.danger.g, TitanTheme.danger.b, 0.12)
+                                border.width: 1; border.color: Qt.rgba(TitanTheme.danger.r, TitanTheme.danger.g, TitanTheme.danger.b, 0.3)
                                 visible: NetworkManager.isConnected || NetworkManager.ethernetConnected
 
                                 Text {
@@ -566,7 +567,9 @@ Item {
         anchors { bottom: parent.bottom; bottomMargin: 24; horizontalCenter: parent.horizontalCenter }
         width: Math.min(pageRoot.width - 48, toastTextItem.implicitWidth + 40)
         height: 40; radius: 20
-        color: toastIsError ? "#2A1418" : "#142A1E"
+        color: toastIsError
+               ? Qt.rgba(TitanTheme.danger.r, TitanTheme.danger.g, TitanTheme.danger.b, 0.15)
+               : Qt.rgba(TitanTheme.success.r, TitanTheme.success.g, TitanTheme.success.b, 0.15)
         border.width: 1; border.color: toastIsError ? pageRoot.red : pageRoot.green
         visible: toastText.length > 0; z: 1000
 

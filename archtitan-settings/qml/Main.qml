@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls.Basic
 import QtQuick.Layouts
 import ArchTitanSettings
+import ArchTitan.TitanUI
 
 
 ApplicationWindow {
@@ -16,35 +17,35 @@ ApplicationWindow {
     flags: Qt.Window | Qt.FramelessWindowHint
 
     // ── Design tokens ──────────────────────────────────────────────
+    // Single source of truth: the shared ArchTitan.TitanUI design system
+    // (Titan Design Language). No palette values are declared locally.
     readonly property bool isDarkTheme: WallpaperManager.isDark
 
-    readonly property color globalBg0:          isDarkTheme ? "#0D0D0D" : "#F5F5F5"
-    readonly property color globalBg1:          isDarkTheme ? "#B3111111" : "#B3FFFFFF"
-    readonly property color globalBg2:          isDarkTheme ? "#99171717" : "#99E5E5E5"
-    readonly property color globalBg3:          isDarkTheme ? "#161616" : "#EAEAEA"
-    readonly property color globalBg4:          isDarkTheme ? "#242424" : "#DDDDDD"
-    readonly property color globalBorder0:      isDarkTheme ? "#2A2A2A" : "#CCCCCC"
-    readonly property color globalBorder1:      isDarkTheme ? "#1F1F1F" : "#E0E0E0"
-    readonly property color globalTextHigh:     isDarkTheme ? "#EBEBEB" : "#111111"
-    readonly property color globalTextMid:      isDarkTheme ? "#8C8C8C" : "#444444"
-    readonly property color globalTextLow:      isDarkTheme ? "#707070" : "#777777"
+    readonly property color bg0:          TitanTheme.bg0
+    readonly property color bg1:          TitanTheme.bg1
+    readonly property color bg2:          TitanTheme.bg2
+    readonly property color bg3:          TitanTheme.bg3
+    readonly property color bg4:          TitanTheme.bg4
+    readonly property color border0:      TitanTheme.border
+    readonly property color border1:      TitanTheme.borderSubtle
+    property color accent:                TitanTheme.accent
+    readonly property color accentDim:    TitanTheme.accentSoft
+    readonly property color textHigh:     TitanTheme.textHigh
+    readonly property color textMid:      TitanTheme.textMid
+    readonly property color textLow:      TitanTheme.textLow
+    readonly property color green:        TitanTheme.success
+    readonly property color red:          TitanTheme.danger
+    readonly property color orange:       TitanTheme.warning
+    readonly property color purple:       TitanTheme.mauve
 
-    readonly property color bg0:          globalBg0
-    readonly property color bg1:          globalBg1
-    readonly property color bg2:          globalBg2
-    readonly property color bg3:          isDarkTheme ? "#1C1C1C" : "#E5E5E5"
-    readonly property color bg4:          globalBg4
-    readonly property color border0:      globalBorder0
-    readonly property color border1:      globalBorder1
-    property color accent:       SettingsBackend.accentColor
-    property color accentDim:    Qt.rgba(accent.r, accent.g, accent.b, 0.25)
-    readonly property color textHigh:     globalTextHigh
-    readonly property color textMid:      globalTextMid
-    readonly property color textLow:      globalTextLow
-    readonly property color green:        "#4CAF82"
-    readonly property color red:          "#E05C6A"
-    readonly property color orange:       "#D4853A"
-    readonly property color purple:       "#7C6FCD"
+    // Legacy page-body aliases (resolved up the component scope chain).
+    readonly property color globalBg0:     TitanTheme.bg0
+    readonly property color globalBg1:     TitanTheme.bg1
+    readonly property color globalBg2:     TitanTheme.bg2
+    readonly property color globalBg3:     TitanTheme.bg3
+    readonly property color globalBg4:     TitanTheme.bg4
+    readonly property color globalBorder0: TitanTheme.border
+    readonly property color globalBorder1: TitanTheme.borderSubtle
 
     readonly property int sidebarW: 220
     property int currentPage: 0
@@ -97,7 +98,7 @@ ApplicationWindow {
             Rectangle {
                 Layout.preferredWidth: root.sidebarW
                 Layout.fillHeight: true
-                color: "#0a0e16"
+                color: TitanTheme.bg0
                 radius: 12
 
                 // Square off right corners
@@ -111,7 +112,7 @@ ApplicationWindow {
                 Rectangle {
                     anchors { top: parent.top; bottom: parent.bottom; right: parent.right }
                     width: 1
-                    color: Qt.rgba(0.298, 0.545, 0.96, 0.25)
+                    color: TitanTheme.accentEdge
                 }
 
                 ColumnLayout {
@@ -137,9 +138,9 @@ ApplicationWindow {
                                 Layout.alignment: Qt.AlignHCenter
                                 width: 34; height: 34
                                 radius: 8
-                                color: Qt.rgba(0.298, 0.545, 0.96, 0.15)
+                                color: TitanTheme.accentSoft
                                 border.width: 1
-                                border.color: Qt.rgba(0.298, 0.545, 0.96, 0.4)
+                                border.color: TitanTheme.accentEdge
 
                                 Image {
                                     anchors.centerIn: parent
@@ -156,7 +157,7 @@ ApplicationWindow {
                                 text: "ArchTitan Settings"
                                 font { pixelSize: 13; family: "Inter" }
                                 font.weight: Font.Bold
-                                color: "#f2f4f8"
+                                color: TitanTheme.textHigh
                             }
                         }
                     }
@@ -204,7 +205,7 @@ ApplicationWindow {
 
                             Rectangle {
                                 width: 8; height: 8; radius: 4
-                                color: "#46d183"
+                                color: TitanTheme.success
                                 Layout.alignment: Qt.AlignVCenter
                             }
 
@@ -216,12 +217,12 @@ ApplicationWindow {
                                     text: "ArchTitan OS"
                                     font { pixelSize: 11; family: "Inter" }
                                     font.weight: Font.Medium
-                                    color: "#f2f4f8"
+                                    color: TitanTheme.textHigh
                                 }
                                 Text {
                                     text: "Settings v1.0"
                                     font { pixelSize: 10; family: "Inter" }
-                                    color: "#9aa2b1"
+                                    color: TitanTheme.textMid
                                 }
                             }
                         }
@@ -262,9 +263,9 @@ ApplicationWindow {
 
                             Repeater {
                                 model: [
-                                    { col: "#ED6A5E", hov: "#C9504A", act: "close",    sym: "×" },
-                                    { col: "#F5BF4F", hov: "#D4A030", act: "minimize", sym: "−" },
-                                    { col: "#61C554", hov: "#48A83D", act: "maximize", sym: "+" }
+                                    { col: "#ED6A5E", hov: "#C9504A", act: "close",    sym: "×" }, // tdl-allow: macOS-style window control
+                                    { col: "#F5BF4F", hov: "#D4A030", act: "minimize", sym: "−" }, // tdl-allow: macOS-style window control
+                                    { col: "#61C554", hov: "#48A83D", act: "maximize", sym: "+" }  // tdl-allow: macOS-style window control
                                 ]
                                 delegate: Item {
                                     width: 13; height: 13
@@ -278,7 +279,7 @@ ApplicationWindow {
                                         text: modelData.sym
                                         font.pixelSize: 9
                                         font.weight: Font.Bold
-                                        color: "#00000070"
+                                        color: "#70000000"
                                         visible: wc.containsMouse
                                     }
                                     MouseArea {
@@ -330,12 +331,12 @@ ApplicationWindow {
         var p = SettingsBackend.powerProfile;
         if (p === "Performance")
             return { icon: "qrc:/ArchTitanSettings/assets/icons/performance_nobg.png",
-                     label: "Performance", accent: "#E05C6A", colorize: false }
+                     label: "Performance", accent: TitanTheme.danger, colorize: false }
         if (p === "Power Saver")
             return { icon: "qrc:/ArchTitanSettings/assets/icons/powersaving.png",
-                     label: "Power Saver", accent: "#4CAF82", colorize: false }
+                     label: "Power Saver", accent: TitanTheme.success, colorize: false }
         return { icon: "qrc:/ArchTitanSettings/assets/icons/balanced.png",
-                 label: "Balanced", accent: "#7AA2F7", colorize: false }
+                 label: "Balanced", accent: TitanTheme.info, colorize: false }
     }
 
     Item {
@@ -348,7 +349,7 @@ ApplicationWindow {
         // Backdrop tint
         Rectangle {
             anchors.fill: parent
-            color: isDarkTheme ? "#88000000" : "#88FFFFFF"
+            color: Qt.rgba(0, 0, 0, 0.53)
             radius: 12
         }
 
@@ -357,7 +358,7 @@ ApplicationWindow {
             anchors.centerIn: parent
             width: 240; height: 220
             radius: 24
-            color: isDarkTheme ? "#CC111111" : "#CCF5F5F5"
+            color: Qt.rgba(TitanTheme.bg0.r, TitanTheme.bg0.g, TitanTheme.bg0.b, 0.85)
             border.width: 1
             border.color: root._profileMeta.accent
 
@@ -431,7 +432,7 @@ ApplicationWindow {
                         font { pixelSize: 9; family: "Inter" }
                         font.weight: Font.DemiBold
                         font.letterSpacing: 1.6
-                        color: isDarkTheme ? "#606060" : "#888888"
+                        color: TitanTheme.textLow
                     }
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter

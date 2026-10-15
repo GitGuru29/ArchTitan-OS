@@ -35,6 +35,7 @@ qt_add_executable(archtitan-settings
 qt_add_qml_module(archtitan-settings
     URI ArchTitanSettings
     VERSION 1.0
+    IMPORT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../titan-ui/build/qml"
     QML_FILES
         qml/Main.qml
         qml/components/SidebarItem.qml

@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import ArchTitanSettings
+import ArchTitan.TitanUI
 
 Item {
     property string text: ""
@@ -17,7 +18,7 @@ Item {
             font { pixelSize: 10; family: "Inter" }
             font.weight: Font.DemiBold
             font.letterSpacing: 1.2
-            color: "#4A4A4A"
+            color: TitanTheme.textLow
         }
 
         Rectangle {
@@ -28,7 +29,7 @@ Item {
                 return Math.max(0, pw - tw - 16)
             }
             height: 1
-            color: "#222222"
+            color: TitanTheme.borderSubtle
             visible: parent.parent.text !== ""
         }
     }

@@ -2,19 +2,20 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls.Basic
 import ArchTitanSettings
+import ArchTitan.TitanUI
 
 ScrollView {
     id: root
     contentWidth: -1
     ScrollBar.vertical.policy: ScrollBar.AsNeeded
 
-    property color textHigh: globalTextHigh
-    property color textMid:  globalTextMid
-    property color textLow:  globalTextLow
-    property color accent:   SettingsBackend.accentColor
-    property color green:    "#4CAF82"
-    property color orange:   "#D4853A"
-    property color red:      "#E05C6A"
+    property color textHigh: TitanTheme.textHigh
+    property color textMid:  TitanTheme.textMid
+    property color textLow:  TitanTheme.textLow
+    property color accent:   TitanTheme.accent
+    property color green:    TitanTheme.success
+    property color orange:   TitanTheme.warning
+    property color red:      TitanTheme.danger
 
     ColumnLayout {
         width: root.availableWidth; spacing: 0

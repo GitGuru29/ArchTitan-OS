@@ -2,18 +2,19 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls.Basic
 import ArchTitanSettings
+import ArchTitan.TitanUI
 
 ScrollView {
     id: root
     contentWidth: -1
     ScrollBar.vertical.policy: ScrollBar.AsNeeded
 
-    property color textHigh: globalTextHigh
-    property color textMid:  globalTextMid
-    property color textLow:  globalTextLow
-    property color accent:   SettingsBackend.accentColor
-    property color red:      "#E05C6A"
-    property color green:    "#4CAF82"
+    property color textHigh: TitanTheme.textHigh
+    property color textMid:  TitanTheme.textMid
+    property color textLow:  TitanTheme.textLow
+    property color accent:   TitanTheme.accent
+    property color red:      TitanTheme.danger
+    property color green:    TitanTheme.success
 
     ColumnLayout {
         width: root.availableWidth
@@ -185,7 +186,7 @@ ScrollView {
                                 onValueChanged: AudioBackend.masterVolume = value
                                 enabled: !AudioBackend.masterMuted
                                 opacity: AudioBackend.masterMuted ? 0.35 : 1.0
-                                fillColor: AudioBackend.masterMuted ? "#3A3A3A" : root.accent
+                                fillColor: AudioBackend.masterMuted ? TitanTheme.surface2 : root.accent
                             }
 
                             Text {
@@ -224,7 +225,7 @@ ScrollView {
                             onValueChanged: AudioBackend.micVolume = value
                             enabled: !AudioBackend.micMuted
                             opacity: AudioBackend.micMuted ? 0.35 : 1.0
-                            fillColor: AudioBackend.micMuted ? "#3A3A3A" : root.accent
+                            fillColor: AudioBackend.micMuted ? TitanTheme.surface2 : root.accent
                         }
 
                         Text {
@@ -265,7 +266,7 @@ ScrollView {
                                     text: modelData
                                     font { pixelSize: 12; family: "Inter" }
                                     font.weight: sel ? Font.Medium : Font.Normal
-                                    color: sel ? "#FFFFFF" : root.textMid
+                                    color: sel ? TitanTheme.accentFg : root.textMid
                                 }
 
                                 MouseArea {
@@ -374,7 +375,7 @@ ScrollView {
                                         text: modelData.label
                                         font { pixelSize: 13; family: "Inter" }
                                         font.weight: sel ? Font.Medium : Font.Normal
-                                        color: sel ? "#FFFFFF" : root.textMid
+                                        color: sel ? TitanTheme.accentFg : root.textMid
                                     }
 
                                     MouseArea {
