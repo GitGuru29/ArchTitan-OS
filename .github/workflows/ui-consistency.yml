@@ -1,0 +1,41 @@
+name: UI Consistency
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'airootfs/**'
+      - 'titan-ui/**'
+      - 'titanfetch-src/**'
+      - 'titan-browser-source/**'
+      - 'archtitan-settings/**'
+      - 'subsystems/**'
+      - 'scripts/**'
+      - '.github/workflows/ui-consistency.yml'
+  pull_request:
+    paths:
+      - 'airootfs/**'
+      - 'titan-ui/**'
+      - 'titanfetch-src/**'
+      - 'titan-browser-source/**'
+      - 'archtitan-settings/**'
+      - 'subsystems/**'
+      - 'scripts/**'
+      - '.github/workflows/ui-consistency.yml'
+  workflow_dispatch:
+
+jobs:
+  consistency:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Colour palette lint (Titan Design Language)
+        run: python3 scripts/colour-lint.py
+
+      - name: Config tree drift (skel / root / live)
+        run: python3 scripts/config-drift.py
+
+      - name: Contrast audit (WCAG 2.1)
+        run: python3 scripts/contrast-audit.py

@@ -23,6 +23,16 @@ ArchTitan embraces the Unix philosophy while providing a cohesive, pre-configure
 
 ---
 
+##  Design System (Titan Design Language)
+
+Every surface shares a single design system — the **Titan Design Language (TDL)** — living in [`titan-ui/`](titan-ui/README.md): Catppuccin Mocha surfaces, Samsung One UI 9.0 geometry, a wallpaper-adaptive accent, and a full component set (`TitanButton`, `TitanCard`, `TitanToggleTile`, `TitanSpinner`, `TitanEmptyState`, `TitanErrorState`, …).
+
+- **One source of truth:** QML apps import `ArchTitan.TitanUI`; Qt Widgets apps use the header-only `TitanPalette.h`. Hardcoded colour literals are disallowed outside the token set.
+- **Enforced in CI:** palette lint, config-tree drift and WCAG 2.1 contrast checks run on every change (`.github/workflows/ui-consistency.yml`).
+- **Preview:** `cd titan-ui && ./build.sh && QML_IMPORT_PATH=build/qml ./build/titan-ui-gallery`.
+
+---
+
 ##  System Architecture
 
 ArchTitan bridges the gap between the modern Wayland compositor, custom middleware, and low-level Linux kernel subsystems:
@@ -348,6 +358,7 @@ Comprehensive guides and technical documentation are available on the [ArchTitan
 | Topic | Description | Link |
 | :--- | :--- | :--- |
 | **System Architecture** | Subsystem layers, D-Bus IPC, and kernel interfaces | [Architecture Guide](https://github.com/GitGuru29/archtitan-os/wiki/Architecture) |
+| **Design System (TDL)** | Tokens, components, icon policy & consistency tooling | [`titan-ui/README.md`](titan-ui/README.md) |
 | **Building the ISO** | Archiso compilation steps and dependency handling | [Build Documentation](https://github.com/GitGuru29/archtitan-os/wiki/Building-the-ISO) |
 | **Installation Guide** | UEFI partitioning, live environment, and dual-booting | [Installation Manual](https://github.com/GitGuru29/archtitan-os/wiki/Installation-Guide) |
 | **Hardware Manager** | cgroups v2 resource orchestration and power policies | [THM Documentation](https://github.com/GitGuru29/archtitan-os/wiki/Titan-Hardware-Manager) |

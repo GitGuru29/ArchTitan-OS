@@ -1,0 +1,32 @@
+# ArchTitan OS — pointer hot-zone configuration
+#
+# When the pointer dwells in a screen zone, the mapped command runs.
+# Seven zones are available; the top-centre zone is intentionally omitted
+# because Waybar occupies the top edge.
+#
+#   +--[top_left]------(top-centre: omitted)------[top_right]--+
+#   |                                                          |
+# [left_center]                                        [right_center]
+#   |                                                          |
+#   +--[bottom_left]--------[bottom_center]--------[bottom_right]--+
+
+[hotzones]
+enabled            = true
+corner_size        = 4      # px, square corner zone
+edge_length        = 140    # px, length of an edge-midpoint zone
+edge_thickness     = 4      # px, thickness of an edge-midpoint zone
+dwell_ms           = 180    # pointer must rest this long inside the zone
+cooldown_ms        = 500    # re-arm delay after the pointer leaves the zone
+exclusion_box      = 64     # px the pointer must travel inward to re-arm
+exclude_fullscreen = true
+ignore_classes     = ["mpv", "org.kde.*", "*gamescope*"]
+
+[hotzones.zones]
+top_right     = "titan-quicksettings --toggle"
+top_left      = "rofi -show drun"
+bottom_right  = "titan-quicksettings --notifications"
+bottom_left   = "hyprctl dispatch togglespecialworkspace magic"
+right_center  = "hyprctl dispatch workspace e+1"
+left_center   = "hyprctl dispatch workspace e-1"
+bottom_center = "hyprctl dispatch togglespecialworkspace magic"
+# top_center  = ""          # omitted by design (Waybar occupies the top edge)
