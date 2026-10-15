@@ -1,7 +1,11 @@
 /* ═══════════════════════════════════════════════════════════════
  * ARCHTITAN OS — Floating Bento Island Waybar Theme
- * Tokyo Night / Obsidian glass aesthetic with floating pills,
- * hardware-accelerated blur, and tactile interactive modules.
+ * Catppuccin Mocha / Titan Design Language (TDL) with floating
+ * pills, hardware-accelerated blur, and tactile modules.
+ *
+ * Surfaces, borders, shadows and accent carry `@titan-adapt:<token>`
+ * markers — titan-waybar-theme rewrites only those colours from the
+ * active wallpaper. Text/accent hues stay on the Catppuccin palette.
  * ═══════════════════════════════════════════════════════════════ */
 
 * {
@@ -18,7 +22,7 @@
 /* ── Transparent Main Window Container ───────────────────────── */
 window#waybar {
     background: transparent;
-    color     : #c0caf5;
+    color     : #CDD6F4;
 }
 
 window#waybar.hidden {
@@ -27,30 +31,30 @@ window#waybar.hidden {
 
 /* ── Modular Floating Island Capsules ────────────────────────── */
 .modules-left {
-    background    : rgba(11, 14, 20, 0.78);
-    border        : 1px solid rgba(255, 255, 255, 0.08);
+    background    : rgba(17, 17, 27, 0.78); /* @titan-adapt:bar-bg */
+    border        : 1px solid rgba(255, 255, 255, 0.08); /* @titan-adapt:bar-border */
     border-radius : 18px;
     padding       : 3px 6px;
     margin        : 4px 0 4px 10px;
-    box-shadow    : 0 4px 16px rgba(0, 0, 0, 0.45);
+    box-shadow    : 0 4px 16px rgba(0, 0, 0, 0.45); /* @titan-adapt:bar-shadow */
 }
 
 .modules-center {
-    background    : rgba(11, 14, 20, 0.78);
-    border        : 1px solid rgba(255, 255, 255, 0.08);
+    background    : rgba(17, 17, 27, 0.78); /* @titan-adapt:bar-bg */
+    border        : 1px solid rgba(255, 255, 255, 0.08); /* @titan-adapt:bar-border */
     border-radius : 18px;
     padding       : 3px 14px;
     margin        : 4px 0;
-    box-shadow    : 0 4px 16px rgba(0, 0, 0, 0.45);
+    box-shadow    : 0 4px 16px rgba(0, 0, 0, 0.45); /* @titan-adapt:bar-shadow */
 }
 
 .modules-right {
-    background    : rgba(11, 14, 20, 0.78);
-    border        : 1px solid rgba(255, 255, 255, 0.08);
+    background    : rgba(17, 17, 27, 0.78); /* @titan-adapt:bar-bg */
+    border        : 1px solid rgba(255, 255, 255, 0.08); /* @titan-adapt:bar-border */
     border-radius : 18px;
     padding       : 3px 8px;
     margin        : 4px 10px 4px 0;
-    box-shadow    : 0 4px 16px rgba(0, 0, 0, 0.45);
+    box-shadow    : 0 4px 16px rgba(0, 0, 0, 0.45); /* @titan-adapt:bar-shadow */
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -65,7 +69,7 @@ window#waybar.hidden {
 #workspaces button {
     padding      : 2px 9px;
     margin       : 2px 2px;
-    color        : #565f89;
+    color        : #585B70;
     background   : transparent;
     border-radius: 10px;
     font-size    : 11.5px;
@@ -75,27 +79,27 @@ window#waybar.hidden {
 }
 
 #workspaces button:hover {
-    color     : #c0caf5;
+    color     : #CDD6F4;
     background: rgba(255, 255, 255, 0.08);
 }
 
-/* Active workspace — glowing Tokyo Night pill */
+/* Active workspace — glowing accent pill */
 #workspaces button.active {
-    color        : #ffffff;
-    background   : rgba(122, 162, 247, 0.22);
-    border       : 1px solid rgba(122, 162, 247, 0.65);
+    color        : #CDD6F4;
+    background   : rgba(137, 180, 250, 0.22); /* @titan-adapt:accent-soft */
+    border       : 1px solid rgba(137, 180, 250, 0.65); /* @titan-adapt:accent-line */
     border-radius: 12px;
     font-weight  : 700;
     padding      : 2px 14px;
-    box-shadow   : 0 0 10px rgba(122, 162, 247, 0.35);
+    box-shadow   : 0 0 10px rgba(137, 180, 250, 0.35);
 }
 
 #workspaces button.urgent {
-    color        : #ffffff;
-    background   : rgba(247, 118, 142, 0.25);
-    border       : 1px solid rgba(247, 118, 142, 0.7);
+    color        : #FFFFFF;
+    background   : rgba(243, 139, 168, 0.25);
+    border       : 1px solid rgba(243, 139, 168, 0.7);
     border-radius: 12px;
-    box-shadow   : 0 0 8px rgba(247, 118, 142, 0.4);
+    box-shadow   : 0 0 8px rgba(243, 139, 168, 0.4);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -103,7 +107,7 @@ window#waybar.hidden {
  * ═══════════════════════════════════════════════════════════════ */
 
 #custom-titan-center {
-    color        : #c0caf5;
+    color        : #CDD6F4;
     font-size    : 11.5px;
     font-weight  : 500;
     padding      : 0 10px;
@@ -113,7 +117,7 @@ window#waybar.hidden {
 }
 
 #custom-titan-center:hover {
-    color: #ffffff;
+    color: #FFFFFF;
 }
 
 /* Vertical Roll Keyframe Animations */
@@ -138,7 +142,7 @@ window#waybar.hidden {
 #network,
 #battery,
 #custom-notification {
-    color        : #7a889b;
+    color        : #7F849C;
     font-size    : 11.5px;
     padding      : 2px 7px;
     margin       : 1px 1px;
@@ -152,7 +156,7 @@ window#waybar.hidden {
 #network:hover,
 #battery:hover {
     background: rgba(255, 255, 255, 0.06);
-    color     : #c0caf5;
+    color     : #CDD6F4;
 }
 
 /* Subtle vertical separator */
@@ -163,51 +167,51 @@ window#waybar.hidden {
 
 /* Power profile */
 #custom-power-profile {
-    color      : #9ece6a;
+    color      : #A6E3A1;
     font-weight: 500;
 }
 
 /* Temperature */
 #temperature {
-    color: #7aa2f7;
+    color: #89B4FA;
 }
 #temperature.critical {
-    color     : #f7768e;
-    background: rgba(247, 118, 142, 0.15);
+    color     : #F38BA8;
+    background: rgba(243, 139, 168, 0.15);
 }
 
 /* Volume / Audio */
 #pulseaudio {
-    color: #7aa2f7;
+    color: #89B4FA;
 }
 #pulseaudio.muted {
-    color: #565f89;
+    color: #585B70;
 }
 
 /* Network */
 #network {
-    color    : #7dcfff;
+    color    : #94e2d5;
     font-size: 12px;
 }
 #network.disconnected {
-    color: #565f89;
+    color: #585B70;
 }
 
 /* Battery */
 #battery {
-    color      : #9ece6a;
+    color      : #A6E3A1;
     font-weight: 500;
 }
 #battery.warning {
-    color: #e0af68;
+    color: #F9E2AF;
 }
 #battery.critical {
-    color     : #f7768e;
-    background: rgba(247, 118, 142, 0.15);
+    color     : #F38BA8;
+    background: rgba(243, 139, 168, 0.15);
 }
 #battery.charging,
 #battery.plugged {
-    color: #73daca;
+    color: #94E2D5;
 }
 #battery.not-present {
     padding: 0;
@@ -216,7 +220,7 @@ window#waybar.hidden {
 
 /* Clock */
 #clock {
-    color        : #c0caf5;
+    color        : #CDD6F4;
     font-weight  : 600;
     font-size    : 11.5px;
     padding      : 2px 9px;
@@ -226,26 +230,26 @@ window#waybar.hidden {
 }
 
 #clock:hover {
-    background  : rgba(122, 162, 247, 0.15);
-    border-color: rgba(122, 162, 247, 0.4);
-    color       : #ffffff;
+    background  : rgba(137, 180, 250, 0.15);
+    border-color: rgba(137, 180, 250, 0.4);
+    color       : #89B4FA; /* @titan-adapt:accent */
 }
 
 /* Quick Settings Trigger Chip */
 #custom-notification {
-    color        : #bb9af7;
+    color        : #CBA6F7;
     font-size    : 13.5px;
     padding      : 2px 8px;
-    background   : rgba(187, 154, 247, 0.10);
-    border       : 1px solid rgba(187, 154, 247, 0.25);
+    background   : rgba(203, 166, 247, 0.10);
+    border       : 1px solid rgba(203, 166, 247, 0.25);
     border-radius: 10px;
 }
 
 #custom-notification:hover {
-    color       : #ffffff;
-    background  : rgba(187, 154, 247, 0.25);
-    border-color: rgba(187, 154, 247, 0.6);
-    box-shadow  : 0 0 8px rgba(187, 154, 247, 0.35);
+    color       : #FFFFFF;
+    background  : rgba(203, 166, 247, 0.25);
+    border-color: rgba(203, 166, 247, 0.6);
+    box-shadow  : 0 0 8px rgba(203, 166, 247, 0.35);
 }
 
 /* System Tray */
@@ -256,21 +260,21 @@ window#waybar.hidden {
     -gtk-icon-effect: dim;
 }
 #tray > .needs-attention {
-    background   : rgba(247, 118, 142, 0.2);
+    background   : rgba(243, 139, 168, 0.2);
     border-radius: 6px;
 }
 
 /* Tooltips */
 tooltip {
-    background   : rgba(11, 14, 20, 0.94);
-    border       : 1px solid rgba(122, 162, 247, 0.25);
+    background   : rgba(17, 17, 27, 0.94); /* @titan-adapt:tip-bg */
+    border       : 1px solid rgba(137, 180, 250, 0.25); /* @titan-adapt:tip-border */
     border-radius: 10px;
-    color        : #c0caf5;
+    color        : #CDD6F4;
     box-shadow   : 0 6px 20px rgba(0, 0, 0, 0.6);
 }
 
 tooltip label {
-    color    : #c0caf5;
+    color    : #CDD6F4;
     padding  : 6px 10px;
     font-size: 11px;
 }

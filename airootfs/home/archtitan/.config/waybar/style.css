@@ -1,11 +1,15 @@
 /* ═══════════════════════════════════════════════════════════════
- * ARCHTITAN OS — Minimal Technical Waybar Theme
- * Near-black charcoal background, restrained purple accents,
- * thin-line system iconography, and embedded rounded center viewport.
+ * ARCHTITAN OS — Floating Bento Island Waybar Theme
+ * Catppuccin Mocha / Titan Design Language (TDL) with floating
+ * pills, hardware-accelerated blur, and tactile modules.
+ *
+ * Surfaces, borders, shadows and accent carry `@titan-adapt:<token>`
+ * markers — titan-waybar-theme rewrites only those colours from the
+ * active wallpaper. Text/accent hues stay on the Catppuccin palette.
  * ═══════════════════════════════════════════════════════════════ */
 
 * {
-    font-family  : "JetBrainsMono Nerd Font", "JetBrains Mono", monospace;
+    font-family  : "Inter", "JetBrainsMono Nerd Font", sans-serif;
     font-size    : 11.5px;
     font-weight  : 500;
     min-height   : 0;
@@ -15,122 +19,120 @@
     margin       : 0;
 }
 
-/* ── Main Linear Bar (Continuous Horizontal) ─────────────────── */
+/* ── Transparent Main Window Container ───────────────────────── */
 window#waybar {
-    background   : rgba(13, 14, 21, 0.94); /* @titan-adapt:bar-bg */
-    border       : 1px solid rgba(255, 255, 255, 0.07); /* @titan-adapt:bar-border */
-    border-radius: 10px;
-    color        : #cdd6f4;
-    box-shadow   : 0 4px 20px rgba(0, 0, 0, 0.65); /* @titan-adapt:bar-shadow */
+    background: transparent;
+    color     : #CDD6F4;
 }
 
 window#waybar.hidden {
     opacity: 0.1;
 }
 
-/* ── Section Containers ───────────────────────────────────────── */
-.modules-left   { padding: 0 4px 0 6px; }
-.modules-center { padding: 0; }
-.modules-right  { padding: 0 6px 0 4px; }
+/* ── Modular Floating Island Capsules ────────────────────────── */
+.modules-left {
+    background    : rgba(17, 17, 27, 0.78); /* @titan-adapt:bar-bg */
+    border        : 1px solid rgba(255, 255, 255, 0.08); /* @titan-adapt:bar-border */
+    border-radius : 18px;
+    padding       : 3px 6px;
+    margin        : 4px 0 4px 10px;
+    box-shadow    : 0 4px 16px rgba(0, 0, 0, 0.45); /* @titan-adapt:bar-shadow */
+}
+
+.modules-center {
+    background    : rgba(17, 17, 27, 0.78); /* @titan-adapt:bar-bg */
+    border        : 1px solid rgba(255, 255, 255, 0.08); /* @titan-adapt:bar-border */
+    border-radius : 18px;
+    padding       : 3px 14px;
+    margin        : 4px 0;
+    box-shadow    : 0 4px 16px rgba(0, 0, 0, 0.45); /* @titan-adapt:bar-shadow */
+}
+
+.modules-right {
+    background    : rgba(17, 17, 27, 0.78); /* @titan-adapt:bar-bg */
+    border        : 1px solid rgba(255, 255, 255, 0.08); /* @titan-adapt:bar-border */
+    border-radius : 18px;
+    padding       : 3px 8px;
+    margin        : 4px 10px 4px 0;
+    box-shadow    : 0 4px 16px rgba(0, 0, 0, 0.45); /* @titan-adapt:bar-shadow */
+}
 
 /* ═══════════════════════════════════════════════════════════════
- * LEFT — Workspaces
+ * LEFT — Workspaces Capsule
  * ═══════════════════════════════════════════════════════════════ */
 
 #workspaces {
-    margin: 0 2px;
+    margin: 0;
+    padding: 0;
 }
 
 #workspaces button {
-    padding      : 2px 10px;
-    margin       : 6px 2px;
-    color        : #585b70;
+    padding      : 2px 9px;
+    margin       : 2px 2px;
+    color        : #585B70;
     background   : transparent;
-    border-radius: 6px;
+    border-radius: 10px;
     font-size    : 11.5px;
     font-weight  : 600;
-    min-width    : 22px;
-    transition   : all 0.2s ease;
+    min-width    : 20px;
+    transition   : all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 #workspaces button:hover {
-    color     : #cdd6f4;
-    background: rgba(255, 255, 255, 0.05);
+    color     : #CDD6F4;
+    background: rgba(255, 255, 255, 0.08);
 }
 
-/* Active workspace — restrained purple pill */
+/* Active workspace — glowing accent pill */
 #workspaces button.active {
-    color        : #cdd6f4;
-    background   : rgba(180, 190, 254, 0.14); /* @titan-adapt:accent-soft */
-    border       : 1px solid rgba(180, 190, 254, 0.25); /* @titan-adapt:accent-line */
-    border-radius: 6px;
+    color        : #CDD6F4;
+    background   : rgba(137, 180, 250, 0.22); /* @titan-adapt:accent-soft */
+    border       : 1px solid rgba(137, 180, 250, 0.65); /* @titan-adapt:accent-line */
+    border-radius: 12px;
     font-weight  : 700;
+    padding      : 2px 14px;
+    box-shadow   : 0 0 10px rgba(137, 180, 250, 0.35);
 }
 
 #workspaces button.urgent {
-    color        : #f38ba8;
-    background   : rgba(243, 139, 168, 0.12);
-    border       : 1px solid rgba(243, 139, 168, 0.25);
-    border-radius: 6px;
+    color        : #FFFFFF;
+    background   : rgba(243, 139, 168, 0.25);
+    border       : 1px solid rgba(243, 139, 168, 0.7);
+    border-radius: 12px;
+    box-shadow   : 0 0 8px rgba(243, 139, 168, 0.4);
 }
 
 /* ═══════════════════════════════════════════════════════════════
- * CENTER — Embedded Rounded Viewport
+ * CENTER — Titan Viewport
  * ═══════════════════════════════════════════════════════════════ */
 
-/* ── Vertical Roll Keyframe Animations ────────────────────────── */
-@keyframes roll-a-fwd {
-    from { opacity: 0; margin-top: 14px; }
-    to   { opacity: 1; margin-top: 0; }
-}
-@keyframes roll-b-fwd {
-    from { opacity: 0; margin-top: 14px; }
-    to   { opacity: 1; margin-top: 0; }
-}
-@keyframes roll-a-rev {
-    from { opacity: 0; margin-top: -14px; }
-    to   { opacity: 1; margin-top: 0; }
-}
-@keyframes roll-b-rev {
-    from { opacity: 0; margin-top: -14px; }
-    to   { opacity: 1; margin-top: 0; }
-}
-
-/* ── Center Capsule / Card ────────────────────────────────────── */
 #custom-titan-center {
-    background   : rgba(255, 255, 255, 0.035);
-    border       : 1px solid rgba(255, 255, 255, 0.07);
-    border-radius: 16px;
-    color        : #cdd6f4;
+    color        : #CDD6F4;
     font-size    : 11.5px;
     font-weight  : 500;
-    padding      : 0 20px;
-    margin       : 4px 6px;
-    min-width    : 440px;
-    transition   : background 0.2s ease, border-color 0.2s ease;
+    padding      : 0 10px;
+    margin       : 0;
+    min-width    : 380px;
+    transition   : color 0.2s ease;
 }
 
 #custom-titan-center:hover {
-    background  : rgba(255, 255, 255, 0.055);
-    border-color: rgba(180, 190, 254, 0.22);
+    color: #FFFFFF;
 }
 
-/* ── Animation Classes ────────────────────────────────────────── */
-#custom-titan-center.a-fwd {
-    animation: roll-a-fwd 380ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-#custom-titan-center.b-fwd {
-    animation: roll-b-fwd 380ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-#custom-titan-center.a-rev {
-    animation: roll-a-rev 380ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-#custom-titan-center.b-rev {
-    animation: roll-b-rev 380ms cubic-bezier(0.16, 1, 0.3, 1);
-}
+/* Vertical Roll Keyframe Animations */
+@keyframes roll-a-fwd { from { opacity: 0; margin-top: 10px; } to { opacity: 1; margin-top: 0; } }
+@keyframes roll-b-fwd { from { opacity: 0; margin-top: 10px; } to { opacity: 1; margin-top: 0; } }
+@keyframes roll-a-rev { from { opacity: 0; margin-top: -10px; } to { opacity: 1; margin-top: 0; } }
+@keyframes roll-b-rev { from { opacity: 0; margin-top: -10px; } to { opacity: 1; margin-top: 0; } }
+
+#custom-titan-center.a-fwd { animation: roll-a-fwd 350ms cubic-bezier(0.16, 1, 0.3, 1); }
+#custom-titan-center.b-fwd { animation: roll-b-fwd 350ms cubic-bezier(0.16, 1, 0.3, 1); }
+#custom-titan-center.a-rev { animation: roll-a-rev 350ms cubic-bezier(0.16, 1, 0.3, 1); }
+#custom-titan-center.b-rev { animation: roll-b-rev 350ms cubic-bezier(0.16, 1, 0.3, 1); }
 
 /* ═══════════════════════════════════════════════════════════════
- * RIGHT — Status & Telemetry Modules
+ * RIGHT — Status & Telemetry Chips
  * ═══════════════════════════════════════════════════════════════ */
 
 #custom-power-profile,
@@ -138,122 +140,141 @@ window#waybar.hidden {
 #temperature,
 #pulseaudio,
 #network,
-#battery {
-    color    : #7f849c;
-    font-size: 11.5px;
-    padding  : 0 8px;
-    margin   : 0;
+#battery,
+#custom-notification {
+    color        : #7F849C;
+    font-size    : 11.5px;
+    padding      : 2px 7px;
+    margin       : 1px 1px;
+    border-radius: 8px;
+    transition   : all 0.2s ease;
 }
 
-/* Thin subtle vertical separator */
+#custom-power-profile:hover,
+#temperature:hover,
+#pulseaudio:hover,
+#network:hover,
+#battery:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color     : #CDD6F4;
+}
+
+/* Subtle vertical separator */
 #custom-separator {
-    color  : #1f202e;
-    padding: 0;
+    color  : rgba(255, 255, 255, 0.1);
+    padding: 0 1px;
 }
 
-/* Power profile — subtle green for efficiency */
+/* Power profile */
 #custom-power-profile {
-    color      : #a6e3a1;
-    font-weight: 500;
-}
-
-/* Clock */
-#clock {
-    color      : #cdd6f4;
+    color      : #A6E3A1;
     font-weight: 500;
 }
 
 /* Temperature */
 #temperature {
-    color: #7f849c;
+    color: #89B4FA;
 }
 #temperature.critical {
-    color: #f38ba8;
+    color     : #F38BA8;
+    background: rgba(243, 139, 168, 0.15);
 }
 
-/* Volume */
+/* Volume / Audio */
 #pulseaudio {
-    color: #7f849c;
+    color: #89B4FA;
 }
 #pulseaudio.muted {
-    color: #45475a;
+    color: #585B70;
 }
 
 /* Network */
 #network {
-    color    : #7f849c;
-    font-size: 12.5px;
-    padding  : 0 6px;
+    color    : #94e2d5;
+    font-size: 12px;
 }
 #network.disconnected {
-    color: #45475a;
+    color: #585B70;
 }
 
 /* Battery */
 #battery {
-    color      : #cdd6f4;
+    color      : #A6E3A1;
     font-weight: 500;
 }
 #battery.warning {
-    color: #fab387;
+    color: #F9E2AF;
 }
 #battery.critical {
-    color: #f38ba8;
+    color     : #F38BA8;
+    background: rgba(243, 139, 168, 0.15);
 }
 #battery.charging,
 #battery.plugged {
-    color: #a6e3a1;
+    color: #94E2D5;
 }
 #battery.not-present {
     padding: 0;
     color  : transparent;
 }
 
-/* ── Clock ────────────────────────────────────────────────── */
+/* Clock */
 #clock {
-    color: #CDD6F4;
-    font-weight: 700;
-    font-size: 11px;
-    padding: 0 10px 0 8px;
+    color        : #CDD6F4;
+    font-weight  : 600;
+    font-size    : 11.5px;
+    padding      : 2px 9px;
+    background   : rgba(255, 255, 255, 0.04);
+    border-radius: 10px;
+    border       : 1px solid rgba(255, 255, 255, 0.05);
 }
 
-/* ── Notification Bell (SwayNC) ───────────────────────────── */
+#clock:hover {
+    background  : rgba(137, 180, 250, 0.15);
+    border-color: rgba(137, 180, 250, 0.4);
+    color       : #89B4FA; /* @titan-adapt:accent */
+}
+
+/* Quick Settings Trigger Chip */
 #custom-notification {
-    color: #89B4FA; /* @titan-adapt:accent */
-    font-size: 13px;
-    padding: 0 8px;
-    border-radius: 4px;
+    color        : #CBA6F7;
+    font-size    : 13.5px;
+    padding      : 2px 8px;
+    background   : rgba(203, 166, 247, 0.10);
+    border       : 1px solid rgba(203, 166, 247, 0.25);
+    border-radius: 10px;
 }
 
 #custom-notification:hover {
-    color: #38bdf8;
-    background: rgba(56, 189, 248, 0.15);
-    text-shadow: 0 0 8px rgba(56, 189, 248, 0.5);
+    color       : #FFFFFF;
+    background  : rgba(203, 166, 247, 0.25);
+    border-color: rgba(203, 166, 247, 0.6);
+    box-shadow  : 0 0 8px rgba(203, 166, 247, 0.35);
 }
 
-/* ── System Tray ──────────────────────────────────────────── */
+/* System Tray */
 #tray {
-    padding: 0 6px 0 4px;
+    padding: 0 4px;
 }
 #tray > .passive {
     -gtk-icon-effect: dim;
 }
 #tray > .needs-attention {
-    background   : rgba(243, 139, 168, 0.15);
-    border-radius: 4px;
+    background   : rgba(243, 139, 168, 0.2);
+    border-radius: 6px;
 }
 
-/* ── Tooltips ─────────────────────────────────────────────────── */
+/* Tooltips */
 tooltip {
-    background   : rgba(13, 14, 21, 0.96); /* @titan-adapt:tip-bg */
-    border       : 1px solid rgba(255, 255, 255, 0.08); /* @titan-adapt:tip-border */
-    border-radius: 8px;
-    color        : #cdd6f4;
-    box-shadow   : 0 4px 18px rgba(0, 0, 0, 0.6);
+    background   : rgba(17, 17, 27, 0.94); /* @titan-adapt:tip-bg */
+    border       : 1px solid rgba(137, 180, 250, 0.25); /* @titan-adapt:tip-border */
+    border-radius: 10px;
+    color        : #CDD6F4;
+    box-shadow   : 0 6px 20px rgba(0, 0, 0, 0.6);
 }
 
 tooltip label {
-    color    : #cdd6f4;
+    color    : #CDD6F4;
     padding  : 6px 10px;
     font-size: 11px;
 }
