@@ -1,31 +1,31 @@
 # ArchTitan Custom Starship Prompt
 
 format = """
-[](#7DCFFF)\
+[](#89B4FA)\
 $os\
 $cmd_duration\
-[](#7DCFFF) \
-[](#7DCFFF)\
+[](#89B4FA) \
+[](#89B4FA)\
 $directory\
-[](#7DCFFF)
+[](#89B4FA)
 $character"""
 
 [os]
 disabled = false
-style = "bg:#7DCFFF fg:#1A1B26 bold"
+style = "bg:#89B4FA fg:#1E1E2E bold"
 format = "[  ]($style)"
 
 [cmd_duration]
 min_time = 0
-style = "bg:#7DCFFF fg:#1A1B26 bold"
+style = "bg:#89B4FA fg:#1E1E2E bold"
 format = "[$duration]($style)"
 
 [directory]
-style = "bg:#7DCFFF fg:#1A1B26 bold"
+style = "bg:#89B4FA fg:#1E1E2E bold"
 format = "[ $path  ]($style)"
 truncation_length = 3
 truncation_symbol = "…/"
 
 [character]
-success_symbol = "[•](#7DCFFF) [▶](#7DCFFF)"
-error_symbol = "[•](#F7768E) [▶](#F7768E)"
+success_symbol = "[•](#89B4FA) [▶](#89B4FA)"
+error_symbol = "[•](#F38BA8) [▶](#F38BA8)"

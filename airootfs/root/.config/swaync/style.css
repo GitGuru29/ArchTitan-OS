@@ -3,21 +3,21 @@
  * Obsidian Glassmorphic Catppuccin / Cyan Aesthetic matching ArchTitan UI
  * ============================================================================== */
 
-@define-color base            rgba(15, 20, 30, 0.94);
-@define-color surface         rgba(26, 33, 48, 0.88);
-@define-color surface-alt     rgba(35, 45, 66, 0.92);
-@define-color surface-hover   rgba(45, 57, 82, 0.95);
+@define-color base            rgba(17, 17, 27, 0.94);
+@define-color surface         rgba(30, 30, 46, 0.88);
+@define-color surface-alt     rgba(37, 40, 56, 0.92);
+@define-color surface-hover   rgba(49, 50, 68, 0.95);
 @define-color border-color    rgba(255, 255, 255, 0.08);
-@define-color border-highlight rgba(56, 189, 248, 0.35);
+@define-color border-highlight rgba(137, 180, 250, 0.35);
 
-@define-color cyan-active     #38bdf8;
-@define-color cyan-glow       rgba(56, 189, 248, 0.45);
-@define-color on-cyan         #0b1329;
+@define-color cyan-active     #89b4fa;
+@define-color cyan-glow       rgba(137, 180, 250, 0.45);
+@define-color on-cyan         #181825;
 
-@define-color text-main       #f1f5f9;
-@define-color text-muted      #94a3b8;
-@define-color text-sub        #64748b;
-@define-color danger          #f43f5e;
+@define-color text-main       #cdd6f4;
+@define-color text-muted      #a6adc8;
+@define-color text-sub        #6c7086;
+@define-color danger          #f38ba8;
 
 /* --- Global Reset & Typography --- */
 * {
@@ -32,7 +32,7 @@
     background-color: @base;
     border: 1px solid @border-highlight;
     border-radius: 22px;
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.75), 0 0 20px rgba(56, 189, 248, 0.12);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.75), 0 0 20px rgba(137, 180, 250, 0.12);
     padding: 16px;
     margin: 8px;
 }
@@ -61,16 +61,16 @@
 }
 
 .header button:first-child {
-    background: rgba(56, 189, 248, 0.15);
+    background: rgba(137, 180, 250, 0.15);
     color: @cyan-active;
-    border: 1px solid rgba(56, 189, 248, 0.3);
+    border: 1px solid rgba(137, 180, 250, 0.3);
     font-weight: 700;
 }
 
 .header button:hover {
     background: @surface-hover;
     border-color: @border-highlight;
-    box-shadow: 0 0 8px rgba(56, 189, 248, 0.2);
+    box-shadow: 0 0 8px rgba(137, 180, 250, 0.2);
 }
 
 /* --- Primary Quick Settings Pills (.row1, .row2) --- */
@@ -104,9 +104,9 @@
 }
 
 .row1 button.active:hover, .row2 button.active:hover {
-    background-color: #7dd3fc;
-    border-color: #7dd3fc;
-    box-shadow: 0 0 18px rgba(56, 189, 248, 0.6);
+    background-color: #89b4fa;
+    border-color: #89b4fa;
+    box-shadow: 0 0 18px rgba(137, 180, 250, 0.6);
 }
 
 /* --- Squircle Grid Buttons (.squircles) --- */
@@ -138,8 +138,8 @@
 }
 
 .squircles button.active:hover {
-    background-color: #7dd3fc;
-    border-color: #7dd3fc;
+    background-color: #89b4fa;
+    border-color: #89b4fa;
 }
 
 /* --- Title Widget (Notifications Header & Clear All) --- */
@@ -165,9 +165,9 @@
 }
 
 .widget-title > button:hover {
-    background: rgba(244, 63, 94, 0.2);
+    background: rgba(243, 139, 168, 0.2);
     color: @danger;
-    border-color: rgba(244, 63, 94, 0.4);
+    border-color: rgba(243, 139, 168, 0.4);
 }
 
 /* --- Notifications List & Cards --- */
@@ -226,7 +226,7 @@
 }
 
 .close-button:hover {
-    background: rgba(244, 63, 94, 0.2);
+    background: rgba(243, 139, 168, 0.2);
     color: @danger;
 }
 
