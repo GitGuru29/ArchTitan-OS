@@ -1,0 +1,27 @@
+module ArchTitan.TitanUI
+linktarget TitanUIplugin
+optional plugin TitanUIplugin
+classname ArchTitan_TitanUIPlugin
+typeinfo TitanUI.qmltypes
+prefer :/ArchTitan/TitanUI/
+TitanGallery 1.0 qml/TitanGallery.qml
+TitanGalleryBody 1.0 qml/TitanGalleryBody.qml
+singleton TitanTheme 1.0 qml/style/TitanTheme.qml
+TitanIcon 1.0 qml/components/TitanIcon.qml
+TitanButton 1.0 qml/components/TitanButton.qml
+TitanSwitch 1.0 qml/components/TitanSwitch.qml
+TitanSlider 1.0 qml/components/TitanSlider.qml
+TitanCard 1.0 qml/components/TitanCard.qml
+TitanPill 1.0 qml/components/TitanPill.qml
+TitanToggleTile 1.0 qml/components/TitanToggleTile.qml
+TitanBadge 1.0 qml/components/TitanBadge.qml
+TitanDivider 1.0 qml/components/TitanDivider.qml
+TitanSidebarItem 1.0 qml/components/TitanSidebarItem.qml
+TitanGlassPanel 1.0 qml/components/TitanGlassPanel.qml
+TitanProgress 1.0 qml/components/TitanProgress.qml
+TitanSpinner 1.0 qml/components/TitanSpinner.qml
+TitanSkeleton 1.0 qml/components/TitanSkeleton.qml
+TitanEmptyState 1.0 qml/components/TitanEmptyState.qml
+TitanErrorState 1.0 qml/components/TitanErrorState.qml
+depends QtQuick
+

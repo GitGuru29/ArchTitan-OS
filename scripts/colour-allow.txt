@@ -1,0 +1,21 @@
+# ArchTitan TDL colour-lint allowlist.
+# One path substring per line; matching files are exempt from the palette check.
+# Use ONLY for genuine data/brand/artwork or files pending migration. Prefer an
+# inline `// tdl-allow` comment for a handful of deliberate lines in an
+# otherwise-conforming file.
+
+# ── Data / brand / artwork ─────────────────────────────────────────────────
+# Installer slideshow artwork (brand imagery).
+airootfs/etc/calamares/branding/archtitan/show.qml
+# Settings — user-selectable accent swatches, theme/wallpaper preview swatches
+# and icon-theme brand colours (values are data, not theming).
+archtitan-settings/qml/pages/AppearancePage.qml
+# Quick Settings — per-app notification tint/brand colours.
+subsystems/titan-quicksettings/qml/components/OneUINotificationCard.qml
+
+# ── Pending migration (tracked) ────────────────────────────────────────────
+# Pre-existing WIP lock screens (do not touch this cycle).
+airootfs/etc/skel/.config/hypr/hyprlock.conf
+airootfs/root/.config/hypr/hyprlock.conf
+# SDDM login theme — P3 boot/login continuity (share TDL + adaptive accent).
+airootfs/usr/share/sddm/themes/archtitan/
