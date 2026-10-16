@@ -51,6 +51,7 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("bash -c 'sleep 3 && titan-media-hud'")
     hl.exec_cmd("titan-wallpaper-restore")
     hl.exec_cmd("bash -c 'sleep 3 && titan-quicksettings --daemon'")
+    hl.exec_cmd("bash -c 'sleep 3 && titan-sysmon --daemon'")
     hl.exec_cmd("titan-hotzones")
     hl.exec_cmd("titan-zone-osd")
     hl.exec_cmd("/usr/lib/polkit-kde-authentication-agent-1")
@@ -297,6 +298,7 @@ hl.layer_rule({ match = { namespace = "^swaync-control-center$" }, blur = true, 
 hl.layer_rule({ match = { namespace = "^swaync-notification-window$" }, blur = true, ignore_alpha = 0 })
 hl.layer_rule({ match = { namespace = "^titan-quicksettings$" }, blur = true, ignore_alpha = 0.5 })
 hl.layer_rule({ match = { namespace = "^titan-quicksettings-blur$" }, blur = true, ignore_alpha = 0.5 })
+hl.layer_rule({ match = { namespace = "^titan-sysmon$" }, blur = true, ignore_alpha = 0.5 })
 
 -- Hot-zone / gesture OSD overlay. Full-screen and input-transparent; opacity is
 -- animated inside the surface, so suppress the compositor's map/unmap fade.

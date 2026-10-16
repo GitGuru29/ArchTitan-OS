@@ -26,6 +26,7 @@
 #include "../enforcement/enforcement_plane.hpp"
 #include "../resources/pressure_level.hpp"
 #include "../ipc/workspace_monitor.hpp"
+#include "../ipc/telemetry_publisher.hpp"
 
 #include <iostream>
 #include <fstream>
@@ -43,6 +44,18 @@ namespace fs = std::filesystem;
 // ─────────────────────────────────────────────────────────────────────────────
 static volatile sig_atomic_t g_shutdown = 0;
 static void handle_signal(int) { g_shutdown = 1; }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GovernorHint → wire string for the telemetry snapshot.
+// ─────────────────────────────────────────────────────────────────────────────
+static const char* governor_to_string(thm::GovernorHint h) {
+    switch (h) {
+        case thm::GovernorHint::POWERSAVE:   return "powersave";
+        case thm::GovernorHint::PERFORMANCE: return "performance";
+        case thm::GovernorHint::SCHEDUTIL:
+        default:                             return "schedutil";
+    }
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Build a fresh /proc snapshot (like v2 MemoryGraph::build())
@@ -237,6 +250,14 @@ int main(int argc, char* argv[]) {
     // Governor hint currently applied — feeds compute_governor's hysteresis band
     thm::GovernorHint current_gov = thm::GovernorHint::SCHEDUTIL;
 
+    // ── Phase 13: Telemetry sidecar ─────────────────────────────────────────
+    thm::TelemetryPublisher telemetry;
+    const auto start_time = std::chrono::steady_clock::now();
+    std::string last_action;
+    std::string last_action_target;
+    pid_t       last_action_pid  = 0;
+    bool        has_last_action  = false;
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // MAIN TICK LOOP
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -394,8 +415,19 @@ int main(int argc, char* argv[]) {
                 if (decision == thm::PolicyDecision::RECLAIM) {
                     if (reclaimer.reclaim(*wl, proc_graph, all_workloads))
                         wl->state = thm::WorkloadState::TERMINATED;
+                    last_action        = thm::to_string(decision);
+                    last_action_target = wl->root_cmdline;
+                    last_action_pid    = wl->root_pid;
+                    has_last_action    = true;
                 } else {
                     enforcement.apply(*wl, decision);
+                    if (decision == thm::PolicyDecision::THROTTLE ||
+                        decision == thm::PolicyDecision::FREEZE) {
+                        last_action        = thm::to_string(decision);
+                        last_action_target = wl->root_cmdline;
+                        last_action_pid    = wl->root_pid;
+                        has_last_action    = true;
+                    }
                 }
             }
         }
@@ -457,6 +489,55 @@ int main(int argc, char* argv[]) {
         }
         for (uint32_t wl_id : expired) {
             workload_mgr.remove(wl_id);
+        }
+
+        // ── (i) Publish telemetry snapshot ──────────────────────────────────
+        {
+            thm::TelemetrySnapshot snap;
+            snap.timestamp_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::system_clock::now().time_since_epoch()).count();
+            snap.uptime_seconds = std::chrono::duration_cast<std::chrono::seconds>(
+                std::chrono::steady_clock::now() - start_time).count();
+            snap.pressure_level  = thm::to_string(pressure);
+            snap.psi_some_avg10  = psi.some_avg10;
+            snap.psi_full_avg10  = psi.full_avg10;
+            snap.mem_used_pct    = mem.used_pct();
+            snap.mem_total_kb     = mem.total_kb;
+            snap.mem_available_kb = mem.available_kb;
+            snap.governor        = governor_to_string(current_gov);
+            snap.workload_count  = static_cast<int>(workload_mgr.all_ids().size());
+            snap.has_last_action    = has_last_action;
+            snap.last_action        = last_action;
+            snap.last_action_target = last_action_target;
+            snap.last_action_pid    = last_action_pid;
+
+            for (uint32_t id : workload_mgr.all_ids()) {
+                auto* wl = workload_mgr.get(id);
+                if (!wl || wl->state == thm::WorkloadState::TERMINATED) continue;
+
+                thm::TelemetryWorkload tw;
+                tw.id           = wl->id;
+                tw.root_pid     = wl->root_pid;
+                tw.workspace_id = wl->workspace_id;
+                tw.name         = wl->root_cmdline.empty() ? std::string("?") : wl->root_cmdline;
+                tw.type         = thm::to_string(wl->type);
+                tw.state        = thm::to_string(wl->state);
+                tw.pid_count    = static_cast<int>(wl->pids.size());
+
+                long mem_kb = 0;
+                for (pid_t p : wl->pids) {
+                    auto it = proc_graph.find(p);
+                    if (it != proc_graph.end()) mem_kb += it->second.rss_kb;
+                }
+                tw.mem_kb = mem_kb;
+
+                if (wl->state == thm::WorkloadState::ACTIVE ||
+                    wl->state == thm::WorkloadState::BACKGROUND_EXECUTING)
+                    snap.active_workloads++;
+
+                snap.workloads.push_back(std::move(tw));
+            }
+            telemetry.publish(snap);
         }
 
         // ── Sleep remaining tick budget ─────────────────────────────────────

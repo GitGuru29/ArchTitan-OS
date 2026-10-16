@@ -51,6 +51,9 @@ set(CORE_SRC
 
     # Phase 11: Pressure Level Engine
     resources/pressure_level.cpp
+
+    # Phase 13: Telemetry publisher (system monitor sidecar)
+    ipc/telemetry_publisher.cpp
 )
 
 # ── Static library (all phases) ──────────────────────────────────────────────
