@@ -12,6 +12,7 @@
 
 [hotzones]
 enabled            = true
+show_frame         = true   # steady workspace boundary border marking hot-zones
 corner_size        = 4      # px, square corner zone
 edge_length        = 140    # px, length of an edge-midpoint zone
 edge_thickness     = 4      # px, thickness of an edge-midpoint zone
@@ -25,8 +26,8 @@ ignore_classes     = ["mpv", "org.kde.*", "*gamescope*"]
 top_right     = "titan-quicksettings --toggle"
 top_left      = "rofi -show drun"
 bottom_right  = "titan-quicksettings --notifications"
-bottom_left   = "hyprctl dispatch togglespecialworkspace magic"
+bottom_left   = ""
 right_center  = "hyprctl dispatch workspace e+1"
-left_center   = "hyprctl dispatch workspace e-1"
-bottom_center = "hyprctl dispatch togglespecialworkspace magic"
+left_center   = "titan-sysmon --toggle"
+bottom_center = ""
 # top_center  = ""          # omitted by design (Waybar occupies the top edge)
