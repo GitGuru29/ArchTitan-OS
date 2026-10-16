@@ -1,0 +1,12 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/">
+        <file>qml/SystemMonitorWindow.qml</file>
+        <file>qml/components/GaugeRing.qml</file>
+        <file>qml/components/Sparkline.qml</file>
+        <file>qml/components/MeterRow.qml</file>
+        <file>qml/components/Section.qml</file>
+        <file>qml/components/WorkloadRow.qml</file>
+        <file>assets/noise.png</file>
+    </qresource>
+</RCC>
