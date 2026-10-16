@@ -51,6 +51,7 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("bash -c 'sleep 3 && titan-media-hud'")
     hl.exec_cmd("titan-wallpaper-restore")
     hl.exec_cmd("bash -c 'sleep 3 && titan-quicksettings --daemon'")
+    hl.exec_cmd("bash -c 'sleep 3 && titan-sysmon --daemon'")
     hl.exec_cmd("titan-hotzones")
     hl.exec_cmd("titan-zone-osd")
     hl.exec_cmd("/usr/lib/polkit-kde-authentication-agent-1")
@@ -152,7 +153,26 @@ hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 
 -- Touchpad gestures on Hyprland's native engine (no third-party plugin).
 -- 3-finger horizontal -> workspace prev/next (native 1:1 slide animation).
+-- One swipe = exactly one workspace step: 1 -> 2 -> 3 ... and back 3 -> 2 -> 1.
+--
+-- workspace_swipe_use_r is the important one. By default Hyprland resolves
+-- the neighbour with "m+1"/"m-1" (open workspaces only, wrapping). Swiping off
+-- an EMPTY workspace then finds nothing to the right (m+1 wraps back to 1) and
+-- Hyprland refuses the swipe, so you got stuck on workspace 2. Going back,
+-- m-1 skipped destroyed empty workspaces (3 -> 1). "r+1"/"r-1" count empty
+-- workspaces too, so the step is always +/-1 and create_new materialises it.
+-- workspace_swipe_forever is off so one long swipe can't overshoot by two.
 hl.gesture({ fingers = 3, direction = "horizontal", action = "workspace" })
+hl.gesture({ fingers = 4, direction = "horizontal", action = "workspace" })
+hl.config({
+    gestures = {
+        workspace_swipe_use_r              = true,
+        workspace_swipe_create_new         = true,
+        workspace_swipe_forever            = false,
+        workspace_swipe_direction_lock     = true,
+        workspace_swipe_min_speed_to_force = 10,
+    }
+})
 
 -- 3-finger down -> close the active window.
 hl.gesture({ fingers = 3, direction = "down", action = "close" })
@@ -328,13 +348,14 @@ hl.layer_rule({ match = { namespace = "^swaync-control-center$" }, blur = true, 
 hl.layer_rule({ match = { namespace = "^swaync-notification-window$" }, blur = true, ignore_alpha = 0 })
 hl.layer_rule({ match = { namespace = "^titan-quicksettings$" }, blur = true, ignore_alpha = 0.5 })
 hl.layer_rule({ match = { namespace = "^titan-quicksettings-blur$" }, blur = true, ignore_alpha = 0.5 })
+hl.layer_rule({ match = { namespace = "^titan-sysmon$" }, blur = true, ignore_alpha = 0.5 })
 
 -- Hot-zone / gesture OSD overlay. Full-screen and input-transparent; opacity is
 -- animated inside the surface, so suppress the compositor's map/unmap fade.
 hl.layer_rule({ name = "titan-zone-osd", match = { namespace = "^titan-zone-osd$" }, no_anim = true })
 
 -- ArchTitan Media Island -- SUPER+M toggle (uses LayerShellQt, no window rules needed)
-hl.bind(mainMod .. " + M", hl.dsp.exec_cmd("titan-bar-media"))  -- Jump Waybar center viewport to Media page
+hl.bind(mainMod .. " + M", hl.dsp.exec_cmd("titan-media-hud --toggle"))  -- Toggle media island overlay
 -- Media keys (XF86)
 hl.bind("XF86AudioPlay",         hl.dsp.exec_cmd("playerctl play-pause"))
 hl.bind("XF86AudioNext",         hl.dsp.exec_cmd("playerctl next"))

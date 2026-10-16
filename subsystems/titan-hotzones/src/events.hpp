@@ -14,23 +14,24 @@
 namespace titan {
 
 class HyprEventWatcher : public QObject {
-    Q_OBJECT
+  Q_OBJECT
 public:
-    explicit HyprEventWatcher(QObject* parent = nullptr);
+  explicit HyprEventWatcher(QObject *parent = nullptr);
 
-    void start();
+  void start();
 
 signals:
-    void workspaceChanged(const QString& name);
-    void specialChanged(const QString& name);
+  void workspaceChanged(const QString &name);
+  void specialChanged(const QString &name);
+  void focusChanged();
 
 private:
-    void connectToSocket();
-    void onReadyRead();
+  void connectToSocket();
+  void onReadyRead();
 
-    QLocalSocket socket_;
-    QTimer retry_;
-    QByteArray buffer_;
+  QLocalSocket socket_;
+  QTimer retry_;
+  QByteArray buffer_;
 };
 
 } // namespace titan

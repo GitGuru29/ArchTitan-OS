@@ -1,26 +1,36 @@
-// titan-hotzones — tiny broadcast server used to drive the zone OSD.
+// titan-hotzones — tiny broadcast/control server used to drive the zone OSD.
 //
 // The daemon hosts a UNIX-domain socket; any connected `titan-zone-osd` client
-// receives newline-delimited JSON state messages. This keeps the OSD fully
-// decoupled (it can be absent, restart, or run per-screen) and the daemon
-// never blocks on it.
+// receives newline-delimited JSON state messages. Also accepts control commands
+// (ENABLE, DISABLE, TOGGLE, STATUS) from clients (e.g., Quick Settings).
 #pragma once
 
 #include <QJsonObject>
-#include <QLocalServer>
 #include <QList>
+#include <QLocalServer>
 
 class QLocalSocket;
 
-class OsdServer {
+class OsdServer : public QObject {
+  Q_OBJECT
 public:
-    bool start();
-    bool hasClients() const { return !clients_.isEmpty(); }
-    void broadcast(const QJsonObject& message);
+  explicit OsdServer(QObject *parent = nullptr);
+  bool start();
+  bool hasClients() const { return !clients_.isEmpty(); }
+  void broadcast(const QJsonObject &message);
 
-    static QString socketPath();
+  static QString socketPath();
+
+signals:
+  void enableRequested();
+  void disableRequested();
+  void toggleRequested();
+  void clientConnected();
 
 private:
-    QLocalServer server_;
-    QList<QLocalSocket*> clients_;
+  QLocalServer server_;
+  QList<QLocalSocket *> clients_;
+
+private slots:
+  void handleNewConnection();
 };
