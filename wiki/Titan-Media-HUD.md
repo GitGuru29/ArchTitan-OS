@@ -38,7 +38,7 @@ flowchart TD
 
     subgraph Signals["System Data Sources"]
         MPRIS["MPRIS D-Bus (Spotify, mpv, browser)"]
-        THM_ST["/tmp/titan_hwm_state"]
+        THM_ST["/run/archtitan/thm-state.json"]
         GPU_MON["titan-hud-gpu (sysfs / nvidia-smi / amdgpu)"]
         CTX_MON["titan-hud-context"]
     end

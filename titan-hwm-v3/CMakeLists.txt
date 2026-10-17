@@ -54,6 +54,9 @@ set(CORE_SRC
 
     # Phase 13: Telemetry publisher (system monitor sidecar)
     ipc/telemetry_publisher.cpp
+
+    # Phase 14: Command server (titan-hwm CLI control channel)
+    ipc/command_server.cpp
 )
 
 # ── Static library (all phases) ──────────────────────────────────────────────
@@ -65,6 +68,11 @@ add_executable(titan-hwm-daemon daemon/daemon.cpp)
 set_target_properties(titan-hwm-daemon PROPERTIES OUTPUT_NAME "titan-hwm-daemon")
 target_link_libraries(titan-hwm-daemon PRIVATE thm_core pthread)
 
+# ── CLI executable (Phase 14) ────────────────────────────────────────────────
+add_executable(titan-hwm-cli cli/titan_hwm_cli.cpp)
+set_target_properties(titan-hwm-cli PROPERTIES OUTPUT_NAME "titan-hwm")
+target_link_libraries(titan-hwm-cli PRIVATE pthread)
+
 # ── Test Suite Executable ───────────────────────────────────────────────────
 enable_testing()
 add_executable(thm_test_runner tests/test_runner.cpp)
@@ -74,6 +82,7 @@ add_test(NAME thm_os_tests COMMAND thm_test_runner)
 
 # ── Install targets ──────────────────────────────────────────────────────────
 install(TARGETS titan-hwm-daemon RUNTIME DESTINATION /usr/local/bin)
+install(TARGETS titan-hwm-cli RUNTIME DESTINATION /usr/local/bin)
 install(FILES archtitan.slice titan-hwm.service
         DESTINATION lib/systemd/system
         COMPONENT systemd)

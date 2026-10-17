@@ -174,8 +174,8 @@ Policies define filesystem allowlists, network access, device nodes, and syscall
 
 | Path | Purpose |
 | :--- | :--- |
-| `/tmp/titan_hwm.sock` | THM UNIX socket — CLI commands (`titan-hwm switch`, etc.) |
-| `/tmp/titan_hwm_state` | Current profile and last action (read by CLI/Waybar/Media HUD) |
+| `/tmp/titan_hwm.sock` | THM UNIX socket — CLI queries (`titan-hwm status`) |
+| `/run/archtitan/thm-state.json` | Live telemetry (pressure, memory, workloads) read by CLI/Waybar/titan-sysmon/titanfetch |
 | `/usr/local/bin/titan-hud-gpu` | Telemetry provider script for Titan Media HUD |
 | `/usr/local/bin/titan-hud-context` | Workspace focus & THM state reader for Titan Media HUD |
 | `/var/log/titan-sandbox/sandbox.log` | Sandbox launch and policy resolution logs |

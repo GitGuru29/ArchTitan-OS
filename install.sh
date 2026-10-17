@@ -32,7 +32,6 @@ sudo systemctl enable --now titan-hwm.service
 echo ""
 echo "   Installation complete!"
 echo "   Daemon status : systemctl status titan-hwm"
-echo "   CLI usage     : titan-hwm switch web|android|system|casual"
 echo "   Live status   : titan-hwm status"
 echo "   Telemetry     : titan-hwm metrics"
 

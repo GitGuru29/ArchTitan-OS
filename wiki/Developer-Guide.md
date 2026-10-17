@@ -122,7 +122,6 @@ To test manually:
 ```bash
 systemctl status titan-hwm
 titan-hwm status
-titan-hwm switch system
 titan-hwm metrics
 ```
 

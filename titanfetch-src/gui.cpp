@@ -18,6 +18,10 @@
 #include <QTimer>
 #include <QPushButton>
 #include <QProgressBar>
+#include <QFile>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonParseError>
 
 #include <cstdio>
 #include <cstring>
@@ -850,33 +854,46 @@ void Gui::updateMemoryUsage()
 void Gui::updateThmStatus()
 {
     if (!m_thmBadge) return;
-    const QString st = readSysLine("/tmp/titan_hwm_state");
-    if (!st.isEmpty()) {
-        const QString prof = st.toUpper();
-        m_thmBadge->setText(QStringLiteral("● THM: %1").arg(prof));
 
-        const QString badgeFmt =
-            QStringLiteral("background: %1; color: %2; border: 1px solid %3; border-radius: 16px; padding: 0 16px; font-size: 11px; font-weight: bold;");
-        if (prof.contains(QLatin1String("SYSTEM"))) {
-            m_thmBadge->setStyleSheet(
-                badgeFmt.arg(hxa(TitanPalette::mauve(), 0.15), hx(TitanPalette::mauve()), hxa(TitanPalette::mauve(), 0.35))
-            );
-        } else if (prof.contains(QLatin1String("WEB"))) {
-            m_thmBadge->setStyleSheet(
-                badgeFmt.arg(hxa(TitanPalette::teal(), 0.15), hx(TitanPalette::teal()), hxa(TitanPalette::teal(), 0.35))
-            );
-        } else if (prof.contains(QLatin1String("ANDROID"))) {
-            m_thmBadge->setStyleSheet(
-                badgeFmt.arg(hxa(TitanPalette::success(), 0.15), hx(TitanPalette::success()), hxa(TitanPalette::success(), 0.35))
-            );
-        } else {
-            m_thmBadge->setStyleSheet(
-                badgeFmt.arg(hxa(TitanPalette::accent(), 0.15), hx(TitanPalette::accent()), hxa(TitanPalette::accent(), 0.35))
-            );
+    // THM v3 (root system service) publishes JSON to /run/archtitan/thm-state.json.
+    const QString path = qEnvironmentVariable(
+        "THM_TELEMETRY_PATH", QStringLiteral("/run/archtitan/thm-state.json"));
+
+    QString level;
+    QFile f(path);
+    if (f.open(QIODevice::ReadOnly)) {
+        QJsonParseError err{};
+        const QJsonDocument doc = QJsonDocument::fromJson(f.readAll(), &err);
+        if (err.error == QJsonParseError::NoError && doc.isObject()) {
+            level = doc.object()
+                        .value(QStringLiteral("pressure")).toObject()
+                        .value(QStringLiteral("level")).toString()
+                        .toUpper();
         }
-    } else {
-        m_thmBadge->setText(QStringLiteral("● THM: CASUAL"));
     }
+
+    const QString badgeFmt = QStringLiteral(
+        "background: %1; color: %2; border: 1px solid %3; "
+        "border-radius: 16px; padding: 0 16px; font-size: 11px; font-weight: bold;");
+
+    if (level.isEmpty()) {
+        m_thmBadge->setText(QStringLiteral("● THM: OFFLINE"));
+        m_thmBadge->setStyleSheet(
+            badgeFmt.arg(hxa(TitanPalette::surface2(), 0.15),
+                         hx(TitanPalette::textMid()),
+                         hxa(TitanPalette::surface2(), 0.35)));
+        return;
+    }
+
+    m_thmBadge->setText(QStringLiteral("● THM: %1").arg(level));
+
+    QColor c = TitanPalette::success(); // NORMAL
+    if (level == QLatin1String("CRITICAL"))      c = TitanPalette::danger();
+    else if (level == QLatin1String("HIGH"))     c = TitanPalette::peach();
+    else if (level == QLatin1String("MODERATE")) c = TitanPalette::warning();
+
+    m_thmBadge->setStyleSheet(
+        badgeFmt.arg(hxa(c, 0.15), hx(c), hxa(c, 0.35)));
 }
 
 void Gui::copySysInfoToClipboard()
