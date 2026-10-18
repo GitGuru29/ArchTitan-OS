@@ -85,8 +85,16 @@ private:
     mutable std::mutex ws_mtx_;
     std::unordered_map<int, WorkspaceState> workspaces_;
 
+    // Resolved Hyprland IPC endpoint (discovered in start()).
+    // The daemon runs as a root system service, so the session's
+    // XDG_RUNTIME_DIR / HYPRLAND_INSTANCE_SIGNATURE are usually absent; we
+    // discover the active instance under /run/user/<uid>/hypr/<instance>/.
+    std::string sock_path_;
+    std::string hypr_runtime_dir_;
+    std::string hypr_instance_sig_;
+
     // IPC socket path discovery
-    static std::string hyprland_socket_path();
+    std::string discover_socket_path();
 
     // Main listener loop (runs on listener_thread_)
     void listen_loop();

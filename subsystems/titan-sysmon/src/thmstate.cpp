@@ -41,12 +41,23 @@ ThmState ThmReader::read(const QString &path)
     s.version        = o.value(QStringLiteral("version")).toString();
     s.timestampMs    = static_cast<qint64>(o.value(QStringLiteral("timestamp_ms")).toDouble());
     s.uptimeSeconds  = static_cast<qint64>(o.value(QStringLiteral("uptime_seconds")).toDouble());
-    s.pressureLevel  = o.value(QStringLiteral("pressure_level")).toString();
-    s.psiSome        = o.value(QStringLiteral("psi_some_avg10")).toDouble();
-    s.psiFull        = o.value(QStringLiteral("psi_full_avg10")).toDouble();
-    s.memUsedPct     = o.value(QStringLiteral("mem_used_pct")).toDouble();
-    s.memTotalKb     = static_cast<qint64>(o.value(QStringLiteral("mem_total_kb")).toDouble());
-    s.memAvailableKb = static_cast<qint64>(o.value(QStringLiteral("mem_available_kb")).toDouble());
+
+    // Pressure is emitted by the daemon as a nested object:
+    //   "pressure": { "level", "psi_some_avg10", "psi_full_avg10",
+    //                 "mem_used_pct", "mem_total_kb", "mem_available_kb" }
+    // Fall back to flat top-level keys for older/alternative producers.
+    const QJsonObject pressure = o.value(QStringLiteral("pressure")).toObject();
+    const auto pressurePick = [&](const QString &key) -> QJsonValue {
+        if (pressure.contains(key))
+            return pressure.value(key);
+        return o.value(key);
+    };
+    s.pressureLevel  = pressurePick(QStringLiteral("level")).toString();
+    s.psiSome        = pressurePick(QStringLiteral("psi_some_avg10")).toDouble();
+    s.psiFull        = pressurePick(QStringLiteral("psi_full_avg10")).toDouble();
+    s.memUsedPct     = pressurePick(QStringLiteral("mem_used_pct")).toDouble();
+    s.memTotalKb     = static_cast<qint64>(pressurePick(QStringLiteral("mem_total_kb")).toDouble());
+    s.memAvailableKb = static_cast<qint64>(pressurePick(QStringLiteral("mem_available_kb")).toDouble());
     s.governor       = o.value(QStringLiteral("governor")).toString();
     s.workloadCount  = o.value(QStringLiteral("workload_count")).toInt();
     s.activeWorkloads = o.value(QStringLiteral("active_workloads")).toInt();

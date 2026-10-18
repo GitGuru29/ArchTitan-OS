@@ -202,7 +202,9 @@ Audio daemons and active players remain pinned with `cpu.weight = 100` regardles
 
 ## CLI & Control Reference (`titan-hwm`)
 
-The daemon exposes an IPC UNIX domain socket at `/tmp/titan_hwm.sock` and writes live JSON telemetry to `/tmp/titan_hwm_state`.
+The daemon exposes an IPC UNIX domain socket at `/tmp/titan_hwm.sock` and writes live JSON telemetry to `/run/archtitan/thm-state.json`.
+
+> **Note:** The v1/v2 concepts of "profiles" and the `titan-hwm switch` command were removed in v3. The daemon is fully autonomous — pressure is detected from PSI and memory and driven by the policy engine, not by a manually selected profile.
 
 ### CLI Commands
 
@@ -212,36 +214,36 @@ titan-hwm status
 
 # Display live terminal telemetry metrics (cgroups, PSI, active workloads)
 titan-hwm metrics
-
-# Override profile manually
-titan-hwm switch system
-titan-hwm switch web
-titan-hwm switch android
-titan-hwm switch casual
-titan-hwm switch neutral
-
-# Trigger manual orphan thaw sweep
-titan-hwm thaw
 ```
 
-### IPC State File (`/tmp/titan_hwm_state`)
+### Telemetry State File (`/run/archtitan/thm-state.json`)
 
 ```json
 {
   "version": "3.1.0",
+  "timestamp_ms": 1792147312851,
   "uptime_seconds": 1420,
-  "active_profile": "System Dev",
-  "focused_workspace": 1,
-  "memory_pressure_pct": 4.2,
-  "active_workloads": [
+  "pressure": {
+    "level": "NORMAL",
+    "psi_some_avg10": 4.20,
+    "psi_full_avg10": 0.00,
+    "mem_used_pct": 38.67,
+    "mem_total_kb": 16148320,
+    "mem_available_kb": 9903324
+  },
+  "governor": "schedutil",
+  "workload_count": 2,
+  "active_workloads": 0,
+  "last_action": null,
+  "workloads": [
     {
+      "id": 2,
       "pid": 12844,
+      "workspace": -2,
       "name": "cargo",
-      "type": "COMPILER",
-      "state": "BACKGROUND_EXECUTING",
-      "slice": "archtitan-active.slice",
-      "cpu_pct": 742.1,
-      "memory_mb": 1420
+      "type": "SYSTEM_DEV",
+      "state": "IDLE",
+      "pids": 1
     }
   ]
 }
@@ -262,7 +264,7 @@ titan-hwm thaw
 | `/etc/systemd/system/archtitan.slice` | Systemd cgroup delegation slice (`Delegate=yes`) |
 | `/etc/systemd/system/titan-hwm.service` | Hardened systemd unit with OOMScoreAdjust=-1000 and anti-tamper restart |
 | `/tmp/titan_hwm.sock` | UNIX domain IPC socket |
-| `/tmp/titan_hwm_state` | Telemetry state JSON file |
+| `/run/archtitan/thm-state.json` | Telemetry state JSON file (read by titan-sysmon, titanfetch, Waybar helpers) |
 
 ### Configuration File (`/etc/titan-hwm/config`)
 

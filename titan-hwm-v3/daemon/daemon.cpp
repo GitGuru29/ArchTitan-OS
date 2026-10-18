@@ -27,14 +27,17 @@
 #include "../resources/pressure_level.hpp"
 #include "../ipc/workspace_monitor.hpp"
 #include "../ipc/telemetry_publisher.hpp"
+#include "../ipc/command_server.hpp"
 
 #include <iostream>
 #include <fstream>
 #include <csignal>
 #include <chrono>
 #include <thread>
+#include <mutex>
 #include <filesystem>
 #include <algorithm>
+#include <sstream>
 #include <unistd.h>
 
 namespace fs = std::filesystem;
@@ -55,6 +58,36 @@ static const char* governor_to_string(thm::GovernorHint h) {
         case thm::GovernorHint::SCHEDUTIL:
         default:                             return "schedutil";
     }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// format_status — human-readable reply for the `titan-hwm status` command.
+// Built from the last telemetry snapshot (updated once per tick).
+// ─────────────────────────────────────────────────────────────────────────────
+static std::string format_status(const thm::TelemetrySnapshot& s) {
+    std::ostringstream o;
+    o << "Titan Hardware Manager v" << s.version << "\n";
+    o << "  Uptime:          " << s.uptime_seconds << "s\n";
+    o << "  Pressure:        " << s.pressure_level
+      << "  (PSI some " << s.psi_some_avg10
+      << "% / full " << s.psi_full_avg10 << "%)\n";
+    o << "  Memory used:     " << s.mem_used_pct << "%"
+      << "  (" << (s.mem_available_kb / 1024) << " MB free of "
+      << (s.mem_total_kb / 1024) << " MB)\n";
+    o << "  CPU governor:    " << s.governor << "\n";
+    o << "  Workloads:       " << s.active_workloads << " active / "
+      << s.workload_count << " tracked\n";
+    if (s.has_last_action && !s.last_action.empty()) {
+        o << "  Last action:     " << s.last_action;
+        if (!s.last_action_target.empty())
+            o << " (" << s.last_action_target << ")";
+        if (s.last_action_pid > 0)
+            o << " pid=" << s.last_action_pid;
+        o << "\n";
+    } else {
+        o << "  Last action:     none\n";
+    }
+    return o.str();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -160,6 +193,12 @@ static int startup_thaw_sweep() {
 // main
 // ─────────────────────────────────────────────────────────────────────────────
 int main(int argc, char* argv[]) {
+    // Flush every insertion. Under systemd, stdout/stderr are pipes and are
+    // block-buffered by default — without this, THM log lines would not reach
+    // the journal until a 4 KiB buffer fills, making `journalctl -u titan-hwm`
+    // appear empty during normal operation.
+    std::cout << std::unitbuf;
+
     std::cout << "╔══════════════════════════════════════════╗\n"
               << "║  Titan Hardware Manager v3               ║\n"
               << "║  Workload-centric resource management    ║\n"
@@ -257,6 +296,27 @@ int main(int argc, char* argv[]) {
     std::string last_action_target;
     pid_t       last_action_pid  = 0;
     bool        has_last_action  = false;
+
+    // ── Command server: restores the user control channel ───────────────────
+    // `titan-hwm status` is answered from the last telemetry snapshot, which is
+    // rebuilt every tick under snap_mutex. `switch` is intentionally NOT
+    // implemented: v3 has no static workspace profiles (that was v1/v2-only).
+    thm::CommandServer cmd_server;
+    std::mutex snap_mutex;
+    thm::TelemetrySnapshot shared_snap;
+    cmd_server.set_handler([&](const std::string& cmd) -> std::string {
+        if (cmd == "status") {
+            std::lock_guard<std::mutex> lk(snap_mutex);
+            return format_status(shared_snap);
+        }
+        if (cmd == "ping")
+            return "pong\n";
+        return "titan-hwm: unknown command '" + cmd + "'\n";
+    });
+    if (!cmd_server.start()) {
+        std::cerr << "[THM] WARNING: command server failed to start — "
+                  << "`titan-hwm status` will be unavailable.\n";
+    }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // MAIN TICK LOOP
@@ -538,6 +598,13 @@ int main(int argc, char* argv[]) {
                 snap.workloads.push_back(std::move(tw));
             }
             telemetry.publish(snap);
+
+            // Publish the same snapshot to the command server so that
+            // `titan-hwm status` reflects the live state.
+            {
+                std::lock_guard<std::mutex> lk(snap_mutex);
+                shared_snap = snap;
+            }
         }
 
         // ── Sleep remaining tick budget ─────────────────────────────────────
@@ -560,6 +627,7 @@ int main(int argc, char* argv[]) {
     }
 
     ws_monitor.stop();
+    cmd_server.stop();
 
     std::cout << "[THM] Clean shutdown complete.\n";
     return 0;

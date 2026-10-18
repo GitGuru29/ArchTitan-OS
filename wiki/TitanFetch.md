@@ -37,7 +37,7 @@ Executing `titanfetch` in Kitty or any terminal displays custom ArchTitan ASCII 
 Running `titanfetch --gui` launches an ultra-modern, glassmorphic technical HUD featuring live hardware telemetry:
 
 - **Glassmorphic Styling**: Translucent dark frosted glass layout (`rgba(12, 14, 20, 0.94)`) with glowing Catppuccin Mocha borders (`#89b4fa`), custom window controls, and draggable header bar.
-- **Live Active THM Profile Badge**: Real-time integration with `/tmp/titan_hwm_state` displaying the active workload profile (`SYSTEM DEV`, `WEB DEV`, `ANDROID DEV`, `CASUAL`, `NEUTRAL`).
+- **Live THM Pressure Badge**: Real-time integration with `/run/archtitan/thm-state.json`, displaying the current pressure level (`NORMAL`, `MODERATE`, `HIGH`, `CRITICAL`) published by the Titan Hardware Manager v3 daemon.
 - **Real CPU Per-Core Load Matrix**: Polling `/proc/stat` every 1 second to calculate and animate per-core CPU usage bars and temperature (°C).
 - **Live Memory & Swap Gauges**: Live RAM and Swap gauges with active vs cached memory breakdown.
 - **Developer Toolchain Status**: Card detecting local toolchains (GCC/Clang, Rust/Cargo, Go, Node.js, Python 3, Docker Engine).
@@ -53,7 +53,7 @@ flowchart LR
         PROC["/proc/meminfo & /proc/cpuinfo"]
         SYS["/sys/class/thermal & /sys/class/drm"]
         STAT["/proc/stat & /proc/uptime"]
-        THM_ST["/tmp/titan_hwm_state"]
+        THM_ST["/run/archtitan/thm-state.json"]
     end
 
     subgraph Core["TitanFetch Core Engine"]

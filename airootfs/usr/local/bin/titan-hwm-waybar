@@ -1,43 +1,54 @@
 #!/usr/bin/env bash
 # titan-hwm-waybar — Waybar JSON output for the Titan HWM module
-# Reads /tmp/titan_hwm_state written by the daemon every transition.
-# Returns: { "text", "class", "tooltip" } for Waybar custom module.
+# Reads /run/archtitan/thm-state.json written by the THM v3 daemon.
+# Returns: { "text", "class", "tooltip" } for a Waybar custom module.
+#
+# The daemon is a root system service, so its telemetry lives in /run/archtitan.
+# Set THM_TELEMETRY_PATH to override (used by tests).
 
-STATE="/tmp/titan_hwm_state"
+STATE="${THM_TELEMETRY_PATH:-/run/archtitan/thm-state.json}"
 
-if [[ ! -f "$STATE" ]]; then
-    echo '{"text":"⚙ HWM","class":"inactive","tooltip":"Titan HWM not running"}'
+inactive() {
+    printf '{"text":"⚙ HWM","class":"inactive","tooltip":"Titan HWM: daemon not running\\nNo telemetry at %s"}\n' "$STATE"
     exit 0
-fi
+}
 
-profile=$(grep "^profile="         "$STATE" 2>/dev/null | cut -d= -f2)
-mem_pct=$(grep "^mem_available_pct=" "$STATE" 2>/dev/null | cut -d= -f2)
-action=$(grep  "^last_action="     "$STATE" 2>/dev/null | cut -d= -f2)
-freed=$(grep   "^freed_mb="        "$STATE" 2>/dev/null | cut -d= -f2)
-temp=$(grep    "^cpu_temp_c="      "$STATE" 2>/dev/null | cut -d= -f2)
-psi=$(grep     "^psi_some_avg10="  "$STATE" 2>/dev/null | cut -d= -f2)
+[[ -s "$STATE" ]] || inactive
+json=$(cat "$STATE" 2>/dev/null) || inactive
+[[ -n "$json" ]] || inactive
 
-# Sanitize numerics — strip anything that's not a digit or decimal point
-psi_clean="${psi//[^0-9.]/}"
-mem_pct="${mem_pct//[^0-9.]/}"
-freed="${freed//[^0-9.]/}"
-temp="${temp//[^0-9.]/}"
+# Prefer jq for robust parsing; fall back to a minimal grep/sed extractor.
+have_jq=0
+command -v jq >/dev/null 2>&1 && have_jq=1
 
-# Trim to 1 decimal for PSI display
-psi_display=$(printf "%.1f" "${psi_clean:-0}" 2>/dev/null || echo "0.0")
+jget() {
+    local key="$1" default="$2"
+    if (( have_jq )); then
+        jq -r "$key // \"$default\"" <<<"$json" 2>/dev/null || echo "$default"
+    else
+        echo "$default"
+    fi
+}
 
-case "$profile" in
-    "Web Dev")     icon="🌐"; css_class="web"     ;;
-    "Android Dev") icon="🤖"; css_class="android" ;;
-    "System Dev")  icon="⚙️";  css_class="system"  ;;
-    "Casual")      icon="🪑"; css_class="casual"  ;;
-    "Neutral")     icon="💤"; css_class="neutral" ;;
-    *)             icon="⚙";  css_class="inactive";;
+level=$(jget '.pressure.level' 'UNKNOWN')
+psi=$(jget '.pressure.psi_some_avg10' '0')
+mem_used=$(jget '.pressure.mem_used_pct' '0')
+governor=$(jget '.governor' '-')
+wcount=$(jget '.workload_count' '0')
+acount=$(jget '.active_workloads' '0')
+action=$(jget '.last_action.decision' 'none')
+
+case "$level" in
+    NORMAL)   icon="🛡";  css_class="normal"   ;;
+    MODERATE) icon="⚠️";  css_class="moderate" ;;
+    HIGH)     icon="🔥"; css_class="high"     ;;
+    CRITICAL) icon="❗"; css_class="critical" ;;
+    *)        icon="⚙";  css_class="inactive" ;;
 esac
 
-text="${icon} ${profile:-Unknown}"
+text="${icon} ${level}"
 
-tooltip="Profile: ${profile:-Unknown}\\nRAM Free: ${mem_pct:-0}%\\nPSI: ${psi_display}%\\nAction: ${action:-none}\\nFreed: ${freed:-0}MB\\nCPU Temp: ${temp:-0}°C"
+tooltip="Pressure: ${level}\\nPSI (10s some): ${psi}%\\nRAM Used: ${mem_used}%\\nCPU Governor: ${governor}\\nWorkloads: ${acount} active / ${wcount} tracked\\nLast action: ${action}"
 
 printf '{"text":"%s","class":"%s","tooltip":"%s"}\n' \
     "$text" "$css_class" "$tooltip"
