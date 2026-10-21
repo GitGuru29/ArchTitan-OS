@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "id": "rosepine",
+  "name": "Rosé Pine",
+  "isDark": true,
+  "accent": "#C4A7E7",
+  "accent2": "#EBBCBA",
+  "wallpaper": "/usr/share/backgrounds/archtitan/titan-mauve.jpg",
+  "source": "rose-pine/neovim (main)",
+  "palette": {
+    "crust": "#16141F",
+    "mantle": "#191724",
+    "base": "#1F1D2E",
+    "surface0": "#21202E",
+    "surface1": "#26233A",
+    "surface2": "#403D52",
+    "surface3": "#524F67",
+    "border": "#21202E",
+    "textHigh": "#E0DEF4",
+    "textMid": "#908CAA",
+    "textLow": "#6E6A86",
+    "success": "#95B1AC",
+    "warning": "#F6C177",
+    "danger": "#EB6F92",
+    "teal": "#9CCFD8",
+    "mauve": "#C4A7E7",
+    "peach": "#EBBCBA",
+    "pink": "#D7827E"
+  }
+}

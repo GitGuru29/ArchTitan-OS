@@ -113,11 +113,19 @@ All checks are pure-stdlib Python and run in CI
 (`.github/workflows/ui-consistency.yml`):
 
 ```bash
+python3 scripts/self-test.py        # prove each checker fails on injected drift
 python3 scripts/colour-lint.py      # every colour literal is a TDL token/value
+python3 scripts/palette-parity.py   # C++ TitanPalette ≡ QML TitanTheme tokens
 python3 scripts/config-drift.py     # etc/skel ≡ root, live variant documented
 python3 scripts/contrast-audit.py   # WCAG 2.1 contrast for token pairings
 ```
 
+- `colour-lint` scans QML, CSS, rasi, conf, QSS, Calamares `*.desc`, the GRUB
+  `theme.txt`, and C++ (`.cpp/.h/.hpp/.cc`) — so the shell, the Qt Widgets apps
+  and the boot/installer surfaces all obey one palette.
+- `palette-parity` keeps `TitanPalette.h` in lockstep with `TitanTheme.qml`
+  (same token set, same Mocha fallback, same derived alphas, and the copy
+  installed into `airootfs/usr/include/archtitan/` byte-identical).
 - **Allowlist** genuine data/artwork in `scripts/colour-allow.txt`. For a few
   deliberate lines inside an otherwise-conforming file, append an inline
   `// tdl-allow` comment on the line instead.
