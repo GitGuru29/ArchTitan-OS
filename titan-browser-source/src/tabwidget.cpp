@@ -1,5 +1,6 @@
 #include "tabwidget.h"
 #include "profilemanager.h"
+#include "TitanPalette.h"
 
 #include <QTabBar>
 #include <QStackedWidget>
@@ -447,13 +448,13 @@ void TabWidget::onTabBarContextMenu(const QPoint &pos)
     if (index < 0) return;
 
     auto *menu = new QMenu(m_tabBar);
-    menu->setStyleSheet(QStringLiteral(R"(
+    menu->setStyleSheet(TitanPalette::qss(QStringLiteral(R"(
         QMenu {
-            background: #11111b;
-            border: 1px solid rgba(137, 180, 250, 0.25);
+            background: @crust;
+            border: 1px solid rgba(@accentRGB, 0.25);
             border-radius: 8px;
             padding: 5px;
-            color: #cdd6f4;
+            color: @textHigh;
             font-size: 12px;
         }
         QMenu::item {
@@ -461,10 +462,10 @@ void TabWidget::onTabBarContextMenu(const QPoint &pos)
             border-radius: 5px;
         }
         QMenu::item:selected {
-            background: rgba(137, 180, 250, 0.15);
-            color: #89b4fa;
+            background: rgba(@accentRGB, 0.15);
+            color: @accent;
         }
-    )"));
+    )")));
 
     auto *reloadAct = menu->addAction(QStringLiteral("Reload Tab"));
     connect(reloadAct, &QAction::triggered, this, [this, index]{ reloadTab(index); });
@@ -497,3 +498,4 @@ void TabWidget::onTabBarContextMenu(const QPoint &pos)
 }
 
 #include "tabwidget.moc"
+

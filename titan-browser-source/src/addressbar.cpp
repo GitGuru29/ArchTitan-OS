@@ -1,4 +1,5 @@
 #include "addressbar.h"
+#include "TitanPalette.h"
 #include <QFocusEvent>
 #include <QKeyEvent>
 #include <QAction>
@@ -19,28 +20,28 @@ AddressBar::AddressBar(QWidget *parent) : QLineEdit(parent)
     m_bookmarkAction->setToolTip(QStringLiteral("Bookmark this page"));
     connect(m_bookmarkAction, &QAction::triggered, this, &AddressBar::onBookmarkActionTriggered);
 
-    setStyleSheet(QStringLiteral(R"(
+    setStyleSheet(TitanPalette::qss(QStringLiteral(R"(
         QLineEdit {
-            background: #181825;
-            border: 1px solid rgba(137, 180, 250, 0.18);
+            background: @mantle;
+            border: 1px solid rgba(@accentRGB, 0.18);
             border-radius: 8px;
-            color: #cdd6f4;
+            color: @textHigh;
             padding: 4px 10px 4px 8px;
             font-size: 13px;
             font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            selection-background-color: rgba(137, 180, 250, 0.35);
+            selection-background-color: rgba(@accentRGB, 0.35);
             min-height: 26px;
         }
         QLineEdit:hover {
-            background: #181825;
-            border-color: rgba(137, 180, 250, 0.35);
+            background: @mantle;
+            border-color: rgba(@accentRGB, 0.35);
         }
         QLineEdit:focus {
-            background: #181825;
-            border: 1px solid #89b4fa;
-            color: #cdd6f4;
+            background: @mantle;
+            border: 1px solid @accent;
+            color: @textHigh;
         }
-    )"));
+    )")));
 
     connect(this, &QLineEdit::returnPressed, this, &AddressBar::onReturnPressed);
     connect(this, &QLineEdit::textChanged, this, &AddressBar::onTextChanged);
