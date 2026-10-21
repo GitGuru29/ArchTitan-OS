@@ -1,0 +1,167 @@
+{
+  "items": [
+    {
+      "id": "apps",
+      "title": "Apps",
+      "hint": "Launch an application",
+      "icon": "\uf00a",
+      "keys": "Super+Space",
+      "exec": "titan-exec-hook rofi -show drun"
+    },
+    {
+      "id": "windows",
+      "title": "Windows",
+      "hint": "Switch between open windows",
+      "icon": "\uf2d0",
+      "exec": "rofi -show window"
+    },
+    {
+      "id": "theme",
+      "title": "Theme",
+      "hint": "Change the look of the whole desktop",
+      "icon": "\uf1fc",
+      "provider": "@themes",
+      "children": [
+        { "id": "theme-next", "title": "Next theme", "hint": "Cycle forward", "icon": "\uf051",
+          "keys": "Super+Ctrl+Space", "exec": "titan-theme next", "requires": "titan-theme" },
+        { "id": "theme-prev", "title": "Previous theme", "hint": "Cycle backward", "icon": "\uf048",
+          "exec": "titan-theme prev", "requires": "titan-theme" },
+        { "id": "theme-random", "title": "Random theme", "hint": "Feeling lucky", "icon": "\uf074",
+          "exec": "titan-theme random", "requires": "titan-theme" }
+      ]
+    },
+    {
+      "id": "wallpaper",
+      "title": "Wallpaper",
+      "hint": "Pick a background",
+      "icon": "\uf03e",
+      "keys": "Super+\\",
+      "exec": "titan-wallpaper-picker"
+    },
+    {
+      "id": "capture",
+      "title": "Capture",
+      "hint": "Screenshots and colour picker",
+      "icon": "\uf030",
+      "children": [
+        { "id": "shot-region-clip", "title": "Region to clipboard", "hint": "Select an area and copy it",
+          "icon": "\uf125", "keys": "Super+Shift+S", "delay": 120, "requires": "slurp",
+          "exec": "grim -g \"$(slurp)\" - | wl-copy --type image/png && notify-send -u low -i camera-photo Screenshot 'Region copied to clipboard'" },
+        { "id": "shot-region-file", "title": "Region to file", "hint": "Save to ~/Pictures/Screenshots and copy",
+          "icon": "\uf0c7", "delay": 120, "requires": "slurp",
+          "exec": "d=\"$HOME/Pictures/Screenshots\"; mkdir -p \"$d\" && f=\"$d/$(date +%Y-%m-%d_%H-%M-%S).png\" && grim -g \"$(slurp)\" \"$f\" && wl-copy --type image/png < \"$f\" && notify-send -u low -i camera-photo Screenshot \"Saved $(basename \"$f\")\"" },
+        { "id": "shot-full-file", "title": "Full screen to file", "hint": "Save the whole screen to ~/Pictures/Screenshots",
+          "icon": "\uf108", "delay": 120, "requires": "grim",
+          "exec": "d=\"$HOME/Pictures/Screenshots\"; mkdir -p \"$d\" && f=\"$d/$(date +%Y-%m-%d_%H-%M-%S).png\" && grim \"$f\" && wl-copy --type image/png < \"$f\" && notify-send -u low -i camera-photo Screenshot \"Saved $(basename \"$f\")\"" },
+        { "id": "colour-picker", "title": "Colour picker", "hint": "Pick a colour, hex goes to the clipboard",
+          "icon": "\uf1fb", "delay": 120, "requires": "hyprpicker",
+          "exec": "titan-quicksettings-toggle colorpicker" },
+        { "id": "clipboard", "title": "Clipboard history", "hint": "Search what you copied earlier",
+          "icon": "\uf0ea", "keys": "Super+V", "requires": "cliphist",
+          "exec": "cliphist list | rofi -dmenu | cliphist decode | wl-copy" }
+      ]
+    },
+    {
+      "id": "toggles",
+      "title": "Toggles",
+      "hint": "Night light, caffeine, game mode",
+      "icon": "\uf205",
+      "children": [
+        { "id": "nightlight", "title": "Night light", "hint": "Warm the screen colour", "icon": "\uf186",
+          "requires": "hyprsunset", "exec": "titan-quicksettings-toggle nightlight" },
+        { "id": "caffeine", "title": "Caffeine", "hint": "Keep the screen awake", "icon": "\uf0f4",
+          "requires": "hypridle", "exec": "titan-quicksettings-toggle caffeine" },
+        { "id": "gamemode", "title": "Game mode", "hint": "Disable animations, blur and shadows", "icon": "\uf11b",
+          "requires": "hyprctl", "exec": "titan-quicksettings-toggle gamemode" },
+        { "id": "power-profile", "title": "Cycle power profile", "hint": "Power Saver, Balanced, Performance",
+          "icon": "\uf0e7", "keys": "Super+P", "requires": "titan-cycle-power", "exec": "titan-cycle-power" }
+      ]
+    },
+    {
+      "id": "panels",
+      "title": "Panels",
+      "hint": "Quick settings, media, monitor",
+      "icon": "\uf108",
+      "children": [
+        { "id": "quicksettings", "title": "Quick settings", "hint": "Toggles and notifications", "icon": "\uf1de",
+          "keys": "Super+N", "requires": "titan-quicksettings", "exec": "titan-quicksettings --toggle" },
+        { "id": "media", "title": "Media island", "hint": "Now playing", "icon": "\uf001",
+          "keys": "Super+M", "requires": "titan-media-hud", "exec": "titan-media-hud --toggle" },
+        { "id": "sysmon", "title": "System monitor", "hint": "CPU, memory, GPU and thermals", "icon": "\uf080",
+          "requires": "titan-sysmon", "exec": "titan-sysmon --toggle" },
+        { "id": "btop", "title": "Task manager", "hint": "btop in a terminal", "icon": "\uf120",
+          "keys": "Ctrl+Shift+Esc", "requires": "btop", "exec": "titan-exec-hook kitty -e btop" }
+      ]
+    },
+    {
+      "id": "settings",
+      "title": "Settings",
+      "hint": "System, audio, network",
+      "icon": "\uf013",
+      "children": [
+        { "id": "settings-app", "title": "ArchTitan Settings", "hint": "Appearance, power, security", "icon": "\uf013",
+          "keys": "Super+,", "requires": "archtitan-settings", "exec": "titan-exec-hook archtitan-settings" },
+        { "id": "audio", "title": "Audio", "hint": "Volume mixer", "icon": "\uf028",
+          "keys": "Super+Ctrl+V", "requires": "pavucontrol", "exec": "titan-exec-hook pavucontrol" },
+        { "id": "network", "title": "Network", "hint": "Wi-Fi and connections (nmtui)", "icon": "\uf1eb",
+          "requires": "nmtui", "exec": "titan-exec-hook kitty -e nmtui" }
+      ]
+    },
+    {
+      "id": "system",
+      "title": "System",
+      "hint": "Lock, sleep, power",
+      "icon": "\uf011",
+      "children": [
+        { "id": "lock", "title": "Lock", "hint": "Lock the screen", "icon": "\uf023",
+          "keys": "Super+L", "requires": "hyprlock", "exec": "pidof hyprlock || hyprlock" },
+        { "id": "sleep", "title": "Sleep", "hint": "Suspend to RAM", "icon": "\uf236",
+          "requires": "systemctl", "exec": "systemctl suspend -i || loginctl suspend" },
+        { "id": "powermenu", "title": "Power menu", "hint": "Log out, reboot, shut down", "icon": "\uf011",
+          "keys": "Ctrl+Alt+Del", "requires": "titan-powermenu", "exec": "titan-powermenu" },
+        { "id": "sys-update", "title": "System Update", "hint": "Update packages via terminal", "icon": "\uf021",
+          "requires": "pacman", "exec": "titan-exec-hook kitty -e bash -c 'sudo pacman -Syu; echo \"Press enter to exit\"; read'" },
+        { "id": "reload", "title": "Reload Hyprland", "hint": "Re-read the compositor config", "icon": "\uf021",
+          "requires": "hyprctl", "exec": "hyprctl reload" }
+      ]
+    },
+    {
+      "id": "shortcuts",
+      "title": "Shortcuts",
+      "hint": "Keyboard shortcuts cheat sheet",
+      "icon": "\uf11c",
+      "children": [
+        { "id": "sc-menu", "title": "Titan Central Menu", "hint": "Search, apps, toggles & settings", "icon": "\uf00a",
+          "keys": "Super+/ / Super+K", "exec": "titan-menu --toggle" },
+        { "id": "sc-term", "title": "Terminal", "hint": "Open Kitty terminal emulator", "icon": "\uf120",
+          "keys": "Super+Enter", "exec": "titan-exec-hook kitty" },
+        { "id": "sc-browser", "title": "Web Browser", "hint": "Launch TitanBrowser", "icon": "\uf268",
+          "keys": "Super+W", "exec": "titan-exec-hook titanbrowser" },
+        { "id": "sc-fm", "title": "File Manager", "hint": "Open Ranger file manager", "icon": "\uf07b",
+          "keys": "Super+E", "exec": "titan-exec-hook kitty -e ranger" },
+        { "id": "sc-settings", "title": "ArchTitan Settings", "hint": "Open settings panel", "icon": "\uf013",
+          "keys": "Super+,", "exec": "titan-exec-hook archtitan-settings" },
+        { "id": "sc-qs", "title": "Quick Settings", "hint": "Toggles & notification center", "icon": "\uf1de",
+          "keys": "Super+N", "exec": "titan-quicksettings --toggle" },
+        { "id": "sc-media", "title": "Media Island HUD", "hint": "Playback controls & info", "icon": "\uf001",
+          "keys": "Super+M", "exec": "titan-media-hud --toggle" },
+        { "id": "sc-clip", "title": "Clipboard History", "hint": "Search and paste clipboard", "icon": "\uf0ea",
+          "keys": "Super+V", "exec": "cliphist list | rofi -dmenu | cliphist decode | wl-copy" },
+        { "id": "sc-snip", "title": "Screen Snip", "hint": "Select region to clipboard", "icon": "\uf030",
+          "keys": "Super+Shift+S", "exec": "grim -g \"$(slurp)\" - | wl-copy --type image/png" },
+        { "id": "sc-wall", "title": "Wallpaper Picker", "hint": "Browse and set desktop background", "icon": "\uf03e",
+          "keys": "Super+\\", "exec": "titan-wallpaper-picker" },
+        { "id": "sc-kill", "title": "Close Active Window", "hint": "Close currently focused window", "icon": "\uf00d",
+          "keys": "Super+Q", "exec": "hyprctl dispatch killactive" },
+        { "id": "sc-float", "title": "Toggle Floating", "hint": "Toggle window float/tile", "icon": "\uf2d0",
+          "keys": "Super+F", "exec": "hyprctl dispatch togglefloating" },
+        { "id": "sc-fs", "title": "Toggle Fullscreen", "hint": "Maximize window to fullscreen", "icon": "\uf065",
+          "keys": "Super+Shift+F", "exec": "hyprctl dispatch fullscreen 0" },
+        { "id": "sc-lock", "title": "Lock Screen", "hint": "Lock Hyprland session", "icon": "\uf023",
+          "keys": "Super+L", "exec": "pidof hyprlock || hyprlock" },
+        { "id": "sc-power", "title": "Power Menu", "hint": "Log out, reboot or shutdown", "icon": "\uf011",
+          "keys": "Ctrl+Alt+Del", "exec": "titan-powermenu" }
+      ]
+    }
+  ]
+}

@@ -52,6 +52,7 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("titan-wallpaper-restore")
     hl.exec_cmd("bash -c 'sleep 3 && titan-quicksettings --daemon'")
     hl.exec_cmd("bash -c 'sleep 3 && titan-sysmon --daemon'")
+    hl.exec_cmd("bash -c 'sleep 3 && titan-menu --daemon'")
     hl.exec_cmd("titan-hotzones")
     hl.exec_cmd("titan-zone-osd")
     hl.exec_cmd("/usr/lib/polkit-kde-authentication-agent-1")
@@ -77,6 +78,10 @@ local mainMod = "SUPER"
 -- Shell & Utilities
 hl.bind(mainMod .. " + SUPER_L", hl.dsp.exec_cmd(sandboxed .. " " .. menu), { repeating = true })  -- Windows logo to open search
 hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd(sandboxed .. " " .. menu))   -- Spotlight-style: Super+Space
+hl.bind(mainMod .. " + ALT + Space", hl.dsp.exec_cmd("titan-menu --toggle"))  -- Titan Central Command Palette
+hl.bind(mainMod .. " + K", hl.dsp.exec_cmd("titan-menu --toggle"))            -- Keybinds & Command Palette
+hl.bind(mainMod .. " + slash", hl.dsp.exec_cmd("titan-menu --toggle"))        -- Help & Shortcuts Cheat Sheet (Super+/)
+hl.bind(mainMod .. " + F1", hl.dsp.exec_cmd("titan-menu --toggle"))           -- Help & Shortcuts Cheat Sheet (Super+F1)
 hl.bind(mainMod .. " + Tab", hl.dsp.exec_cmd(sandboxed .. " " .. menu))     -- Toggle overview/search
 hl.bind(mainMod .. " + V", hl.dsp.exec_cmd("cliphist list | rofi -dmenu | cliphist decode | wl-copy"))  -- Clipboard
 hl.bind(mainMod .. " + Period", hl.dsp.exec_cmd(sandboxed .. " rofi -show emoji"))  -- Emoji
@@ -349,6 +354,7 @@ hl.layer_rule({ match = { namespace = "^swaync-notification-window$" }, blur = t
 hl.layer_rule({ match = { namespace = "^titan-quicksettings$" }, blur = true, ignore_alpha = 0.5 })
 hl.layer_rule({ match = { namespace = "^titan-quicksettings-blur$" }, blur = true, ignore_alpha = 0.5 })
 hl.layer_rule({ match = { namespace = "^titan-sysmon$" }, blur = true, ignore_alpha = 0.5 })
+hl.layer_rule({ match = { namespace = "^titan-menu$" }, blur = true, ignore_alpha = 0.5 })
 
 -- Hot-zone / gesture OSD overlay. Full-screen and input-transparent; opacity is
 -- animated inside the surface, so suppress the compositor's map/unmap fade.

@@ -61,6 +61,7 @@ file_permissions=(
   ["/usr/local/bin/titan-hotzones"]="0:0:755"
   ["/usr/local/bin/titan-zone-osd"]="0:0:755"
   ["/usr/local/bin/titan-sysmon"]="0:0:755"
+  ["/usr/local/bin/titan-menu"]="0:0:755"
   ["/etc/archtitan"]="0:0:755"
   ["/etc/archtitan/hotzones.toml"]="0:0:644"
   # ArchTitan.TitanUI design-system QML module

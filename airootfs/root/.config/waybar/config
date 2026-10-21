@@ -29,6 +29,8 @@
         "custom/separator",
         "battery",
         "custom/separator",
+        "custom/help",
+        "custom/separator",
         "custom/notification",
         "tray"
     ],
@@ -123,6 +125,13 @@
         "format-not-found": "",
         "interval"        : 10,
         "tooltip-format"  : "{timeTo} · {capacity}%\nPower: {power:.1f}W"
+    },
+
+    "custom/help": {
+        "tooltip": true,
+        "tooltip-format": "Command Palette & Shortcuts Cheat Sheet (Super+/)",
+        "format": "󰌌",
+        "on-click": "titan-menu --toggle"
     },
 
     "custom/notification": {
