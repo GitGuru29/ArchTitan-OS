@@ -105,7 +105,7 @@ Item {
                         radius: 1.5
                         gradient: Gradient {
                             orientation: Gradient.Horizontal
-                            GradientStop { position: 0.0; color: "#89b4fa" }
+                            GradientStop { position: 0.0; color: TitanTheme.accent }
                             GradientStop { position: 1.0; color: TitanTheme.accent }
                         }
                     }
@@ -151,7 +151,7 @@ Item {
                     Rectangle {
                         width: 2.5
                         radius: 1.25
-                        color: (index % 2 === 0) ? TitanTheme.accent : "#89b4fa"
+                        color: TitanTheme.accent
                         height: 8
                         anchors.verticalCenter: parent ? parent.verticalCenter : undefined
 

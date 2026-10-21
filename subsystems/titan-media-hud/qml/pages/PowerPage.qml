@@ -25,15 +25,15 @@ Item {
             Layout.preferredWidth: 46
             Layout.preferredHeight: 46
             radius: 12
-            color: "#1889b4fa"
-            border.color: "#4089b4fa"
+            color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.094)
+            border.color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.251)
             border.width: 1.5
 
             Text {
                 anchors.centerIn: parent
                 text: System ? System.powerProfileIcon : "⚡"
                 font.pixelSize: 22
-                color: "#89b4fa"
+                color: TitanTheme.accent
             }
 
             // Glow aura
@@ -42,7 +42,7 @@ Item {
                 anchors.margins: -3
                 radius: parent.radius + 3
                 color: "transparent"
-                border.color: "#3089b4fa"
+                border.color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.188)
                 border.width: 1
             }
         }
@@ -60,8 +60,8 @@ Item {
                     height: 14
                     width: tagText.implicitWidth + 10
                     radius: 7
-                    color: "#2089b4fa"
-                    border.color: "#4089b4fa"
+                    color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.125)
+                    border.color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.251)
                     border.width: 1
 
                     Text {
@@ -72,7 +72,7 @@ Item {
                         font.pixelSize: 8
                         font.weight: Font.Bold
                         font.letterSpacing: 0.8
-                        color: "#89b4fa"
+                        color: TitanTheme.accent
                     }
                 }
 

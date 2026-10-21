@@ -34,7 +34,7 @@ Item {
         }
 
         border.color: {
-            if (isPrimary) return "#cba6f7"
+            if (isPrimary) return TitanTheme.mauve
             if (isActive) return TitanTheme.accent
             return btnArea.containsMouse ? "#40FFFFFF" : "#18FFFFFF"
         }
@@ -42,8 +42,8 @@ Item {
 
         Gradient {
             id: primaryGradient
-            GradientStop { position: 0.0; color: btnArea.containsMouse ? "#cba6f7" : TitanTheme.accent }
-            GradientStop { position: 1.0; color: btnArea.containsMouse ? TitanTheme.accent : "#89b4fa" }
+            GradientStop { position: 0.0; color: btnArea.containsMouse ? TitanTheme.mauve : TitanTheme.accent }
+            GradientStop { position: 1.0; color: TitanTheme.accent }
         }
 
         // Tactile press & hover scale
