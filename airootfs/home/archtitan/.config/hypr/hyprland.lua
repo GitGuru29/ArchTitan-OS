@@ -80,6 +80,8 @@ hl.bind(mainMod .. " + SUPER_L", hl.dsp.exec_cmd(sandboxed .. " " .. menu), { re
 hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd(sandboxed .. " " .. menu))   -- Spotlight-style: Super+Space
 hl.bind(mainMod .. " + ALT + Space", hl.dsp.exec_cmd("titan-menu --toggle"))  -- Titan Central Command Palette
 hl.bind(mainMod .. " + K", hl.dsp.exec_cmd("titan-menu --toggle"))            -- Keybinds & Command Palette
+hl.bind(mainMod .. " + slash", hl.dsp.exec_cmd("titan-menu --toggle"))        -- Help & Shortcuts Cheat Sheet (Super+/)
+hl.bind(mainMod .. " + F1", hl.dsp.exec_cmd("titan-menu --toggle"))           -- Help & Shortcuts Cheat Sheet (Super+F1)
 hl.bind(mainMod .. " + Tab", hl.dsp.exec_cmd(sandboxed .. " " .. menu))     -- Toggle overview/search
 hl.bind(mainMod .. " + V", hl.dsp.exec_cmd("cliphist list | rofi -dmenu | cliphist decode | wl-copy"))  -- Clipboard
 hl.bind(mainMod .. " + Period", hl.dsp.exec_cmd(sandboxed .. " rofi -show emoji"))  -- Emoji
@@ -91,9 +93,8 @@ hl.bind(mainMod .. " + N", hl.dsp.exec_cmd("titan-quicksettings --toggle"))  -- 
 
 -- Session & Media
 hl.bind("CTRL + ALT + Delete", hl.dsp.exec_cmd("titan-powermenu"))
--- Disable swaylock on live ISO so you don't get locked out without a password
-hl.bind(mainMod .. " + L", hl.dsp.exec_cmd(":"))  -- Lock disabled on live OS
-hl.bind(mainMod .. " + SHIFT + L", hl.dsp.exec_cmd("systemctl suspend"))  -- Sleep
+hl.bind(mainMod .. " + L", hl.dsp.exec_cmd("pidof hyprlock || hyprlock || swaylock -f -c 0b0e14 || loginctl lock-session"))  -- Lock Screen
+hl.bind(mainMod .. " + SHIFT + L", hl.dsp.exec_cmd("systemctl suspend -i || loginctl suspend"))  -- Sleep
 hl.bind("XF86Sleep", hl.dsp.exec_cmd(":"))  -- swallow sleep key on live ISO
 
 -- Apps
@@ -214,37 +215,45 @@ hl.config({
     },
 
     general = {
-        gaps_in    = 5,
-        gaps_out   = 10,
+        gaps_in     = 6,
+        gaps_out    = 12,
         border_size = 2,
         col = {
-            active_border   = { colors = { "rgba(7aa2f7ee)", "rgba(9ece6aee)", "rgba(e0af68ee)", "rgba(bb9af7ee)" }, angle = 45 },
-            inactive_border = "rgba(414868aa)",
+            active_border   = { colors = { "rgba(7aa2f7ee)", "rgba(bb9af7ee)" }, angle = 45 },
+            inactive_border = "rgba(24283b88)",
         },
         layout = "dwindle",
     },
 
     -- Decoration -- blur, shadows, rounding
     decoration = {
-        rounding = 12,
+        rounding = 14,
 
         blur = {
-            enabled = false,
+            enabled           = true,
+            size              = 6,
+            passes            = 3,
+            new_optimizations = true,
+            ignore_opacity    = true,
+            noise             = 0.012,
+            contrast          = 0.92,
+            brightness        = 0.88,
+            vibrancy          = 0.28,
         },
 
         shadow = {
             enabled      = true,
-            range        = 12,
-            render_power = 3,
-            offset       = { 0, 4 },
-            color        = "rgba(1a1a2ecc)",
+            range        = 24,
+            render_power = 4,
+            offset       = { 0, 5 },
+            color        = "rgba(0b0e1499)",
         },
 
         dim_inactive   = false,
-        dim_strength   = 0.1,
+        dim_strength   = 0.08,
 
-        active_opacity   = 1.0,
-        inactive_opacity = 0.92,
+        active_opacity   = 0.98,
+        inactive_opacity = 0.90,
     },
 
     -- Layout
@@ -268,22 +277,22 @@ hl.config({
 ---- ANIMATIONS ----
 ---------------------------
 
-hl.curve("overshot", { type = "bezier", points = { { 0.05, 0.9 }, { 0.1, 1.1 } } })
-hl.curve("smoothOut", { type = "bezier", points = { { 0.36, 0 },   { 0.66, -0.56 } } })
-hl.curve("smoothIn",  { type = "bezier", points = { { 0.25, 1 },   { 0.5, 1 } } })
-hl.curve("snappy",    { type = "bezier", points = { { 0.4, 0 },    { 0.2, 1 } } })
+hl.curve("quint", { type = "bezier", points = { { 0.23, 1 }, { 0.32, 1 } } })
+hl.curve("cubic", { type = "bezier", points = { { 0.65, 0 }, { 0.35, 1 } } })
+hl.curve("snappy", { type = "bezier", points = { { 0.1, 1 }, { 0.1, 1 } } })
+hl.curve("smooth", { type = "bezier", points = { { 0.25, 1 }, { 0.5, 1 } } })
 
 hl.config({ animations = { enabled = true } })
 
--- smooth and snappy
-hl.animation({ leaf = "windows",     enabled = true, speed = 1, bezier = "overshot", style = "slide" })
-hl.animation({ leaf = "windowsOut",  enabled = true, speed = 1, bezier = "smoothOut", style = "slide" })
-hl.animation({ leaf = "windowsMove", enabled = true, speed = 1, bezier = "snappy" })
-hl.animation({ leaf = "border",      enabled = true, speed = 1, bezier = "default" })
-hl.animation({ leaf = "borderangle", enabled = true, speed = 1, bezier = "default", style = "loop" })
-hl.animation({ leaf = "fade",        enabled = true, speed = 1, bezier = "smoothIn" })
-hl.animation({ leaf = "fadeDim",     enabled = true, speed = 1, bezier = "smoothIn" })
-hl.animation({ leaf = "workspaces",  enabled = true, speed = 1, bezier = "overshot", style = "slidevert" })
+-- fluid and snappy animations
+hl.animation({ leaf = "windows",     enabled = true, speed = 4.2, bezier = "quint", style = "popin 85%" })
+hl.animation({ leaf = "windowsOut",  enabled = true, speed = 3.2, bezier = "cubic", style = "popin 90%" })
+hl.animation({ leaf = "windowsMove", enabled = true, speed = 3.8, bezier = "snappy" })
+hl.animation({ leaf = "border",      enabled = true, speed = 6, bezier = "quint" })
+hl.animation({ leaf = "borderangle", enabled = true, speed = 30, bezier = "default", style = "loop" })
+hl.animation({ leaf = "fade",        enabled = true, speed = 3.5, bezier = "smooth" })
+hl.animation({ leaf = "fadeDim",     enabled = true, speed = 4, bezier = "smooth" })
+hl.animation({ leaf = "workspaces",  enabled = true, speed = 4.5, bezier = "quint", style = "slide" })
 
 ---------------------------
 ---- WINDOW RULES ----
@@ -297,6 +306,30 @@ hl.window_rule({
     size    = "980 640",
     center  = true,
     opacity = "1.0 1.0",
+})
+
+hl.window_rule({
+    name    = "pavucontrol-float",
+    match   = { class = "^pavucontrol$" },
+    float   = true,
+    size    = "720 500",
+    center  = true,
+})
+
+hl.window_rule({
+    name    = "archtitan-settings-float",
+    match   = { class = "^archtitan-settings$" },
+    float   = true,
+    size    = "960 620",
+    center  = true,
+})
+
+hl.window_rule({
+    name    = "btop-float",
+    match   = { class = "^kitty$", title = "^btop$" },
+    float   = true,
+    size    = "1020 660",
+    center  = true,
 })
 
 -- ArchTitan Quick Settings Window Rules
@@ -329,7 +362,6 @@ hl.layer_rule({ name = "titan-zone-osd", match = { namespace = "^titan-zone-osd$
 
 -- ArchTitan Media Island -- SUPER+M toggle (uses LayerShellQt, no window rules needed)
 hl.bind(mainMod .. " + M", hl.dsp.exec_cmd("titan-media-hud --toggle"))  -- Toggle media island overlay
-
 -- Media keys (XF86)
 hl.bind("XF86AudioPlay",         hl.dsp.exec_cmd("playerctl play-pause"))
 hl.bind("XF86AudioNext",         hl.dsp.exec_cmd("playerctl next"))

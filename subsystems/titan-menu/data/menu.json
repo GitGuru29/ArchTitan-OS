@@ -132,7 +132,7 @@
       "icon": "\uf11c",
       "children": [
         { "id": "sc-menu", "title": "Titan Central Menu", "hint": "Search, apps, toggles & settings", "icon": "\uf00a",
-          "keys": "Super+Alt+Space", "exec": "titan-menu --toggle" },
+          "keys": "Super+/ / Super+K", "exec": "titan-menu --toggle" },
         { "id": "sc-term", "title": "Terminal", "hint": "Open Kitty terminal emulator", "icon": "\uf120",
           "keys": "Super+Enter", "exec": "titan-exec-hook kitty" },
         { "id": "sc-browser", "title": "Web Browser", "hint": "Launch TitanBrowser", "icon": "\uf268",

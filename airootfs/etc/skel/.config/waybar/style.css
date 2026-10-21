@@ -141,6 +141,7 @@ window#waybar.hidden {
 #pulseaudio,
 #network,
 #battery,
+#custom-help,
 #custom-notification {
     color        : #7F849C;
     font-size    : 11.5px;
@@ -233,6 +234,24 @@ window#waybar.hidden {
     background  : rgba(137, 180, 250, 0.15);
     border-color: rgba(137, 180, 250, 0.4);
     color       : #89B4FA; /* @titan-adapt:accent */
+}
+
+/* Command Palette & Shortcuts Help Trigger Chip */
+#custom-help {
+    color        : #89B4FA;
+    font-size    : 13.5px;
+    padding      : 2px 8px;
+    background   : rgba(137, 180, 250, 0.10);
+    border       : 1px solid rgba(137, 180, 250, 0.25);
+    border-radius: 10px;
+    margin       : 1px 1px;
+}
+
+#custom-help:hover {
+    color       : #FFFFFF;
+    background  : rgba(137, 180, 250, 0.25);
+    border-color: rgba(137, 180, 250, 0.6);
+    box-shadow  : 0 0 8px rgba(137, 180, 250, 0.35);
 }
 
 /* Quick Settings Trigger Chip */
