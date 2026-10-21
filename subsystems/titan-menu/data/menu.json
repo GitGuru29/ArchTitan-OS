@@ -160,7 +160,13 @@
         { "id": "sc-lock", "title": "Lock Screen", "hint": "Lock Hyprland session", "icon": "\uf023",
           "keys": "Super+L", "exec": "pidof hyprlock || hyprlock" },
         { "id": "sc-power", "title": "Power Menu", "hint": "Log out, reboot or shutdown", "icon": "\uf011",
-          "keys": "Ctrl+Alt+Del", "exec": "titan-powermenu" }
+          "keys": "Ctrl+Alt+Del", "exec": "titan-powermenu" },
+        { "id": "sc-vol", "title": "Volume Controls (OSD)", "hint": "Raise, lower, or mute audio output", "icon": "\uf028",
+          "keys": "Vol Up / Down / Mute", "exec": "swayosd-client --output-volume raise", "requires": "swayosd-client" },
+        { "id": "sc-bright", "title": "Brightness Controls (OSD)", "hint": "Adjust screen backlight with OSD", "icon": "\uf185",
+          "keys": "Brightness Up / Down", "exec": "swayosd-client --brightness raise", "requires": "swayosd-client" },
+        { "id": "sc-caps", "title": "Caps Lock Indicator (OSD)", "hint": "Display Caps Lock status OSD", "icon": "\uf11c",
+          "keys": "Caps Lock", "exec": "swayosd-client --caps-lock", "requires": "swayosd-client" }
       ]
     }
   ]

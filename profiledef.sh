@@ -65,6 +65,7 @@ file_permissions=(
   ["/usr/local/bin/titan-menu"]="0:0:755"
   ["/etc/archtitan"]="0:0:755"
   ["/etc/archtitan/hotzones.toml"]="0:0:644"
+  ["/usr/share/archtitan/themes"]="0:0:755"
   # ArchTitan.TitanUI design-system QML module
   ["/usr/include/archtitan"]="0:0:755"
   ["/usr/include/archtitan/TitanPalette.h"]="0:0:644"
