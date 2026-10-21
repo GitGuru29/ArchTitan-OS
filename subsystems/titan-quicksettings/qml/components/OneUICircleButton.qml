@@ -27,9 +27,16 @@ ColumnLayout {
         Layout.alignment: Qt.AlignHCenter
         radius: 25
         clip: true
-        color: buttonRoot.active ? buttonRoot.activeColor : (btnMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgOneUIPill)
-        border.color: buttonRoot.active ? TitanTheme.borderActive : (btnMa.containsMouse ? TitanTheme.borderHover : TitanTheme.borderGlass)
-        border.width: 1
+        // Keyboard: reachable with Tab / arrows, activated with Enter or Space.
+        activeFocusOnTab: true
+        Keys.onReturnPressed: (event) => { buttonRoot.clicked(); event.accepted = true }
+        Keys.onEnterPressed:  (event) => { buttonRoot.clicked(); event.accepted = true }
+        Keys.onSpacePressed:  (event) => { buttonRoot.clicked(); event.accepted = true }
+        color: buttonRoot.active ? buttonRoot.activeColor : ((btnMa.containsMouse || activeFocus) ? TitanTheme.bgHover : TitanTheme.bgOneUIPill)
+        border.color: activeFocus ? TitanTheme.accent
+                      : buttonRoot.active ? TitanTheme.borderActive
+                      : (btnMa.containsMouse ? TitanTheme.borderHover : TitanTheme.borderGlass)
+        border.width: activeFocus ? 2 : 1
 
         // Tactile Liquid Touch: spring bounce on press and hover
         scale: btnMa.pressed ? 0.91 : (btnMa.containsMouse ? 1.07 : 1.0)
@@ -83,4 +90,5 @@ ColumnLayout {
 
     Accessible.role: Accessible.Button
     Accessible.name: label
+    Accessible.onPressAction: buttonRoot.clicked()
 }

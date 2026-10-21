@@ -13,6 +13,25 @@ RowLayout {
     id: sliderRoot
     Layout.fillWidth: true
     implicitHeight: 36
+
+    /**
+     * Commit a value: clamp, store, and let consumers react exactly once.
+     * Keyboard and pointer paths both funnel through here so the two can
+     * never disagree about the current value.
+     */
+    function commit(newValue) {
+        var clamped = Math.max(sliderRoot.from, Math.min(sliderRoot.to, newValue));
+        if (clamped === sliderRoot.value) return;
+        sliderRoot.value = clamped;
+        sliderRoot.changed(clamped);
+    }
+
+    /** Step the slider by `delta` clicks (5% of the range per click). */
+    function nudge(delta) {
+        var span = sliderRoot.to - sliderRoot.from;
+        var step = span > 0 ? Math.max(1, Math.round(span / 20)) : 1;
+        sliderRoot.commit(sliderRoot.value + delta * step);
+    }
     Layout.preferredHeight: 36
     spacing: 12
 
@@ -59,9 +78,23 @@ RowLayout {
         color: TitanTheme.bgOneUITrack
         border.color: TitanTheme.borderGlass
         border.width: 1
+        radius: 18
+        color: TitanTheme.bgOneUITrack
+        border.color: activeFocus ? TitanTheme.accent : TitanTheme.borderGlass
+        border.width: activeFocus ? 2 : 1
         clip: true
         scale: mouseArea.pressed ? 1.015 : 1.0
         Behavior on scale { NumberAnimation { duration: 110; easing.type: Easing.OutQuad } }
+        Behavior on border.color { ColorAnimation { duration: 120 } }
+
+        // Keyboard: focusable, stepped with the arrow keys, home/end to extremes.
+        activeFocusOnTab: true
+        Keys.onLeftPressed:  (event) => { sliderRoot.nudge(-1); event.accepted = true }
+        Keys.onDownPressed:  (event) => { sliderRoot.nudge(-1); event.accepted = true }
+        Keys.onRightPressed: (event) => { sliderRoot.nudge(1);  event.accepted = true }
+        Keys.onUpPressed:    (event) => { sliderRoot.nudge(1);  event.accepted = true }
+        Keys.onHomePressed:  (event) => { sliderRoot.commit(sliderRoot.from); event.accepted = true }
+        Keys.onEndPressed:   (event) => { sliderRoot.commit(sliderRoot.to);   event.accepted = true }
 
         // Active fill with One UI 9 gradient
         Rectangle {
@@ -126,4 +159,6 @@ RowLayout {
 
     Accessible.role: Accessible.Slider
     Accessible.name: "One UI pill slider"
+    Accessible.onIncreaseAction: sliderRoot.nudge(1)
+    Accessible.onDecreaseAction: sliderRoot.nudge(-1)
 }
