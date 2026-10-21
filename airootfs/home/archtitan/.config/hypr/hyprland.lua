@@ -32,6 +32,7 @@ local sandboxed = "titan-exec-hook"
 -----------------------
 
 hl.env("XCURSOR_SIZE", "24")
+hl.env("XCURSOR_THEME", "Breeze_Snow")
 hl.env("QT_QPA_PLATFORMTHEME", "qt5ct")
 hl.env("WLR_NO_HARDWARE_CURSORS", "1")
 hl.env("WLR_RENDERER_ALLOW_SOFTWARE", "1")
@@ -48,24 +49,34 @@ hl.on("hyprland.start", function()
 
     hl.exec_cmd("bash -c 'sleep 2 && waybar'")
     hl.exec_cmd("bash -c 'sleep 2 && swaync'")
+    -- Idle daemon: the installed (skel) hypridle.conf blanks the display after
+    -- 5 min and locks after 10 min. The live-ISO hypridle.conf defines NO
+    -- timeouts, so the live session never blanks or locks mid-install.
+    hl.exec_cmd("hypridle")
     hl.exec_cmd("bash -c 'sleep 3 && titan-media-hud'")
     hl.exec_cmd("titan-wallpaper-restore")
+    -- Startup sync for the theme engine: brings Waybar/SwayNC/rofi/kitty/
+    -- hyprlock/GTK/qt5ct and the Hyprland border keywords in line with the
+    -- active theme (no wallpaper change, no toast). Sleep covers swaybg.
+    hl.exec_cmd("bash -c 'sleep 4 && titan-theme apply'")
     hl.exec_cmd("bash -c 'sleep 3 && titan-quicksettings --daemon'")
     hl.exec_cmd("bash -c 'sleep 3 && titan-sysmon --daemon'")
     hl.exec_cmd("titan-hotzones")
     hl.exec_cmd("titan-zone-osd")
     hl.exec_cmd("/usr/lib/polkit-kde-authentication-agent-1")
     hl.exec_cmd("xdg-user-dirs-update")
+    -- Clipboard manager: watch and store text and image clips for Super+V history
+    hl.exec_cmd("wl-paste --type text --watch cliphist store")
+    hl.exec_cmd("wl-paste --type image --watch cliphist store")
 
     -- Auto-launch installer as floating window (only on live ISO)
     -- /run/archiso only exists on mkarchiso live media -- reliable detection
     -- Users can minimize it and explore the desktop, then reopen with Super+I
     hl.exec_cmd("bash -c 'sleep 6; if [ -d /run/archiso ]; then launch-installer; fi'")
 
-    -- Disable screen timeout / DPMS blanking on live ISO
-    -- No hypridle daemon is launched -- no idle daemon = no blanking
-    -- Also explicitly kill any DPMS via wlopm on startup
-    hl.exec_cmd("bash -c 'sleep 2; which wlopm >/dev/null 2>&1 && wlopm --on DP-1 --on HDMI-A-1 --on Virtual-1 || true'")
+    -- Live ISO only: force DPMS on at startup so the installer session never
+    -- blanks mid-install. Installed systems keep hypridle's timeouts instead.
+    hl.exec_cmd("bash -c 'sleep 2; [ -d /run/archiso ] || exit 0; which wlopm >/dev/null 2>&1 && wlopm --on DP-1 --on HDMI-A-1 --on Virtual-1 || true'")
 end)
 
 ---------------------------
@@ -75,30 +86,42 @@ end)
 local mainMod = "SUPER"
 
 -- Shell & Utilities
-hl.bind(mainMod .. " + SUPER_L", hl.dsp.exec_cmd(sandboxed .. " " .. menu), { repeating = true })  -- Windows logo to open search
+hl.bind("SUPER_L", hl.dsp.exec_cmd(sandboxed .. " " .. menu), { released = true })  -- Windows logo to open search
+hl.bind("SUPER_R", hl.dsp.exec_cmd(sandboxed .. " " .. menu), { released = true })
 hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd(sandboxed .. " " .. menu))   -- Spotlight-style: Super+Space
 hl.bind(mainMod .. " + Tab", hl.dsp.exec_cmd(sandboxed .. " " .. menu))     -- Toggle overview/search
 hl.bind(mainMod .. " + V", hl.dsp.exec_cmd("cliphist list | rofi -dmenu | cliphist decode | wl-copy"))  -- Clipboard
 hl.bind(mainMod .. " + Period", hl.dsp.exec_cmd(sandboxed .. " rofi -show emoji"))  -- Emoji
 hl.bind(mainMod .. " + backslash", hl.dsp.exec_cmd("titan-wallpaper-picker"))  -- Wallpaper Picker (Super+\)
 hl.bind(mainMod .. " + SHIFT + backslash", hl.dsp.exec_cmd("titan-wallpaper-picker"))  -- Wallpaper Picker (Super+|)
+hl.bind(mainMod .. " + CTRL + Space", hl.dsp.exec_cmd("titan-theme next"))  -- Next theme (Super+Ctrl+Space)
+hl.bind(mainMod .. " + CTRL + SHIFT + Space", hl.dsp.exec_cmd("titan-theme prev"))  -- Previous theme (Super+Ctrl+Shift+Space)
 hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd('grim -g "$(slurp)" - | wl-copy'))  -- Screen snip
 hl.bind("Print", hl.dsp.exec_cmd('grim -g "$(slurp)" - | wl-copy'))
 hl.bind(mainMod .. " + N", hl.dsp.exec_cmd("titan-quicksettings --toggle"))  -- Quick Settings & Notification Center
 
+-- Power Management & System Telemetry
+hl.bind(mainMod .. " + P", hl.dsp.exec_cmd("titan-cycle-power"))  -- Power Profile cycle (Super+P)
+hl.bind("XF86Launch1", hl.dsp.exec_cmd("titan-cycle-power"), { locked = true })  -- Power Profile cycle (Fn+P / hotkey)
+hl.bind("XF86Launch3", hl.dsp.exec_cmd("titan-cycle-power"), { locked = true })
+hl.bind(mainMod .. " + Escape", hl.dsp.exec_cmd("titan-sysmon --toggle"))  -- System Monitor overlay toggle
+hl.bind("CTRL + SHIFT + " .. mainMod .. " + Escape", hl.dsp.exec_cmd("titan-sysmon --toggle"))
+
 -- Session & Media
 hl.bind("CTRL + ALT + Delete", hl.dsp.exec_cmd("titan-powermenu"))
--- Disable swaylock on live ISO so you don't get locked out without a password
-hl.bind(mainMod .. " + L", hl.dsp.exec_cmd(":"))  -- Lock disabled on live OS
-hl.bind(mainMod .. " + SHIFT + L", hl.dsp.exec_cmd("systemctl suspend"))  -- Sleep
-hl.bind("XF86Sleep", hl.dsp.exec_cmd(":"))  -- swallow sleep key on live ISO
+-- Lock: disabled on the live ISO (the live user has an empty password, so
+-- hyprlock's PAM stack would strand the session). Installed systems lock
+-- normally — same pattern as the installer autostart above.
+hl.bind(mainMod .. " + L", hl.dsp.exec_cmd("bash -c '[ -d /run/archiso ] && : || (pidof hyprlock || hyprlock || swaylock -f -c 11111b || loginctl lock-session)'"))  -- Lock Screen
+hl.bind(mainMod .. " + SHIFT + L", hl.dsp.exec_cmd("systemctl suspend -i || loginctl suspend"))  -- Sleep
+hl.bind("XF86Sleep", hl.dsp.exec_cmd("bash -c '[ -d /run/archiso ] || (systemctl suspend -i || loginctl suspend)'"))  -- Sleep key (no-op on live ISO)
 
 -- Apps
 hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd(sandboxed .. " " .. terminal))        -- Terminal
-hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(sandboxed .. " " .. fileManager))          -- File manager
+hl.bind(mainMod .. " + E", hl.dsp.exec_cmd("bash -c 'if command -v ranger >/dev/null 2>&1; then " .. sandboxed .. " " .. terminal .. " -e ranger; elif command -v thunar >/dev/null 2>&1; then " .. sandboxed .. " thunar; elif command -v dolphin >/dev/null 2>&1; then " .. sandboxed .. " dolphin; else " .. sandboxed .. " " .. terminal .. "; fi'"))          -- File manager
 hl.bind(mainMod .. " + W", hl.dsp.exec_cmd(sandboxed .. " " .. browser))              -- Browser
-hl.bind(mainMod .. " + C", hl.dsp.exec_cmd(sandboxed .. " code"))                     -- Code editor
-hl.bind(mainMod .. " + X", hl.dsp.exec_cmd(sandboxed .. " " .. terminal .. " -e nano"))  -- Text editor
+hl.bind(mainMod .. " + C", hl.dsp.exec_cmd("bash -c 'if command -v code >/dev/null 2>&1; then " .. sandboxed .. " code; elif command -v cursor >/dev/null 2>&1; then " .. sandboxed .. " cursor; elif command -v codium >/dev/null 2>&1; then " .. sandboxed .. " codium; elif command -v nvim >/dev/null 2>&1; then " .. sandboxed .. " " .. terminal .. " -e nvim; fi'"))                     -- Code editor
+hl.bind(mainMod .. " + X", hl.dsp.exec_cmd("bash -c 'if command -v nano >/dev/null 2>&1; then " .. sandboxed .. " " .. terminal .. " -e nano \"$@\"; elif command -v nvim >/dev/null 2>&1; then " .. sandboxed .. " " .. terminal .. " -e nvim \"$@\"; else " .. sandboxed .. " " .. terminal .. "; fi' --"))  -- Text editor
 hl.bind("CTRL + " .. mainMod .. " + V", hl.dsp.exec_cmd(sandboxed .. " pavucontrol"))  -- Volume mixer
 hl.bind("CTRL + SHIFT + Escape", hl.dsp.exec_cmd(sandboxed .. " " .. terminal .. " -e btop"))  -- Task manager
 hl.bind(mainMod .. " + comma", hl.dsp.exec_cmd(sandboxed .. " archtitan-settings"))     -- Settings panel shortcut
@@ -110,7 +133,7 @@ hl.bind(mainMod .. " + SHIFT + ALT + Q", hl.dsp.exec_cmd("hyprctl kill"))      -
 hl.bind(mainMod .. " + ALT + Space", hl.dsp.window.float({ action = "toggle" }))  -- Float/Tile
 hl.bind(mainMod .. " + F", hl.dsp.window.fullscreen({ mode = "fullscreen" }))    -- Fullscreen
 hl.bind(mainMod .. " + D", hl.dsp.window.fullscreen({ mode = "maximized" }))     -- Maximize (fullscreen with gaps)
-hl.bind(mainMod .. " + P", hl.dsp.window.pseudo())                              -- dwindle
+hl.bind(mainMod .. " + ALT + P", hl.dsp.window.pseudo())                        -- Pseudo-tile (dwindle)
 hl.bind(mainMod .. " + J", hl.dsp.layout("togglesplit"))                        -- Adjust split ratio (toggle)
 
 -- Move Focus
@@ -125,11 +148,12 @@ hl.bind(mainMod .. " + SHIFT + right", hl.dsp.window.move({ direction = "right" 
 hl.bind(mainMod .. " + SHIFT + up",    hl.dsp.window.move({ direction = "up" }))
 hl.bind(mainMod .. " + SHIFT + down",  hl.dsp.window.move({ direction = "down" }))
 
--- Workspaces (Super+1..9 to switch, Super+Shift+1..9 to move window)
-for i = 1, 9 do
+-- Workspaces (Super+1..9,0 to switch, Super+Shift+1..9,0 to move window)
+for i = 1, 10 do
+    local key = i == 10 and "0" or tostring(i)
     local ws = tostring(i)
-    hl.bind(mainMod .. " + " .. ws, hl.dsp.focus({ workspace = ws }))
-    hl.bind(mainMod .. " + SHIFT + " .. ws, hl.dsp.window.move({ workspace = ws }))
+    hl.bind(mainMod .. " + " .. key, hl.dsp.focus({ workspace = ws }))
+    hl.bind(mainMod .. " + SHIFT + " .. key, hl.dsp.window.move({ workspace = ws }))
 end
 
 -- Focus Workspace Left/Right
@@ -211,37 +235,45 @@ hl.config({
     },
 
     general = {
-        gaps_in    = 5,
-        gaps_out   = 10,
+        gaps_in     = 6,
+        gaps_out    = 12,
         border_size = 2,
         col = {
-            active_border   = { colors = { "rgba(7aa2f7ee)", "rgba(9ece6aee)", "rgba(e0af68ee)", "rgba(bb9af7ee)" }, angle = 45 },
-            inactive_border = "rgba(414868aa)",
+            active_border   = { colors = { "rgba(89b4faee)", "rgba(cba6f7ee)" }, angle = 45 },
+            inactive_border = "rgba(18182588)",
         },
         layout = "dwindle",
     },
 
     -- Decoration -- blur, shadows, rounding
     decoration = {
-        rounding = 12,
+        rounding = 14,
 
         blur = {
-            enabled = false,
+            enabled           = true,
+            size              = 6,
+            passes            = 3,
+            new_optimizations = true,
+            ignore_opacity    = true,
+            noise             = 0.012,
+            contrast          = 0.92,
+            brightness        = 0.88,
+            vibrancy          = 0.28,
         },
 
         shadow = {
             enabled      = true,
-            range        = 12,
-            render_power = 3,
-            offset       = { 0, 4 },
-            color        = "rgba(1a1a2ecc)",
+            range        = 24,
+            render_power = 4,
+            offset       = { 0, 5 },
+            color        = "rgba(11111b99)",
         },
 
         dim_inactive   = false,
-        dim_strength   = 0.1,
+        dim_strength   = 0.08,
 
-        active_opacity   = 1.0,
-        inactive_opacity = 0.92,
+        active_opacity   = 0.98,
+        inactive_opacity = 0.90,
     },
 
     -- Layout
@@ -265,22 +297,22 @@ hl.config({
 ---- ANIMATIONS ----
 ---------------------------
 
-hl.curve("overshot", { type = "bezier", points = { { 0.05, 0.9 }, { 0.1, 1.1 } } })
-hl.curve("smoothOut", { type = "bezier", points = { { 0.36, 0 },   { 0.66, -0.56 } } })
-hl.curve("smoothIn",  { type = "bezier", points = { { 0.25, 1 },   { 0.5, 1 } } })
-hl.curve("snappy",    { type = "bezier", points = { { 0.4, 0 },    { 0.2, 1 } } })
+hl.curve("quint", { type = "bezier", points = { { 0.23, 1 }, { 0.32, 1 } } })
+hl.curve("cubic", { type = "bezier", points = { { 0.65, 0 }, { 0.35, 1 } } })
+hl.curve("snappy", { type = "bezier", points = { { 0.1, 1 }, { 0.1, 1 } } })
+hl.curve("smooth", { type = "bezier", points = { { 0.25, 1 }, { 0.5, 1 } } })
 
 hl.config({ animations = { enabled = true } })
 
--- smooth and snappy
-hl.animation({ leaf = "windows",     enabled = true, speed = 1, bezier = "overshot", style = "slide" })
-hl.animation({ leaf = "windowsOut",  enabled = true, speed = 1, bezier = "smoothOut", style = "slide" })
-hl.animation({ leaf = "windowsMove", enabled = true, speed = 1, bezier = "snappy" })
-hl.animation({ leaf = "border",      enabled = true, speed = 1, bezier = "default" })
-hl.animation({ leaf = "borderangle", enabled = true, speed = 1, bezier = "default", style = "loop" })
-hl.animation({ leaf = "fade",        enabled = true, speed = 1, bezier = "smoothIn" })
-hl.animation({ leaf = "fadeDim",     enabled = true, speed = 1, bezier = "smoothIn" })
-hl.animation({ leaf = "workspaces",  enabled = true, speed = 1, bezier = "overshot", style = "slidevert" })
+-- fluid and snappy animations
+hl.animation({ leaf = "windows",     enabled = true, speed = 4.2, bezier = "quint", style = "popin 85%" })
+hl.animation({ leaf = "windowsOut",  enabled = true, speed = 3.2, bezier = "cubic", style = "popin 90%" })
+hl.animation({ leaf = "windowsMove", enabled = true, speed = 3.8, bezier = "snappy" })
+hl.animation({ leaf = "border",      enabled = true, speed = 6, bezier = "quint" })
+hl.animation({ leaf = "borderangle", enabled = true, speed = 30, bezier = "default", style = "loop" })
+hl.animation({ leaf = "fade",        enabled = true, speed = 3.5, bezier = "smooth" })
+hl.animation({ leaf = "fadeDim",     enabled = true, speed = 4, bezier = "smooth" })
+hl.animation({ leaf = "workspaces",  enabled = true, speed = 4.5, bezier = "quint", style = "slide" })
 
 ---------------------------
 ---- WINDOW RULES ----
@@ -294,6 +326,30 @@ hl.window_rule({
     size    = "980 640",
     center  = true,
     opacity = "1.0 1.0",
+})
+
+hl.window_rule({
+    name    = "pavucontrol-float",
+    match   = { class = "^pavucontrol$" },
+    float   = true,
+    size    = "720 500",
+    center  = true,
+})
+
+hl.window_rule({
+    name    = "archtitan-settings-float",
+    match   = { class = "^archtitan-settings$" },
+    float   = true,
+    size    = "960 620",
+    center  = true,
+})
+
+hl.window_rule({
+    name    = "btop-float",
+    match   = { class = "^kitty$", title = "^btop$" },
+    float   = true,
+    size    = "1020 660",
+    center  = true,
 })
 
 -- ArchTitan Quick Settings Window Rules
@@ -325,11 +381,16 @@ hl.layer_rule({ name = "titan-zone-osd", match = { namespace = "^titan-zone-osd$
 
 -- ArchTitan Media Island -- SUPER+M toggle (uses LayerShellQt, no window rules needed)
 hl.bind(mainMod .. " + M", hl.dsp.exec_cmd("titan-media-hud --toggle"))  -- Toggle media island overlay
+-- Media & Audio keys (XF86)
+hl.bind("XF86AudioPlay",         hl.dsp.exec_cmd("playerctl play-pause"),                              { locked = true })
+hl.bind("XF86AudioPause",        hl.dsp.exec_cmd("playerctl play-pause"),                              { locked = true })
+hl.bind("XF86AudioNext",         hl.dsp.exec_cmd("playerctl next"),                                    { locked = true })
+hl.bind("XF86AudioPrev",         hl.dsp.exec_cmd("playerctl previous"),                                { locked = true })
+hl.bind("XF86AudioRaiseVolume",  hl.dsp.exec_cmd("wpctl set-volume -l 1.5 @DEFAULT_AUDIO_SINK@ 5%+"), { locked = true, repeating = true })
+hl.bind("XF86AudioLowerVolume",  hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"),         { locked = true, repeating = true })
+hl.bind("XF86AudioMute",         hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"),        { locked = true, repeating = true })
+hl.bind("XF86AudioMicMute",     hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"),      { locked = true, repeating = true })
 
--- Media keys (XF86)
-hl.bind("XF86AudioPlay",         hl.dsp.exec_cmd("playerctl play-pause"))
-hl.bind("XF86AudioNext",         hl.dsp.exec_cmd("playerctl next"))
-hl.bind("XF86AudioPrev",         hl.dsp.exec_cmd("playerctl previous"))
-hl.bind("XF86AudioRaiseVolume",  hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+"))
-hl.bind("XF86AudioLowerVolume",  hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"))
-hl.bind("XF86AudioMute",         hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"))
+-- Display Brightness keys (XF86)
+hl.bind("XF86MonBrightnessUp",   hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%+"),                  { locked = true, repeating = true })
+hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%-"),                  { locked = true, repeating = true })

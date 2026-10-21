@@ -4,6 +4,7 @@
 // screen-edge frame that marks the workspace boundary for hot-zones.
 import QtQuick
 import QtQuick.Window
+import ArchTitan.TitanUI as TDL
 
 Window {
     id: root
@@ -23,17 +24,19 @@ Window {
     property real   progress: osd.progress
     property bool   frame:    osd.frame
 
-    readonly property color cSurface: "#F21E1E2E"
-    readonly property color cBorder:  "#3D89B4FA"
-    readonly property color cAccent:  "#89B4FA"
-    readonly property color cTrack:   "#313244"
-    readonly property color cText:    "#CDD6F4"
-    readonly property color cSubtext: "#7F849C"
+    // TDL token palette — the OSD is themed by the same design system as
+    // every other surface (accent follows the wallpaper-adaptive theme).
+    readonly property color cSurface: Qt.rgba(TDL.TitanTheme.base.r, TDL.TitanTheme.base.g, TDL.TitanTheme.base.b, 0.95)
+    readonly property color cBorder:  Qt.rgba(TDL.TitanTheme.accent.r, TDL.TitanTheme.accent.g, TDL.TitanTheme.accent.b, 0.24)
+    readonly property color cAccent:  TDL.TitanTheme.accent
+    readonly property color cTrack:   TDL.TitanTheme.surface0
+    readonly property color cText:    TDL.TitanTheme.textHigh
+    readonly property color cSubtext: TDL.TitanTheme.textLow
 
-    // Workspace frame colors: ArchTitan blue -> violet gradient
-    readonly property color cFrameA:  "#7AA2F7"
-    readonly property color cFrameB:  "#BB9AF7"
-    readonly property color cGlow:    "#407AA2F7"
+    // Workspace frame colors: ArchTitan accent -> mauve gradient (TDL tokens)
+    readonly property color cFrameA:  TDL.TitanTheme.accent
+    readonly property color cFrameB:  TDL.TitanTheme.mauve
+    readonly property color cGlow:    Qt.rgba(TDL.TitanTheme.accent.r, TDL.TitanTheme.accent.g, TDL.TitanTheme.accent.b, 0.25)
 
     readonly property int pillW: 236
     readonly property int pillH: 92
@@ -146,7 +149,7 @@ Window {
             visible: root.zoneName !== "" || root.kind === "workspace"
             width: root.pillW
             height: root.pillH
-            radius: 20
+            radius: TDL.TitanTheme.radiusXl
             color: root.cSurface
             border.width: 1
             border.color: root.cBorder
@@ -194,8 +197,8 @@ Window {
                 Column {
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: 2
-                    Text { text: root.label; color: root.cText; font.pixelSize: 16; font.bold: true; font.family: "Inter" }
-                    Text { text: root.subtitle; color: root.cSubtext; font.pixelSize: 11; font.family: "Inter" }
+                    Text { text: root.label; color: root.cText; font.pixelSize: 16; font.bold: true; font.family: TDL.TitanTheme.fontFamily }
+                    Text { text: root.subtitle; color: root.cSubtext; font.pixelSize: 11; font.family: TDL.TitanTheme.fontFamily }
                 }
             }
         }
