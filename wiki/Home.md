@@ -28,6 +28,9 @@ The project was originally developed as **TitanArch**, a Final Year Project focu
 | First-party WebEngine browser | [Titan Browser](Titan-Browser) |
 | System control center | [ArchTitan Settings](ArchTitan-Settings) |
 | Dynamic Island overlay & HUD | [Titan Media HUD](Titan-Media-HUD) |
+| Central command palette & menu | [Titan Menu](Titan-Menu) |
+| Quick settings & notifications | [Titan Quick Settings](Titan-QuickSettings) |
+| Hardware telemetry & gauges | [Titan System Monitor](Titan-Sysmon) |
 | Hyprland, Waybar, keybindings | [Desktop Environment](Desktop-Environment) |
 | Repo layout & contributing | [Developer Guide](Developer-Guide) |
 | What's done vs planned | [Roadmap & Status](Roadmap-and-Status) |
