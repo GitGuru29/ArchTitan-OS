@@ -3,6 +3,8 @@
 #include <QDebug>
 #include <QDir>
 #include <QFile>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QTextStream>
 #include <QDBusInterface>
 #include <QDBusReply>
@@ -13,6 +15,7 @@ SettingsBackend::SettingsBackend(QObject *parent)
     , m_settings(QStringLiteral("ArchTitan"), QStringLiteral("archtitan-settings"))
 {
     loadSettings();
+    loadThemeState();
 
     // Listen to external D-Bus changes for power profile (try both common service names)
     QDBusConnection::systemBus().connect(
@@ -35,7 +38,7 @@ SettingsBackend::SettingsBackend(QObject *parent)
 
 void SettingsBackend::loadSettings() {
     m_colorTheme   = m_settings.value("appearance/colorTheme",   "Dark").toString();
-    m_accentColor  = m_settings.value("appearance/accentColor",  "#7AA2F7").toString();
+    m_accentColor  = m_settings.value("appearance/accentColor",  "#89B4FA").toString();
     m_glassmorphism= m_settings.value("appearance/glassmorphism", true).toBool();
     m_panelOpacity = m_settings.value("appearance/panelOpacity",  0.88).toDouble();
     m_iconTheme    = m_settings.value("appearance/iconTheme",    "Papirus-Dark").toString();
@@ -53,6 +56,29 @@ void SettingsBackend::loadSettings() {
     m_lockscreenRingColor = m_settings.value("security/lockscreenRingColor", "default").toString();
 }
 
+void SettingsBackend::loadThemeState() {
+    // The theme engine's state file (~/.config/archtitan/theme.json, written by
+    // `titan-theme`) is the source of truth for the desktop's look. Mirror it
+    // into the UI so the appearance page reflects the active theme.
+    const QString path =
+        QDir::homePath() + QStringLiteral("/.config/archtitan/theme.json");
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly))
+        return;
+    const QJsonObject theme = QJsonDocument::fromJson(file.readAll()).object();
+    if (theme.isEmpty())
+        return;
+
+    if (theme.contains(QStringLiteral("isDark")))
+        m_colorTheme = theme.value(QStringLiteral("isDark")).toBool()
+                           ? QStringLiteral("Dark") : QStringLiteral("Light");
+    const QString accent = theme.value(QStringLiteral("accent")).toString();
+    if (!accent.isEmpty())
+        m_accentColor = accent;
+
+    qDebug() << "[SettingsBackend] Theme state adopted:" << m_colorTheme << m_accentColor;
+}
+
 void SettingsBackend::applyAppearance() {
     // 1. Persist to QSettings
     m_settings.setValue("appearance/colorTheme",   m_colorTheme);
@@ -64,12 +90,19 @@ void SettingsBackend::applyAppearance() {
     m_settings.setValue("appearance/fontSize",     m_fontSize);
     m_settings.sync();
 
-    // 2. Apply accent color to Hyprland (border colors)
-    QString hex = m_accentColor;
-    hex.remove('#');
-    QString hyprColor = "0xff" + hex;
-    QProcess::startDetached("hyprctl", {"keyword", "general:col.active_border", hyprColor + " 0xff444444 45deg"});
-    QProcess::startDetached("hyprctl", {"keyword", "general:col.inactive_border", "0xff333333"});
+    // 2. Drive the theme engine. `titan-theme` owns every seam: the QML surfaces
+    //    follow via ThemeBackend's file watcher, and this rewrites Waybar,
+    //    SwayNC, rofi, kitty, hyprlock, GTK, qt5ct and the Hyprland border
+    //    keywords. `mode` no-ops unless the light/dark baseline changes; the
+    //    accent override applies to whatever theme is active. TITAN_QUIET keeps
+    //    this page the sole source of feedback instead of stacking two toasts.
+    const QString mode =
+        (m_colorTheme == QLatin1String("Light")) ? QStringLiteral("light")
+                                                 : QStringLiteral("dark");
+    QProcess::startDetached("bash", {"-c",
+        QStringLiteral("TITAN_QUIET=1 titan-theme mode %1; "
+                       "TITAN_QUIET=1 titan-theme accent %2")
+            .arg(mode, m_accentColor)});
 
     // 3. Apply icon theme via gsettings (GTK apps pick this up)
     QProcess::startDetached("gsettings", {"set", "org.gnome.desktop.interface", "icon-theme", m_iconTheme});
