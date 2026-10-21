@@ -28,7 +28,7 @@ ArchTitan embraces the Unix philosophy while providing a cohesive, pre-configure
 Every surface shares a single design system — the **Titan Design Language (TDL)** — living in [`titan-ui/`](titan-ui/README.md): Catppuccin Mocha surfaces, Samsung One UI 9.0 geometry, a wallpaper-adaptive accent, and a full component set (`TitanButton`, `TitanCard`, `TitanToggleTile`, `TitanSpinner`, `TitanEmptyState`, `TitanErrorState`, …).
 
 - **One source of truth:** QML apps import `ArchTitan.TitanUI`; Qt Widgets apps use the header-only `TitanPalette.h`. Hardcoded colour literals are disallowed outside the token set.
-- **Enforced in CI:** palette lint, config-tree drift and WCAG 2.1 contrast checks run on every change (`.github/workflows/ui-consistency.yml`).
+- **Enforced in CI:** palette lint, C++/QML token parity, config-tree drift and WCAG 2.1 contrast checks — plus a self-test proving each guard fails on drift — run on every change (`.github/workflows/ui-consistency.yml`).
 - **Preview:** `cd titan-ui && ./build.sh && QML_IMPORT_PATH=build/qml ./build/titan-ui-gallery`.
 
 ---

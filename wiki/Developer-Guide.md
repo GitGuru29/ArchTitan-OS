@@ -122,6 +122,7 @@ To test manually:
 ```bash
 systemctl status titan-hwm
 titan-hwm status
+titan-hwm switch system
 titan-hwm metrics
 ```
 
@@ -189,6 +190,34 @@ sudo mkarchiso -v -w tmp-work/ -o out/ ./
 - **IPC & Sockets**: All daemons must handle socket write errors gracefully and clean up socket files on `SIGINT`/`SIGTERM`.
 - **Systemd**: System services must use `Type=simple` or `Type=exec` and redirect stdout/stderr to `journald`.
 - **Shell Scripts**: Bash scripts must pass `shellcheck` with zero warnings, use explicit error checking, and set `set -u` or proper error handling.
+
+---
+
+## Titan Design Language (TDL) & UI Changes
+
+Every user-facing surface — the Hyprland shell, first-party apps, and even the login, installer and bootloader screens — draws from a single palette: **Catppuccin Mocha** surfaces with a wallpaper-adaptive accent. There is no second theme.
+
+### Token sources (single source of truth)
+
+| Consumer | File | Notes |
+| :--- | :--- | :--- |
+| QML apps | `titan-ui/qml/style/TitanTheme.qml` | `import ArchTitan.TitanUI`; colour tokens bind to `ThemeBackend` and recolour live from `~/.config/archtitan/theme.json`. |
+| Qt Widgets apps | `titan-ui/include/TitanPalette.h` | Header-only; `TitanPalette::qss("@token")` substitutes `@token` / `@tokenRGB` inside stylesheets. |
+| Pre-login / installer / boot | `airootfs/usr/share/sddm/…`, `airootfs/etc/calamares/…`, `airootfs/usr/share/grub/…` | These run before a user session exists, so they inline the Mocha baseline — still lint-guarded. |
+
+### Rules
+
+- **Never hard-code a colour.** Use `TitanTheme.*` in QML and `TitanPalette::*` (or `TitanPalette::qss`) in C++/QSS. `scripts/colour-lint.py` fails CI on any colour literal that is not a palette value.
+- **Data is the exception.** Swatch/label pairs (e.g. `"Cyan (#89b4fa)", "#89b4fa"`) are values, not theming — mark the line with `// tdl-allow`, or list the file in `scripts/colour-allow.txt`.
+- **Keep both header copies identical.** `titan-ui/build.sh` installs `TitanPalette.h`; `scripts/palette-parity.py` enforces parity with the source.
+
+### Before you push
+
+```bash
+python3 scripts/self-test.py && python3 scripts/colour-lint.py \
+  && python3 scripts/palette-parity.py && python3 scripts/config-drift.py \
+  && python3 scripts/contrast-audit.py
+```
 
 ---
 
