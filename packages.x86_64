@@ -98,6 +98,7 @@ wireplumber
 pavucontrol
 playerctl
 brightnessctl
+power-profiles-daemon
 
 # ── Display Manager & Installer ───────────────────────────────────────────────
 sddm
@@ -106,13 +107,16 @@ calamares
 partitionmanager
 polkit-kde-agent
 
-# ── Look & Feel (Fonts & Icons) ───────────────────────────────────────────────
+# ── Look & Feel (Fonts, Icons, Cursors, Qt Theming) ───────────────────────────
 inter-font
 ttf-jetbrains-mono-nerd
 noto-fonts
 noto-fonts-emoji
 papirus-icon-theme
+breeze-cursors
+qt5ct
 xdg-utils
+libnotify
 xdg-user-dirs
 
 # ── Qt Runtimes ───────────────────────────────────────────────────────────────
@@ -141,6 +145,7 @@ starship
 btop
 zellij
 ranger
+nano
 ripgrep
 fd
 tree

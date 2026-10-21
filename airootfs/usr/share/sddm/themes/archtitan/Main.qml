@@ -7,7 +7,7 @@ Rectangle {
     id: root
     width: 1920
     height: 1080
-    color: "#08090C"
+    color: tdlCrust
 
     // Configuration defaults from theme.conf
     property string ringMode: (typeof config !== "undefined" && config.ringMode) ? config.ringMode : "music"
@@ -16,11 +16,25 @@ Rectangle {
     property bool simulateMusic: false
     property bool is24Hour: (typeof config !== "undefined" && config.clockFormat === "12h") ? false : true
 
+    // ── TDL tokens — Catppuccin Mocha baseline (mirrors titan-ui's TitanTheme.qml)
+    // SDDM is pre-login, so the shipped default palette is inlined here;
+    // colour-lint keeps these on-palette with every other surface.
+    readonly property color tdlCrust   : "#11111B"
+    readonly property color tdlMantle  : "#181825"
+    readonly property color tdlBase    : "#1E1E2E"
+    readonly property color tdlSurface0: "#313244"
+    readonly property color tdlSurface1: "#45475A"
+    readonly property color tdlSurface3: "#6C7086"
+    readonly property color tdlTextHigh: "#CDD6F4"
+    readonly property color tdlTextLow : "#7F849C"
+    readonly property color tdlAccent  : "#89B4FA"
+    readonly property color tdlDanger  : "#F38BA8"
+
     // ── Background Atmosphere & Haze ─────────────────────────────────
     // Dark carbon background
     Rectangle {
         anchors.fill: parent
-        color: "#07080B"
+        color: tdlCrust
     }
 
     // Horizontal atmospheric misty band (across the center horizon)
@@ -33,9 +47,9 @@ Rectangle {
         opacity: 0.18
         gradient: Gradient {
             GradientStop { position: 0.0; color: "transparent" }
-            GradientStop { position: 0.35; color: "#2B3245" }
-            GradientStop { position: 0.50; color: "#46506B" }
-            GradientStop { position: 0.65; color: "#2B3245" }
+            GradientStop { position: 0.35; color: tdlSurface0 }
+            GradientStop { position: 0.50; color: tdlSurface1 }
+            GradientStop { position: 0.65; color: tdlSurface0 }
             GradientStop { position: 1.0; color: "transparent" }
         }
     }
@@ -47,7 +61,7 @@ Rectangle {
         anchors.bottom: parent.bottom
         anchors.bottomMargin: 80
         height: 1
-        color: "#181B24"
+        color: tdlMantle
     }
 
     // ── Centerpiece: The Spire, Compass Reticle & Glowing RGB Ring ───
@@ -84,9 +98,9 @@ Rectangle {
         width: 350
         height: 320
         radius: 16
-        color: Qt.rgba(0.04, 0.05, 0.08, 0.78)
+        color: Qt.rgba(tdlBase.r, tdlBase.g, tdlBase.b, 0.78)
         border.width: 1
-        border.color: Qt.rgba(0.48, 0.64, 0.97, 0.28)
+        border.color: Qt.rgba(tdlAccent.r, tdlAccent.g, tdlAccent.b, 0.28)
 
         Column {
             anchors.fill: parent
@@ -100,7 +114,7 @@ Rectangle {
 
                 Text {
                     text: "ARCHTITAN"
-                    color: "#7E8597"
+                    color: tdlTextLow
                     font.pixelSize: 11
                     font.weight: Font.DemiBold
                     font.letterSpacing: 3
@@ -117,7 +131,7 @@ Rectangle {
                 Text {
                     id: badgeText
                     text: "󰌾 SECURED"
-                    color: "#4A5164"
+                    color: tdlSurface3
                     font.pixelSize: 9
                     font.weight: Font.Bold
                     font.letterSpacing: 1.5
@@ -131,9 +145,9 @@ Rectangle {
                 width: parent.width
                 height: 44
                 radius: 10
-                color: usernameField.activeFocus ? Qt.rgba(0.08, 0.10, 0.15, 0.95) : Qt.rgba(0.06, 0.08, 0.12, 0.75)
+                color: usernameField.activeFocus ? Qt.rgba(tdlSurface0.r, tdlSurface0.g, tdlSurface0.b, 0.95) : Qt.rgba(tdlMantle.r, tdlMantle.g, tdlMantle.b, 0.75)
                 border.width: 1
-                border.color: usernameField.activeFocus ? "#7AA2F7" : Qt.rgba(1, 1, 1, 0.08)
+                border.color: usernameField.activeFocus ? tdlAccent : Qt.rgba(1, 1, 1, 0.08)
                 Behavior on border.color { ColorAnimation { duration: 150 } }
 
                 TextField {
@@ -142,11 +156,11 @@ Rectangle {
                     anchors.leftMargin: 14
                     anchors.rightMargin: 14
                     placeholderText: "User name"
-                    placeholderTextColor: "#4A5164"
+                    placeholderTextColor: tdlTextLow
                     text: (typeof userModel !== "undefined" && userModel.lastUser) ? userModel.lastUser : ""
                     font.pixelSize: 13
                     font.family: "JetBrainsMono Nerd Font"
-                    color: "#F0F3FA"
+                    color: tdlTextHigh
                     verticalAlignment: Text.AlignVCenter
                     background: null
 
@@ -159,9 +173,9 @@ Rectangle {
                 width: parent.width
                 height: 44
                 radius: 10
-                color: passwordField.activeFocus ? Qt.rgba(0.08, 0.10, 0.15, 0.95) : Qt.rgba(0.06, 0.08, 0.12, 0.75)
+                color: passwordField.activeFocus ? Qt.rgba(tdlSurface0.r, tdlSurface0.g, tdlSurface0.b, 0.95) : Qt.rgba(tdlMantle.r, tdlMantle.g, tdlMantle.b, 0.75)
                 border.width: 1
-                border.color: passwordField.activeFocus ? "#7AA2F7" : Qt.rgba(1, 1, 1, 0.08)
+                border.color: passwordField.activeFocus ? tdlAccent : Qt.rgba(1, 1, 1, 0.08)
                 Behavior on border.color { ColorAnimation { duration: 150 } }
 
                 TextField {
@@ -170,11 +184,11 @@ Rectangle {
                     anchors.leftMargin: 14
                     anchors.rightMargin: 14
                     placeholderText: "Password"
-                    placeholderTextColor: "#4A5164"
+                    placeholderTextColor: tdlTextLow
                     echoMode: TextInput.Password
                     font.pixelSize: 13
                     font.family: "JetBrainsMono Nerd Font"
-                    color: "#F0F3FA"
+                    color: tdlTextHigh
                     verticalAlignment: Text.AlignVCenter
                     background: null
 
@@ -197,14 +211,16 @@ Rectangle {
                 contentItem: Text {
                     text: "ENTER SESSION"
                     font: enterButton.font
-                    color: "#08090C"
+                    color: tdlCrust
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }
 
                 background: Rectangle {
                     radius: 8
-                    color: enterButton.pressed ? "#CBD5E1" : (enterButton.hovered ? "#F8FAFC" : "#FFFFFF")
+                    color: enterButton.pressed
+                           ? Qt.darker(tdlAccent, 1.15)
+                           : (enterButton.hovered ? Qt.lighter(tdlAccent, 1.10) : tdlAccent)
                     Behavior on color { ColorAnimation { duration: 120 } }
                 }
 
@@ -215,7 +231,7 @@ Rectangle {
             Text {
                 id: errorMessage
                 text: ""
-                color: "#FF455B"
+                color: tdlDanger
                 font.pixelSize: 11
                 font.weight: Font.Bold
                 font.letterSpacing: 2
@@ -240,7 +256,7 @@ Rectangle {
         // 1. Settings Gear Icon (Opens in-greeter customizer drawer)
         Text {
             text: ""
-            color: gearMouse.containsMouse ? "#FFFFFF" : "#636B7E"
+            color: gearMouse.containsMouse ? tdlTextHigh : tdlTextLow
             font.pixelSize: 17
             font.family: "JetBrainsMono Nerd Font"
             anchors.verticalCenter: parent.verticalCenter
@@ -259,7 +275,7 @@ Rectangle {
         // 2. Reboot Icon
         Text {
             text: "⟳"
-            color: rebootMouse.containsMouse ? "#FFFFFF" : "#636B7E"
+            color: rebootMouse.containsMouse ? tdlTextHigh : tdlTextLow
             font.pixelSize: 18
             anchors.verticalCenter: parent.verticalCenter
 
@@ -279,7 +295,7 @@ Rectangle {
         // 3. Power Off Icon
         Text {
             text: "⏻"
-            color: powerMouse.containsMouse ? "#FFFFFF" : "#636B7E"
+            color: powerMouse.containsMouse ? tdlTextHigh : tdlTextLow
             font.pixelSize: 18
             anchors.verticalCenter: parent.verticalCenter
 

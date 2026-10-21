@@ -1,11 +1,13 @@
 # ────────────────────────────────────────────────────────────
-#  ArchTitan GRUB Theme
+#  ArchTitan GRUB Theme (Titan Design Language)
 #  Applied on the installed system by Calamares (bootloader.conf)
-#  Background: 1920×1080 dark splash
+#  Background: 1920×1080 dark splash — Catppuccin Mocha surfaces
+#  Assets: 9-slice PNGs (select_bkg/, progress_bar/, progress_highlight/,
+#  scrollbar_thumb/, items/) ship alongside this file.
 # ────────────────────────────────────────────────────────────
 
 title-text: ""
-desktop-color: "#0d1117"
+desktop-color: "#11111b"
 
 # ── Boot menu box ──────────────────────────────────────────
 + boot_menu {
@@ -15,28 +17,18 @@ desktop-color: "#0d1117"
     height = 35%
 
     item_font         = "Unifont Regular 14"
-    item_color        = "#c9d1d9"
+    item_color        = "#cdd6f4"
     item_height       = 36
     item_padding      = 8
     item_spacing      = 4
     item_icon_space   = 0
+    item_pixmap_style = "items/*.png"
 
-    selected_item_color      = "#ffffff"
+    selected_item_color      = "#89b4fa"
     selected_item_pixmap_style = "select_bkg/*.png"
 
     scrollbar               = false
-    scrollbar_width         = 4
-    scrollbar_thumb         = "scrollbar_thumb/*.png"
 }
-
-# ── Selected entry highlight ────────────────────────────────
-#+ image {
-#    file  = "select_bkg/c.png"
-#    left  = 0
-#    top   = 0
-#    width = 100%
-#    height = 36
-#}
 
 # ── Logo centred above the menu ─────────────────────────────
 + image {
@@ -49,7 +41,7 @@ desktop-color: "#0d1117"
 + label {
     text  = "Use ↑↓ to navigate • Enter to boot • 'e' to edit"
     font  = "Unifont Regular 12"
-    color = "#8b949e"
+    color = "#a6adc8"
     align = "center"
     left  = 0%
     top   = 91%

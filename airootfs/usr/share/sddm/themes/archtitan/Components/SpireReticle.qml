@@ -9,6 +9,11 @@ Item {
     property string ringMode: "music"    // "music", "rgb", "monochrome", "accent"
     property color customAccent: "#FFFFFF"
     property bool isMusicPlaying: false
+
+    // ── TDL tokens — Catppuccin Mocha baseline (mirrors titan-ui's TitanTheme.qml)
+    // SDDM is pre-login, so the shipped default palette is inlined here;
+    // colour-lint keeps these on-palette with every other surface.
+    readonly property color tdlAccent: "#89B4FA"
     property real audioPulse: 1.0
 
     // Internal rotation for RGB chromatic animation
@@ -63,7 +68,7 @@ Item {
             ctx.moveTo(spireRoot.cx - cosA * len, spireRoot.cy + sinA * len)
             ctx.lineTo(spireRoot.cx + cosA * len, spireRoot.cy - sinA * len)
 
-            ctx.strokeStyle = "rgba(220, 230, 250, 0.45)"
+            ctx.strokeStyle = "rgba(205, 214, 244, 0.45)"  // textHigh
             ctx.lineWidth = 1.2
             ctx.stroke()
 
@@ -108,10 +113,10 @@ Item {
                     ctx.strokeStyle = "rgba(255, 255, 255, 0.85)"
                     ctx.lineWidth = 1.8
                 } else if (isMajor) {
-                    ctx.strokeStyle = "rgba(230, 240, 255, 0.65)"
+                    ctx.strokeStyle = "rgba(205, 214, 244, 0.55)"  // textHigh
                     ctx.lineWidth = 1.2
                 } else {
-                    ctx.strokeStyle = "rgba(180, 195, 220, 0.35)"
+                    ctx.strokeStyle = "rgba(166, 173, 200, 0.35)"  // textMid
                     ctx.lineWidth = 0.9
                 }
                 ctx.stroke()
@@ -238,9 +243,9 @@ Item {
             ctx.lineTo(cx - 22, midY + 10)
             ctx.closePath()
             var g1 = ctx.createLinearGradient(cx - 48, topY, cx, botY)
-            g1.addColorStop(0.0, "#0D0E13")
-            g1.addColorStop(0.5, "#151821")
-            g1.addColorStop(1.0, "#0B0C10")
+            g1.addColorStop(0.0, "#11111B")  // crust
+            g1.addColorStop(0.5, "#181825")  // mantle
+            g1.addColorStop(1.0, "#11111B")  // crust
             ctx.fillStyle = g1
             ctx.fill()
 
@@ -255,9 +260,9 @@ Item {
             ctx.lineTo(cx, topY + 90)
             ctx.closePath()
             var g2 = ctx.createLinearGradient(cx - 22, topY, cx, botY)
-            g2.addColorStop(0.0, "#12141A")
-            g2.addColorStop(0.4, "#191D26")
-            g2.addColorStop(1.0, "#0F1116")
+            g2.addColorStop(0.0, "#181825")  // mantle
+            g2.addColorStop(0.4, "#1E1E2E")  // base
+            g2.addColorStop(1.0, "#11111B")  // crust
             ctx.fillStyle = g2
             ctx.fill()
 
@@ -270,9 +275,9 @@ Item {
             ctx.lineTo(cx + 7, midY + 30)
             ctx.closePath()
             var g3 = ctx.createLinearGradient(cx, topY, cx, botY)
-            g3.addColorStop(0.0, "#060709")
-            g3.addColorStop(0.5, "#0A0B0E")
-            g3.addColorStop(1.0, "#050608")
+            g3.addColorStop(0.0, "#11111B")  // crust
+            g3.addColorStop(0.5, "#11111B")  // crust
+            g3.addColorStop(1.0, "#11111B")  // crust
             ctx.fillStyle = g3
             ctx.fill()
 
@@ -287,10 +292,10 @@ Item {
             ctx.lineTo(cx, topY + 90)
             ctx.closePath()
             var g4 = ctx.createLinearGradient(cx, topY, cx + 26, botY)
-            g4.addColorStop(0.0, "#303646")
-            g4.addColorStop(0.3, "#262B38")
-            g4.addColorStop(0.7, "#1D212B")
-            g4.addColorStop(1.0, "#141720")
+            g4.addColorStop(0.0, "#45475A")  // surface1
+            g4.addColorStop(0.3, "#313244")  // surface0
+            g4.addColorStop(0.7, "#1E1E2E")  // base
+            g4.addColorStop(1.0, "#181825")  // mantle
             ctx.fillStyle = g4
             ctx.fill()
 
@@ -303,9 +308,9 @@ Item {
             ctx.lineTo(cx + 22, midY + 10)
             ctx.closePath()
             var g5 = ctx.createLinearGradient(cx + 22, topY, cx + 56, botY)
-            g5.addColorStop(0.0, "#222733")
-            g5.addColorStop(0.5, "#1B1F2A")
-            g5.addColorStop(1.0, "#101218")
+            g5.addColorStop(0.0, "#313244")  // surface0
+            g5.addColorStop(0.5, "#1E1E2E")  // base
+            g5.addColorStop(1.0, "#11111B")  // crust
             ctx.fillStyle = g5
             ctx.fill()
 
@@ -341,9 +346,9 @@ Item {
         gradient: Gradient {
             orientation: Gradient.Horizontal
             GradientStop { position: 0.0; color: "transparent" }
-            GradientStop { position: 0.3; color: "#59DCE6FF" }
-            GradientStop { position: 0.52; color: "#D9FFFFFF" }
-            GradientStop { position: 0.75; color: "#59DCE6FF" }
+            GradientStop { position: 0.3; color: Qt.rgba(tdlAccent.r, tdlAccent.g, tdlAccent.b, 0.35) }
+            GradientStop { position: 0.52; color: Qt.rgba(1, 1, 1, 0.85) }
+            GradientStop { position: 0.75; color: Qt.rgba(tdlAccent.r, tdlAccent.g, tdlAccent.b, 0.35) }
             GradientStop { position: 1.0; color: "transparent" }
         }
     }
