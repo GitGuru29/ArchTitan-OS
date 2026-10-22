@@ -12,9 +12,17 @@ Rectangle {
     Layout.fillWidth: true
     Layout.preferredHeight: 74
     radius: TitanTheme.radiusBento
-    color: active ? TitanTheme.accentBlue : (tileMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgOneUICard)
-    border.color: active ? TitanTheme.borderActive : (tileMa.containsMouse ? TitanTheme.borderHover : TitanTheme.borderGlass)
-    border.width: 1
+    color: active ? TitanTheme.accentBlue : (tileMa.containsMouse || activeFocus ? TitanTheme.bgHover : TitanTheme.bgOneUICard)
+    border.color: activeFocus ? TitanTheme.accent
+                  : active ? TitanTheme.borderActive
+                  : (tileMa.containsMouse ? TitanTheme.borderHover : TitanTheme.borderGlass)
+    border.width: activeFocus ? 2 : 1
+
+    // Keyboard: reachable with Tab / arrows, activated with Enter or Space.
+    activeFocusOnTab: true
+    Keys.onReturnPressed: (event) => { tileRoot.clicked(); event.accepted = true }
+    Keys.onEnterPressed:  (event) => { tileRoot.clicked(); event.accepted = true }
+    Keys.onSpacePressed:  (event) => { tileRoot.clicked(); event.accepted = true }
     clip: true
 
     property bool active: false
@@ -100,4 +108,5 @@ Rectangle {
 
     Accessible.role: Accessible.Button
     Accessible.name: title
+    Accessible.onPressAction: tileRoot.clicked()
 }

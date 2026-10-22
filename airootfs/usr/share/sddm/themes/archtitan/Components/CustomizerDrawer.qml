@@ -6,15 +6,27 @@ Rectangle {
     width: 360
     height: 480
     radius: 16
-    color: "#12141C"
+    color: tdlMantle
     border.width: 1
-    border.color: "#2E3444"
+    border.color: tdlSurface0
     clip: true
 
     property string currentRingMode: "music"
     property color currentAccent: "#FFFFFF"
     property bool is24HourClock: true
     property bool simulateMusic: false
+
+    // ── TDL tokens — Catppuccin Mocha baseline (mirrors titan-ui's TitanTheme.qml)
+    // SDDM is pre-login, so the shipped default palette is inlined here;
+    // colour-lint keeps these on-palette with every other surface.
+    readonly property color tdlCrust   : "#11111B"
+    readonly property color tdlMantle  : "#181825"
+    readonly property color tdlBase    : "#1E1E2E"
+    readonly property color tdlSurface0: "#313244"
+    readonly property color tdlTextHigh: "#CDD6F4"
+    readonly property color tdlTextMid : "#A6ADC8"
+    readonly property color tdlTextLow : "#7F849C"
+    readonly property color tdlAccent  : "#89B4FA"
 
     signal ringModeChanged(string mode)
     signal accentColorChanged(color col)
@@ -36,7 +48,7 @@ Rectangle {
                 anchors.left: parent.left
                 anchors.verticalCenter: parent.verticalCenter
                 text: "CUSTOMIZE SDDM"
-                color: "#E2E8F0"
+                color: tdlTextHigh
                 font.pixelSize: 13
                 font.weight: Font.Bold
                 font.letterSpacing: 2
@@ -47,7 +59,7 @@ Rectangle {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
                 text: "✕"
-                color: "#7E8597"
+                color: tdlTextLow
                 font.pixelSize: 15
                 MouseArea {
                     anchors.fill: parent
@@ -57,7 +69,7 @@ Rectangle {
             }
         }
 
-        Rectangle { width: parent.width; height: 1; color: "#222735" }
+        Rectangle { width: parent.width; height: 1; color: tdlSurface0 }
 
         // 1. Ring Lighting Mode
         Column {
@@ -66,7 +78,7 @@ Rectangle {
 
             Text {
                 text: "RING LIGHTING EFFECT"
-                color: "#7E8597"
+                color: tdlTextLow
                 font.pixelSize: 10
                 font.weight: Font.DemiBold
                 font.letterSpacing: 1.5
@@ -113,7 +125,7 @@ Rectangle {
 
             Text {
                 text: "ACCENT PALETTE"
-                color: "#7E8597"
+                color: tdlTextLow
                 font.pixelSize: 10
                 font.weight: Font.DemiBold
                 font.letterSpacing: 1.5
@@ -122,12 +134,12 @@ Rectangle {
 
             Row {
                 spacing: 10
-                ColorDot { dotColor: "#FFFFFF" }
-                ColorDot { dotColor: "#00F0FF" }
-                ColorDot { dotColor: "#BB9AF7" }
-                ColorDot { dotColor: "#00FF9F" }
-                ColorDot { dotColor: "#FF0055" }
-                ColorDot { dotColor: "#FFB800" }
+                ColorDot { dotColor: "#FFFFFF" }  // tdl-allow: ring accent preset
+                ColorDot { dotColor: "#00F0FF" } // tdl-allow: ring accent preset
+                ColorDot { dotColor: "#CBA6F7" } // tdl-allow: ring accent preset
+                ColorDot { dotColor: "#00FF9F" } // tdl-allow: ring accent preset
+                ColorDot { dotColor: "#FF0055" } // tdl-allow: ring accent preset
+                ColorDot { dotColor: "#FFB800" } // tdl-allow: ring accent preset
             }
         }
 
@@ -144,13 +156,13 @@ Rectangle {
                     width: parent.width - 60
                     Text {
                         text: "Simulate Music State"
-                        color: "#DCE1EE"
+                        color: tdlTextHigh
                         font.pixelSize: 12
                         font.weight: Font.Medium
                     }
                     Text {
                         text: "Preview RGB pulse animation"
-                        color: "#6B7280"
+                        color: tdlTextLow
                         font.pixelSize: 10
                     }
                 }
@@ -176,13 +188,13 @@ Rectangle {
                     width: parent.width - 60
                     Text {
                         text: "24-Hour Clock"
-                        color: "#DCE1EE"
+                        color: tdlTextHigh
                         font.pixelSize: 12
                         font.weight: Font.Medium
                     }
                     Text {
                         text: "Toggle 24h or 12h roller format"
-                        color: "#6B7280"
+                        color: tdlTextLow
                         font.pixelSize: 10
                     }
                 }
@@ -208,7 +220,7 @@ Rectangle {
 
             contentItem: Text {
                 text: "APPLY & CLOSE"
-                color: "#0A0B0E"
+                color: tdlCrust
                 font: parent.font
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
@@ -216,7 +228,9 @@ Rectangle {
 
             background: Rectangle {
                 radius: 6
-                color: parent.pressed ? "#CBD5E1" : (parent.hovered ? "#F8FAFC" : "#FFFFFF")
+                color: parent.pressed
+                       ? Qt.darker(tdlAccent, 1.15)
+                       : (parent.hovered ? Qt.lighter(tdlAccent, 1.10) : tdlAccent)
             }
 
             onClicked: drawerRoot.closeRequested()
@@ -233,14 +247,14 @@ Rectangle {
         width: 154
         height: 34
         radius: 6
-        color: selected ? "#242A38" : (btnMouse.containsMouse ? "#1A1D27" : "#141720")
+        color: selected ? tdlSurface0 : (btnMouse.containsMouse ? tdlBase : tdlMantle)
         border.width: 1
-        border.color: selected ? "#00F0FF" : "#282E3D"
+        border.color: selected ? tdlAccent : tdlSurface0
 
         Text {
             anchors.centerIn: parent
             text: parent.text
-            color: selected ? "#FFFFFF" : "#8E98AC"
+            color: selected ? tdlTextHigh : tdlTextMid
             font.pixelSize: 11
             font.weight: selected ? Font.Bold : Font.Normal
         }
@@ -262,7 +276,7 @@ Rectangle {
         radius: 12
         color: dotColor
         border.width: (drawerRoot.currentAccent === dotColor) ? 2 : 0
-        border.color: "#FFFFFF"
+        border.color: tdlTextHigh
 
         MouseArea {
             anchors.fill: parent

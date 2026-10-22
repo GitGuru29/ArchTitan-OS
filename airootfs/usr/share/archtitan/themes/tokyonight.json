@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "id": "tokyonight",
+  "name": "Tokyo Night",
+  "isDark": true,
+  "accent": "#7AA2F7",
+  "accent2": "#BB9AF7",
+  "wallpaper": "/usr/share/backgrounds/archtitan/titan-blue.jpg",
+  "source": "folke/tokyonight.nvim (storm)",
+  "palette": {
+    "crust": "#1B1E2D",
+    "mantle": "#1F2335",
+    "base": "#24283B",
+    "surface0": "#292E42",
+    "surface1": "#414868",
+    "surface2": "#545C7E",
+    "surface3": "#565F89",
+    "border": "#292E42",
+    "textHigh": "#C0CAF5",
+    "textMid": "#A9B1D6",
+    "textLow": "#737AA2",
+    "success": "#9ECE6A",
+    "warning": "#E0AF68",
+    "danger": "#F7768E",
+    "teal": "#7DCFFF",
+    "mauve": "#BB9AF7",
+    "peach": "#FF9E64",
+    "pink": "#FF007C"
+  }
+}

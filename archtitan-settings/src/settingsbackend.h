@@ -123,6 +123,7 @@ private:
     QString m_lockscreenRingColor;
 
     void loadSettings();
+    void loadThemeState();
     void updateSwayidleConfig();
     bool applyPowerProfileDBus(const QString &profile);
 

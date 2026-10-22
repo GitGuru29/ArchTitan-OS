@@ -58,6 +58,10 @@ printf '%s\n%s\n' "$WALLPAPER_PATH" "$SCALE_MODE" > "$PERSIST_FILE"
 titan-waybar-theme "$WALLPAPER_PATH" >/dev/null 2>&1 || true
 
 # ── Notify ──────────────────────────────────────────────────────────────────
-NAME="$(basename "${WALLPAPER_PATH%.*}")"
-notify-send -u low -i preferences-desktop-wallpaper \
-    "Wallpaper applied" "$NAME" 2>/dev/null || true
+# TITAN_QUIET=1 suppresses this toast — `titan-theme set` already sends its
+# own themed notification and doesn't want a duplicate.
+if [[ -z "${TITAN_QUIET:-}" ]]; then
+    NAME="$(basename "${WALLPAPER_PATH%.*}")"
+    notify-send -u low -i preferences-desktop-wallpaper \
+        "Wallpaper applied" "$NAME" 2>/dev/null || true
+fi

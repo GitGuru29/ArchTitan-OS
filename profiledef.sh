@@ -55,14 +55,18 @@ file_permissions=(
   ["/usr/local/bin/titan-set-wallpaper"]="0:0:755"
   ["/usr/local/bin/titan-wallpaper-restore"]="0:0:755"
   ["/usr/local/bin/titan-waybar-theme"]="0:0:755"
+  ["/usr/local/bin/titan-theme"]="0:0:755"
   ["/usr/local/bin/titan-quicksettings"]="0:0:755"
   ["/usr/local/bin/titan-quicksettings-toggle"]="0:0:755"
   # Hot-zone interaction layer
   ["/usr/local/bin/titan-hotzones"]="0:0:755"
   ["/usr/local/bin/titan-zone-osd"]="0:0:755"
   ["/usr/local/bin/titan-sysmon"]="0:0:755"
+  ["/usr/local/bin/titan-cycle-power"]="0:0:755"
+  ["/usr/local/bin/archtitan-cycle-power"]="0:0:755"
   ["/etc/archtitan"]="0:0:755"
   ["/etc/archtitan/hotzones.toml"]="0:0:644"
+  ["/usr/share/archtitan/themes"]="0:0:755"
   # ArchTitan.TitanUI design-system QML module
   ["/usr/include/archtitan"]="0:0:755"
   ["/usr/include/archtitan/TitanPalette.h"]="0:0:644"

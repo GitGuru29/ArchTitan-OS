@@ -8,7 +8,7 @@ import QtQuick.tooling 1.2
 Module {
     Component {
         file: "themebackend.h"
-        lineNumber: 17
+        lineNumber: 22
         name: "ThemeBackend"
         accessSemantics: "reference"
         prototype: "QObject"
@@ -17,21 +17,21 @@ Module {
         isSingleton: true
         exportMetaObjectRevisions: [256]
         Property {
-            name: "accent"
-            type: "QColor"
-            read: "accent"
+            name: "id"
+            type: "QString"
+            read: "id"
             notify: "changed"
             index: 0
-            lineNumber: 23
+            lineNumber: 28
             isReadonly: true
         }
         Property {
-            name: "accentFg"
-            type: "QColor"
-            read: "accentFg"
+            name: "name"
+            type: "QString"
+            read: "name"
             notify: "changed"
             index: 1
-            lineNumber: 24
+            lineNumber: 29
             isReadonly: true
         }
         Property {
@@ -40,9 +40,207 @@ Module {
             read: "isDark"
             notify: "changed"
             index: 2
-            lineNumber: 25
+            lineNumber: 30
             isReadonly: true
         }
-        Signal { name: "changed"; lineNumber: 35 }
+        Property {
+            name: "accent"
+            type: "QColor"
+            read: "accent"
+            notify: "changed"
+            index: 3
+            lineNumber: 31
+            isReadonly: true
+        }
+        Property {
+            name: "accentFg"
+            type: "QColor"
+            read: "accentFg"
+            notify: "changed"
+            index: 4
+            lineNumber: 32
+            isReadonly: true
+        }
+        Property {
+            name: "accent2"
+            type: "QColor"
+            read: "accent2"
+            notify: "changed"
+            index: 5
+            lineNumber: 33
+            isReadonly: true
+        }
+        Property {
+            name: "crust"
+            type: "QColor"
+            read: "crust"
+            notify: "changed"
+            index: 6
+            lineNumber: 34
+            isReadonly: true
+        }
+        Property {
+            name: "mantle"
+            type: "QColor"
+            read: "mantle"
+            notify: "changed"
+            index: 7
+            lineNumber: 35
+            isReadonly: true
+        }
+        Property {
+            name: "base"
+            type: "QColor"
+            read: "base"
+            notify: "changed"
+            index: 8
+            lineNumber: 36
+            isReadonly: true
+        }
+        Property {
+            name: "surface0"
+            type: "QColor"
+            read: "surface0"
+            notify: "changed"
+            index: 9
+            lineNumber: 37
+            isReadonly: true
+        }
+        Property {
+            name: "surface1"
+            type: "QColor"
+            read: "surface1"
+            notify: "changed"
+            index: 10
+            lineNumber: 38
+            isReadonly: true
+        }
+        Property {
+            name: "surface2"
+            type: "QColor"
+            read: "surface2"
+            notify: "changed"
+            index: 11
+            lineNumber: 39
+            isReadonly: true
+        }
+        Property {
+            name: "surface3"
+            type: "QColor"
+            read: "surface3"
+            notify: "changed"
+            index: 12
+            lineNumber: 40
+            isReadonly: true
+        }
+        Property {
+            name: "border"
+            type: "QColor"
+            read: "border"
+            notify: "changed"
+            index: 13
+            lineNumber: 41
+            isReadonly: true
+        }
+        Property {
+            name: "textHigh"
+            type: "QColor"
+            read: "textHigh"
+            notify: "changed"
+            index: 14
+            lineNumber: 42
+            isReadonly: true
+        }
+        Property {
+            name: "textMid"
+            type: "QColor"
+            read: "textMid"
+            notify: "changed"
+            index: 15
+            lineNumber: 43
+            isReadonly: true
+        }
+        Property {
+            name: "textLow"
+            type: "QColor"
+            read: "textLow"
+            notify: "changed"
+            index: 16
+            lineNumber: 44
+            isReadonly: true
+        }
+        Property {
+            name: "success"
+            type: "QColor"
+            read: "success"
+            notify: "changed"
+            index: 17
+            lineNumber: 45
+            isReadonly: true
+        }
+        Property {
+            name: "warning"
+            type: "QColor"
+            read: "warning"
+            notify: "changed"
+            index: 18
+            lineNumber: 46
+            isReadonly: true
+        }
+        Property {
+            name: "danger"
+            type: "QColor"
+            read: "danger"
+            notify: "changed"
+            index: 19
+            lineNumber: 47
+            isReadonly: true
+        }
+        Property {
+            name: "info"
+            type: "QColor"
+            read: "info"
+            notify: "changed"
+            index: 20
+            lineNumber: 48
+            isReadonly: true
+        }
+        Property {
+            name: "teal"
+            type: "QColor"
+            read: "teal"
+            notify: "changed"
+            index: 21
+            lineNumber: 49
+            isReadonly: true
+        }
+        Property {
+            name: "mauve"
+            type: "QColor"
+            read: "mauve"
+            notify: "changed"
+            index: 22
+            lineNumber: 50
+            isReadonly: true
+        }
+        Property {
+            name: "peach"
+            type: "QColor"
+            read: "peach"
+            notify: "changed"
+            index: 23
+            lineNumber: 51
+            isReadonly: true
+        }
+        Property {
+            name: "pink"
+            type: "QColor"
+            read: "pink"
+            notify: "changed"
+            index: 24
+            lineNumber: 52
+            isReadonly: true
+        }
+        Signal { name: "changed"; lineNumber: 84 }
     }
 }

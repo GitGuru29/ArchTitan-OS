@@ -12,6 +12,18 @@ ColumnLayout {
     Layout.fillWidth: true
     spacing: 12
 
+    // Actions shared by the MouseArea and the keyboard handler of rows that
+    // are also reachable with Tab / arrows.
+    function openDeviceControl() {
+        if (typeof systemCtrl !== "undefined" && systemCtrl)
+            systemCtrl.openSettings();
+    }
+
+    function openPowerMenu() {
+        if (typeof systemCtrl !== "undefined" && systemCtrl)
+            systemCtrl.openPowerMenu();
+    }
+
     // ── 1. Top Connectivity Bento (Wi-Fi & Bluetooth) ────────────────────────
     RowLayout {
         Layout.fillWidth: true
@@ -449,9 +461,14 @@ ColumnLayout {
         Layout.fillWidth: true
         height: 50
         radius: 20
-        color: devMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgOneUICard
-        border.color: TitanTheme.borderGlass
-        border.width: 1
+        // Keyboard reachability for this list row.
+        activeFocusOnTab: true
+        Keys.onReturnPressed: (event) => { bentoRoot.openDeviceControl(); event.accepted = true }
+        Keys.onEnterPressed:  (event) => { bentoRoot.openDeviceControl(); event.accepted = true }
+        Keys.onSpacePressed:  (event) => { bentoRoot.openDeviceControl(); event.accepted = true }
+        color: devMa.containsMouse || activeFocus ? TitanTheme.bgHover : TitanTheme.bgOneUICard
+        border.color: activeFocus ? TitanTheme.accent : TitanTheme.borderGlass
+        border.width: activeFocus ? 2 : 1
         clip: true
 
         // Tactile Liquid Touch: spring bounce on hover and press
@@ -514,10 +531,7 @@ ColumnLayout {
             anchors.fill: parent
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
-            onClicked: {
-                if (typeof systemCtrl !== "undefined" && systemCtrl)
-                    systemCtrl.openSettings()
-            }
+            onClicked: bentoRoot.openDeviceControl()
         }
     }
 
@@ -527,9 +541,17 @@ ColumnLayout {
         height: 50
         radius: 20
         color: pwrTileMa.containsMouse ? Qt.rgba(TitanTheme.red.r, TitanTheme.red.g, TitanTheme.red.b, 0.16) : TitanTheme.bgOneUICard
-        border.color: pwrTileMa.containsMouse ? Qt.rgba(TitanTheme.red.r, TitanTheme.red.g, TitanTheme.red.b, 0.45) : TitanTheme.borderGlass
-        border.width: 1
+        border.color: activeFocus ? TitanTheme.accent
+                      : pwrTileMa.containsMouse ? Qt.rgba(TitanTheme.red.r, TitanTheme.red.g, TitanTheme.red.b, 0.45)
+                      : TitanTheme.borderGlass
+        border.width: activeFocus ? 2 : 1
         clip: true
+
+        // Keyboard reachability for this bento tile.
+        activeFocusOnTab: true
+        Keys.onReturnPressed: (event) => { bentoRoot.openPowerMenu(); event.accepted = true }
+        Keys.onEnterPressed:  (event) => { bentoRoot.openPowerMenu(); event.accepted = true }
+        Keys.onSpacePressed:  (event) => { bentoRoot.openPowerMenu(); event.accepted = true }
 
         // Tactile Liquid Touch: spring bounce on hover and press
         scale: pwrTileMa.pressed ? 0.97 : (pwrTileMa.containsMouse ? 1.015 : 1.0)

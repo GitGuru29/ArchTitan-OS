@@ -53,6 +53,20 @@ Window {
         }
     }
 
+    // ── Keyboard navigation ─────────────────────────────────────────────────
+    // The panel is fully usable without a mouse: Tab / Shift+Tab walk the
+    // tiles (each is activeFocusOnTab with a visible focus ring), arrows step
+    // through the same chain, and Enter / Space activate the focused tile.
+    function moveFocus(forward) {
+        const current = rootWindow.activeFocusItem;
+        const next = current
+                     ? current.nextItemInFocusChain(forward)
+                     : container.nextItemInFocusChain(forward);
+        if (next && next !== current) {
+            next.forceActiveFocus();
+        }
+    }
+
     Timer {
         id: closeTimer
         interval: 280
@@ -63,24 +77,29 @@ Window {
         }
     }
 
-    Item {
-        anchors.fill: parent
-        focus: true
-        Keys.onEscapePressed: {
-            if (showPowerMenu) {
-                showPowerMenu = false;
-            } else if (editMode) {
-                editMode = false;
-            } else {
-                closeDrawer();
-            }
-        }
-    }
-
     // ── Dual Bento Drawer Body (Slides in from right) ─────────────────────────
     Item {
         id: container
         anchors.fill: parent
+
+        // Full keyboard operability: focus lands here when the drawer opens
+        // (the tiles are activeFocusOnTab and each draws a focus ring), Tab /
+        // Shift+Tab and the arrow keys step through the chain, Enter / Space
+        // activate, and Esc unwinds menu → edit → close.
+        focus: true
+        Keys.onEscapePressed: {
+            if (rootWindow.showPowerMenu) {
+                rootWindow.showPowerMenu = false;
+            } else if (rootWindow.editMode) {
+                rootWindow.editMode = false;
+            } else {
+                rootWindow.closeDrawer();
+            }
+        }
+        Keys.onRightPressed: (event) => { rootWindow.moveFocus(true);  event.accepted = true }
+        Keys.onUpPressed:    (event) => { rootWindow.moveFocus(false); event.accepted = true }
+        Keys.onLeftPressed:  (event) => { rootWindow.moveFocus(false); event.accepted = true }
+        Keys.onDownPressed:  (event) => { rootWindow.moveFocus(true);  event.accepted = true }
 
         // Slide-in animation from the right
         x: drawerOpen ? 0 : width + 50
@@ -138,12 +157,45 @@ Window {
 
                     // Scrollable Bento Controls vs Edit Customizer View
                     Flickable {
+                        id: bentoFlick
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         contentWidth: width
                         contentHeight: Math.max(height, currentContent.implicitHeight)
                         clip: true
                         boundsBehavior: Flickable.StopAtBounds
+
+                        /**
+                         * Keyboard focus follow: Tab / arrow focus can land on a
+                         * control below the fold, so scroll it into view. Without
+                         * this the focus ring would walk off-screen and the panel
+                         * would look like it stopped responding.
+                         */
+                        function revealFocus() {
+                            var item = rootWindow.activeFocusItem;
+                            if (!item) return;
+
+                            // Only act on items inside this flickable's content.
+                            var node = item;
+                            while (node && node !== contentItem) node = node.parent;
+                            if (node !== contentItem) return;
+
+                            var pad = 12;
+                            var y = item.mapToItem(contentItem, 0, 0).y;
+                            var h = item.height;
+                            var target = contentY;
+                            if (y - pad < contentY)
+                                target = y - pad;
+                            else if (y + h + pad > contentY + height)
+                                target = y + h + pad - height;
+                            var maxY = Math.max(0, contentHeight - height);
+                            contentY = Math.max(0, Math.min(maxY, target));
+                        }
+
+                        Connections {
+                            target: rootWindow
+                            function onActiveFocusItemChanged() { bentoFlick.revealFocus() }
+                        }
 
                         Item {
                             id: currentContent

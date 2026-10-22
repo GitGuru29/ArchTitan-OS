@@ -14,7 +14,7 @@ import ArchTitan.TitanUI as TDL
  * Import: `import "../style"` (unqualified `TitanTheme.*`).
  */
 QtObject {
-    readonly property bool isDark: true
+    readonly property bool isDark: TDL.TitanTheme.isDark
 
     readonly property string fontFamily: TDL.TitanTheme.fontFamily
     readonly property string monoFamily: TDL.TitanTheme.monoFamily
