@@ -19,7 +19,7 @@ Window {
     readonly property color bgColor: Qt.rgba(TitanTheme.bg0.r, TitanTheme.bg0.g, TitanTheme.bg0.b, 0.92)   // Catppuccin Crust 92%
     readonly property color borderColor: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.14) // Sapphire 14%
     readonly property color accentPrimary: TitanTheme.accent
-    readonly property color accentSecondary: "#89b4fa"
+    readonly property color accentSecondary: TitanTheme.accent
     readonly property color textPrimary: TitanTheme.textHigh
     readonly property color textSecondary: TitanTheme.textMid
     readonly property color textDim: TitanTheme.surface2

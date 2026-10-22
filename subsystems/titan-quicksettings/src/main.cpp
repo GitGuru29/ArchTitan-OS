@@ -3,6 +3,7 @@
 #include <QQmlContext>
 #include <QQuickWindow>
 #include <QCommandLineParser>
+#include <QDateTime>
 #include <QSettings>
 #include <QDir>
 #include <QStandardPaths>
@@ -260,6 +261,24 @@ int main(int argc, char *argv[])
         });
         QObject::connect(&ipc, &IpcServer::hideRequested, window, [window]() {
             QMetaObject::invokeMethod(window, "closeDrawer");
+        });
+
+        // Dismiss on click-away: a layer-shell surface only receives keyboard
+        // focus once the user clicks it, so stamp the activation time and close
+        // on the first deactivation that follows. The grace period swallows the
+        // activate/deactivate flicker some compositors emit while mapping, and a
+        // panel that was never activated keeps its Esc / hotkey dismissal.
+        QObject::connect(window, &QQuickWindow::activeChanged, window, [window]() {
+            constexpr qint64 graceMs = 400;
+            if (window->isActive()) {
+                window->setProperty("titanFocusArmedAt", QDateTime::currentMSecsSinceEpoch());
+                return;
+            }
+            const qint64 armedAt = window->property("titanFocusArmedAt").toLongLong();
+            if (armedAt > 0 && QDateTime::currentMSecsSinceEpoch() - armedAt >= graceMs) {
+                window->setProperty("titanFocusArmedAt", QVariant(0));
+                QMetaObject::invokeMethod(window, "closeDrawer");
+            }
         });
 
         if (!startHidden) {

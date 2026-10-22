@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "id": "gruvbox",
+  "name": "Gruvbox",
+  "isDark": true,
+  "accent": "#83A598",
+  "accent2": "#8EC07C",
+  "wallpaper": "/usr/share/backgrounds/archtitan/titan-peach.jpg",
+  "source": "morhetz/gruvbox (dark)",
+  "palette": {
+    "crust": "#1D2021",
+    "mantle": "#222424",
+    "base": "#282828",
+    "surface0": "#32302F",
+    "surface1": "#3C3836",
+    "surface2": "#504945",
+    "surface3": "#7C6F64",
+    "border": "#32302F",
+    "textHigh": "#EBDBB2",
+    "textMid": "#D5C4A1",
+    "textLow": "#928374",
+    "success": "#B8BB26",
+    "warning": "#FABD2F",
+    "danger": "#FB4934",
+    "teal": "#8EC07C",
+    "mauve": "#D3869B",
+    "peach": "#FE8019",
+    "pink": "#D3869B"
+  }
+}

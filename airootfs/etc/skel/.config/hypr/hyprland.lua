@@ -18,7 +18,7 @@ hl.monitor({
 ---------------------
 
 local terminal    = "kitty"
-local menu        = "rofi -show drun"
+local menu        = "titan-menu --toggle"
 local browser     = "titanbrowser"
 local fileManager = terminal .. " -e ranger"
 
@@ -47,20 +47,15 @@ hl.on("hyprland.start", function()
     -- "attempt to call a nil value" and aborts this whole handler.
 
     hl.exec_cmd("bash -c 'sleep 2 && waybar'")
-    hl.exec_cmd("bash -c 'sleep 2 && swaync'")
     hl.exec_cmd("bash -c 'sleep 3 && titan-media-hud'")
     hl.exec_cmd("titan-wallpaper-restore")
     hl.exec_cmd("bash -c 'sleep 3 && titan-quicksettings --daemon'")
-    hl.exec_cmd("bash -c 'sleep 3 && titan-sysmon --daemon'")
+    hl.exec_cmd("bash -c 'sleep 3 && titan-menu --daemon'")
     hl.exec_cmd("titan-hotzones")
     hl.exec_cmd("titan-zone-osd")
+    hl.exec_cmd("swayosd-server")
     hl.exec_cmd("/usr/lib/polkit-kde-authentication-agent-1")
     hl.exec_cmd("xdg-user-dirs-update")
-
-    -- Auto-launch installer as floating window (only on live ISO)
-    -- /run/archiso only exists on mkarchiso live media -- reliable detection
-    -- Users can minimize it and explore the desktop, then reopen with Super+I
-    hl.exec_cmd("bash -c 'sleep 6; if [ -d /run/archiso ]; then launch-installer; fi'")
 
     -- Disable screen timeout / DPMS blanking on live ISO
     -- No hypridle daemon is launched -- no idle daemon = no blanking
@@ -74,10 +69,15 @@ end)
 
 local mainMod = "SUPER"
 
--- Shell & Utilities
-hl.bind(mainMod .. " + SUPER_L", hl.dsp.exec_cmd(sandboxed .. " " .. menu), { repeating = true })  -- Windows logo to open search
-hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd(sandboxed .. " " .. menu))   -- Spotlight-style: Super+Space
-hl.bind(mainMod .. " + Tab", hl.dsp.exec_cmd(sandboxed .. " " .. menu))     -- Toggle overview/search
+-- Shell & Utilities (ArchTitan Central Command Palette)
+hl.bind(mainMod .. " + SUPER_L", hl.dsp.exec_cmd("titan-menu --toggle"), { repeating = true })  -- Windows logo opens ArchTitan Menu
+hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd("titan-menu --toggle"))   -- Super+Space: ArchTitan Central Palette
+hl.bind(mainMod .. " + R", hl.dsp.exec_cmd(sandboxed .. " rofi -show drun"))  -- Super+R: Secondary App runner
+hl.bind(mainMod .. " + ALT + Space", hl.dsp.exec_cmd("titan-menu --toggle"))  -- Titan Central Command Palette
+hl.bind(mainMod .. " + K", hl.dsp.exec_cmd("titan-menu --toggle"))            -- Keybinds & Command Palette
+hl.bind(mainMod .. " + slash", hl.dsp.exec_cmd("titan-menu --toggle"))        -- Help & Shortcuts Cheat Sheet (Super+/)
+hl.bind(mainMod .. " + F1", hl.dsp.exec_cmd("titan-menu --toggle"))           -- Help & Shortcuts Cheat Sheet (Super+F1)
+hl.bind(mainMod .. " + Tab", hl.dsp.exec_cmd("titan-menu --toggle"))          -- Toggle overview/palette
 hl.bind(mainMod .. " + V", hl.dsp.exec_cmd("cliphist list | rofi -dmenu | cliphist decode | wl-copy"))  -- Clipboard
 hl.bind(mainMod .. " + Period", hl.dsp.exec_cmd(sandboxed .. " rofi -show emoji"))  -- Emoji
 hl.bind(mainMod .. " + backslash", hl.dsp.exec_cmd("titan-wallpaper-picker"))  -- Wallpaper Picker (Super+\)
@@ -210,19 +210,19 @@ hl.config({
     },
 
     general = {
-        gaps_in     = 6,
-        gaps_out    = 12,
+        gaps_in     = 5,
+        gaps_out    = 10,
         border_size = 2,
         col = {
-            active_border   = { colors = { "rgba(7aa2f7ee)", "rgba(bb9af7ee)" }, angle = 45 },
-            inactive_border = "rgba(24283b88)",
+            active_border   = { colors = { "rgba(00d2ffee)", "rgba(38bdf8ee)" }, angle = 45 },
+            inactive_border = "rgba(1e263888)",
         },
         layout = "dwindle",
     },
 
     -- Decoration -- blur, shadows, rounding
     decoration = {
-        rounding = 14,
+        rounding = 10,
 
         blur = {
             enabled           = true,
@@ -349,6 +349,8 @@ hl.layer_rule({ match = { namespace = "^swaync-notification-window$" }, blur = t
 hl.layer_rule({ match = { namespace = "^titan-quicksettings$" }, blur = true, ignore_alpha = 0.5 })
 hl.layer_rule({ match = { namespace = "^titan-quicksettings-blur$" }, blur = true, ignore_alpha = 0.5 })
 hl.layer_rule({ match = { namespace = "^titan-sysmon$" }, blur = true, ignore_alpha = 0.5 })
+hl.layer_rule({ match = { namespace = "^titan-menu$" }, blur = true, ignore_alpha = 0.5 })
+hl.layer_rule({ match = { namespace = "^swayosd$" }, blur = true, ignore_alpha = 0.5 })
 
 -- Hot-zone / gesture OSD overlay. Full-screen and input-transparent; opacity is
 -- animated inside the surface, so suppress the compositor's map/unmap fade.
@@ -356,10 +358,14 @@ hl.layer_rule({ name = "titan-zone-osd", match = { namespace = "^titan-zone-osd$
 
 -- ArchTitan Media Island -- SUPER+M toggle (uses LayerShellQt, no window rules needed)
 hl.bind(mainMod .. " + M", hl.dsp.exec_cmd("titan-media-hud --toggle"))  -- Toggle media island overlay
--- Media keys (XF86)
+-- Media keys (XF86) & SwayOSD OSD bindings
 hl.bind("XF86AudioPlay",         hl.dsp.exec_cmd("playerctl play-pause"))
 hl.bind("XF86AudioNext",         hl.dsp.exec_cmd("playerctl next"))
 hl.bind("XF86AudioPrev",         hl.dsp.exec_cmd("playerctl previous"))
-hl.bind("XF86AudioRaiseVolume",  hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+"))
-hl.bind("XF86AudioLowerVolume",  hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"))
-hl.bind("XF86AudioMute",         hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"))
+hl.bind("XF86AudioRaiseVolume",  hl.dsp.exec_cmd("swayosd-client --output-volume raise"), { repeating = true })
+hl.bind("XF86AudioLowerVolume",  hl.dsp.exec_cmd("swayosd-client --output-volume lower"), { repeating = true })
+hl.bind("XF86AudioMute",         hl.dsp.exec_cmd("swayosd-client --output-volume mute-toggle"))
+hl.bind("XF86AudioMicMute",      hl.dsp.exec_cmd("swayosd-client --input-volume mute-toggle"))
+hl.bind("XF86MonBrightnessUp",   hl.dsp.exec_cmd("swayosd-client --brightness raise"), { repeating = true })
+hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("swayosd-client --brightness lower"), { repeating = true })
+hl.bind("Caps_Lock",             hl.dsp.exec_cmd("swayosd-client --caps-lock"))

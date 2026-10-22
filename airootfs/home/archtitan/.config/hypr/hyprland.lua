@@ -18,7 +18,7 @@ hl.monitor({
 ---------------------
 
 local terminal    = "kitty"
-local menu        = "rofi -show drun"
+local menu        = "titan-menu --toggle"
 local browser     = "titanbrowser"
 local fileManager = terminal .. " -e ranger"
 
@@ -47,20 +47,15 @@ hl.on("hyprland.start", function()
     -- "attempt to call a nil value" and aborts this whole handler.
 
     hl.exec_cmd("bash -c 'sleep 2 && waybar'")
-    hl.exec_cmd("bash -c 'sleep 2 && swaync'")
     hl.exec_cmd("bash -c 'sleep 3 && titan-media-hud'")
     hl.exec_cmd("titan-wallpaper-restore")
     hl.exec_cmd("bash -c 'sleep 3 && titan-quicksettings --daemon'")
-    hl.exec_cmd("bash -c 'sleep 3 && titan-sysmon --daemon'")
+    hl.exec_cmd("bash -c 'sleep 3 && titan-menu --daemon'")
     hl.exec_cmd("titan-hotzones")
     hl.exec_cmd("titan-zone-osd")
+    hl.exec_cmd("swayosd-server")
     hl.exec_cmd("/usr/lib/polkit-kde-authentication-agent-1")
     hl.exec_cmd("xdg-user-dirs-update")
-
-    -- Auto-launch installer as floating window (only on live ISO)
-    -- /run/archiso only exists on mkarchiso live media -- reliable detection
-    -- Users can minimize it and explore the desktop, then reopen with Super+I
-    hl.exec_cmd("bash -c 'sleep 6; if [ -d /run/archiso ]; then launch-installer; fi'")
 
     -- Disable screen timeout / DPMS blanking on live ISO
     -- No hypridle daemon is launched -- no idle daemon = no blanking
@@ -74,10 +69,15 @@ end)
 
 local mainMod = "SUPER"
 
--- Shell & Utilities
-hl.bind(mainMod .. " + SUPER_L", hl.dsp.exec_cmd(sandboxed .. " " .. menu), { repeating = true })  -- Windows logo to open search
-hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd(sandboxed .. " " .. menu))   -- Spotlight-style: Super+Space
-hl.bind(mainMod .. " + Tab", hl.dsp.exec_cmd(sandboxed .. " " .. menu))     -- Toggle overview/search
+-- Shell & Utilities (ArchTitan Central Command Palette)
+hl.bind(mainMod .. " + SUPER_L", hl.dsp.exec_cmd("titan-menu --toggle"), { repeating = true })  -- Windows logo opens ArchTitan Menu
+hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd("titan-menu --toggle"))   -- Super+Space: ArchTitan Central Palette
+hl.bind(mainMod .. " + R", hl.dsp.exec_cmd(sandboxed .. " rofi -show drun"))  -- Super+R: Secondary App runner
+hl.bind(mainMod .. " + ALT + Space", hl.dsp.exec_cmd("titan-menu --toggle"))  -- Titan Central Command Palette
+hl.bind(mainMod .. " + K", hl.dsp.exec_cmd("titan-menu --toggle"))            -- Keybinds & Command Palette
+hl.bind(mainMod .. " + slash", hl.dsp.exec_cmd("titan-menu --toggle"))        -- Help & Shortcuts Cheat Sheet (Super+/)
+hl.bind(mainMod .. " + F1", hl.dsp.exec_cmd("titan-menu --toggle"))           -- Help & Shortcuts Cheat Sheet (Super+F1)
+hl.bind(mainMod .. " + Tab", hl.dsp.exec_cmd("titan-menu --toggle"))          -- Toggle overview/palette
 hl.bind(mainMod .. " + V", hl.dsp.exec_cmd("cliphist list | rofi -dmenu | cliphist decode | wl-copy"))  -- Clipboard
 hl.bind(mainMod .. " + Period", hl.dsp.exec_cmd(sandboxed .. " rofi -show emoji"))  -- Emoji
 hl.bind(mainMod .. " + backslash", hl.dsp.exec_cmd("titan-wallpaper-picker"))  -- Wallpaper Picker (Super+\)
@@ -88,9 +88,8 @@ hl.bind(mainMod .. " + N", hl.dsp.exec_cmd("titan-quicksettings --toggle"))  -- 
 
 -- Session & Media
 hl.bind("CTRL + ALT + Delete", hl.dsp.exec_cmd("titan-powermenu"))
--- Disable swaylock on live ISO so you don't get locked out without a password
-hl.bind(mainMod .. " + L", hl.dsp.exec_cmd(":"))  -- Lock disabled on live OS
-hl.bind(mainMod .. " + SHIFT + L", hl.dsp.exec_cmd("systemctl suspend"))  -- Sleep
+hl.bind(mainMod .. " + L", hl.dsp.exec_cmd("pidof hyprlock || hyprlock || swaylock -f -c 0b0e14 || loginctl lock-session"))  -- Lock Screen
+hl.bind(mainMod .. " + SHIFT + L", hl.dsp.exec_cmd("systemctl suspend -i || loginctl suspend"))  -- Sleep
 hl.bind("XF86Sleep", hl.dsp.exec_cmd(":"))  -- swallow sleep key on live ISO
 
 -- Apps
@@ -211,37 +210,45 @@ hl.config({
     },
 
     general = {
-        gaps_in    = 5,
-        gaps_out   = 10,
+        gaps_in     = 5,
+        gaps_out    = 10,
         border_size = 2,
         col = {
-            active_border   = { colors = { "rgba(7aa2f7ee)", "rgba(9ece6aee)", "rgba(e0af68ee)", "rgba(bb9af7ee)" }, angle = 45 },
-            inactive_border = "rgba(414868aa)",
+            active_border   = { colors = { "rgba(00d2ffee)", "rgba(38bdf8ee)" }, angle = 45 },
+            inactive_border = "rgba(1e263888)",
         },
         layout = "dwindle",
     },
 
     -- Decoration -- blur, shadows, rounding
     decoration = {
-        rounding = 12,
+        rounding = 10,
 
         blur = {
-            enabled = false,
+            enabled           = true,
+            size              = 6,
+            passes            = 3,
+            new_optimizations = true,
+            ignore_opacity    = true,
+            noise             = 0.012,
+            contrast          = 0.92,
+            brightness        = 0.88,
+            vibrancy          = 0.28,
         },
 
         shadow = {
             enabled      = true,
-            range        = 12,
-            render_power = 3,
-            offset       = { 0, 4 },
-            color        = "rgba(1a1a2ecc)",
+            range        = 24,
+            render_power = 4,
+            offset       = { 0, 5 },
+            color        = "rgba(0b0e1499)",
         },
 
         dim_inactive   = false,
-        dim_strength   = 0.1,
+        dim_strength   = 0.08,
 
-        active_opacity   = 1.0,
-        inactive_opacity = 0.92,
+        active_opacity   = 0.98,
+        inactive_opacity = 0.90,
     },
 
     -- Layout
@@ -265,22 +272,22 @@ hl.config({
 ---- ANIMATIONS ----
 ---------------------------
 
-hl.curve("overshot", { type = "bezier", points = { { 0.05, 0.9 }, { 0.1, 1.1 } } })
-hl.curve("smoothOut", { type = "bezier", points = { { 0.36, 0 },   { 0.66, -0.56 } } })
-hl.curve("smoothIn",  { type = "bezier", points = { { 0.25, 1 },   { 0.5, 1 } } })
-hl.curve("snappy",    { type = "bezier", points = { { 0.4, 0 },    { 0.2, 1 } } })
+hl.curve("quint", { type = "bezier", points = { { 0.23, 1 }, { 0.32, 1 } } })
+hl.curve("cubic", { type = "bezier", points = { { 0.65, 0 }, { 0.35, 1 } } })
+hl.curve("snappy", { type = "bezier", points = { { 0.1, 1 }, { 0.1, 1 } } })
+hl.curve("smooth", { type = "bezier", points = { { 0.25, 1 }, { 0.5, 1 } } })
 
 hl.config({ animations = { enabled = true } })
 
--- smooth and snappy
-hl.animation({ leaf = "windows",     enabled = true, speed = 1, bezier = "overshot", style = "slide" })
-hl.animation({ leaf = "windowsOut",  enabled = true, speed = 1, bezier = "smoothOut", style = "slide" })
-hl.animation({ leaf = "windowsMove", enabled = true, speed = 1, bezier = "snappy" })
-hl.animation({ leaf = "border",      enabled = true, speed = 1, bezier = "default" })
-hl.animation({ leaf = "borderangle", enabled = true, speed = 1, bezier = "default", style = "loop" })
-hl.animation({ leaf = "fade",        enabled = true, speed = 1, bezier = "smoothIn" })
-hl.animation({ leaf = "fadeDim",     enabled = true, speed = 1, bezier = "smoothIn" })
-hl.animation({ leaf = "workspaces",  enabled = true, speed = 1, bezier = "overshot", style = "slidevert" })
+-- fluid and snappy animations
+hl.animation({ leaf = "windows",     enabled = true, speed = 4.2, bezier = "quint", style = "popin 85%" })
+hl.animation({ leaf = "windowsOut",  enabled = true, speed = 3.2, bezier = "cubic", style = "popin 90%" })
+hl.animation({ leaf = "windowsMove", enabled = true, speed = 3.8, bezier = "snappy" })
+hl.animation({ leaf = "border",      enabled = true, speed = 6, bezier = "quint" })
+hl.animation({ leaf = "borderangle", enabled = true, speed = 30, bezier = "default", style = "loop" })
+hl.animation({ leaf = "fade",        enabled = true, speed = 3.5, bezier = "smooth" })
+hl.animation({ leaf = "fadeDim",     enabled = true, speed = 4, bezier = "smooth" })
+hl.animation({ leaf = "workspaces",  enabled = true, speed = 4.5, bezier = "quint", style = "slide" })
 
 ---------------------------
 ---- WINDOW RULES ----
@@ -294,6 +301,30 @@ hl.window_rule({
     size    = "980 640",
     center  = true,
     opacity = "1.0 1.0",
+})
+
+hl.window_rule({
+    name    = "pavucontrol-float",
+    match   = { class = "^pavucontrol$" },
+    float   = true,
+    size    = "720 500",
+    center  = true,
+})
+
+hl.window_rule({
+    name    = "archtitan-settings-float",
+    match   = { class = "^archtitan-settings$" },
+    float   = true,
+    size    = "960 620",
+    center  = true,
+})
+
+hl.window_rule({
+    name    = "btop-float",
+    match   = { class = "^kitty$", title = "^btop$" },
+    float   = true,
+    size    = "1020 660",
+    center  = true,
 })
 
 -- ArchTitan Quick Settings Window Rules
@@ -318,6 +349,8 @@ hl.layer_rule({ match = { namespace = "^swaync-notification-window$" }, blur = t
 hl.layer_rule({ match = { namespace = "^titan-quicksettings$" }, blur = true, ignore_alpha = 0.5 })
 hl.layer_rule({ match = { namespace = "^titan-quicksettings-blur$" }, blur = true, ignore_alpha = 0.5 })
 hl.layer_rule({ match = { namespace = "^titan-sysmon$" }, blur = true, ignore_alpha = 0.5 })
+hl.layer_rule({ match = { namespace = "^titan-menu$" }, blur = true, ignore_alpha = 0.5 })
+hl.layer_rule({ match = { namespace = "^swayosd$" }, blur = true, ignore_alpha = 0.5 })
 
 -- Hot-zone / gesture OSD overlay. Full-screen and input-transparent; opacity is
 -- animated inside the surface, so suppress the compositor's map/unmap fade.
@@ -325,11 +358,14 @@ hl.layer_rule({ name = "titan-zone-osd", match = { namespace = "^titan-zone-osd$
 
 -- ArchTitan Media Island -- SUPER+M toggle (uses LayerShellQt, no window rules needed)
 hl.bind(mainMod .. " + M", hl.dsp.exec_cmd("titan-media-hud --toggle"))  -- Toggle media island overlay
-
--- Media keys (XF86)
+-- Media keys (XF86) & SwayOSD OSD bindings
 hl.bind("XF86AudioPlay",         hl.dsp.exec_cmd("playerctl play-pause"))
 hl.bind("XF86AudioNext",         hl.dsp.exec_cmd("playerctl next"))
 hl.bind("XF86AudioPrev",         hl.dsp.exec_cmd("playerctl previous"))
-hl.bind("XF86AudioRaiseVolume",  hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+"))
-hl.bind("XF86AudioLowerVolume",  hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"))
-hl.bind("XF86AudioMute",         hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"))
+hl.bind("XF86AudioRaiseVolume",  hl.dsp.exec_cmd("swayosd-client --output-volume raise"), { repeating = true })
+hl.bind("XF86AudioLowerVolume",  hl.dsp.exec_cmd("swayosd-client --output-volume lower"), { repeating = true })
+hl.bind("XF86AudioMute",         hl.dsp.exec_cmd("swayosd-client --output-volume mute-toggle"))
+hl.bind("XF86AudioMicMute",      hl.dsp.exec_cmd("swayosd-client --input-volume mute-toggle"))
+hl.bind("XF86MonBrightnessUp",   hl.dsp.exec_cmd("swayosd-client --brightness raise"), { repeating = true })
+hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("swayosd-client --brightness lower"), { repeating = true })
+hl.bind("Caps_Lock",             hl.dsp.exec_cmd("swayosd-client --caps-lock"))

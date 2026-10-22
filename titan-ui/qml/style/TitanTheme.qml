@@ -5,9 +5,11 @@ import ArchTitan.TitanUI
 /**
  * TitanTheme — ArchTitan "Titan Design Language" (TDL) tokens.
  *
- * Single source of truth for every user-facing surface. Base surfaces are
- * Catppuccin Mocha; geometry and glass depth follow Samsung One UI 9.0. The
- * accent is wallpaper-adaptive via ThemeBackend and can be overridden at runtime.
+ * Single source of truth for every user-facing surface. Colour tokens are
+ * bindings onto ThemeBackend, which loads the active theme from
+ * ~/.config/archtitan/theme.json (written by `titan-theme`) and falls back to
+ * Catppuccin Mocha — so QML recolours live on every theme or accent switch
+ * with no restarts. Geometry and glass depth follow Samsung One UI 9.0.
  *
  * Import: `import ArchTitan.TitanUI`
  */
@@ -15,58 +17,58 @@ QtObject {
     id: theme
 
     // ── Mode ────────────────────────────────────────────────────────────────
-    readonly property bool isDark: true
+    readonly property bool isDark: ThemeBackend.isDark
 
-    // ── Accent (wallpaper-adaptive) ─────────────────────────────────────────
+    // ── Accent (theme / wallpaper-adaptive) ─────────────────────────────────
     property color accent: ThemeBackend.accent
     readonly property color accentFg:              ThemeBackend.accentFg
     readonly property color accentSoft:            Qt.rgba(accent.r, accent.g, accent.b, 0.18)
     readonly property color accentSofter:          Qt.rgba(accent.r, accent.g, accent.b, 0.10)
     readonly property color accentEdge:            Qt.rgba(accent.r, accent.g, accent.b, 0.55)
 
-    // ── Catppuccin Mocha surfaces ───────────────────────────────────────────
-    readonly property color crust:    "#11111B"
-    readonly property color mantle:   "#181825"
-    readonly property color base:     "#1E1E2E"
-    readonly property color surface0: "#313244"
-    readonly property color surface1: "#45475A"
-    readonly property color surface2: "#585B70"
-    readonly property color surface3: "#6C7086"
+    // ── Theme surfaces ──────────────────────────────────────────────────────
+    readonly property color crust:    ThemeBackend.crust
+    readonly property color mantle:   ThemeBackend.mantle
+    readonly property color base:     ThemeBackend.base
+    readonly property color surface0: ThemeBackend.surface0
+    readonly property color surface1: ThemeBackend.surface1
+    readonly property color surface2: ThemeBackend.surface2
+    readonly property color surface3: ThemeBackend.surface3
 
     // Semantic background roles
-    readonly property color bg0:      "#11111B"          // deepest
-    readonly property color bg1:      "#B31E1E2E"         // window shell (translucent)
-    readonly property color bg2:      "#991E1E2E"         // card
-    readonly property color bg3:      "#1E1E2E"           // elevated
-    readonly property color bg4:      "#313244"           // hover
-    readonly property color bgInset:  "#800E0E16"         // recessed
+    readonly property color bg0:      crust                             // deepest
+    readonly property color bg1:      Qt.rgba(base.r, base.g, base.b, 0.702)   // window shell (translucent)
+    readonly property color bg2:      Qt.rgba(base.r, base.g, base.b, 0.6)     // card
+    readonly property color bg3:      base                              // elevated
+    readonly property color bg4:      surface0                          // hover
+    readonly property color bgInset:  Qt.rgba(crust.r, crust.g, crust.b, 0.502) // recessed
 
     // Frosted glass / overlay
-    readonly property color glass:     "#B80B0E14"
-    readonly property color glassAlt:  "#70161A26"
-    readonly property color glassCard: "#66182132"
+    readonly property color glass:     Qt.rgba(crust.r, crust.g, crust.b, 0.722)
+    readonly property color glassAlt:  Qt.rgba(mantle.r, mantle.g, mantle.b, 0.439)
+    readonly property color glassCard: Qt.rgba(mantle.r, mantle.g, mantle.b, 0.4)
 
     // ── Borders ─────────────────────────────────────────────────────────────
-    readonly property color border:       "#252838"
-    readonly property color borderSubtle: "#18FFFFFF"
-    readonly property color borderHover:  "#40FFFFFF"
+    readonly property color border:       ThemeBackend.border
+    readonly property color borderSubtle: isDark ? "#18FFFFFF" : "#1A000000"
+    readonly property color borderHover:  isDark ? "#40FFFFFF" : "#30000000"
     readonly property color borderStrong: accentEdge
 
     // ── Text ────────────────────────────────────────────────────────────────
-    readonly property color textHigh:     "#CDD6F4"
-    readonly property color textMid:      "#A6ADC8"
-    readonly property color textLow:      "#7F849C"
+    readonly property color textHigh:     ThemeBackend.textHigh
+    readonly property color textMid:      ThemeBackend.textMid
+    readonly property color textLow:      ThemeBackend.textLow
     readonly property color textOnAccent: accentFg
 
     // ── Semantic status ─────────────────────────────────────────────────────
-    readonly property color success: "#A6E3A1"
-    readonly property color warning: "#F9E2AF"
-    readonly property color danger:  "#F38BA8"
-    readonly property color info:    "#89B4FA"
-    readonly property color teal:    "#94E2D5"
-    readonly property color peach:   "#FAB387"
-    readonly property color mauve:   "#CBA6F7"
-    readonly property color pink:    "#F5C2E7"
+    readonly property color success: ThemeBackend.success
+    readonly property color warning: ThemeBackend.warning
+    readonly property color danger:  ThemeBackend.danger
+    readonly property color info:    ThemeBackend.info
+    readonly property color teal:    ThemeBackend.teal
+    readonly property color peach:   ThemeBackend.peach
+    readonly property color mauve:   ThemeBackend.mauve
+    readonly property color pink:    ThemeBackend.pink
 
     // ── Typography ──────────────────────────────────────────────────────────
     readonly property string fontFamily:  "Inter"
@@ -83,10 +85,10 @@ QtObject {
 
     // ── Radii (One UI 9.0 squircles) ────────────────────────────────────────
     readonly property int radiusSm:      8
-    readonly property int radiusMd:      12
-    readonly property int radiusLg:      16
-    readonly property int radiusXl:      20
-    readonly property int radiusBento:   24
+    readonly property int radiusMd:     12
+    readonly property int radiusLg:     16
+    readonly property int radiusXl:     20
+    readonly property int radiusBento:  24
     readonly property int radiusWindow:  28
     readonly property int radiusCard:    20
     readonly property int radiusControl: 16

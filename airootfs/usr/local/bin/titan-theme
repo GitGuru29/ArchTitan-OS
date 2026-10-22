@@ -1,0 +1,630 @@
+#!/usr/bin/env python3
+"""titan-theme — ArchTitan theme engine.
+
+One command drives the whole desktop between the seven shipped themes
+(usr/share/archtitan/themes/<id>.json): QML surfaces follow automatically via
+ThemeBackend's file watcher, and this tool brings the non-Qt seams — Waybar,
+SwayNC, rofi, kitty, hyprlock, GTK and qt5ct — in line, plus the Hyprland
+border keywords.
+
+State lives in ~/.config/archtitan/theme.json (a full theme definition with
+any user accent override applied on top).
+
+Usage:
+  titan-theme list                 List installed themes (* marks the active)
+  titan-theme current              Print the active theme id
+  titan-theme set <id>             Switch theme: apply + wallpaper + toast
+  titan-theme next | prev          Cycle themes (alphabetical by id)
+  titan-theme random               Switch to a random theme
+  titan-theme accent <#rrggbb>     Override the accent, keep theme + wallpaper
+  titan-theme mode <dark|light>    Switch to the baseline theme for a mode
+  titan-theme apply                Re-apply the active theme in place
+                                   (startup sync: no wallpaper change, no toast)
+
+Mechanics
+---------
+Shell configs carry marker blocks (`/* titan-theme:begin */` … `end`, or the
+`#` form for hyprlock) that are regenerated verbatim from the palette; the
+hyprlock background path and Pango span colours are rewritten by context.
+Everything else is a one-shot conversion baked into the shipped files.
+Reloads: Waybar via SIGUSR2 (inside titan-waybar-theme), SwayNC via
+`swaync-client -rs`, kitty via SIGUSR1 (plus its own auto_reload_config).
+GTK and qt5ct schemes apply on next app start by design.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+
+THEME_DIR = os.environ.get("TITAN_THEME_DIR", "/usr/share/archtitan/themes")
+CONFIG_HOME = os.environ.get(
+    "XDG_CONFIG_HOME", os.path.join(os.path.expanduser("~"), ".config")
+)
+STATE_FILE = os.path.join(CONFIG_HOME, "archtitan", "theme.json")
+WALLPAPER_FILE = os.path.join(CONFIG_HOME, "archtitan", "wallpaper")
+
+WAYBAR_CSS = os.path.join(CONFIG_HOME, "waybar", "style.css")
+SWAYNC_CSS = os.path.join(CONFIG_HOME, "swaync", "style.css")
+SWAYOSD_CSS = os.path.join(CONFIG_HOME, "swayosd", "style.css")
+ROFI_RASI = os.path.join(CONFIG_HOME, "rofi", "spotlight.rasi")
+HYPRLOCK = os.path.join(CONFIG_HOME, "hypr", "hyprlock.conf")
+KITTY_FRAGMENT = os.path.join(CONFIG_HOME, "kitty", "current-theme.conf")
+GTK_INI = [
+    os.path.join(CONFIG_HOME, "gtk-3.0", "settings.ini"),
+    os.path.join(CONFIG_HOME, "gtk-4.0", "settings.ini"),
+]
+QT5CT_CONF = os.path.join(CONFIG_HOME, "qt5ct", "qt5ct.conf")
+QT5CT_SCHEME_DIR = "/usr/share/qt5ct/colors"
+
+CSS_BEGIN = "/* titan-theme:begin */"
+CSS_END = "/* titan-theme:end */"
+CONF_BEGIN = "# titan-theme:begin"
+CONF_END = "# titan-theme:end"
+
+DEFAULT_THEME = "archtitan"
+
+
+def log(msg: str) -> None:
+    print(f"titan-theme: {msg}", file=sys.stderr)
+
+
+def die(msg: str) -> None:
+    print(f"titan-theme: {msg}", file=sys.stderr)
+    raise SystemExit(1)
+
+
+# ── Palette helpers ──────────────────────────────────────────────────────────
+
+def rgb(hexv: str) -> tuple[int, int, int]:
+    h = hexv.strip().lstrip("#")
+    return (int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16))
+
+
+def rgba(hexv: str, alpha: float) -> str:
+    r, g, b = rgb(hexv)
+    return f"rgba({r}, {g}, {b}, {alpha:.2f})"
+
+
+def rel_luminance(hexv: str) -> float:
+    def lin(c: float) -> float:
+        return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+
+    r, g, b = (lin(v / 255.0) for v in rgb(hexv))
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+
+def accent_fg(accent: str) -> str:
+    # WCAG crossover where crust ink (#11111B) and white are equally legible:
+    # (L + .05) / .056 == 1.05 / (L + .05) -> L = 0.1925. Matches
+    # ThemeBackend::accentFg / TitanPalette::accentFg exactly.
+    return "#11111B" if rel_luminance(accent) > 0.1925 else "#FFFFFF"
+
+
+# ── Theme definitions & state ────────────────────────────────────────────────
+
+def theme_def(tid: str) -> dict:
+    path = os.path.join(THEME_DIR, f"{tid}.json")
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            return json.load(fh)
+    except (OSError, ValueError) as exc:
+        die(f"theme '{tid}' unreadable ({path}): {exc}")
+
+
+def installed_ids() -> list[str]:
+    try:
+        names = sorted(
+            n[:-5] for n in os.listdir(THEME_DIR) if n.endswith(".json")
+        )
+    except OSError:
+        return []
+    return names
+
+
+def read_state() -> dict:
+    """Active theme definition. Falls back to the shipped baseline."""
+    try:
+        with open(STATE_FILE, "r", encoding="utf-8") as fh:
+            state = json.load(fh)
+        if isinstance(state, dict) and "palette" in state and "accent" in state:
+            return state
+    except (OSError, ValueError):
+        pass
+    return theme_def(DEFAULT_THEME)
+
+
+def write_state(theme: dict) -> None:
+    os.makedirs(os.path.dirname(STATE_FILE), exist_ok=True)
+    tmp = STATE_FILE + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as fh:
+        json.dump(theme, fh, indent=2, ensure_ascii=False)
+        fh.write("\n")
+    os.chmod(tmp, 0o644)
+    os.replace(tmp, STATE_FILE)
+
+
+# ── Marker-block rewriter ────────────────────────────────────────────────────
+
+def _atomic_write(path: str, text: str) -> None:
+    tmp = os.path.join(os.path.dirname(path), "." + os.path.basename(path) + ".tmp")
+    with open(tmp, "w", encoding="utf-8") as fh:
+        fh.write(text)
+    os.chmod(tmp, 0o644)
+    os.replace(tmp, path)
+
+
+def replace_block(path: str, begin: str, end: str, body: str) -> bool:
+    """Replace the region between markers (inclusive of body only)."""
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            text = fh.read()
+    except OSError as exc:
+        log(f"skip {path}: {exc}")
+        return False
+    i = text.find(begin)
+    j = text.find(end, i + len(begin)) if i >= 0 else -1
+    if i < 0 or j < 0:
+        log(f"warning: markers not found in {path}; leaving it alone")
+        return False
+    new = text[:i] + begin + "\n" + body + "\n" + end + text[j + len(end):]
+    if new == text:
+        return False
+    _atomic_write(path, new)
+    return True
+
+
+# ── Per-surface bodies ───────────────────────────────────────────────────────
+
+def waybar_body(t: dict) -> str:
+    p, dark = t["palette"], t["isDark"]
+    on_bar = "#FFFFFF" if dark else "#000000"
+    rows = [
+        ("text-high", t["palette"]["textHigh"]),
+        ("text-low", p["textLow"]),
+        ("accent", t["accent"]),
+        ("surface2", p["surface2"]),
+        ("success", p["success"]),
+        ("warning", p["warning"]),
+        ("danger", p["danger"]),
+        ("teal", p["teal"]),
+        ("mauve", p["mauve"]),
+        ("on-bar", on_bar),
+    ]
+    lines = ["/* generated by `titan-theme` — do not edit by hand */"]
+    lines += [f"@define-color {name:<10} {val};" for name, val in rows]
+    return "\n".join(lines)
+
+
+def swaync_body(t: dict) -> str:
+    p, dark = t["palette"], t["isDark"]
+    acc, fg = t["accent"], accent_fg(t["accent"])
+    border = "rgba(255, 255, 255, 0.08)" if dark else "rgba(0, 0, 0, 0.12)"
+    rows = [
+        ("base", rgba(p["crust"], 0.94)),
+        ("surface", rgba(p["base"], 0.88)),
+        ("surface-alt", rgba(p["border"], 0.92)),
+        ("surface-hover", rgba(p["surface0"], 0.95)),
+        ("border-color", border),
+        ("border-highlight", rgba(acc, 0.35)),
+        (None, None),
+        ("cyan-active", acc.lower()),
+        ("cyan-glow", rgba(acc, 0.45)),
+        ("on-cyan", fg.lower()),
+        (None, None),
+        ("text-main", p["textHigh"].lower()),
+        ("text-muted", p["textMid"].lower()),
+        ("text-sub", p["surface3"].lower()),
+        ("danger", p["danger"].lower()),
+        ("on-surface", "#ffffff" if dark else "#000000"),
+    ]
+    lines = ["/* generated by `titan-theme` — do not edit by hand */"]
+    for name, val in rows:
+        if name is None:
+            lines.append("")
+        else:
+            lines.append(f"@define-color {name:<15} {val};")
+    return "\n".join(lines)
+
+
+def swayosd_body(t: dict) -> str:
+    p, dark = t["palette"], t["isDark"]
+    acc = t["accent"]
+    border_alpha = 0.35 if dark else 0.40
+    trough = "rgba(255, 255, 255, 0.12)" if dark else "rgba(0, 0, 0, 0.10)"
+    rows = [
+        ("base", rgba(p["crust"], 0.88)),
+        ("surface", rgba(p["base"], 0.85)),
+        ("border-highlight", rgba(acc, border_alpha)),
+        ("cyan-active", acc.lower()),
+        ("cyan-glow", rgba(acc, 0.45)),
+        ("text-main", p["textHigh"].lower()),
+        ("text-muted", p["textMid"].lower()),
+        ("trough-bg", trough),
+    ]
+    lines = ["/* generated by `titan-theme` — do not edit by hand */"]
+    for name, val in rows:
+        lines.append(f"@define-color {name:<15} {val};")
+    return "\n".join(lines)
+
+
+def rofi_body(t: dict) -> str:
+    p, dark = t["palette"], t["isDark"]
+    acc = t["accent"]
+    neutral = "255, 255, 255" if dark else "0, 0, 0"
+    subtle = "0.08" if dark else "0.10"
+    rows = [
+        ("bg-card", f"{p['crust'].upper()}E8"),
+        ("bg-input", f"rgba({neutral}, 0.05)"),
+        ("bg-selected", rgba(acc, 0.18)),
+        ("bg-hover", f"rgba({neutral}, 0.04)"),
+        ("border-accent", rgba(acc, 0.45)),
+        ("border-subtle", f"rgba({neutral}, {subtle})"),
+        ("text-primary", p["textHigh"]),
+        ("text-secondary", p["textMid"]),
+        ("text-accent", acc),
+        ("text-dim", p["surface3"]),
+        ("text-highlight", f"bold {acc}"),
+        ("text-selected", p["textHigh"] if not dark else "#FFFFFF"),
+        ("scrollbar-clr", rgba(acc, 0.4)),
+    ]
+    lines = ["    /* generated by `titan-theme` — do not edit by hand */"]
+    width = max(len(n) for n, _ in rows)
+    lines += [f"    {n + ':':<{width + 1}} {v};" for n, v in rows]
+    return "\n".join(lines)
+
+
+def hyprlock_body(t: dict) -> str:
+    p = t["palette"]
+    acc, acc2, fg = t["accent"], t["accent2"], accent_fg(t["accent"])
+    crust = p["crust"]
+    rows = [
+        ("$accent", rgba(acc, 1.0)),
+        ("$accent_gradient", f"{rgba(acc, 0.9)} {rgba(acc2, 0.9)} 45deg"),
+        ("$accent_soft", rgba(acc, 0.95)),
+        ("$bg_card", rgba(crust, 0.78)),
+        ("$bg_input", rgba(p["mantle"], 0.90)),
+        ("$bg_deep", "rgb(%d, %d, %d)" % rgb(crust)),
+        ("$border_card", rgba(acc, 0.30)),
+        ("$text_primary", rgba(p["textHigh"], 1.0)),
+        ("$text_muted", rgba(p["textMid"], 1.0)),
+        ("$text_dim", rgba(p["surface3"], 1.0)),
+        ("$fail_color", rgba(p["danger"], 1.0)),
+        ("$check_color", rgba(p["success"], 1.0)),
+        ("$caps_color", rgba(p["warning"], 1.0)),
+        ("$on_accent", rgba(fg, 1.0)),
+    ]
+    lines = ["# generated by `titan-theme` — do not edit by hand"]
+    lines += [f"{name} = {val}" for name, val in rows]
+    return "\n".join(lines)
+
+
+def kitty_fragment(t: dict) -> str:
+    p = t["palette"]
+    acc = t["accent"]
+    rows = [
+        ("foreground", p["textHigh"]),
+        ("background", p["base"]),
+        ("selection_foreground", p["base"]),
+        ("selection_background", p["pink"]),
+        ("cursor", p["pink"]),
+        ("cursor_text_color", p["base"]),
+        ("url_color", acc),
+        ("active_tab_foreground", p["base"]),
+        ("active_tab_background", acc),
+        ("inactive_tab_foreground", p["textLow"]),
+        ("inactive_tab_background", p["mantle"]),
+        ("color0", p["surface1"]),
+        ("color1", p["danger"]),
+        ("color2", p["success"]),
+        ("color3", p["warning"]),
+        ("color4", acc),
+        ("color5", p["pink"]),
+        ("color6", p["teal"]),
+        ("color7", p["textHigh"]),
+        ("color8", p["surface2"]),
+        ("color9", p["danger"]),
+        ("color10", p["success"]),
+        ("color11", p["warning"]),
+        ("color12", acc),
+        ("color13", p["pink"]),
+        ("color14", p["teal"]),
+        ("color15", p["textMid"]),
+    ]
+    lines = [
+        f"# titan-theme — generated from {t['id']}.json; do not edit.",
+        "# Rewritten by `titan-theme set/apply`; kitty picks it up live",
+        "# (auto_reload_config) or via SIGUSR1.",
+        "",
+    ]
+    lines += [f"{name:<24} {val}" for name, val in rows]
+    return "\n".join(lines) + "\n"
+
+
+# ── Whole-file rewrites (hyprlock path & Pango spans, GTK, qt5ct) ────────────
+
+def patch_hyprlock_context(path: str, t: dict) -> None:
+    """Rewrite the wallpaper path and the two Pango span colours by context."""
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            text = fh.read()
+    except OSError as exc:
+        log(f"skip {path}: {exc}")
+        return
+
+    p = t["palette"]
+    new = text
+    # Background wallpaper only — the reticle lives in /usr/share/pixmaps.
+    new = re.sub(
+        r"(?m)^(    path = ).*backgrounds/archtitan/\S+$",
+        lambda m: m.group(1) + t["wallpaper"],
+        new,
+    )
+    # Pango escapes the leading hash in colour literals ("##RRGGBB").
+    new = re.sub(
+        r'(?s)(<span foreground=")##[0-9A-Fa-f]{6}(">Password</span>)',
+        lambda m: m.group(1) + "##" + p["surface3"].lstrip("#") + m.group(2),
+        new,
+    )
+    new = re.sub(
+        r'(?s)(<span foreground=")##[0-9A-Fa-f]{6}(">!! AUTH FAILED</span>)',
+        lambda m: m.group(1) + "##" + p["danger"].lstrip("#") + m.group(2),
+        new,
+    )
+    if new != text:
+        _atomic_write(path, new)
+
+
+def patch_gtk(path: str, t: dict) -> None:
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            text = fh.read()
+    except OSError:
+        return
+    theme_name = "Adwaita-dark" if t["isDark"] else "Adwaita"
+    prefer = "1" if t["isDark"] else "0"
+    pairs = {
+        "gtk-theme-name": theme_name,
+        "gtk-application-prefer-dark-theme": prefer,
+    }
+    new = text
+    for key, val in pairs.items():
+        pattern = re.compile(rf"(?m)^{re.escape(key)}=.*$")
+        if pattern.search(new):
+            new = pattern.sub(f"{key}={val}", new)
+        else:
+            new = new.rstrip("\n") + f"\n{key}={val}\n"
+    if new != text:
+        _atomic_write(path, new)
+
+
+def patch_qt5ct(path: str, t: dict) -> None:
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            text = fh.read()
+    except OSError:
+        return
+    scheme = f"{QT5CT_SCHEME_DIR}/archtitan-{t['id']}.conf"
+    pattern = re.compile(r"(?m)^color_scheme_path=.*$")
+    if pattern.search(text):
+        new = pattern.sub(f"color_scheme_path={scheme}", text)
+    else:
+        new = text.rstrip("\n") + f"\ncolor_scheme_path={scheme}\n"
+    if new != text:
+        _atomic_write(path, new)
+
+
+# ── Reload helpers ───────────────────────────────────────────────────────────
+
+def run_quiet(argv: list[str], env: dict | None = None) -> None:
+    """Best-effort: these seams may not exist (TTY, build chroot, no session)."""
+    if not shutil.which(argv[0]):
+        return
+    try:
+        subprocess.run(
+            argv, check=False, env=env,
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        )
+    except OSError:
+        pass
+
+
+def apply_hyprctl(t: dict) -> None:
+    p = t["palette"]
+    acc, acc2 = t["accent"].lower(), t["accent2"].lower()
+    crust = p["crust"].lower()
+    mantle = p["mantle"].lower()
+    keywords = {
+        "general:col.active_border":
+            f"rgba({acc}ee) rgba({acc2}ee) 45deg",
+        "general:col.inactive_border": f"rgba({mantle}88)",
+        "decoration:shadow:color": f"rgba({crust}99)",
+    }
+    if not shutil.which("hyprctl"):
+        return
+    for key, value in keywords.items():
+        run_quiet(["hyprctl", "keyword", key, value])
+
+
+def reload_shell() -> None:
+    run_quiet(["swaync-client", "-rs"])
+    run_quiet(["pkill", "-SIGUSR1", "-x", "kitty"])
+    if shutil.which("swayosd-server"):
+        try:
+            res = subprocess.run(["pgrep", "-x", "swayosd-server"], capture_output=True, text=True)
+            if res.returncode == 0:
+                run_quiet(["pkill", "-x", "swayosd-server"])
+                subprocess.Popen(["swayosd-server"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except OSError:
+            pass
+
+
+def notify(title: str, body: str) -> None:
+    """Desktop toast; suppressed when TITAN_QUIET is set (callers such as
+    `titan-set-wallpaper` and the settings app send their own feedback)."""
+    if os.environ.get("TITAN_QUIET"):
+        return
+    run_quiet([
+        "notify-send", "-u", "low", "-i", "preferences-desktop-color",
+        title, body,
+    ])
+
+
+# ── Commands ─────────────────────────────────────────────────────────────────
+
+def cmd_apply() -> None:
+    """Startup/sync pass: bring every non-Qt seam to the active theme."""
+    theme = read_state()
+
+    apply_hyprctl(theme)
+
+    # Marker blocks — regenerated verbatim from the palette.
+    replace_block(WAYBAR_CSS, CSS_BEGIN, CSS_END, waybar_body(theme))
+    replace_block(SWAYNC_CSS, CSS_BEGIN, CSS_END, swaync_body(theme))
+    replace_block(SWAYOSD_CSS, CSS_BEGIN, CSS_END, swayosd_body(theme))
+    replace_block(ROFI_RASI, CSS_BEGIN, CSS_END, rofi_body(theme))
+    replace_block(HYPRLOCK, CONF_BEGIN, CONF_END, hyprlock_body(theme))
+    patch_hyprlock_context(HYPRLOCK, theme)
+
+    # Kitty colour fragment (kitty.conf includes it).
+    os.makedirs(os.path.dirname(KITTY_FRAGMENT), exist_ok=True)
+    _atomic_write(KITTY_FRAGMENT, kitty_fragment(theme))
+
+    for ini in GTK_INI:
+        patch_gtk(ini, theme)
+    patch_qt5ct(QT5CT_CONF, theme)
+
+    # Waybar: theme-driven @titan-adapt repatch + SIGUSR2 reload.
+    run_quiet(["titan-waybar-theme"])
+    reload_shell()
+
+
+def cmd_set(tid: str) -> None:
+    ids = installed_ids()
+    if tid not in ids:
+        die(f"unknown theme '{tid}' (try: titan-theme list)")
+    theme = theme_def(tid)
+    write_state(theme)
+    cmd_apply()
+
+    # Wallpaper: only touch it when the theme actually wants a different one.
+    persisted = ""
+    try:
+        with open(WALLPAPER_FILE, "r", encoding="utf-8") as fh:
+            persisted = fh.readline().strip()
+    except OSError:
+        pass
+    target = theme.get("wallpaper", "")
+    if target and persisted != target:
+        if os.path.isfile(target):
+            # TITAN_QUIET: titan-set-wallpaper's own toast would double up.
+            env = dict(os.environ, TITAN_QUIET="1")
+            if shutil.which("titan-set-wallpaper"):
+                try:
+                    subprocess.run(
+                        ["titan-set-wallpaper", target],
+                        check=False, env=env,
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL,
+                    )
+                except OSError:
+                    pass
+
+    notify("Theme", theme["name"])
+
+
+def cmd_accent(hexv: str) -> None:
+    value = hexv if hexv.startswith("#") else "#" + hexv
+    if not re.fullmatch(r"#[0-9a-fA-F]{6}", value):
+        die(f"bad colour '{hexv}' (expected #rrggbb)")
+    theme = read_state()
+    theme["accent"] = value.upper()
+    write_state(theme)
+    cmd_apply()
+    notify("Accent", f"{value.upper()} — {theme['name']}")
+
+
+def cmd_mode(mode: str) -> None:
+    target = {"dark": "mocha", "light": "latte"}.get(mode)
+    if target is None:
+        die("mode must be 'dark' or 'light'")
+    theme = read_state()
+    want_dark = mode == "dark"
+    if bool(theme.get("isDark", True)) == want_dark:
+        print(theme["id"])
+        return
+    cmd_set(target)
+
+
+def cmd_cycle(step: int) -> None:
+    ids = installed_ids()
+    if not ids:
+        die(f"no themes found in {THEME_DIR}")
+    current = read_state().get("id", DEFAULT_THEME)
+    idx = ids.index(current) if current in ids else 0
+    cmd_set(ids[(idx + step) % len(ids)])
+
+
+def cmd_list() -> None:
+    ids = installed_ids()
+    if not ids:
+        die(f"no themes found in {THEME_DIR}")
+    current = read_state().get("id", "")
+    for tid in ids:
+        theme = theme_def(tid)
+        mark = "*" if tid == current else " "
+        print(f"{mark} {tid:<12} {theme['name']}")
+
+
+def usage() -> None:
+    print(__doc__.strip())
+
+
+def main(argv: list[str]) -> int:
+    if not argv or argv[0] in ("-h", "--help", "help"):
+        usage()
+        return 0
+    cmd, *rest = argv
+    if cmd == "list":
+        cmd_list()
+    elif cmd == "current":
+        print(read_state().get("id", ""))
+    elif cmd == "set":
+        if not rest:
+            die("set: missing theme id")
+        cmd_set(rest[0])
+    elif cmd == "next":
+        cmd_cycle(+1)
+    elif cmd == "prev":
+        cmd_cycle(-1)
+    elif cmd == "random":
+        import random as _random
+
+        ids = [i for i in installed_ids() if i != read_state().get("id")]
+        if not ids:
+            die("no other themes installed")
+        cmd_set(_random.choice(ids))
+    elif cmd == "accent":
+        if not rest:
+            die("accent: missing colour")
+        cmd_accent(rest[0])
+    elif cmd == "mode":
+        if not rest:
+            die("mode: missing dark|light")
+        cmd_mode(rest[0])
+    elif cmd == "apply":
+        cmd_apply()
+    else:
+        die(f"unknown command '{cmd}'")
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main(sys.argv[1:]))
+    except BrokenPipeError:
+        sys.exit(0)

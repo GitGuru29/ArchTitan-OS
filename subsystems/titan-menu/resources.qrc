@@ -1,0 +1,8 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/">
+        <file>qml/MenuWindow.qml</file>
+        <file>qml/components/MenuRow.qml</file>
+        <file alias="data/menu.json">data/menu.json</file>
+    </qresource>
+</RCC>

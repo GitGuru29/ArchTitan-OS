@@ -389,11 +389,14 @@ static void scanHyprFile(const QString &path, const QString &hyprDir,
             continue;
         }
 
-        if (line.startsWith(QLatin1Char('#'))) continue;  // comment
+        if (line.startsWith(QLatin1Char('#')) || line.startsWith(QLatin1String("--")))
+            continue;  // comment (# conf style, -- lua style)
 
         // Only process lines that carry color info
+        // (lua writes `active_border = { colors = { ... } }` — no `col.` prefix)
         bool isColorLine = line.contains(QLatin1String("col."))
-                        || line.contains(QLatin1String("border_color"));
+                        || line.contains(QLatin1String("border_color"))
+                        || line.contains(QLatin1String("active_border"));
         if (!isColorLine) continue;
         if (isSkippedColorLine(line)) continue;
 
@@ -401,9 +404,13 @@ static void scanHyprFile(const QString &path, const QString &hyprDir,
         int eq = line.indexOf(QLatin1Char('='));
         const QString value = (eq >= 0) ? line.mid(eq + 1) : line;
 
-        // Tokenize and extract colors
+        // Tokenize and extract colors (lua quotes and separates with commas)
         const QStringList tokens = value.split(QLatin1Char(' '), Qt::SkipEmptyParts);
-        for (const QString &tok : tokens) {
+        for (const QString &raw : tokens) {
+            QString tok = raw;
+            tok.remove(QLatin1Char('"'));
+            tok.remove(QLatin1Char('\''));
+            tok.remove(QLatin1Char(','));
             if (!tok.startsWith(QLatin1String("rgba"), Qt::CaseInsensitive) &&
                 !tok.startsWith(QLatin1String("rgb("), Qt::CaseInsensitive)) continue;
 
@@ -428,7 +435,12 @@ static QList<QColor> readHyprlandAccents()
 {
     const QString home   = QString::fromUtf8(qgetenv("HOME"));
     const QString hyprDir = home + QStringLiteral("/.config/hypr");
-    const QString mainConf = hyprDir + QStringLiteral("/hyprland.conf");
+    // hyprland.lua supersedes hyprland.conf on Hyprland >= 0.55 — scan the
+    // authoritative file, falling back to .conf for older setups.
+    const QString luaConf = hyprDir + QStringLiteral("/hyprland.lua");
+    const QString mainConf = QFile::exists(luaConf)
+        ? luaConf
+        : hyprDir + QStringLiteral("/hyprland.conf");
 
     QList<QColor> colors;
     QSet<QString> visited;

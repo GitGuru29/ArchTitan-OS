@@ -16,7 +16,7 @@ Presentation {
     Slide {
         Rectangle {
             anchors.fill: parent
-            color: "#0D0E14"
+            color: "#11111B"
 
             // Background image
             Image {
@@ -33,8 +33,8 @@ Presentation {
                 gradient: Gradient {
                     orientation: Gradient.Horizontal
                     GradientStop { position: 0.0; color: "transparent" }
-                    GradientStop { position: 0.4; color: "#00D4FF" }
-                    GradientStop { position: 0.6; color: "#7AA2F7" }
+                    GradientStop { position: 0.4; color: "#89B4FA" }
+                    GradientStop { position: 0.6; color: "#CBA6F7" }
                     GradientStop { position: 1.0; color: "transparent" }
                 }
             }
@@ -46,7 +46,7 @@ Presentation {
                 gradient: Gradient {
                     orientation: Gradient.Horizontal
                     GradientStop { position: 0.0; color: "transparent" }
-                    GradientStop { position: 0.5; color: "rgba(0,212,255,0.3)" }
+                    GradientStop { position: 0.5; color: "rgba(137,180,250,0.3)" }
                     GradientStop { position: 1.0; color: "transparent" }
                 }
             }
@@ -66,14 +66,14 @@ Presentation {
                         width: 128; height: 128; radius: 64
                         color: "transparent"
                         border.width: 1
-                        border.color: "rgba(0,212,255,0.25)"
+                        border.color: "rgba(137,180,250,0.25)"
                     }
                     Rectangle {
                         anchors.centerIn: parent
                         width: 112; height: 112; radius: 56
-                        color: "rgba(0,212,255,0.05)"
+                        color: "rgba(137,180,250,0.05)"
                         border.width: 1
-                        border.color: "rgba(0,212,255,0.15)"
+                        border.color: "rgba(137,180,250,0.15)"
                     }
                     Image {
                         anchors.centerIn: parent
@@ -89,9 +89,9 @@ Presentation {
                     width: parent.width
                     height: 72
                     radius: 12
-                    color: "rgba(0,212,255,0.05)"
+                    color: "rgba(137,180,250,0.05)"
                     border.width: 1
-                    border.color: "rgba(0,212,255,0.22)"
+                    border.color: "rgba(137,180,250,0.22)"
 
                     Column {
                         anchors.centerIn: parent
@@ -101,14 +101,14 @@ Presentation {
                             text: "WELCOME TO ARCHTITAN OS"
                             font.pointSize: 18
                             font.weight: Font.Bold
-                            color: "#00D4FF"
+                            color: "#89B4FA"
                             font.letterSpacing: 3
                         }
                         Text {
                             anchors.horizontalCenter: parent.horizontalCenter
                             text: "VERSION  1.0  ·  ARCH LINUX"
                             font.pointSize: 9
-                            color: "#414868"
+                            color: "#6C7086"
                             font.letterSpacing: 4
                         }
                     }
@@ -118,7 +118,7 @@ Presentation {
                     anchors.horizontalCenter: parent.horizontalCenter
                     text: "A powerful, developer-focused Arch Linux distribution\nbuilt for performance, elegance, and speed."
                     font.pointSize: 11
-                    color: "#A9B1D6"
+                    color: "#A6ADC8"
                     horizontalAlignment: Text.AlignHCenter
                     lineHeight: 1.65
                     wrapMode: Text.WordWrap
@@ -135,14 +135,14 @@ Presentation {
                         Rectangle {
                             height: 26; radius: 13
                             width: tagText.implicitWidth + 24
-                            color: "rgba(0,212,255,0.08)"
+                            color: "rgba(137,180,250,0.08)"
                             border.width: 1
-                            border.color: "rgba(0,212,255,0.25)"
+                            border.color: "rgba(137,180,250,0.25)"
                             Text {
                                 id: tagText
                                 anchors.centerIn: parent
                                 text: modelData
-                                color: "#00D4FF"
+                                color: "#89B4FA"
                                 font.pointSize: 8
                                 font.letterSpacing: 1
                             }
@@ -157,7 +157,7 @@ Presentation {
     Slide {
         Rectangle {
             anchors.fill: parent
-            color: "#0D0E14"
+            color: "#11111B"
 
             Image {
                 anchors.fill: parent
@@ -172,7 +172,7 @@ Presentation {
                 gradient: Gradient {
                     orientation: Gradient.Horizontal
                     GradientStop { position: 0.0; color: "transparent" }
-                    GradientStop { position: 0.5; color: "#7AA2F7" }
+                    GradientStop { position: 0.5; color: "#89B4FA" }
                     GradientStop { position: 1.0; color: "transparent" }
                 }
             }
@@ -186,14 +186,14 @@ Presentation {
                 Rectangle {
                     anchors.horizontalCenter: parent.horizontalCenter
                     width: 72; height: 72; radius: 36
-                    color: "rgba(122,162,247,0.08)"
+                    color: "rgba(137,180,250,0.08)"
                     border.width: 1
-                    border.color: "rgba(122,162,247,0.35)"
+                    border.color: "rgba(137,180,250,0.35)"
                     Text {
                         anchors.centerIn: parent
                         text: "⬡"
                         font.pointSize: 28
-                        color: "#7AA2F7"
+                        color: "#89B4FA"
                     }
                 }
 
@@ -202,7 +202,7 @@ Presentation {
                     text: "HYPRLAND DESKTOP"
                     font.pointSize: 18
                     font.weight: Font.Bold
-                    color: "#7AA2F7"
+                    color: "#89B4FA"
                     font.letterSpacing: 3
                 }
 
@@ -210,7 +210,7 @@ Presentation {
                     anchors.horizontalCenter: parent.horizontalCenter
                     text: "A blazing-fast Wayland compositor with GPU-accelerated\nanimations, dynamic tiling, and total visual control."
                     font.pointSize: 11
-                    color: "#A9B1D6"
+                    color: "#A6ADC8"
                     horizontalAlignment: Text.AlignHCenter
                     lineHeight: 1.6
                     wrapMode: Text.WordWrap
@@ -230,15 +230,15 @@ Presentation {
                         ]
                         Rectangle {
                             width: 110; height: 72; radius: 10
-                            color: "rgba(122,162,247,0.06)"
+                            color: "rgba(137,180,250,0.06)"
                             border.width: 1
-                            border.color: "rgba(122,162,247,0.2)"
+                            border.color: "rgba(137,180,250,0.2)"
                             Column {
                                 anchors.centerIn: parent
                                 spacing: 4
-                                Text { anchors.horizontalCenter: parent.horizontalCenter; text: modelData.icon; font.pointSize: 18; color: "#7AA2F7" }
-                                Text { anchors.horizontalCenter: parent.horizontalCenter; text: modelData.title; font.pointSize: 9; font.weight: Font.Bold; color: "#C0CAF5" }
-                                Text { anchors.horizontalCenter: parent.horizontalCenter; text: modelData.sub; font.pointSize: 8; color: "#414868" }
+                                Text { anchors.horizontalCenter: parent.horizontalCenter; text: modelData.icon; font.pointSize: 18; color: "#89B4FA" }
+                                Text { anchors.horizontalCenter: parent.horizontalCenter; text: modelData.title; font.pointSize: 9; font.weight: Font.Bold; color: "#CDD6F4" }
+                                Text { anchors.horizontalCenter: parent.horizontalCenter; text: modelData.sub; font.pointSize: 8; color: "#6C7086" }
                             }
                         }
                     }
@@ -251,7 +251,7 @@ Presentation {
     Slide {
         Rectangle {
             anchors.fill: parent
-            color: "#0D0E14"
+            color: "#11111B"
 
             Image {
                 anchors.fill: parent
@@ -266,7 +266,7 @@ Presentation {
                 gradient: Gradient {
                     orientation: Gradient.Horizontal
                     GradientStop { position: 0.0; color: "transparent" }
-                    GradientStop { position: 0.5; color: "#9ECE6A" }
+                    GradientStop { position: 0.5; color: "#A6E3A1" }
                     GradientStop { position: 1.0; color: "transparent" }
                 }
             }
@@ -279,14 +279,14 @@ Presentation {
                 Rectangle {
                     anchors.horizontalCenter: parent.horizontalCenter
                     width: 72; height: 72; radius: 36
-                    color: "rgba(158,206,106,0.08)"
+                    color: "rgba(166,227,161,0.08)"
                     border.width: 1
-                    border.color: "rgba(158,206,106,0.35)"
+                    border.color: "rgba(166,227,161,0.35)"
                     Text {
                         anchors.centerIn: parent
                         text: "⚡"
                         font.pointSize: 28
-                        color: "#9ECE6A"
+                        color: "#A6E3A1"
                     }
                 }
 
@@ -295,7 +295,7 @@ Presentation {
                     text: "DEVELOPER POWERHOUSE"
                     font.pointSize: 18
                     font.weight: Font.Bold
-                    color: "#9ECE6A"
+                    color: "#A6E3A1"
                     font.letterSpacing: 3
                 }
 
@@ -303,7 +303,7 @@ Presentation {
                     anchors.horizontalCenter: parent.horizontalCenter
                     text: "Pre-configured with a complete development environment.\nCode from the moment you log in — zero setup required."
                     font.pointSize: 11
-                    color: "#A9B1D6"
+                    color: "#A6ADC8"
                     horizontalAlignment: Text.AlignHCenter
                     lineHeight: 1.6
                     wrapMode: Text.WordWrap
@@ -327,14 +327,14 @@ Presentation {
                         ]
                         Rectangle {
                             width: 100; height: 52; radius: 8
-                            color: "rgba(158,206,106,0.05)"
+                            color: "rgba(166,227,161,0.05)"
                             border.width: 1
-                            border.color: "rgba(158,206,106,0.18)"
+                            border.color: "rgba(166,227,161,0.18)"
                             Row {
                                 anchors.centerIn: parent
                                 spacing: 8
-                                Text { text: modelData.icon; font.pointSize: 14; color: "#9ECE6A"; anchors.verticalCenter: parent.verticalCenter }
-                                Text { text: modelData.name; font.pointSize: 9; font.weight: Font.Bold; color: "#C0CAF5"; anchors.verticalCenter: parent.verticalCenter }
+                                Text { text: modelData.icon; font.pointSize: 14; color: "#A6E3A1"; anchors.verticalCenter: parent.verticalCenter }
+                                Text { text: modelData.name; font.pointSize: 9; font.weight: Font.Bold; color: "#CDD6F4"; anchors.verticalCenter: parent.verticalCenter }
                             }
                         }
                     }
@@ -347,7 +347,7 @@ Presentation {
     Slide {
         Rectangle {
             anchors.fill: parent
-            color: "#0D0E14"
+            color: "#11111B"
 
             Image {
                 anchors.fill: parent
@@ -362,7 +362,7 @@ Presentation {
                 gradient: Gradient {
                     orientation: Gradient.Horizontal
                     GradientStop { position: 0.0; color: "transparent" }
-                    GradientStop { position: 0.5; color: "#BB9AF7" }
+                    GradientStop { position: 0.5; color: "#CBA6F7" }
                     GradientStop { position: 1.0; color: "transparent" }
                 }
             }
@@ -375,14 +375,14 @@ Presentation {
                 Rectangle {
                     anchors.horizontalCenter: parent.horizontalCenter
                     width: 72; height: 72; radius: 36
-                    color: "rgba(187,154,247,0.08)"
+                    color: "rgba(203,166,247,0.08)"
                     border.width: 1
-                    border.color: "rgba(187,154,247,0.35)"
+                    border.color: "rgba(203,166,247,0.35)"
                     Text {
                         anchors.centerIn: parent
                         text: "🛡"
                         font.pointSize: 28
-                        color: "#BB9AF7"
+                        color: "#CBA6F7"
                     }
                 }
 
@@ -391,7 +391,7 @@ Presentation {
                     text: "BUILT FOR PERFORMANCE"
                     font.pointSize: 18
                     font.weight: Font.Bold
-                    color: "#BB9AF7"
+                    color: "#CBA6F7"
                     font.letterSpacing: 3
                 }
 
@@ -399,7 +399,7 @@ Presentation {
                     anchors.horizontalCenter: parent.horizontalCenter
                     text: "ArchTitan ships with optimized defaults that balance\nperformance, security, and usability out of the box."
                     font.pointSize: 11
-                    color: "#A9B1D6"
+                    color: "#A6ADC8"
                     horizontalAlignment: Text.AlignHCenter
                     lineHeight: 1.6
                     wrapMode: Text.WordWrap
@@ -413,15 +413,15 @@ Presentation {
 
                     Repeater {
                         model: [
-                            { value: "Rolling", label: "Release Model",  color: "#BB9AF7" },
-                            { value: "LUKS",    label: "Disk Encryption", color: "#7AA2F7" },
-                            { value: "Zero",    label: "Bloatware",       color: "#9ECE6A" }
+                            { value: "Rolling", label: "Release Model",  color: "#CBA6F7" },
+                            { value: "LUKS",    label: "Disk Encryption", color: "#CBA6F7" },
+                            { value: "Zero",    label: "Bloatware",       color: "#A6E3A1" }
                         ]
                         Rectangle {
                             width: 115; height: 72; radius: 10
-                            color: "rgba(187,154,247,0.05)"
+                            color: "rgba(203,166,247,0.05)"
                             border.width: 1
-                            border.color: "rgba(187,154,247,0.18)"
+                            border.color: "rgba(203,166,247,0.18)"
                             Column {
                                 anchors.centerIn: parent
                                 spacing: 4
@@ -436,7 +436,7 @@ Presentation {
                                     anchors.horizontalCenter: parent.horizontalCenter
                                     text: modelData.label
                                     font.pointSize: 8
-                                    color: "#565F89"
+                                    color: "#6C7086"
                                 }
                             }
                         }

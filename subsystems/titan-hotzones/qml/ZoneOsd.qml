@@ -31,9 +31,9 @@ Window {
     readonly property color cSubtext: "#7F849C"
 
     // Workspace frame colors: ArchTitan blue -> violet gradient
-    readonly property color cFrameA:  "#7AA2F7"
-    readonly property color cFrameB:  "#BB9AF7"
-    readonly property color cGlow:    "#407AA2F7"
+    readonly property color cFrameA:  "#89B4FA"
+    readonly property color cFrameB:  "#CBA6F7"
+    readonly property color cGlow:    "#4089B4FA"
 
     readonly property int pillW: 236
     readonly property int pillH: 92

@@ -68,7 +68,7 @@ Item {
         radius: 1
         gradient: Gradient {
             orientation: Gradient.Horizontal
-            GradientStop { position: 0.0; color: "#89b4fa" }
+            GradientStop { position: 0.0; color: TitanTheme.accent }
             GradientStop { position: 1.0; color: TitanTheme.accent }
         }
     }
@@ -112,7 +112,7 @@ Item {
                 color: {
                     if (isNearHead) return "#FFFFFF"
                     if (isPlayed) {
-                        return (dotFrac / Math.max(0.01, vizRoot.progress) < 0.5) ? "#89b4fa" : TitanTheme.accent
+                        return TitanTheme.accent
                     }
                     return distFromHead < 0.15 ? TitanTheme.surface2 : TitanTheme.bg4
                 }
@@ -172,7 +172,7 @@ Item {
         width: 2
         height: parent.height + 4
         radius: 1
-        color: "#cba6f7"
+        color: TitanTheme.mauve
         visible: seekArea.containsMouse
         x: Math.max(0, Math.min(vizRoot.width - width, seekArea.mouseX - 1))
         anchors.verticalCenter: parent.verticalCenter
