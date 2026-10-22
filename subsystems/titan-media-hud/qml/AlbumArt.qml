@@ -55,7 +55,7 @@ Item {
             visible: !currentArt.visible || currentArt.status !== Image.Ready
 
             gradient: Gradient {
-                GradientStop { position: 0.0; color: "#313244" }
+                GradientStop { position: 0.0; color: TitanTheme.surface0 }
                 GradientStop { position: 0.5; color: TitanTheme.bg3 }
                 GradientStop { position: 1.0; color: TitanTheme.bg0 }
             }

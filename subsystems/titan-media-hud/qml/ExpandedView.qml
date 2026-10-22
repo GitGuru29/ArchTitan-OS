@@ -107,7 +107,7 @@ Item {
                     text: Mpris && Mpris.artist.length > 0 ? Mpris.artist : "ArchTitan Audio"
                     font.family: "JetBrainsMono Nerd Font"
                     font.pixelSize: 11
-                    color: "#cdd6f4"
+                    color: TitanTheme.textHigh
                     elide: Text.ElideRight
                     maximumLineCount: 1
                 }
@@ -214,8 +214,8 @@ Item {
                 height: 16
                 width: profileText.implicitWidth + 14
                 radius: 8
-                color: "#1289b4fa"
-                border.color: "#2589b4fa"
+                color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.071)
+                border.color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.145)
                 border.width: 1
 
                 Text {
@@ -224,7 +224,7 @@ Item {
                     text: "🎵 " + AudioProfile.profileName
                     font.family: "JetBrainsMono Nerd Font"
                     font.pixelSize: 9
-                    color: "#89b4fa"
+                    color: TitanTheme.accent
                 }
             }
 

@@ -200,8 +200,8 @@ Item {
                 height: 16
                 width: profileText.implicitWidth + 16
                 radius: 8
-                color: "#1089b4fa"
-                border.color: "#2089b4fa"
+                color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.063)
+                border.color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.125)
                 border.width: 1
 
                 Text {
@@ -210,7 +210,7 @@ Item {
                     text: "🎵 " + AudioProfile.profileName
                     font.family: "JetBrainsMono Nerd Font"
                     font.pixelSize: 9
-                    color: "#89b4fa"
+                    color: TitanTheme.accent
                 }
             }
 
