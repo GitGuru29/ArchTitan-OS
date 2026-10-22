@@ -21,7 +21,7 @@
         "clock",
         "group/quicksettings",
         "tray",
-        "custom/power"
+        "group/quick-controls"
     ],
 
     // ── LEFT: Workspaces & Installer ───────────────────────────
@@ -79,7 +79,6 @@
         "modules": [
             "temperature",
             "pulseaudio",
-            "network",
             "battery"
         ]
     },
@@ -104,17 +103,6 @@
         "tooltip"        : false
     },
 
-    "network": {
-        "format-wifi"            : "󰤨",
-        "format-ethernet"        : "󰈀",
-        "format-disconnected"    : "󰤭",
-        "interval"               : 5,
-        "on-click"               : "titan-quicksettings --toggle",
-        "on-click-right"         : "nm-connection-editor",
-        "tooltip-format-wifi"    : "{essid} ({signalStrength}%)\nIP: {ipaddr}\n↓ {bandwidthDownBytes}  ↑ {bandwidthUpBytes}",
-        "tooltip-format-ethernet": "{ifname}\nIP: {ipaddr}"
-    },
-
     "battery": {
         "states"          : { "good": 95, "warning": 30, "critical": 15 },
         "format"          : "{icon} {capacity}%",
@@ -134,10 +122,64 @@
         "show-passive-items": true
     },
 
-    "custom/power": {
-        "format"        : "⏻",
-        "tooltip"       : true,
-        "tooltip-format": "Power Menu (Super+Escape / Ctrl+Alt+Del)",
-        "on-click"      : "titan-powermenu"
+    // ── 3-Button Control Pack (Notification, Wi-Fi, Bluetooth) ──
+
+    "group/quick-controls": {
+        "orientation": "horizontal",
+        "modules": [
+            "custom/notification",
+            "network",
+            "bluetooth"
+        ]
+    },
+
+    "custom/notification": {
+        "tooltip": true,
+        "tooltip-format": "Notifications & Quick Settings (Super+N)",
+        "format": "{icon}",
+        "format-icons": {
+            "notification": "󱅫",
+            "none": "󰂚",
+            "dnd-notification": "󱅯",
+            "dnd-none": "󰂛",
+            "inhibited-notification": "󱅫",
+            "inhibited-none": "󰂚",
+            "dnd-inhibited-notification": "󱅯",
+            "dnd-inhibited-none": "󰂛"
+        },
+        "return-type": "json",
+        "exec-if": "which swaync-client",
+        "exec": "swaync-client -swb",
+        "on-click": "swaync-client -t -sw 2>/dev/null || titan-quicksettings --toggle",
+        "on-click-right": "swaync-client -d -sw 2>/dev/null || true",
+        "escape": true
+    },
+
+    "network": {
+        "format-wifi"            : "󰤨",
+        "format-ethernet"        : "󰈀",
+        "format-disconnected"    : "󰤭",
+        "format-disabled"        : "󰤮",
+        "interval"               : 5,
+        "on-click"               : "titan-quicksettings --toggle",
+        "on-click-right"         : "nm-connection-editor",
+        "tooltip-format-wifi"    : "Wi-Fi: {essid} ({signalStrength}%)\nIP: {ipaddr}\n↓ {bandwidthDownBytes}  ↑ {bandwidthUpBytes}",
+        "tooltip-format-ethernet": "Ethernet: {ifname}\nIP: {ipaddr}",
+        "tooltip-format-disconnected": "Disconnected\nClick to open network settings"
+    },
+
+    "bluetooth": {
+        "format"                 : "󰂯",
+        "format-disabled"        : "󰂲",
+        "format-off"             : "󰂲",
+        "format-on"              : "󰂯",
+        "format-connected"       : "󰂱",
+        "format-connected-battery": "󰂱",
+        "tooltip-format"         : "Bluetooth: {controller_alias}\nStatus: {status}",
+        "tooltip-format-connected": "Bluetooth: {controller_alias}\nConnected: {device_alias}\nBattery: {device_battery_percentage}%",
+        "tooltip-format-disabled": "Bluetooth: Disabled",
+        "tooltip-format-off"     : "Bluetooth: Powered Off",
+        "on-click"               : "titan-quicksettings --toggle",
+        "on-click-right"         : "rfkill toggle bluetooth"
     }
 }
