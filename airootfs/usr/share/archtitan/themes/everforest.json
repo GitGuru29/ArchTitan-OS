@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "id": "everforest",
+  "name": "Everforest",
+  "isDark": true,
+  "accent": "#A7C080",
+  "accent2": "#83C092",
+  "wallpaper": "/usr/share/backgrounds/archtitan/1-everforest.jpg",
+  "source": "sainnhe/everforest (dark medium)",
+  "palette": {
+    "crust": "#1E2326",
+    "mantle": "#232A2E",
+    "base": "#2D353B",
+    "surface0": "#343F44",
+    "surface1": "#3D484D",
+    "surface2": "#475258",
+    "surface3": "#7A8478",
+    "border": "#343F44",
+    "textHigh": "#D3C6AA",
+    "textMid": "#9DA9A0",
+    "textLow": "#859289",
+    "success": "#A7C080",
+    "warning": "#DBBC7F",
+    "danger": "#E67E80",
+    "teal": "#83C092",
+    "mauve": "#D699B6",
+    "peach": "#E69875",
+    "pink": "#D699B6"
+  }
+}

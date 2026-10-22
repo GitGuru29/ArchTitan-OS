@@ -342,7 +342,7 @@ void SystemController::openPowerMenu()
 
 void SystemController::lockSession()
 {
-    QProcess::startDetached("bash", {"-c", "pidof hyprlock || hyprlock || swaylock -f -c 0b0e14 || loginctl lock-session"});
+    QProcess::startDetached("bash", {"-c", "pidof hyprlock || hyprlock || swaylock -f -c 11111b || loginctl lock-session"});
 }
 
 void SystemController::suspendSession()

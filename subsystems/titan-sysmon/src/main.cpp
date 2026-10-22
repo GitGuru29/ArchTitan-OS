@@ -1,4 +1,5 @@
 #include <QCommandLineParser>
+#include <QDateTime>
 #include <QDir>
 #include <QFileInfo>
 #include <QGuiApplication>
@@ -166,6 +167,23 @@ int main(int argc, char *argv[])
             });
             QObject::connect(&ipc, &IpcServer::hideRequested, window, [window]() {
                 QMetaObject::invokeMethod(window, "closePanel");
+            });
+
+            // Dismiss on click-away (see titan-quicksettings for the rationale: a
+            // layer surface is only focused after a click, so stamp the
+            // activation and close on the first deactivation that follows, with
+            // a grace period for mapping flicker).
+            QObject::connect(window, &QQuickWindow::activeChanged, window, [window]() {
+                constexpr qint64 graceMs = 400;
+                if (window->isActive()) {
+                    window->setProperty("titanFocusArmedAt", QDateTime::currentMSecsSinceEpoch());
+                    return;
+                }
+                const qint64 armedAt = window->property("titanFocusArmedAt").toLongLong();
+                if (armedAt > 0 && QDateTime::currentMSecsSinceEpoch() - armedAt >= graceMs) {
+                    window->setProperty("titanFocusArmedAt", QVariant(0));
+                    QMetaObject::invokeMethod(window, "closePanel");
+                }
             });
 
             if (!startHidden)

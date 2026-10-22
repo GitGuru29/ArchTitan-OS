@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "id": "mocha",
+  "name": "Catppuccin Mocha",
+  "isDark": true,
+  "accent": "#89B4FA",
+  "accent2": "#CBA6F7",
+  "wallpaper": "/usr/share/backgrounds/archtitan/wallpaper.png",
+  "source": "catppuccin/palette (mocha)",
+  "palette": {
+    "crust": "#11111B",
+    "mantle": "#181825",
+    "base": "#1E1E2E",
+    "surface0": "#313244",
+    "surface1": "#45475A",
+    "surface2": "#585B70",
+    "surface3": "#6C7086",
+    "border": "#252838",
+    "textHigh": "#CDD6F4",
+    "textMid": "#A6ADC8",
+    "textLow": "#7F849C",
+    "success": "#A6E3A1",
+    "warning": "#F9E2AF",
+    "danger": "#F38BA8",
+    "teal": "#94E2D5",
+    "mauve": "#CBA6F7",
+    "peach": "#FAB387",
+    "pink": "#F5C2E7"
+  }
+}

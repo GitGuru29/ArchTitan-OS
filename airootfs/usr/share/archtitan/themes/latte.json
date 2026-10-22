@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "id": "latte",
+  "name": "Catppuccin Latte",
+  "isDark": false,
+  "accent": "#1E66F5",
+  "accent2": "#8839EF",
+  "wallpaper": "/usr/share/backgrounds/archtitan/titan-latte.jpg",
+  "source": "catppuccin/palette (latte)",
+  "palette": {
+    "crust": "#DCE0E8",
+    "mantle": "#E6E9EF",
+    "base": "#EFF1F5",
+    "surface0": "#CCD0DA",
+    "surface1": "#BCC0CC",
+    "surface2": "#ACB0BE",
+    "surface3": "#9CA0B0",
+    "border": "#DCE0E8",
+    "textHigh": "#4C4F69",
+    "textMid": "#6C6F85",
+    "textLow": "#8C8FA1",
+    "success": "#40A02B",
+    "warning": "#DF8E1D",
+    "danger": "#D20F39",
+    "teal": "#179299",
+    "mauve": "#8839EF",
+    "peach": "#FE640B",
+    "pink": "#EA76CB"
+  }
+}
