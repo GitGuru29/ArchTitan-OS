@@ -70,12 +70,13 @@ end)
 local mainMod = "SUPER"
 
 -- Shell & Utilities (ArchTitan Central Command Palette)
-hl.bind(mainMod .. " + SUPER_L", hl.dsp.exec_cmd("titan-menu --toggle"), { repeating = true })  -- Windows logo opens ArchTitan Menu
+hl.bind("SUPER_L", hl.dsp.exec_cmd("titan-menu --toggle"), { release = true })  -- Windows logo tap opens ArchTitan Menu
+hl.bind("SUPER_R", hl.dsp.exec_cmd("titan-menu --toggle"), { release = true })
 hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd("titan-menu --toggle"))   -- Super+Space: ArchTitan Central Palette
+hl.bind(mainMod .. " + D", hl.dsp.exec_cmd("titan-menu --toggle"))       -- Super+D: App Launcher (Tiling WM standard)
 hl.bind(mainMod .. " + R", hl.dsp.exec_cmd(sandboxed .. " rofi -show drun"))  -- Super+R: Secondary App runner
-hl.bind(mainMod .. " + ALT + Space", hl.dsp.exec_cmd("titan-menu --toggle"))  -- Titan Central Command Palette
-hl.bind(mainMod .. " + K", hl.dsp.exec_cmd("titan-menu --toggle"))            -- Keybinds & Command Palette
 hl.bind(mainMod .. " + slash", hl.dsp.exec_cmd("titan-menu --toggle"))        -- Help & Shortcuts Cheat Sheet (Super+/)
+hl.bind(mainMod .. " + question", hl.dsp.exec_cmd("titan-menu --toggle"))     -- Super+?
 hl.bind(mainMod .. " + F1", hl.dsp.exec_cmd("titan-menu --toggle"))           -- Help & Shortcuts Cheat Sheet (Super+F1)
 hl.bind(mainMod .. " + Tab", hl.dsp.exec_cmd("titan-menu --toggle"))          -- Toggle overview/palette
 hl.bind(mainMod .. " + V", hl.dsp.exec_cmd("cliphist list | rofi -dmenu | cliphist decode | wl-copy"))  -- Clipboard
@@ -86,16 +87,21 @@ hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd('grim -g "$(slurp)" - | wl-co
 hl.bind("Print", hl.dsp.exec_cmd('grim -g "$(slurp)" - | wl-copy'))
 hl.bind(mainMod .. " + N", hl.dsp.exec_cmd("titan-quicksettings --toggle"))  -- Quick Settings & Notification Center
 
--- Session & Media
-hl.bind("CTRL + ALT + Delete", hl.dsp.exec_cmd("titan-powermenu"))
-hl.bind(mainMod .. " + L", hl.dsp.exec_cmd("pidof hyprlock || hyprlock || swaylock -f -c 0b0e14 || loginctl lock-session"))  -- Lock Screen
+-- Session & Power
+hl.bind(mainMod .. " + Escape", hl.dsp.exec_cmd("titan-powermenu"))            -- Super+Escape: Power menu
+hl.bind("CTRL + ALT + Delete", hl.dsp.exec_cmd("titan-powermenu"))             -- Ctrl+Alt+Del: Power menu fallback
+hl.bind(mainMod .. " + ALT + L", hl.dsp.exec_cmd("pidof hyprlock || hyprlock || swaylock -f -c 0b0e14 || loginctl lock-session"))  -- Lock Screen
+hl.bind("CTRL + ALT + L", hl.dsp.exec_cmd("pidof hyprlock || hyprlock || swaylock -f -c 0b0e14 || loginctl lock-session"))        -- Lock Screen fallback
 hl.bind(mainMod .. " + SHIFT + L", hl.dsp.exec_cmd("systemctl suspend -i || loginctl suspend"))  -- Sleep
 hl.bind("XF86Sleep", hl.dsp.exec_cmd(":"))  -- swallow sleep key on live ISO
 
 -- Apps
 hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd(sandboxed .. " " .. terminal))        -- Terminal
+hl.bind(mainMod .. " + KP_Enter", hl.dsp.exec_cmd(sandboxed .. " " .. terminal))      -- Terminal (Keypad Enter)
+hl.bind(mainMod .. " + T", hl.dsp.exec_cmd(sandboxed .. " " .. terminal))             -- Super+T: Terminal
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(sandboxed .. " " .. fileManager))          -- File manager
 hl.bind(mainMod .. " + W", hl.dsp.exec_cmd(sandboxed .. " " .. browser))              -- Browser
+hl.bind(mainMod .. " + B", hl.dsp.exec_cmd(sandboxed .. " " .. browser))              -- Super+B: Browser
 hl.bind(mainMod .. " + C", hl.dsp.exec_cmd(sandboxed .. " code"))                     -- Code editor
 hl.bind(mainMod .. " + X", hl.dsp.exec_cmd(sandboxed .. " " .. terminal .. " -e nano"))  -- Text editor
 hl.bind("CTRL + " .. mainMod .. " + V", hl.dsp.exec_cmd(sandboxed .. " pavucontrol"))  -- Volume mixer
@@ -105,30 +111,41 @@ hl.bind(mainMod .. " + I", hl.dsp.exec_cmd("bash -c 'if [ -d /run/archiso ]; the
 
 -- Window Management
 hl.bind(mainMod .. " + Q", hl.dsp.window.close())                              -- Close
+hl.bind(mainMod .. " + SHIFT + Q", hl.dsp.window.close())                      -- Close (Super+Shift+Q)
+hl.bind("ALT + F4", hl.dsp.window.close())                                     -- Close (Alt+F4)
 hl.bind(mainMod .. " + SHIFT + ALT + Q", hl.dsp.exec_cmd("hyprctl kill"))      -- Forcefully zap a window
-hl.bind(mainMod .. " + ALT + Space", hl.dsp.window.float({ action = "toggle" }))  -- Float/Tile
+hl.bind(mainMod .. " + SHIFT + Space", hl.dsp.window.float({ action = "toggle" }))  -- Super+Shift+Space: Float/Tile
+hl.bind(mainMod .. " + ALT + Space", hl.dsp.window.float({ action = "toggle" }))    -- Super+Alt+Space: Float/Tile
 hl.bind(mainMod .. " + F", hl.dsp.window.fullscreen({ mode = "fullscreen" }))    -- Fullscreen
-hl.bind(mainMod .. " + D", hl.dsp.window.fullscreen({ mode = "maximized" }))     -- Maximize (fullscreen with gaps)
-hl.bind(mainMod .. " + P", hl.dsp.window.pseudo())                              -- dwindle
-hl.bind(mainMod .. " + J", hl.dsp.layout("togglesplit"))                        -- Adjust split ratio (toggle)
+hl.bind(mainMod .. " + SHIFT + F", hl.dsp.window.fullscreen({ mode = "maximized" })) -- Maximize (fullscreen with gaps)
+hl.bind(mainMod .. " + P", hl.dsp.layout("togglesplit"))                        -- Super+P: Toggle dwindle split
+hl.bind(mainMod .. " + SHIFT + P", hl.dsp.exec_cmd("titan-cycle-power"))        -- Super+Shift+P: Cycle power profile
 
--- Move Focus
+-- Move Focus (Arrow keys & Vim H/J/K/L)
 hl.bind(mainMod .. " + left",  hl.dsp.focus({ direction = "left" }))
 hl.bind(mainMod .. " + right", hl.dsp.focus({ direction = "right" }))
 hl.bind(mainMod .. " + up",    hl.dsp.focus({ direction = "up" }))
 hl.bind(mainMod .. " + down",  hl.dsp.focus({ direction = "down" }))
+hl.bind(mainMod .. " + H",     hl.dsp.focus({ direction = "left" }))
+hl.bind(mainMod .. " + L",     hl.dsp.focus({ direction = "right" }))
+hl.bind(mainMod .. " + K",     hl.dsp.focus({ direction = "up" }))
+hl.bind(mainMod .. " + J",     hl.dsp.focus({ direction = "down" }))
 
--- Move Window
+-- Move Window (Arrow keys & Vim Shift+H/J/K/L)
 hl.bind(mainMod .. " + SHIFT + left",  hl.dsp.window.move({ direction = "left" }))
 hl.bind(mainMod .. " + SHIFT + right", hl.dsp.window.move({ direction = "right" }))
 hl.bind(mainMod .. " + SHIFT + up",    hl.dsp.window.move({ direction = "up" }))
 hl.bind(mainMod .. " + SHIFT + down",  hl.dsp.window.move({ direction = "down" }))
+hl.bind(mainMod .. " + SHIFT + H",     hl.dsp.window.move({ direction = "left" }))
+hl.bind(mainMod .. " + SHIFT + L",     hl.dsp.window.move({ direction = "right" }))
+hl.bind(mainMod .. " + SHIFT + K",     hl.dsp.window.move({ direction = "up" }))
+hl.bind(mainMod .. " + SHIFT + J",     hl.dsp.window.move({ direction = "down" }))
 
--- Workspaces (Super+1..9 to switch, Super+Shift+1..9 to move window)
-for i = 1, 9 do
-    local ws = tostring(i)
-    hl.bind(mainMod .. " + " .. ws, hl.dsp.focus({ workspace = ws }))
-    hl.bind(mainMod .. " + SHIFT + " .. ws, hl.dsp.window.move({ workspace = ws }))
+-- Workspaces (Super+1..9, 0 to switch, Super+Shift+1..9, 0 to move window)
+for i = 1, 10 do
+    local key = tostring(i % 10)
+    hl.bind(mainMod .. " + " .. key, hl.dsp.focus({ workspace = tostring(i) }))
+    hl.bind(mainMod .. " + SHIFT + " .. key, hl.dsp.window.move({ workspace = tostring(i) }))
 end
 
 -- Focus Workspace Left/Right
@@ -369,3 +386,10 @@ hl.bind("XF86AudioMicMute",      hl.dsp.exec_cmd("swayosd-client --input-volume 
 hl.bind("XF86MonBrightnessUp",   hl.dsp.exec_cmd("swayosd-client --brightness raise"), { repeating = true })
 hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("swayosd-client --brightness lower"), { repeating = true })
 hl.bind("Caps_Lock",             hl.dsp.exec_cmd("swayosd-client --caps-lock"))
+
+-- VM / keyboard fallbacks without XF86 keys
+hl.bind(mainMod .. " + F12",     hl.dsp.exec_cmd("swayosd-client --output-volume raise"), { repeating = true })
+hl.bind(mainMod .. " + F11",     hl.dsp.exec_cmd("swayosd-client --output-volume lower"), { repeating = true })
+hl.bind(mainMod .. " + F10",     hl.dsp.exec_cmd("swayosd-client --output-volume mute-toggle"))
+hl.bind(mainMod .. " + F6",      hl.dsp.exec_cmd("swayosd-client --brightness raise"), { repeating = true })
+hl.bind(mainMod .. " + F5",      hl.dsp.exec_cmd("swayosd-client --brightness lower"), { repeating = true })
