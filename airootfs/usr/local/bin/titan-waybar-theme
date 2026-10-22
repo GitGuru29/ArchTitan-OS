@@ -312,7 +312,8 @@ def build_palette(avg_rgb, theme: dict | None = None) -> dict[str, str]:
     identity, lift_to, deepen_to = DARK_RANGE if is_dark else LIGHT_RANGE
     t = _clamp(luma / 0.14) if is_dark else _clamp((1.0 - luma) / 0.14)
 
-    bar_alpha = 0.95 - t * 0.09
+    # Frosted glass translucency: let wallpaper blur through while maintaining legibility
+    bar_alpha = _clamp(0.58 + t * 0.08, 0.54, 0.68) if is_dark else _clamp(0.70 + t * 0.06, 0.66, 0.78)
     bar_l = _solve_lightness(
         hue,
         BAR_SAT,
@@ -328,13 +329,13 @@ def build_palette(avg_rgb, theme: dict | None = None) -> dict[str, str]:
     accent = theme_accent if theme_accent else _hsl(hue, accent_s, 0.76)
 
     if is_dark:
-        bar_border = f"rgba(255, 255, 255, {0.28 - 0.16 * t:.2f})"
-        bar_shadow = f"rgba(0, 0, 0, {0.78 - 0.22 * t:.2f})"
-        tip_border = f"rgba(255, 255, 255, {0.31 - 0.16 * t:.2f})"
+        bar_border = f"rgba(255, 255, 255, {0.14 - 0.04 * t:.2f})"
+        bar_shadow = f"rgba(0, 0, 0, {0.38 - 0.12 * t:.2f})"
+        tip_border = f"rgba(255, 255, 255, {0.16 - 0.05 * t:.2f})"
     else:
-        bar_border = f"rgba(0, 0, 0, {0.28 - 0.16 * t:.2f})"
-        bar_shadow = f"rgba(0, 0, 0, {0.40 - 0.18 * t:.2f})"
-        tip_border = f"rgba(0, 0, 0, {0.31 - 0.16 * t:.2f})"
+        bar_border = f"rgba(0, 0, 0, {0.10 - 0.03 * t:.2f})"
+        bar_shadow = f"rgba(0, 0, 0, {0.10 - 0.04 * t:.2f})"
+        tip_border = f"rgba(0, 0, 0, {0.12 - 0.04 * t:.2f})"
 
     palette = {
         "bar-bg": _rgba(bar, bar_alpha),
@@ -343,7 +344,7 @@ def build_palette(avg_rgb, theme: dict | None = None) -> dict[str, str]:
         "accent": _hex(accent),
         "accent-soft": _rgba(accent, 0.16),
         "accent-line": _rgba(accent, 0.38),
-        "tip-bg": _rgba(bar, min(0.99, 0.97 - 0.09 * t)),
+        "tip-bg": _rgba(bar, 0.85 if is_dark else 0.90),
         "tip-border": tip_border,
     }
 
