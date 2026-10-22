@@ -36,6 +36,12 @@ file_permissions=(
   ["/usr/bin/titan-hwm-daemon"]="0:0:755"
   ["/usr/local/bin/titan-hwm"]="0:0:755"
   ["/usr/local/bin/titan-hwm-waybar"]="0:0:755"
+  # Boot-time scripts: mkarchiso does not guarantee the repo exec bit survives, so list them
+  # explicitly. Unlisted, they landed 0644 and systemd failed with 203/EXEC (Permission denied).
+  ["/usr/local/bin/archtitan-firstboot-plymouth"]="0:0:755"
+  ["/usr/local/bin/archtitan-wait-rise"]="0:0:755"
+  ["/usr/local/bin/titan-menu"]="0:0:755"
+  ["/usr/share/archtitan/immutable/archtitan-guard"]="0:0:755"
   ["/usr/lib/archtitan"]="0:0:755"
   ["/usr/lib/archtitan/archtitan-guard"]="0:0:755"
   ["/usr/lib/archtitan/archtitan-apply-immutable"]="0:0:755"
