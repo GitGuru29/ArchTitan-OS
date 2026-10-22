@@ -183,6 +183,10 @@ int main(int argc, char *argv[])
     NotificationServer notifServer;
 
     QQmlApplicationEngine engine;
+    engine.addImportPath(QStringLiteral("/usr/lib/qt6/qml"));
+    engine.addImportPath(QDir::currentPath() + QStringLiteral("/airootfs/usr/lib/qt6/qml"));
+    engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/../../../airootfs/usr/lib/qt6/qml"));
+    engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/../../airootfs/usr/lib/qt6/qml"));
     auto *context = engine.rootContext();
     context->setContextProperty("systemCtrl", &systemCtrl);
     context->setContextProperty("networkCtrl", &netCtrl);
