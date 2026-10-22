@@ -208,7 +208,6 @@ window#waybar.hidden {
 
 #temperature,
 #pulseaudio,
-#network,
 #battery {
     color        : @text-mid;
     background   : transparent;
@@ -222,7 +221,6 @@ window#waybar.hidden {
 
 #temperature:hover,
 #pulseaudio:hover,
-#network:hover,
 #battery:hover {
     background: @module-hover;
     color     : @text-high;
@@ -233,10 +231,10 @@ window#waybar.hidden {
     color: @accent;
 }
 #temperature.critical {
-    color       : #ffffff;
-    background  : @danger;
+    color        : #ffffff;
+    background   : @danger;
     border-radius: 6px;
-    box-shadow  : 0 0 10px rgba(243, 139, 168, 0.45);
+    box-shadow   : 0 0 10px rgba(243, 139, 168, 0.45);
 }
 
 /* Volume / Audio */
@@ -248,15 +246,6 @@ window#waybar.hidden {
     opacity: 0.7;
 }
 
-/* Network */
-#network {
-    color    : @teal;
-    font-size: 12px;
-}
-#network.disconnected {
-    color: @text-low;
-}
-
 /* Battery */
 #battery {
     color      : @success;
@@ -266,10 +255,10 @@ window#waybar.hidden {
     color: @warning;
 }
 #battery.critical {
-    color       : #ffffff;
-    background  : @danger;
+    color        : #ffffff;
+    background   : @danger;
     border-radius: 6px;
-    box-shadow  : 0 0 10px rgba(243, 139, 168, 0.45);
+    box-shadow   : 0 0 10px rgba(243, 139, 168, 0.45);
 }
 #battery.charging,
 #battery.plugged {
@@ -299,23 +288,75 @@ window#waybar.hidden {
     border-radius: 6px;
 }
 
-/* Power Menu Button */
-#custom-power {
-    color        : @danger;
+/* 3-Button Control Pack (Notification, Wi-Fi, Bluetooth) */
+#quick-controls {
     background   : @module-bg;
     border       : 1px solid @module-border;
     border-radius: 10px;
-    font-size    : 13px;
-    padding      : 2px 9px;
+    padding      : 2px 6px;
     margin       : 3px 2px 3px 4px;
     transition   : all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-#custom-power:hover {
-    color        : #ffffff;
-    background   : @danger;
-    border-color : @danger;
-    box-shadow   : 0 0 12px rgba(243, 139, 168, 0.50);
+#quick-controls:hover {
+    background  : @module-hover;
+    border-color: @accent-border;
+    box-shadow  : 0 0 10px @accent-glow;
+}
+
+#quick-controls #custom-notification,
+#quick-controls #network,
+#quick-controls #bluetooth {
+    color        : @text-mid;
+    background   : transparent;
+    border       : none;
+    font-size    : 13px;
+    padding      : 2px 7px;
+    margin       : 0 1px;
+    border-radius: 6px;
+    transition   : all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#quick-controls #custom-notification:hover,
+#quick-controls #network:hover,
+#quick-controls #bluetooth:hover {
+    background: @module-hover;
+    color     : @text-high;
+}
+
+/* Notification state styling */
+#custom-notification.notification {
+    color     : @accent;
+    box-shadow: 0 0 8px @accent-glow;
+}
+#custom-notification.dnd-none,
+#custom-notification.dnd-notification {
+    color  : @text-low;
+    opacity: 0.6;
+}
+
+/* Network state styling */
+#network {
+    color: @teal;
+}
+#network.disconnected,
+#network.disabled {
+    color  : @text-low;
+    opacity: 0.6;
+}
+
+/* Bluetooth state styling */
+#bluetooth {
+    color: @text-mid;
+}
+#bluetooth.connected {
+    color     : @accent;
+    box-shadow: 0 0 8px @accent-glow;
+}
+#bluetooth.off,
+#bluetooth.disabled {
+    color  : @text-low;
+    opacity: 0.6;
 }
 
 /* Tooltips */
