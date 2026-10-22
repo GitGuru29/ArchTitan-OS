@@ -24,6 +24,12 @@ RowLayout {
     property bool showPowerMenu: false
     signal togglePowerMenu()
 
+    // Shared by the pointer path and the keyboard path so both stay identical.
+    function openSettingsAction() {
+        if (typeof systemCtrl !== "undefined" && systemCtrl)
+            systemCtrl.openSettings();
+    }
+
     function getGreeting() {
         var h = new Date().getHours();
         var period = "Good evening";
@@ -144,6 +150,17 @@ RowLayout {
                 }
             }
 
+            // Keyboard: Tab-reachable, Enter / Space activate, focus ring below.
+            activeFocusOnTab: true
+            Keys.onReturnPressed: (event) => { headerRoot.toggleNotificationPanel(); event.accepted = true }
+            Keys.onEnterPressed:  (event) => { headerRoot.toggleNotificationPanel(); event.accepted = true }
+            Keys.onSpacePressed:  (event) => { headerRoot.toggleNotificationPanel(); event.accepted = true }
+            Accessible.role: Accessible.Button
+            Accessible.name: "Notifications"
+            Accessible.onPressAction: headerRoot.toggleNotificationPanel()
+
+            FocusRing {}
+
             MouseArea {
                 id: notifMa
                 anchors.fill: parent
@@ -179,6 +196,17 @@ RowLayout {
                 color: headerRoot.editMode ? "#FFFFFF" : TitanTheme.textPrimary
             }
 
+            // Keyboard: Tab-reachable, Enter / Space activate, focus ring below.
+            activeFocusOnTab: true
+            Keys.onReturnPressed: (event) => { headerRoot.toggleEditMode(); event.accepted = true }
+            Keys.onEnterPressed:  (event) => { headerRoot.toggleEditMode(); event.accepted = true }
+            Keys.onSpacePressed:  (event) => { headerRoot.toggleEditMode(); event.accepted = true }
+            Accessible.role: Accessible.Button
+            Accessible.name: "Edit quick panel"
+            Accessible.onPressAction: headerRoot.toggleEditMode()
+
+            FocusRing {}
+
             MouseArea {
                 id: editMa
                 anchors.fill: parent
@@ -210,15 +238,23 @@ RowLayout {
                 color: TitanTheme.textPrimary
             }
 
+            // Keyboard: Tab-reachable, Enter / Space activate, focus ring below.
+            activeFocusOnTab: true
+            Keys.onReturnPressed: (event) => { openSettingsAction(); event.accepted = true }
+            Keys.onEnterPressed:  (event) => { openSettingsAction(); event.accepted = true }
+            Keys.onSpacePressed:  (event) => { openSettingsAction(); event.accepted = true }
+            Accessible.role: Accessible.Button
+            Accessible.name: "Settings"
+            Accessible.onPressAction: openSettingsAction()
+
+            FocusRing {}
+
             MouseArea {
                 id: setMa
                 anchors.fill: parent
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
-                onClicked: {
-                    if (typeof systemCtrl !== "undefined" && systemCtrl)
-                        systemCtrl.openSettings();
-                }
+                onClicked: openSettingsAction()
             }
         }
 
@@ -245,6 +281,17 @@ RowLayout {
                 font.pixelSize: 14
                 color: headerRoot.showPowerMenu ? TitanTheme.accentText : (pwrMa.containsMouse ? TitanTheme.red : TitanTheme.textPrimary)
             }
+
+            // Keyboard: Tab-reachable, Enter / Space activate, focus ring below.
+            activeFocusOnTab: true
+            Keys.onReturnPressed: (event) => { headerRoot.togglePowerMenu(); event.accepted = true }
+            Keys.onEnterPressed:  (event) => { headerRoot.togglePowerMenu(); event.accepted = true }
+            Keys.onSpacePressed:  (event) => { headerRoot.togglePowerMenu(); event.accepted = true }
+            Accessible.role: Accessible.Button
+            Accessible.name: "Power menu"
+            Accessible.onPressAction: headerRoot.togglePowerMenu()
+
+            FocusRing {}
 
             MouseArea {
                 id: pwrMa
