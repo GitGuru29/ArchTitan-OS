@@ -150,7 +150,7 @@
         "return-type": "json",
         "exec-if": "which swaync-client",
         "exec": "swaync-client -swb",
-        "on-click": "swaync-client -t -sw 2>/dev/null || titan-quicksettings --toggle",
+        "on-click": "titan-quicksettings --toggle",
         "on-click-right": "swaync-client -d -sw 2>/dev/null || true",
         "escape": true
     },
