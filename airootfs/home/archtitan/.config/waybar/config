@@ -1,10 +1,10 @@
 {
     "layer"        : "top",
     "position"     : "top",
-    "height"       : 36,
-    "margin-top"   : 6,
-    "margin-left"  : 12,
-    "margin-right" : 12,
+    "height"       : 38,
+    "margin-top"   : 8,
+    "margin-left"  : 14,
+    "margin-right" : 14,
     "spacing"      : 0,
     "exclusive"    : true,
 
@@ -19,20 +19,12 @@
     ],
 
     "modules-right": [
-        "custom/power-profile",
-        "custom/separator",
         "clock",
-        "custom/separator",
         "temperature",
-        "custom/separator",
         "pulseaudio",
-        "custom/separator",
         "network",
-        "custom/separator",
         "battery",
-        "custom/separator",
         "custom/help",
-        "custom/separator",
         "custom/notification",
         "tray"
     ],
@@ -75,18 +67,6 @@
 
     // ── RIGHT: Telemetry ───────────────────────────────────────
 
-    "custom/power-profile": {
-        "exec"    : "powerprofilesctl get 2>/dev/null | sed 's/balanced/󰌪  Balanced/;s/performance/󰓅  Performance/;s/power-saver/󰚥  Saver/' || echo '󰌪  Balanced'",
-        "interval": 10,
-        "format"  : "{}",
-        "tooltip" : false
-    },
-
-    "custom/separator": {
-        "format" : "<span color='#313244'>│</span>",
-        "tooltip": false
-    },
-
     "clock": {
         "format"         : "󰥔  {:%H:%M}",
         "format-alt"     : "󰃭  {:%a, %b %d}  󰥔  {:%H:%M:%S}",
@@ -97,11 +77,11 @@
             "weeks-pos" : "right",
             "on-scroll" : 1,
             "format": {
-                "months"  : "<span color='#cdd6f4'><b>{}</b></span>",
-                "days"    : "<span color='#7f849c'>{}</span>",
-                "weeks"   : "<span color='#45475a'><b>W{}</b></span>",
-                "weekdays": "<span color='#b4befe'><b>{}</b></span>",
-                "today"   : "<span color='#a6e3a1'><b><u>{}</u></b></span>"
+                "months"  : "<span><b>{}</b></span>",
+                "days"    : "<span alpha='75%'>{}</span>",
+                "weeks"   : "<span alpha='50%'><b>W{}</b></span>",
+                "weekdays": "<span alpha='85%'><b>{}</b></span>",
+                "today"   : "<span><b><u>{}</u></b></span>"
             }
         }
     },

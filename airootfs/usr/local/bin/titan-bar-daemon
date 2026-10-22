@@ -103,21 +103,21 @@ def _build_text(page):
 
     if page == "media":
         if not s["title"] or s["play_status"] == "Stopped":
-            return '<span color="#6c7086">󰝚</span>  <span color="#6c7086">No media playing</span>'
+            return '<span alpha="60%">󰝚</span>  <span alpha="60%">No media playing</span>'
         title  = _trunc(s["title"],  24)
         artist = _trunc(s["artist"], 18) if s["artist"] else ""
         icon   = "󰏤" if s["play_status"] == "Playing" else "󰐊"
         pos    = _fmt_us(s["position"])
         dur    = _fmt_us(s["length"])
         bar    = _progress_bar(s["position"], s["length"])
-        a_part = f'<span color="#7f849c"> — {artist}</span>' if artist else ""
+        a_part = f'<span alpha="70%"> — {artist}</span>' if artist else ""
         return (
-            f'<span color="#b4befe">󰝚</span>  '
-            f'<span weight="600" color="#cdd6f4">{title}</span>'
+            f'<span alpha="85%">󰝚</span>  '
+            f'<span weight="600">{title}</span>'
             f'{a_part}'
-            f'  <span color="#6c7086">󰒮</span> '
-            f'<span color="#b4befe">{icon}</span> '
-            f'<span color="#6c7086">󰒭  {pos} / {dur}  {bar}</span>'
+            f'  <span alpha="45%">󰒮</span> '
+            f'<span alpha="85%">{icon}</span> '
+            f'<span alpha="55%">󰒭  {pos} / {dur}  {bar}</span>'
         )
 
     elif page == "power":
@@ -126,30 +126,27 @@ def _build_text(page):
             icon = "󰓅"
             lbl = "Performance"
             desc = "High Performance"
-            val_color = "#cdd6f4"
         elif "saver" in p:
             icon = "󰚥"
             lbl = "Power Saver"
             desc = "Maximum Battery"
-            val_color = "#cdd6f4"
         else:
             icon = "󰌪"
             lbl = "Balanced"
             desc = "Optimized Efficiency"
-            val_color = "#a6e3a1"  # subtle green for efficiency
         return (
-            f'<span color="#6c7086">{icon}</span>  '
-            f'<span color="#6c7086">POWER PROFILE</span>  '
-            f'<span weight="600" color="{val_color}">{lbl}</span>'
-            f'  <span color="#585b70">· {desc}</span>'
+            f'<span alpha="65%">{icon}</span>  '
+            f'<span alpha="65%">POWER PROFILE</span>  '
+            f'<span weight="700">{lbl}</span>'
+            f'  <span alpha="50%">· {desc}</span>'
         )
 
     elif page == "window":
         win = _trunc(s["active_window"] or "Desktop", 36)
         return (
-            f'<span color="#6c7086">󰖯</span>  '
-            f'<span color="#6c7086">ACTIVE WINDOW</span>  '
-            f'<span weight="600" color="#cdd6f4">{win}</span>'
+            f'<span alpha="65%">󰖯</span>  '
+            f'<span alpha="65%">WINDOW</span>  '
+            f'<span weight="600">{win}</span>'
         )
 
     elif page == "temperature":
@@ -157,19 +154,19 @@ def _build_text(page):
         if t is None:
             return ""
         if t > 80:
-            color = "#f38ba8"  # critical red
             status = "High"
+            col = ' color="#f38ba8"'
         elif t > 65:
-            color = "#fab387"  # warning orange
             status = "Warm"
+            col = ' color="#fab387"'
         else:
-            color = "#cdd6f4"  # normal soft white
             status = "Normal"
+            col = ""
         return (
-            f'<span color="#6c7086">󰔏</span>  '
-            f'<span color="#6c7086">CPU TEMPERATURE</span>  '
-            f'<span weight="600" color="{color}">{t}°C</span>'
-            f'  <span color="#585b70">· {status}</span>'
+            f'<span alpha="65%">󰔏</span>  '
+            f'<span alpha="65%">CPU TEMP</span>  '
+            f'<span weight="600"{col}>{t}°C</span>'
+            f'  <span alpha="50%">· {status}</span>'
         )
 
     elif page == "datetime":
@@ -177,11 +174,10 @@ def _build_text(page):
         date_str = now.strftime("%A, %d %B %Y")
         time_str = now.strftime("%H:%M")
         return (
-            f'<span color="#6c7086">󰸗</span>  '
-            f'<span color="#6c7086">DATE &amp; TIME</span>  '
-            f'<span weight="600" color="#cdd6f4">{date_str}</span>'
-            f'  <span color="#585b70">·</span>  '
-            f'<span weight="600" color="#cdd6f4">{time_str}</span>'
+            f'<span alpha="65%">󰸗</span>  '
+            f'<span weight="600">{date_str}</span>'
+            f'  <span alpha="40%">·</span>  '
+            f'<span weight="600">{time_str}</span>'
         )
 
     elif page == "battery":
@@ -190,17 +186,17 @@ def _build_text(page):
             return ""
         st = s["battery_status"]
         if pct < 15:
-            color = "#f38ba8"  # critical red
+            col = ' color="#f38ba8"'
         elif pct < 30:
-            color = "#fab387"  # warning orange
+            col = ' color="#fab387"'
         else:
-            color = "#cdd6f4"  # normal soft white
+            col = ""
         icon = "󰂄" if st in ("Charging", "Full") else "󰁹"
         return (
-            f'<span color="#6c7086">{icon}</span>  '
-            f'<span color="#6c7086">BATTERY</span>  '
-            f'<span weight="600" color="{color}">{pct}%</span>'
-            f'  <span color="#585b70">· {st}</span>'
+            f'<span alpha="65%">{icon}</span>  '
+            f'<span alpha="65%">BATTERY</span>  '
+            f'<span weight="600"{col}>{pct}%</span>'
+            f'  <span alpha="50%">· {st}</span>'
         )
 
     elif page == "gpu":
@@ -209,10 +205,10 @@ def _build_text(page):
             return ""
         model = _trunc(s["gpu_model"], 16) if s["gpu_model"] else "GPU"
         return (
-            f'<span color="#6c7086">󰢮</span>  '
-            f'<span color="#6c7086">GPU</span>  '
-            f'<span weight="600" color="#cdd6f4">{t}°C</span>'
-            f'  <span color="#585b70">· {model}</span>'
+            f'<span alpha="65%">󰢮</span>  '
+            f'<span alpha="65%">GPU</span>  '
+            f'<span weight="600">{t}°C</span>'
+            f'  <span alpha="50%">· {model}</span>'
         )
 
     return ""
