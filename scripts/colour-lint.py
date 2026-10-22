@@ -28,9 +28,10 @@ ALLOW_FILE = REPO / "scripts" / "colour-allow.txt"
 BASELINE_THEME = (REPO / "airootfs" / "usr" / "share" / "archtitan"
                   / "themes" / "mocha.json")
 
-# The adaptive accent's default (Catppuccin Mocha blue); runtime accent may be
-# any colour, so any alpha of it is accepted in addition to the static palette.
+# The adaptive accent's default (Catppuccin Mocha blue) and ArchTitan signature cyan;
+# runtime accent may be any colour, so any alpha of it is accepted in addition to the static palette.
 ACCENT_DEFAULT = "89B4FA".lower()
+TITAN_ACCENT = "00D2FF".lower()
 
 # Neutral overlays (white / black at any alpha) are always allowed.
 NEUTRALS = {"ffffff", "000000"}
@@ -77,6 +78,7 @@ def load_palette() -> set[str]:
                     hexes.add(digits.lower())
 
     hexes.add(ACCENT_DEFAULT)
+    hexes.add(TITAN_ACCENT)
     return hexes
 
 

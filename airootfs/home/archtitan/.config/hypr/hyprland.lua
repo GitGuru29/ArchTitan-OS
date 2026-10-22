@@ -18,7 +18,7 @@ hl.monitor({
 ---------------------
 
 local terminal    = "kitty"
-local menu        = "rofi -show drun"
+local menu        = "titan-menu --toggle"
 local browser     = "titanbrowser"
 local fileManager = terminal .. " -e ranger"
 
@@ -47,22 +47,15 @@ hl.on("hyprland.start", function()
     -- "attempt to call a nil value" and aborts this whole handler.
 
     hl.exec_cmd("bash -c 'sleep 2 && waybar'")
-    hl.exec_cmd("bash -c 'sleep 2 && swaync'")
     hl.exec_cmd("bash -c 'sleep 3 && titan-media-hud'")
     hl.exec_cmd("titan-wallpaper-restore")
     hl.exec_cmd("bash -c 'sleep 3 && titan-quicksettings --daemon'")
-    hl.exec_cmd("bash -c 'sleep 3 && titan-sysmon --daemon'")
     hl.exec_cmd("bash -c 'sleep 3 && titan-menu --daemon'")
     hl.exec_cmd("titan-hotzones")
     hl.exec_cmd("titan-zone-osd")
     hl.exec_cmd("swayosd-server")
     hl.exec_cmd("/usr/lib/polkit-kde-authentication-agent-1")
     hl.exec_cmd("xdg-user-dirs-update")
-
-    -- Auto-launch installer as floating window (only on live ISO)
-    -- /run/archiso only exists on mkarchiso live media -- reliable detection
-    -- Users can minimize it and explore the desktop, then reopen with Super+I
-    hl.exec_cmd("bash -c 'sleep 6; if [ -d /run/archiso ]; then launch-installer; fi'")
 
     -- Disable screen timeout / DPMS blanking on live ISO
     -- No hypridle daemon is launched -- no idle daemon = no blanking
@@ -76,14 +69,15 @@ end)
 
 local mainMod = "SUPER"
 
--- Shell & Utilities
-hl.bind(mainMod .. " + SUPER_L", hl.dsp.exec_cmd(sandboxed .. " " .. menu), { repeating = true })  -- Windows logo to open search
-hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd(sandboxed .. " " .. menu))   -- Spotlight-style: Super+Space
+-- Shell & Utilities (ArchTitan Central Command Palette)
+hl.bind(mainMod .. " + SUPER_L", hl.dsp.exec_cmd("titan-menu --toggle"), { repeating = true })  -- Windows logo opens ArchTitan Menu
+hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd("titan-menu --toggle"))   -- Super+Space: ArchTitan Central Palette
+hl.bind(mainMod .. " + R", hl.dsp.exec_cmd(sandboxed .. " rofi -show drun"))  -- Super+R: Secondary App runner
 hl.bind(mainMod .. " + ALT + Space", hl.dsp.exec_cmd("titan-menu --toggle"))  -- Titan Central Command Palette
 hl.bind(mainMod .. " + K", hl.dsp.exec_cmd("titan-menu --toggle"))            -- Keybinds & Command Palette
 hl.bind(mainMod .. " + slash", hl.dsp.exec_cmd("titan-menu --toggle"))        -- Help & Shortcuts Cheat Sheet (Super+/)
 hl.bind(mainMod .. " + F1", hl.dsp.exec_cmd("titan-menu --toggle"))           -- Help & Shortcuts Cheat Sheet (Super+F1)
-hl.bind(mainMod .. " + Tab", hl.dsp.exec_cmd(sandboxed .. " " .. menu))     -- Toggle overview/search
+hl.bind(mainMod .. " + Tab", hl.dsp.exec_cmd("titan-menu --toggle"))          -- Toggle overview/palette
 hl.bind(mainMod .. " + V", hl.dsp.exec_cmd("cliphist list | rofi -dmenu | cliphist decode | wl-copy"))  -- Clipboard
 hl.bind(mainMod .. " + Period", hl.dsp.exec_cmd(sandboxed .. " rofi -show emoji"))  -- Emoji
 hl.bind(mainMod .. " + backslash", hl.dsp.exec_cmd("titan-wallpaper-picker"))  -- Wallpaper Picker (Super+\)
@@ -216,19 +210,19 @@ hl.config({
     },
 
     general = {
-        gaps_in     = 6,
-        gaps_out    = 12,
+        gaps_in     = 5,
+        gaps_out    = 10,
         border_size = 2,
         col = {
-            active_border   = { colors = { "rgba(7aa2f7ee)", "rgba(bb9af7ee)" }, angle = 45 },
-            inactive_border = "rgba(24283b88)",
+            active_border   = { colors = { "rgba(00d2ffee)", "rgba(38bdf8ee)" }, angle = 45 },
+            inactive_border = "rgba(1e263888)",
         },
         layout = "dwindle",
     },
 
     -- Decoration -- blur, shadows, rounding
     decoration = {
-        rounding = 14,
+        rounding = 10,
 
         blur = {
             enabled           = true,

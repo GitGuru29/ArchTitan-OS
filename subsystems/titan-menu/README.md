@@ -1,7 +1,7 @@
 # ArchTitan Central Menu & Command Palette (`titan-menu`)
 
 ## Overview
-`titan-menu` is a native, hardware-accelerated Wayland layer-shell command palette and system launcher for **ArchTitan OS**. Designed to bring an integrated, keyboard-first, Omarchy-level UX cohesion to the desktop, it unifies application launching, theme switching, screen capture tools, hardware toggles, desktop overlays, system settings, shortcut references, and power controls into a single frosted-glass palette accessible via **<kbd>Super</kbd> + <kbd>Alt</kbd> + <kbd>Space</kbd>** or **<kbd>Super</kbd> + <kbd>K</kbd>**.
+`titan-menu` is a native, hardware-accelerated Wayland layer-shell command palette and system launcher for **ArchTitan OS**. Designed to bring an integrated, keyboard-first, aerospace-grade UX cohesion to the desktop, it unifies application launching, theme switching, screen capture tools, hardware toggles, desktop overlays, system settings, shortcut references, and power controls into a single frosted-glass palette accessible via **<kbd>Super</kbd>**, **<kbd>Super</kbd> + <kbd>Space</kbd>**, or **<kbd>Super</kbd> + <kbd>K</kbd>**.
 
 ---
 

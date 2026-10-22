@@ -1,12 +1,12 @@
 {
   "version": 1,
-  "id": "mocha",
-  "name": "Catppuccin Mocha",
+  "id": "archtitan",
+  "name": "ArchTitan Electric",
   "isDark": true,
-  "accent": "#89B4FA",
-  "accent2": "#CBA6F7",
+  "accent": "#00D2FF",
+  "accent2": "#7C3AED",
   "wallpaper": "/usr/share/backgrounds/archtitan/wallpaper.png",
-  "source": "catppuccin/palette (mocha)",
+  "source": "archtitan/signature",
   "palette": {
     "crust": "#11111B",
     "mantle": "#181825",

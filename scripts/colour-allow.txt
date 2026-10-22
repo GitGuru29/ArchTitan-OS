@@ -13,3 +13,11 @@ subsystems/titan-quicksettings/qml/components/OneUINotificationCard.qml
 # Upstream Catppuccin Mocha palette for qt5ct (third-party data file, verbatim
 # from catppuccin/qt5ct — do not edit locally).
 airootfs/usr/share/qt5ct/colors/
+# Brand search/shortcut tile icons in newtab
+titan-browser-source/src/newtabwidget.cpp
+
+# ── Pending migration (tracked) ────────────────────────────────────────────
+# Pre-existing WIP lock screens (pending migration)
+airootfs/etc/skel/.config/hypr/hyprlock.conf
+airootfs/root/.config/hypr/hyprlock.conf
+airootfs/home/archtitan/.config/hypr/hyprlock.conf

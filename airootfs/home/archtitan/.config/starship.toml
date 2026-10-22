@@ -1,31 +1,40 @@
-# ArchTitan Custom Starship Prompt
-
+# ArchTitan Precision Starship Prompt
 format = """
-[](#89B4FA)\
+[](#00D2FF)\
 $os\
-$cmd_duration\
-[](#89B4FA) \
-[](#89B4FA)\
+[](fg:#00D2FF bg:#1E2638)\
 $directory\
-[](#89B4FA)
+[](fg:#1E2638 bg:#111622)\
+$git_branch\
+$git_status\
+$cmd_duration\
+[](fg:#111622) 
 $character"""
 
 [os]
 disabled = false
-style = "bg:#89B4FA fg:#1E1E2E bold"
-format = "[  ]($style)"
-
-[cmd_duration]
-min_time = 0
-style = "bg:#89B4FA fg:#1E1E2E bold"
-format = "[$duration]($style)"
+style = "bg:#00D2FF fg:#0B0E14 bold"
+format = "[ 󰣇 TITAN ]($style)"
 
 [directory]
-style = "bg:#89B4FA fg:#1E1E2E bold"
-format = "[ $path  ]($style)"
+style = "bg:#1E2638 fg:#CDD6F4 bold"
+format = "[  $path ]($style)"
 truncation_length = 3
 truncation_symbol = "…/"
 
+[git_branch]
+style = "bg:#111622 fg:#38BDF8 bold"
+format = "[  $branch ]($style)"
+
+[git_status]
+style = "bg:#111622 fg:#F9E2AF"
+format = "[$all_status$ahead_behind ]($style)"
+
+[cmd_duration]
+min_time = 2000
+style = "bg:#111622 fg:#7F849C"
+format = "[ 󰥔 $duration ]($style)"
+
 [character]
-success_symbol = "[•](#89B4FA) [▶](#89B4FA)"
-error_symbol = "[•](#F38BA8) [▶](#F38BA8)"
+success_symbol = "[◆](#00D2FF) "
+error_symbol = "[◆](#F38BA8) "
