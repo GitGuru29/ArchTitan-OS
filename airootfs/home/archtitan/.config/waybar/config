@@ -9,7 +9,6 @@
     "exclusive"    : true,
 
     "modules-left": [
-        "custom/titan-logo",
         "custom/install-badge",
         "hyprland/workspaces"
     ],
@@ -20,23 +19,12 @@
 
     "modules-right": [
         "clock",
-        "temperature",
-        "pulseaudio",
-        "network",
-        "battery",
-        "custom/help",
-        "custom/notification",
-        "tray"
+        "group/quicksettings",
+        "tray",
+        "custom/power"
     ],
 
-    // ── LEFT: ArchTitan Crest & Workspaces ─────────────────────
-
-    "custom/titan-logo": {
-        "format"        : "󰊠 TITAN",
-        "tooltip"       : true,
-        "tooltip-format": "ArchTitan Central Command (Super / Super+Space)",
-        "on-click"      : "titan-menu --toggle"
-    },
+    // ── LEFT: Workspaces & Installer ───────────────────────────
 
     "custom/install-badge": {
         "exec"       : "if [ -d /run/archiso ]; then echo '{\"text\": \"󰐥 Install ArchTitan\", \"tooltip\": \"Launch ArchTitan System Installer (Calamares)\"}'; fi",
@@ -65,7 +53,7 @@
         "tooltip"         : true
     },
 
-    // ── RIGHT: Telemetry ───────────────────────────────────────
+    // ── RIGHT: Telemetry & Controls ────────────────────────────
 
     "clock": {
         "format"         : "󰥔  {:%H:%M}",
@@ -86,27 +74,43 @@
         }
     },
 
+    "group/quicksettings": {
+        "orientation": "horizontal",
+        "modules": [
+            "temperature",
+            "pulseaudio",
+            "network",
+            "battery"
+        ]
+    },
+
     "temperature": {
         "critical-threshold": 80,
         "format"            : "󰔏 {temperatureC}°C",
         "format-critical"   : "󰔏 {temperatureC}°C",
         "interval"          : 3,
+        "on-click"          : "titan-quicksettings --toggle",
         "tooltip"           : false
     },
 
     "pulseaudio": {
-        "format"        : "󰕾 {volume}%",
-        "format-muted"  : "󰖁 Muted",
-        "on-click"      : "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
-        "on-right-click": "pavucontrol",
-        "tooltip"       : false
+        "format"         : "󰕾 {volume}%",
+        "format-muted"   : "󰖁 Muted",
+        "on-click"       : "titan-quicksettings --toggle",
+        "on-click-right" : "pavucontrol",
+        "on-click-middle": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
+        "on-scroll-up"   : "wpctl set-volume -l 1.5 @DEFAULT_AUDIO_SINK@ 5%+",
+        "on-scroll-down" : "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-",
+        "tooltip"        : false
     },
 
     "network": {
-        "format-wifi"        : "󰤨",
-        "format-ethernet"    : "󰈀",
-        "format-disconnected": "󰤭",
-        "interval"           : 5,
+        "format-wifi"            : "󰤨",
+        "format-ethernet"        : "󰈀",
+        "format-disconnected"    : "󰤭",
+        "interval"               : 5,
+        "on-click"               : "titan-quicksettings --toggle",
+        "on-click-right"         : "nm-connection-editor",
         "tooltip-format-wifi"    : "{essid} ({signalStrength}%)\nIP: {ipaddr}\n↓ {bandwidthDownBytes}  ↑ {bandwidthUpBytes}",
         "tooltip-format-ethernet": "{ifname}\nIP: {ipaddr}"
     },
@@ -120,25 +124,20 @@
         "format-full"     : "󰁹 100%",
         "format-not-found": "",
         "interval"        : 10,
+        "on-click"        : "titan-quicksettings --toggle",
         "tooltip-format"  : "{timeTo} · {capacity}%\nPower: {power:.1f}W"
-    },
-
-    "custom/help": {
-        "tooltip": true,
-        "tooltip-format": "Command Palette & Shortcuts Cheat Sheet (Super+/)",
-        "format": "󰌌",
-        "on-click": "titan-menu --toggle"
-    },
-
-    "custom/notification": {
-        "tooltip": false,
-        "format": "󰍜",
-        "on-click": "titan-quicksettings --toggle"
     },
 
     "tray": {
         "icon-size"        : 14,
         "spacing"          : 8,
         "show-passive-items": true
+    },
+
+    "custom/power": {
+        "format"        : "⏻",
+        "tooltip"       : true,
+        "tooltip-format": "Power Menu (Super+Escape / Ctrl+Alt+Del)",
+        "on-click"      : "titan-powermenu"
     }
 }
