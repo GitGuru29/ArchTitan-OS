@@ -45,8 +45,8 @@
 window#waybar {
     background    : rgba(17, 17, 27, 0.58); /* @titan-adapt:bar-bg */
     border        : 1px solid rgba(255, 255, 255, 0.12); /* @titan-adapt:bar-border */
-    border-radius : 16px;
-    padding       : 2px 10px;
+    border-radius : 14px;
+    padding       : 0 6px;
     box-shadow    : 0 8px 32px rgba(0, 0, 0, 0.35); /* @titan-adapt:bar-shadow */
     color         : @text-high;
     transition    : background 0.3s ease, border-color 0.3s ease, color 0.3s ease;
@@ -66,6 +66,22 @@ window#waybar.hidden {
     margin: 0;
 }
 
+/* ── Unified Bento Module Pill Geometry ──────────────────────── */
+#custom-install-badge,
+#workspaces,
+#custom-titan-center,
+#clock,
+#quicksettings,
+#tray,
+#quick-controls {
+    background   : @module-bg;
+    border       : 1px solid @module-border;
+    border-radius: 10px;
+    min-height   : 26px;
+    margin       : 5px 3px;
+    transition   : all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 /* ═══════════════════════════════════════════════════════════════
  * LEFT — Live Installer & Workspaces
  * ═══════════════════════════════════════════════════════════════ */
@@ -74,12 +90,9 @@ window#waybar.hidden {
     color        : @success;
     background   : rgba(166, 227, 161, 0.12);
     border       : 1px solid rgba(166, 227, 161, 0.40);
-    border-radius: 10px;
-    padding      : 2px 10px;
-    margin       : 3px 6px 3px 2px;
+    padding      : 0 10px;
     font-size    : 11px;
     font-weight  : 700;
-    transition   : all 0.2s ease;
 }
 
 #custom-install-badge:hover {
@@ -88,23 +101,19 @@ window#waybar.hidden {
 }
 
 #workspaces {
-    background   : @module-bg;
-    border       : 1px solid @module-border;
-    border-radius: 11px;
-    padding      : 2px 4px;
-    margin       : 3px 4px 3px 2px;
-    transition   : background 0.3s ease, border-color 0.3s ease;
+    padding: 1px 3px;
 }
 
 #workspaces button {
-    padding      : 2px 7px;
-    margin       : 1px 2px;
+    padding      : 1px 7px;
+    margin       : 1px;
     color        : @text-low;
     background   : transparent;
-    border-radius: 8px;
+    border-radius: 6px;
     font-size    : 11px;
     font-weight  : 600;
     min-width    : 20px;
+    min-height   : 22px;
     transition   : all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -118,9 +127,9 @@ window#waybar.hidden {
     color        : @on-accent;
     background   : #00D2FF; /* @titan-adapt:accent */
     border       : 1px solid rgba(0, 210, 255, 0.55); /* @titan-adapt:accent-line */
-    border-radius: 8px;
+    border-radius: 6px;
     font-weight  : 700;
-    padding      : 2px 11px;
+    padding      : 1px 11px;
     box-shadow   : 0 0 12px @accent-glow;
 }
 
@@ -128,7 +137,7 @@ window#waybar.hidden {
     color        : #ffffff;
     background   : @danger;
     border       : 1px solid @danger;
-    border-radius: 8px;
+    border-radius: 6px;
     box-shadow   : 0 0 10px rgba(243, 139, 168, 0.45);
 }
 
@@ -138,15 +147,10 @@ window#waybar.hidden {
 
 #custom-titan-center {
     color        : @text-high;
-    background   : @module-bg;
-    border       : 1px solid @module-border;
-    border-radius: 12px;
     font-size    : 11.5px;
     font-weight  : 500;
-    padding      : 2px 16px;
-    margin       : 3px 0;
+    padding      : 0 16px;
     min-width    : 360px;
-    transition   : all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 #custom-titan-center:hover {
@@ -167,20 +171,15 @@ window#waybar.hidden {
 #custom-titan-center.b-rev { animation: roll-b-rev 350ms cubic-bezier(0.16, 1, 0.3, 1); }
 
 /* ═══════════════════════════════════════════════════════════════
- * RIGHT — Clock, Quick Settings & Power Controls
+ * RIGHT — Clock, Telemetry & 3-Button Control Pack
  * ═══════════════════════════════════════════════════════════════ */
 
 /* Clock Capsule */
 #clock {
     color        : @text-high;
-    background   : @module-bg;
-    border       : 1px solid @module-border;
-    border-radius: 10px;
     font-weight  : 600;
     font-size    : 11.5px;
-    padding      : 2px 11px;
-    margin       : 3px 4px;
-    transition   : all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    padding      : 0 11px;
 }
 
 #clock:hover {
@@ -190,14 +189,9 @@ window#waybar.hidden {
     box-shadow  : 0 0 12px @accent-glow;
 }
 
-/* Unified Control Center Capsule */
+/* Unified Telemetry Capsule (Temperature, Audio, Battery) */
 #quicksettings {
-    background   : @module-bg;
-    border       : 1px solid @module-border;
-    border-radius: 10px;
-    padding      : 2px 6px;
-    margin       : 3px 4px;
-    transition   : all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    padding: 0 4px;
 }
 
 #quicksettings:hover {
@@ -213,9 +207,10 @@ window#waybar.hidden {
     background   : transparent;
     border       : none;
     font-size    : 11.5px;
-    padding      : 2px 6px;
-    margin       : 0 1px;
+    padding      : 0 6px;
+    margin       : 2px 1px;
     border-radius: 6px;
+    min-height   : 22px;
     transition   : all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -274,11 +269,7 @@ window#waybar.hidden {
 
 /* System Tray */
 #tray {
-    background   : @module-bg;
-    border       : 1px solid @module-border;
-    border-radius: 10px;
-    padding      : 2px 8px;
-    margin       : 3px 4px;
+    padding: 0 8px;
 }
 #tray > .passive {
     -gtk-icon-effect: dim;
@@ -290,12 +281,7 @@ window#waybar.hidden {
 
 /* 3-Button Control Pack (Notification, Wi-Fi, Bluetooth) */
 #quick-controls {
-    background   : @module-bg;
-    border       : 1px solid @module-border;
-    border-radius: 10px;
-    padding      : 2px 6px;
-    margin       : 3px 2px 3px 4px;
-    transition   : all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    padding: 0 4px;
 }
 
 #quick-controls:hover {
@@ -310,10 +296,11 @@ window#waybar.hidden {
     color        : @text-mid;
     background   : transparent;
     border       : none;
-    font-size    : 13px;
-    padding      : 2px 7px;
-    margin       : 0 1px;
+    font-size    : 12px;
+    padding      : 0 7px;
+    margin       : 2px 1px;
     border-radius: 6px;
+    min-height   : 22px;
     transition   : all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
