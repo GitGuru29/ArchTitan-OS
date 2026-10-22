@@ -6,6 +6,9 @@
 #include <QDebug>
 #include <QSettings>
 #include <QStandardPaths>
+#include <QFileSystemWatcher>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <unistd.h>
 #include <pwd.h>
 
@@ -53,6 +56,7 @@ QString SystemController::userName() const
 SystemController::SystemController(QObject *parent)
     : QObject(parent)
     , m_timer(new QTimer(this))
+    , m_themeWatcher(new QFileSystemWatcher(this))
 {
     updateUptime();
     updateDate();
@@ -60,6 +64,24 @@ SystemController::SystemController(QObject *parent)
     updateTheme();
     updateScreenRecording();
     updateAirplaneMode();
+
+    QString cfgDir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
+    QString themeFile = cfgDir + "/archtitan/theme.json";
+    if (QFile::exists(themeFile)) {
+        m_themeWatcher->addPath(themeFile);
+    } else {
+        QDir().mkpath(cfgDir + "/archtitan");
+        m_themeWatcher->addPath(cfgDir + "/archtitan");
+    }
+
+    auto onThemeChanged = [this, themeFile](const QString &) {
+        updateTheme();
+        if (!m_themeWatcher->files().contains(themeFile) && QFile::exists(themeFile)) {
+            m_themeWatcher->addPath(themeFile);
+        }
+    };
+    connect(m_themeWatcher, &QFileSystemWatcher::fileChanged, this, onThemeChanged);
+    connect(m_themeWatcher, &QFileSystemWatcher::directoryChanged, this, onThemeChanged);
 
     connect(m_timer, &QTimer::timeout, this, [this]() {
         updateUptime();
@@ -183,6 +205,9 @@ void SystemController::setThemeDark(bool dark)
         m_themeDark = dark;
         emit themeDarkChanged();
     }
+    // Switch OS theme via ArchTitan central theme engine
+    QProcess::startDetached("titan-theme", {"mode", dark ? "dark" : "light"});
+
     QString scheme = dark ? "prefer-dark" : "prefer-light";
     QString gtkTheme = dark ? "adw-gtk3-dark" : "adw-gtk3";
     QProcess::startDetached("gsettings", {"set", "org.gnome.desktop.interface", "color-scheme", scheme});
@@ -196,6 +221,20 @@ void SystemController::setThemeDark(bool dark)
 
 void SystemController::updateTheme()
 {
+    QString cfgDir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
+    QFile file(cfgDir + "/archtitan/theme.json");
+    if (file.open(QIODevice::ReadOnly)) {
+        QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
+        if (doc.isObject()) {
+            bool dark = doc.object().value("isDark").toBool(true);
+            if (m_themeDark != dark) {
+                m_themeDark = dark;
+                emit themeDarkChanged();
+            }
+            return;
+        }
+    }
+
     QProcess proc;
     proc.start("gsettings", {"get", "org.gnome.desktop.interface", "color-scheme"});
     if (proc.waitForFinished(300)) {

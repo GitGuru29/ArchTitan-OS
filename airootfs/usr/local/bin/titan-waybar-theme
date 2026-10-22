@@ -62,7 +62,7 @@ BAR_SAT = 0.1
 # from dark wallpapers / deepen behind bright ones; light themes do the
 # mirror image around a near-white identity surface.
 DARK_RANGE = (0.065, 0.34, 0.03)
-LIGHT_RANGE = (0.90, 0.96, 0.55)
+LIGHT_RANGE = (0.92, 0.97, 0.84)
 
 MARKED = re.compile(
     r"^(?P<head>\s*[-a-zA-Z]+\s*:\s*)(?P<val>[^;]*?)(?P<tail>\s*;\s*/\*\s*@titan-adapt:(?P<tok>[a-z0-9-]+)\s*\*/\s*)$",
@@ -333,9 +333,9 @@ def build_palette(avg_rgb, theme: dict | None = None) -> dict[str, str]:
         bar_shadow = f"rgba(0, 0, 0, {0.38 - 0.12 * t:.2f})"
         tip_border = f"rgba(255, 255, 255, {0.16 - 0.05 * t:.2f})"
     else:
-        bar_border = f"rgba(0, 0, 0, {0.10 - 0.03 * t:.2f})"
-        bar_shadow = f"rgba(0, 0, 0, {0.10 - 0.04 * t:.2f})"
-        tip_border = f"rgba(0, 0, 0, {0.12 - 0.04 * t:.2f})"
+        bar_border = f"rgba(0, 0, 0, {0.08 - 0.02 * t:.2f})"
+        bar_shadow = f"rgba(0, 0, 0, {0.08 - 0.02 * t:.2f})"
+        tip_border = f"rgba(0, 0, 0, {0.08 - 0.02 * t:.2f})"
 
     palette = {
         "bar-bg": _rgba(bar, bar_alpha),
@@ -344,7 +344,7 @@ def build_palette(avg_rgb, theme: dict | None = None) -> dict[str, str]:
         "accent": _hex(accent),
         "accent-soft": _rgba(accent, 0.16),
         "accent-line": _rgba(accent, 0.38),
-        "tip-bg": _rgba(bar, 0.85 if is_dark else 0.90),
+        "tip-bg": _rgba(bar, 0.85 if is_dark else 0.92),
         "tip-border": tip_border,
     }
 

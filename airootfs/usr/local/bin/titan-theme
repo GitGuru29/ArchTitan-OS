@@ -185,9 +185,9 @@ def waybar_body(t: dict) -> str:
     acc = t["accent"]
     fg = accent_fg(acc)
     crust = p["crust"]
-    text_high = p["textHigh"]
-    text_mid = p["textMid"]
-    text_low = p["textLow"]
+    text_high = "#1E1E2E" if not dark else p["textHigh"]
+    text_mid = "#4C4F69" if not dark else p["textMid"]
+    text_low = "#6C6F85" if not dark else p["textLow"]
 
     # Glassy surface tokens
     bar_bg = rgba(crust, 0.58 if dark else 0.72)
@@ -195,15 +195,15 @@ def waybar_body(t: dict) -> str:
     bar_border_top = "rgba(255, 255, 255, 0.22)" if dark else "rgba(255, 255, 255, 0.85)"
     bar_shadow = "rgba(0, 0, 0, 0.35)" if dark else "rgba(0, 0, 0, 0.08)"
 
-    module_bg = "rgba(255, 255, 255, 0.05)" if dark else "rgba(0, 0, 0, 0.04)"
+    module_bg = "rgba(255, 255, 255, 0.05)" if dark else "rgba(255, 255, 255, 0.70)"
     module_border = "rgba(255, 255, 255, 0.08)" if dark else "rgba(0, 0, 0, 0.06)"
-    module_hover = "rgba(255, 255, 255, 0.12)" if dark else "rgba(0, 0, 0, 0.08)"
+    module_hover = "rgba(255, 255, 255, 0.12)" if dark else "rgba(255, 255, 255, 0.95)"
 
     accent_soft = rgba(acc, 0.16)
     accent_glow = rgba(acc, 0.35)
     accent_border = rgba(acc, 0.55)
 
-    on_bar = "#FFFFFF" if dark else "#000000"
+    on_bar = "#FFFFFF" if dark else "#1E1E2E"
     on_accent = fg.lower()
 
     rows = [

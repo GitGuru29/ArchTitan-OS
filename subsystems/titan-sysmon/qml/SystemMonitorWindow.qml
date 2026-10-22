@@ -90,10 +90,10 @@ Window {
             layer.enabled: true
             layer.effect: MultiEffect {
                 shadowEnabled: true
-                shadowColor: "#B0000000"
-                shadowBlur: 0.9
-                shadowVerticalOffset: 12
-                shadowHorizontalOffset: 4
+                shadowColor: TitanTheme.isDark ? "#B0000000" : "#1A000000"
+                shadowBlur: 0.8
+                shadowVerticalOffset: TitanTheme.isDark ? 12 : 6
+                shadowHorizontalOffset: 0
                 autoPaddingEnabled: true
             }
 
@@ -104,11 +104,13 @@ Window {
                 gradient: Gradient {
                     GradientStop {
                         position: 0.0
-                        color: Qt.rgba(TitanTheme.mantle.r, TitanTheme.mantle.g, TitanTheme.mantle.b, 0.74)
+                        color: TitanTheme.isDark ? Qt.rgba(TitanTheme.mantle.r, TitanTheme.mantle.g, TitanTheme.mantle.b, 0.74)
+                                                 : Qt.rgba(1, 1, 1, 0.88)
                     }
                     GradientStop {
                         position: 1.0
-                        color: Qt.rgba(TitanTheme.base.r, TitanTheme.base.g, TitanTheme.base.b, 0.56)
+                        color: TitanTheme.isDark ? Qt.rgba(TitanTheme.base.r, TitanTheme.base.g, TitanTheme.base.b, 0.56)
+                                                 : Qt.rgba(1, 1, 1, 0.78)
                     }
                 }
             }
@@ -129,7 +131,7 @@ Window {
                 y: 0
                 width: glassCard.width - glassCard.radius * 2
                 height: 1
-                color: "#14FFFFFF"
+                color: TitanTheme.isDark ? "#14FFFFFF" : "#60FFFFFF"
             }
 
             // Faint accent edge glow along the left rim
@@ -589,7 +591,7 @@ Window {
                                 Layout.fillWidth: true
                                 implicitHeight: 58
                                 radius: TitanTheme.radiusMd
-                                color: TitanTheme.bgInset
+                                color: TitanTheme.isDark ? TitanTheme.bgInset : Qt.rgba(0, 0, 0, 0.04)
                                 border.width: 1
                                 border.color: TitanTheme.borderSubtle
 

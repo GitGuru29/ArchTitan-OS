@@ -141,23 +141,29 @@ inline QColor surface3() { return detail::raw("surface3"); }
 
 // ── Semantic background roles (mirror TitanTheme.bg0…bg4 + bgInset) ─────────
 inline QColor bg0()     { return crust(); }
-inline QColor bg1()     { return QColor(base().red(), base().green(), base().blue(), 179); } // base @ 0.702
-inline QColor bg2()     { return QColor(base().red(), base().green(), base().blue(), 153); } // base @ 0.600
-inline QColor bg3()     { return base(); }
-inline QColor bg4()     { return surface0(); }
-inline QColor bgInset() { return QColor(crust().red(), crust().green(), crust().blue(), 128); } // crust @ 0.502
+inline QColor bg1()     { return isDark() ? QColor(base().red(), base().green(), base().blue(), 179)
+                                          : QColor(255, 255, 255, 215); } // base @ 0.702 vs crisp white frost @ 0.84
+inline QColor bg2()     { return isDark() ? QColor(base().red(), base().green(), base().blue(), 153)
+                                          : QColor(255, 255, 255, 230); } // card @ 0.90
+inline QColor bg3()     { return isDark() ? base() : QColor(255, 255, 255, 245); }
+inline QColor bg4()     { return isDark() ? surface0() : QColor(0, 0, 0, 13); } // hover / pill @ 0.05
+inline QColor bgInset() { return isDark() ? QColor(crust().red(), crust().green(), crust().blue(), 128)
+                                          : QColor(0, 0, 0, 15); } // recessed track @ 0.06
 
 // ── Frosted glass / overlay ─────────────────────────────────────────────────
-inline QColor glass()     { return QColor(crust().red(), crust().green(), crust().blue(), 184); }  // crust @ 0.722
-inline QColor glassAlt()  { return QColor(mantle().red(), mantle().green(), mantle().blue(), 112); } // mantle @ 0.439
-inline QColor glassCard() { return QColor(mantle().red(), mantle().green(), mantle().blue(), 102); } // mantle @ 0.400
+inline QColor glass()     { return isDark() ? QColor(crust().red(), crust().green(), crust().blue(), 184)
+                                            : QColor(255, 255, 255, 215); }  // crust @ 0.722 vs 0.84
+inline QColor glassAlt()  { return isDark() ? QColor(mantle().red(), mantle().green(), mantle().blue(), 112)
+                                            : QColor(255, 255, 255, 192); } // mantle @ 0.439 vs 0.75
+inline QColor glassCard() { return isDark() ? QColor(mantle().red(), mantle().green(), mantle().blue(), 102)
+                                            : QColor(255, 255, 255, 204); } // mantle @ 0.400 vs 0.80
 
 // ── Borders ────────────────────────────────────────────────────────────────
-inline QColor border()       { return detail::raw("border"); }
+inline QColor border()       { return isDark() ? detail::raw("border") : QColor(0x00, 0x00, 0x00, 0x14); }
 inline QColor borderSubtle() { return isDark() ? QColor(0xFF, 0xFF, 0xFF, 0x18)
-                                               : QColor(0x00, 0x00, 0x00, 0x1A); }
+                                               : QColor(0x00, 0x00, 0x00, 0x10); }
 inline QColor borderHover()  { return isDark() ? QColor(0xFF, 0xFF, 0xFF, 0x40)
-                                               : QColor(0x00, 0x00, 0x00, 0x30); }
+                                               : QColor(0x00, 0x00, 0x00, 0x24); }
 
 // ── Text ───────────────────────────────────────────────────────────────────
 inline QColor textHigh() { return detail::raw("textHigh"); }

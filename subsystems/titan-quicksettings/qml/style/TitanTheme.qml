@@ -24,22 +24,22 @@ QtObject {
     readonly property color bgSurface:         TDL.TitanTheme.bg2        // raised container
     readonly property color bgSurfaceAlt:      TDL.TitanTheme.bg3        // elevated squircle tile
     readonly property color bgInset:           TDL.TitanTheme.bgInset    // recessed track
-    readonly property color bgHover:           TDL.TitanTheme.borderHover
-    readonly property color bgPressed:         Qt.rgba(1, 1, 1, 0.12)
+    readonly property color bgHover:           isDark ? TDL.TitanTheme.borderHover : Qt.rgba(0, 0, 0, 0.08)
+    readonly property color bgPressed:         isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.12)
     readonly property color bgActive:          TDL.TitanTheme.accent
 
     readonly property color bgOneUICard:       TDL.TitanTheme.glassCard  // frosted bento card
     readonly property color bgOneUICardAlt:    TDL.TitanTheme.bg4
     readonly property color bgOneUITrack:      TDL.TitanTheme.bgInset
-    readonly property color bgOneUIPill:       TDL.TitanTheme.bg4
-    readonly property color bgMenu:            Qt.rgba(TDL.TitanTheme.bg0.r, TDL.TitanTheme.bg0.g, TDL.TitanTheme.bg0.b, 0.90) // power menu scrim
+    readonly property color bgOneUIPill:       isDark ? TDL.TitanTheme.bg4 : Qt.rgba(0, 0, 0, 0.04)
+    readonly property color bgMenu:            isDark ? Qt.rgba(TDL.TitanTheme.bg0.r, TDL.TitanTheme.bg0.g, TDL.TitanTheme.bg0.b, 0.90) : Qt.rgba(1, 1, 1, 0.92) // power menu scrim
 
     // ── Borders & glass contours ───────────────────────────────────────────
     readonly property color borderSubtle:      TDL.TitanTheme.borderSubtle
     readonly property color borderHover:       TDL.TitanTheme.borderHover
     readonly property color borderActive:      TDL.TitanTheme.accentEdge
-    readonly property color borderGlass:       TDL.TitanTheme.borderHover
-    readonly property color borderOneUIGlass:  TDL.TitanTheme.borderHover
+    readonly property color borderGlass:       isDark ? TDL.TitanTheme.borderHover : TDL.TitanTheme.borderSubtle
+    readonly property color borderOneUIGlass:  isDark ? TDL.TitanTheme.borderHover : TDL.TitanTheme.borderSubtle
 
     // ── Accents & indicators ───────────────────────────────────────────────
     readonly property color accent:            TDL.TitanTheme.accent

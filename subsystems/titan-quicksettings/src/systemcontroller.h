@@ -106,4 +106,5 @@ private:
   int m_tileVisibilityRevision{0};
 
   QTimer *m_timer;
+  class QFileSystemWatcher *m_themeWatcher{nullptr};
 };
