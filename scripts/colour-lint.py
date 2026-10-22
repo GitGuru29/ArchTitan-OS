@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """ArchTitan TDL colour linter.
 
-Enforces that every colour literal in QML / CSS / rasi / conf files is an actual
-value from the Titan Design Language palette (derived from the canonical token
-file, titan-ui/qml/style/TitanTheme.qml), a neutral white/black overlay, or the
-adaptive accent. This catches off-brand drift (e.g. a stray Tailwind colour)
-that would otherwise silently break visual consistency.
+Enforces that every colour literal in QML / CSS / rasi / conf / C++ files is an
+actual value from the Titan Design Language palette (derived from the canonical
+token file, titan-ui/qml/style/TitanTheme.qml), a neutral white/black overlay,
+or the adaptive accent. This catches off-brand drift (e.g. a stray Tailwind
+colour) that would otherwise silently break visual consistency.
 
 Files listed in scripts/colour-allow.txt (path substring, one per line) are
 exempt -- used for brand marks, generated artwork and data swatches.
@@ -21,6 +21,12 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 TOKEN_FILE = REPO / "titan-ui" / "qml" / "style" / "TitanTheme.qml"
 ALLOW_FILE = REPO / "scripts" / "colour-allow.txt"
+# The baseline theme definition (shipped palettes; every theme shares this
+# schema). TitanTheme.qml now derives its surfaces from ThemeBackend at runtime
+# and only carries a few alpha literals, so the authoritative colour set for
+# static config files is the baseline theme's palette.
+BASELINE_THEME = (REPO / "airootfs" / "usr" / "share" / "archtitan"
+                  / "themes" / "mocha.json")
 
 # The adaptive accent's default (Catppuccin Mocha blue); runtime accent may be
 # any colour, so any alpha of it is accepted in addition to the static palette.
@@ -31,7 +37,14 @@ NEUTRALS = {"ffffff", "000000"}
 
 SKIP_DIRS = ("/build/", "tmp-work", "node_modules", "/.git/",
              "airootfs/usr/lib/qt6/qml/", "/.cache/")
-SCAN_EXT = {".qml", ".css", ".rasi", ".conf"}
+# C++ is included so the Qt Widgets surfaces (titanfetch, titanbrowser) obey the
+# same no-hardcoded-colour rule as the QML shell — they consume TDL via
+# TitanPalette.h, and a stray Mocha literal there is drift just like in QML.
+# .qss / .desc cover the installer (Calamares) surfaces.
+SCAN_EXT = {".qml", ".css", ".rasi", ".conf", ".qss", ".desc",
+            ".cpp", ".h", ".hpp", ".cc"}
+# Files with no distinctive suffix that still carry theme colours (GRUB theme).
+SCAN_NAMES = {"theme.txt"}
 # The token file itself is the source of truth -- never flag it.
 SKIP_FILES = {TOKEN_FILE}
 
@@ -42,8 +55,27 @@ RGB_RE = re.compile(
 
 
 def load_palette() -> set[str]:
-    text = TOKEN_FILE.read_text(encoding="utf-8")
-    hexes = {h.lower()[-6:] for h in HEX_RE.findall(text)}  # strip alpha
+    """Colour tokens allowed in static config files.
+
+    Union of the QML singleton's literal hexes (alpha overlays, derived
+    neutral borders) and the baseline theme's palette + accents.
+    """
+    hexes = {h.lower()[-6:] for h in HEX_RE.findall(
+        TOKEN_FILE.read_text(encoding="utf-8")
+    )}
+
+    if BASELINE_THEME.exists():
+        import json
+
+        theme = json.loads(BASELINE_THEME.read_text(encoding="utf-8"))
+        values = list(theme.get("palette", {}).values())
+        values += [theme.get("accent", ""), theme.get("accent2", "")]
+        for value in values:
+            if isinstance(value, str):
+                digits = value.strip().lstrip("#")
+                if re.fullmatch(r"[0-9a-fA-F]{6}", digits):
+                    hexes.add(digits.lower())
+
     hexes.add(ACCENT_DEFAULT)
     return hexes
 
@@ -71,7 +103,7 @@ def main() -> int:
     scanned = 0
 
     for path in REPO.rglob("*"):
-        if path.suffix not in SCAN_EXT or not path.is_file():
+        if (path.suffix not in SCAN_EXT and path.name not in SCAN_NAMES) or not path.is_file():
             continue
         rel = path.relative_to(REPO).as_posix()
         if path.resolve() in SKIP_FILES:
