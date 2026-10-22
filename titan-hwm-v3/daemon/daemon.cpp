@@ -277,7 +277,11 @@ int main(int argc, char* argv[]) {
         std::cout << "[WS] Window: " << cls << " — " << title << "\n";
     });
     if (!ws_monitor.start()) {
-        std::cerr << "[THM] Hyprland IPC unavailable — running in headless mode.\n";
+        std::cerr << "[THM] Workspace monitor failed to start.\n";
+    } else {
+        // The listener thread connects as soon as Hyprland's IPC socket exists
+        // and reconnects if the compositor restarts; it logs the actual result.
+        std::cout << "[THM] Workspace monitor started (auto-connects to Hyprland).\n";
     }
 
     // ── Proc graph (reused each tick) ───────────────────────────────────────

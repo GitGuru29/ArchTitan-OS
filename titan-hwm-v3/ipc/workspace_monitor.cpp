@@ -10,6 +10,7 @@
 #include <filesystem>
 #include <cstring>
 #include <cstdlib>
+#include <chrono>
 #include <unistd.h>
 #include <poll.h>
 #include <sys/socket.h>
@@ -37,6 +38,7 @@ std::string WorkspaceMonitor::discover_socket_path() {
         std::string p = std::string(xdg) + "/hypr/" + sig + "/.socket2.sock";
         std::error_code ec;
         if (fs::exists(p, ec)) {
+            std::lock_guard<std::mutex> lk(conn_mtx_);
             hypr_runtime_dir_  = xdg;
             hypr_instance_sig_ = sig;
             return p;
@@ -45,9 +47,14 @@ std::string WorkspaceMonitor::discover_socket_path() {
 
     // 2) Discover the active instance under /run/user/<uid>/hypr/<instance>/.
     std::string best;
+    std::string best_dir;
+    std::string best_sig;
     fs::file_time_type best_time{};
     std::error_code ec;
-    for (const auto& userdir : fs::directory_iterator("/run/user", ec)) {
+    // THM_RUN_USER_DIR overrides the scan root (test seam; default /run/user).
+    const char* root_env = std::getenv("THM_RUN_USER_DIR");
+    const fs::path run_user = (root_env && *root_env) ? root_env : "/run/user";
+    for (const auto& userdir : fs::directory_iterator(run_user, ec)) {
         if (!userdir.is_directory())
             continue;
         fs::path hypr = userdir.path() / "hypr";
@@ -65,15 +72,18 @@ std::string WorkspaceMonitor::discover_socket_path() {
             if (ec3)
                 t = fs::file_time_type{};
             if (best.empty() || t > best_time) {
-                best               = sock.string();
-                best_time          = t;
-                hypr_runtime_dir_  = userdir.path().string();
-                hypr_instance_sig_ = inst.path().filename().string();
+                best      = sock.string();
+                best_time = t;
+                best_dir  = userdir.path().string();
+                best_sig  = inst.path().filename().string();
             }
         }
     }
-    if (!best.empty())
-        std::cerr << "[WS] Discovered Hyprland instance: " << best << "\n";
+    if (!best.empty()) {
+        std::lock_guard<std::mutex> lk(conn_mtx_);
+        hypr_runtime_dir_  = best_dir;
+        hypr_instance_sig_ = best_sig;
+    }
     return best;
 }
 
@@ -81,19 +91,9 @@ std::string WorkspaceMonitor::discover_socket_path() {
 // start / stop
 // ─────────────────────────────────────────────────────────────────────────────
 bool WorkspaceMonitor::start() {
-    sock_path_ = discover_socket_path();
-    if (sock_path_.empty()) {
-        std::cerr << "[WS] No Hyprland instance found — "
-                  << "workspace monitoring disabled.\n";
-        return false;
-    }
-    if (!fs::exists(sock_path_)) {
-        std::cerr << "[WS] Hyprland socket not found: " << sock_path_ << "\n";
-        return false;
-    }
-    running_ = true;
+    if (running_.exchange(true))
+        return true; // already started
     listener_thread_ = std::thread(&WorkspaceMonitor::listen_loop, this);
-    std::cout << "[WS] Listening on " << sock_path_ << "\n";
     return true;
 }
 
@@ -101,18 +101,61 @@ void WorkspaceMonitor::stop() {
     running_ = false;
     if (listener_thread_.joinable())
         listener_thread_.join();
+    connected_ = false;
+}
+
+void WorkspaceMonitor::sleep_while_running(int ms) {
+    // Chunked so stop() never waits more than ~100ms for the thread to notice.
+    for (int waited = 0; waited < ms && running_; waited += 100)
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// listen_loop — blocking read from Hyprland socket2 (event stream)
+// listen_loop — discover → connect → stream, retrying for the daemon's lifetime.
+//
+// THM is a system service and can come up before the SDDM autologin session has
+// created Hyprland's socket (the daemon used to look exactly once and then run
+// "headless" forever). It must also survive Hyprland exiting or restarting.
+// Failures are logged once per outage rather than on every retry.
 // ─────────────────────────────────────────────────────────────────────────────
 void WorkspaceMonitor::listen_loop() {
-    std::string path = sock_path_;
+    constexpr int kRetryMs = 2000;
+    bool announced_wait = false;
 
+    while (running_) {
+        const std::string path = discover_socket_path();
+        if (path.empty()) {
+            if (!announced_wait) {
+                std::cerr << "[WS] No Hyprland instance yet — will keep retrying "
+                             "(workspace monitoring pending).\n";
+                announced_wait = true;
+            }
+            sleep_while_running(kRetryMs);
+            continue;
+        }
+
+        if (listen_once(path)) {
+            // Was connected; it dropped (compositor exited/restarted).
+            if (running_)
+                std::cerr << "[WS] Hyprland connection lost — reconnecting.\n";
+            announced_wait = false;
+        } else if (!announced_wait) {
+            std::cerr << "[WS] Hyprland socket not accepting connections yet — "
+                         "will keep retrying.\n";
+            announced_wait = true;
+        }
+        sleep_while_running(kRetryMs);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// listen_once — one connection's lifetime: blocking read from socket2 (events)
+// ─────────────────────────────────────────────────────────────────────────────
+bool WorkspaceMonitor::listen_once(const std::string& path) {
     int fd = socket(AF_UNIX, SOCK_STREAM, 0);
     if (fd < 0) {
         std::cerr << "[WS] socket() failed: " << std::strerror(errno) << "\n";
-        return;
+        return false;
     }
 
     struct sockaddr_un addr{};
@@ -120,10 +163,12 @@ void WorkspaceMonitor::listen_loop() {
     std::strncpy(addr.sun_path, path.c_str(), sizeof(addr.sun_path) - 1);
 
     if (connect(fd, reinterpret_cast<struct sockaddr*>(&addr), sizeof(addr)) < 0) {
-        std::cerr << "[WS] connect() failed: " << std::strerror(errno) << "\n";
         close(fd);
-        return;
+        return false;
     }
+
+    connected_ = true;
+    std::cout << "[WS] Listening on " << path << "\n";
 
     char buf[4096];
     std::string leftover;
@@ -163,7 +208,9 @@ void WorkspaceMonitor::listen_loop() {
         }
     }
 
+    connected_ = false;
     close(fd);
+    return true;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -235,9 +282,16 @@ void WorkspaceMonitor::refresh_visibility() {
     // As a root system service we must inject the session env so hyprctl can
     // locate the compositor; otherwise it exits silently with no output.
     std::string cmd;
-    if (!hypr_runtime_dir_.empty() && !hypr_instance_sig_.empty()) {
-        cmd = "env XDG_RUNTIME_DIR=" + hypr_runtime_dir_ +
-              " HYPRLAND_INSTANCE_SIGNATURE=" + hypr_instance_sig_ +
+    std::string rdir, isig;
+    {
+        // Snapshot: the listener thread may re-discover these concurrently.
+        std::lock_guard<std::mutex> lk(conn_mtx_);
+        rdir = hypr_runtime_dir_;
+        isig = hypr_instance_sig_;
+    }
+    if (!rdir.empty() && !isig.empty()) {
+        cmd = "env XDG_RUNTIME_DIR=" + rdir +
+              " HYPRLAND_INSTANCE_SIGNATURE=" + isig +
               " hyprctl monitors -j 2>/dev/null";
     } else {
         cmd = "hyprctl monitors -j 2>/dev/null";

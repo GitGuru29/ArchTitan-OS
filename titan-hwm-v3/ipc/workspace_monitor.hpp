@@ -46,7 +46,17 @@ public:
     void on_window_change(WindowCallback cb)        { win_cb_ = std::move(cb); }
 
     // Start the IPC listener thread. Non-blocking; runs in background.
+    //
+    // The thread owns Hyprland socket discovery AND reconnection: if the
+    // compositor is not up yet (THM is a system service that can start before
+    // the SDDM autologin session creates Hyprland's socket), or if it exits or
+    // restarts later, the thread keeps retrying until stop(). It therefore
+    // returns true whenever the thread was launched, regardless of whether a
+    // Hyprland instance exists yet; use connected() to query the live state.
     bool start();
+
+    // True while the listener holds an open connection to a Hyprland socket.
+    bool connected() const { return connected_.load(); }
 
     // Stop the listener thread (call from destructor or shutdown).
     void stop();
@@ -80,24 +90,36 @@ private:
 
     std::atomic<int>  focused_ws_{1};
     std::atomic<bool> running_{false};
+    std::atomic<bool> connected_{false};
     std::thread       listener_thread_;
 
     mutable std::mutex ws_mtx_;
     std::unordered_map<int, WorkspaceState> workspaces_;
 
-    // Resolved Hyprland IPC endpoint (discovered in start()).
+    // Resolved Hyprland IPC endpoint (re-discovered on every connect attempt).
     // The daemon runs as a root system service, so the session's
     // XDG_RUNTIME_DIR / HYPRLAND_INSTANCE_SIGNATURE are usually absent; we
     // discover the active instance under /run/user/<uid>/hypr/<instance>/.
-    std::string sock_path_;
+    //
+    // Written by the listener thread, read by refresh_visibility() on the tick
+    // thread — always access under conn_mtx_.
+    mutable std::mutex conn_mtx_;
     std::string hypr_runtime_dir_;
     std::string hypr_instance_sig_;
 
-    // IPC socket path discovery
+    // IPC socket path discovery. Returns "" if no live instance is found and,
+    // on success, publishes the runtime dir / signature under conn_mtx_.
     std::string discover_socket_path();
 
-    // Main listener loop (runs on listener_thread_)
+    // Thread entry: discover → connect → stream, retrying until stop().
     void listen_loop();
+
+    // Connect to `path` and stream events until the peer closes or stop().
+    // Returns true if a connection was established (even if later lost).
+    bool listen_once(const std::string& path);
+
+    // Sleep up to `ms`, waking early (<=100ms latency) once stop() is called.
+    void sleep_while_running(int ms);
 
     // Parse Hyprland IPC event lines
     void handle_event(const std::string& line);
