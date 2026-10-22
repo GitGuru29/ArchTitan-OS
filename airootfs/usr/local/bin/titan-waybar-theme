@@ -11,13 +11,16 @@ Waybar to reload its stylesheet in place (SIGUSR2 — no restart, no flicker).
 Design notes:
   * Only declarations carrying a `@titan-adapt:<token>` marker comment are ever
     rewritten, so hand-written CSS around them is preserved.
-  * The bar keeps the dark charcoal ArchTitan identity in every case; on dark
-    wallpapers it is *lifted* (lighter surface, higher opacity, stronger border)
-    rather than flipped to a light theme.
-  * Text colours stay on the Catppuccin palette; they already contrast well
-    against any bar surface produced here. Only the surface, border, shadow,
-    tooltip and accent tokens are adaptive — the accent is derived from the
-    wallpaper's own hue so the bar feels tied to the desktop.
+  * The accent comes from the active theme (theme.json written by
+    `titan-theme`) so the bar's accent matches every other seam; only when
+    theme.json is absent does it fall back to the wallpaper's own hue.
+  * On dark themes the bar keeps the dark charcoal ArchTitan identity: on a
+    near-black wallpaper it is *lifted* (lighter surface, higher opacity,
+    stronger border) rather than flipped. On light themes (isDark = false) the
+    whole solver runs mirrored — identity surface 0.90, seeking *separation*
+    from bright wallpapers by deepening, with black borders/shadows.
+  * Text colours come from the theme (TDL @define-color block in style.css);
+    the ink used for the contrast warning is the theme's textHigh.
 
 Called from titan-set-wallpaper and titan-wallpaper-restore. It is a theming
 convenience, so any failure is reported and then swallowed by the caller: it
@@ -27,6 +30,7 @@ must never prevent a wallpaper from being applied.
 from __future__ import annotations
 
 import colorsys
+import json
 import os
 import re
 import shutil
@@ -39,9 +43,10 @@ CONFIG_DIR = os.environ.get(
 )
 STYLE_CSS = os.path.join(CONFIG_DIR, "waybar", "style.css")
 PERSIST_FILE = os.path.join(CONFIG_DIR, "archtitan", "wallpaper")
+THEME_FILE = os.path.join(CONFIG_DIR, "archtitan", "theme.json")
 DEFAULT_WALLPAPER = "/usr/share/backgrounds/archtitan/wallpaper.png"
 
-# Catppuccin Mocha text, carried on every bar surface this tool produces.
+# Catppuccin Mocha text — fallback ink when theme.json is unavailable.
 INK = (205, 214, 244)
 
 # Lavender, used when a wallpaper is too desaturated to yield a stable hue.
@@ -53,9 +58,11 @@ TARGET_CONTRAST = 1.6
 
 # The bar surface, as a tint of the wallpaper's own hue.
 BAR_SAT = 0.1
-BAR_DARK_L = 0.065  # the identity surface, unchanged when it already works
-BAR_MIN_L = 0.03  # deepened, for wallpapers lighter than the bar
-BAR_MAX_L = 0.34  # lifted, for wallpapers darker than the bar
+# (identity lightness, lift-to, deepen-to) per mode — dark themes lift away
+# from dark wallpapers / deepen behind bright ones; light themes do the
+# mirror image around a near-white identity surface.
+DARK_RANGE = (0.065, 0.34, 0.03)
+LIGHT_RANGE = (0.90, 0.96, 0.55)
 
 MARKED = re.compile(
     r"^(?P<head>\s*[-a-zA-Z]+\s*:\s*)(?P<val>[^;]*?)(?P<tail>\s*;\s*/\*\s*@titan-adapt:(?P<tok>[a-z0-9-]+)\s*\*/\s*)$",
@@ -177,7 +184,14 @@ def _over(fg_rgb, alpha: float, bg_rgb) -> tuple[float, float, float]:
 
 
 def _solve_lightness(
-    hue: float, sat: float, bg_rgb, alpha: float, target: float
+    hue: float,
+    sat: float,
+    bg_rgb,
+    alpha: float,
+    target: float,
+    identity: float,
+    lift_to: float,
+    deepen_to: float,
 ) -> float:
     """Lightness of the bar that first reaches `target` contrast against `bg_rgb`.
 
@@ -185,11 +199,14 @@ def _solve_lightness(
     the bar is translucent, so compositing drags it towards the wallpaper and
     the raw colour always overstates the separation actually achieved.
 
-    If the normal dark bar already clears the target it is returned untouched.
+    If the identity surface already clears the target it is returned untouched.
     Otherwise the bar is moved in whichever direction increases separation —
     lifted when the wallpaper is darker, deepened when it is lighter — and
     bisected for the least change that suffices. Relative luminance is monotonic
     in lightness, so the search is well behaved.
+
+    `identity`/`lift_to`/`deepen_to` come from DARK_RANGE or LIGHT_RANGE so the
+    same solver serves both themes.
     """
 
     def separation(lightness: float) -> float:
@@ -198,28 +215,38 @@ def _solve_lightness(
         )
 
     # The identity surface already clears the target behind most wallpapers.
-    if separation(BAR_DARK_L) >= target:
-        return BAR_DARK_L
+    if separation(identity) >= target:
+        return identity
 
-    lifted = _rel_luminance(_over(_hsl(hue, sat, BAR_DARK_L), alpha, bg_rgb))
-    if lifted >= _rel_luminance(bg_rgb):
-        low, high = BAR_DARK_L, BAR_MAX_L  # wallpaper is darker: lift the bar
+    lifted = _rel_luminance(_over(_hsl(hue, sat, identity), alpha, bg_rgb))
+    lifting = lifted >= _rel_luminance(bg_rgb)
+    if lifting:
+        low, high = identity, lift_to  # wallpaper is darker: lift the bar
     else:
-        low, high = BAR_MIN_L, BAR_DARK_L  # wallpaper is lighter: deepen it
+        low, high = deepen_to, identity  # wallpaper is lighter: deepen it
 
     if separation(high) < target:
         # Even the far end of the range falls short. Take it anyway and let
         # build_palette report the shortfall rather than pretend we hit target.
-        return BAR_MAX_L if lifted >= _rel_luminance(bg_rgb) else BAR_MIN_L
+        return lift_to if lifting else deepen_to
 
-    # Bisect for the least change that still clears the target.
+    # Bisect for the least change that still clears the target. `high` is the
+    # attaining end when lifting; when deepening the roles are mirrored, so
+    # walk the interval accordingly.
     for _ in range(24):
         mid = (low + high) / 2
-        if separation(mid) < target:
-            low = mid
+        attains = separation(mid) >= target
+        if lifting:
+            if attains:
+                high = mid
+            else:
+                low = mid
         else:
-            high = mid
-    return high
+            if attains:
+                low = mid
+            else:
+                high = mid
+    return high if lifting else low
 
 
 def _rgba(rgb, alpha: float) -> str:
@@ -230,10 +257,50 @@ def _hex(rgb) -> str:
     return "#{:02X}{:02X}{:02X}".format(*rgb)
 
 
-def build_palette(avg_rgb) -> dict[str, str]:
-    r, g, b = tuple(max(0.0, min(255.0, c)) for c in avg_rgb)
+def _hex_to_rgb(value, fallback):
+    """Parse '#rrggbb' -> (r, g, b); `fallback` when absent or malformed."""
+    if isinstance(value, str):
+        digits = value.strip().lstrip("#")
+        if len(digits) == 6:
+            try:
+                return (
+                    int(digits[0:2], 16),
+                    int(digits[2:4], 16),
+                    int(digits[4:6], 16),
+                )
+            except ValueError:
+                pass
+    return fallback
+
+
+def load_theme() -> dict | None:
+    """The active theme definition written by `titan-theme`, if any.
+
+    With it, accent and ink follow the theme (so the bar agrees with every other
+    seam); without it the bar falls back to wallpaper-derived colour.
+    """
+    try:
+        with open(THEME_FILE, "r", encoding="utf-8") as handle:
+            data = json.load(handle)
+    except (OSError, ValueError):
+        return None
+    if isinstance(data, dict) and "palette" in data:
+        return data
+    return None
+
+
+def build_palette(avg_rgb, theme: dict | None = None) -> dict[str, str]:
+    r, g, b = tuple(max(0.0, min(255.0, value)) for value in avg_rgb)
     hue, _, sat = colorsys.rgb_to_hls(r / 255.0, g / 255.0, b / 255.0)
     luma = _rel_luminance((r, g, b))
+
+    is_dark = True
+    ink = INK
+    theme_accent = None
+    if theme:
+        is_dark = bool(theme.get("isDark", True))
+        ink = _hex_to_rgb(theme.get("palette", {}).get("textHigh"), INK)
+        theme_accent = _hex_to_rgb(theme.get("accent"), None)
 
     # A near-greyscale wallpaper has no stable hue to borrow; keep the brand.
     if sat < 0.1:
@@ -242,36 +309,59 @@ def build_palette(avg_rgb) -> dict[str, str]:
     else:
         accent_s = _clamp(0.3 + sat * 0.75, 0.35, 0.8)
 
-    t = _clamp(luma / 0.14)
-    bar_alpha = 0.95 - t * 0.09
+    identity, lift_to, deepen_to = DARK_RANGE if is_dark else LIGHT_RANGE
+    t = _clamp(luma / 0.14) if is_dark else _clamp((1.0 - luma) / 0.14)
 
-    bar_l = _solve_lightness(hue, BAR_SAT, (r, g, b), bar_alpha, TARGET_CONTRAST)
+    bar_alpha = 0.95 - t * 0.09
+    bar_l = _solve_lightness(
+        hue,
+        BAR_SAT,
+        (r, g, b),
+        bar_alpha,
+        TARGET_CONTRAST,
+        identity,
+        lift_to,
+        deepen_to,
+    )
     bar = _hsl(hue, BAR_SAT, bar_l)
-    accent = _hsl(hue, accent_s, 0.76)
+
+    accent = theme_accent if theme_accent else _hsl(hue, accent_s, 0.76)
+
+    if is_dark:
+        bar_border = f"rgba(255, 255, 255, {0.28 - 0.16 * t:.2f})"
+        bar_shadow = f"rgba(0, 0, 0, {0.78 - 0.22 * t:.2f})"
+        tip_border = f"rgba(255, 255, 255, {0.31 - 0.16 * t:.2f})"
+    else:
+        bar_border = f"rgba(0, 0, 0, {0.28 - 0.16 * t:.2f})"
+        bar_shadow = f"rgba(0, 0, 0, {0.40 - 0.18 * t:.2f})"
+        tip_border = f"rgba(0, 0, 0, {0.31 - 0.16 * t:.2f})"
 
     palette = {
         "bar-bg": _rgba(bar, bar_alpha),
-        "bar-border": f"rgba(255, 255, 255, {0.28 - 0.16 * t:.2f})",
-        "bar-shadow": f"rgba(0, 0, 0, {0.78 - 0.22 * t:.2f})",
+        "bar-border": bar_border,
+        "bar-shadow": bar_shadow,
         "accent": _hex(accent),
         "accent-soft": _rgba(accent, 0.16),
         "accent-line": _rgba(accent, 0.38),
         "tip-bg": _rgba(bar, min(0.99, 0.97 - 0.09 * t)),
-        "tip-border": f"rgba(255, 255, 255, {0.31 - 0.16 * t:.2f})",
+        "tip-border": tip_border,
     }
 
-    ink_ratio = contrast_ratio(INK, bar)
+    ink_ratio = contrast_ratio(ink, bar)
     if ink_ratio < 4.5:
         log(f"warning: ink on bar is only {ink_ratio:.2f}:1 (WCAG AA needs 4.5)")
 
     separation = contrast_ratio(_over(bar, bar_alpha, (r, g, b)), (r, g, b))
 
-    ceiling = (luma + 0.05) / 0.05
+    # Headroom at this wallpaper: a fully dark bar (dark themes) or a fully
+    # light one (light themes).
+    ceiling = (luma + 0.05) / 0.05 if is_dark else 1.05 / (luma + 0.05)
+    bar_word = "dark" if is_dark else "light"
     if separation < TARGET_CONTRAST - 0.02:
         if separation >= ceiling * 0.9:
             log(
                 f"note: {TARGET_CONTRAST:.2f}:1 is unreachable behind this wallpaper "
-                f"(a dark bar tops out at {ceiling:.2f}:1); achieved "
+                f"(a {bar_word} bar tops out at {ceiling:.2f}:1); achieved "
                 f"{separation:.2f}:1, "
                 f"{separation / ceiling * 100:.0f}% of the ceiling, relying on the "
                 f"{palette['bar-border']} border and shadow to delineate"
@@ -280,12 +370,13 @@ def build_palette(avg_rgb) -> dict[str, str]:
             log(
                 f"warning: bar/wallpaper separation is {separation:.2f}:1, below both "
                 f"the {TARGET_CONTRAST:.2f}:1 target and 90% of the {ceiling:.2f}:1 "
-                f"ceiling for a dark bar"
+                f"ceiling for a {bar_word} bar"
             )
 
     log(
-        f"wallpaper luma={luma:.4f} hue={hue * 360:.0f}deg sat={sat:.2f} -> "
-        f"bar={palette['bar-bg']} sep={separation:.2f}:1 ink={ink_ratio:.1f}:1"
+        f"{bar_word} bar over luma {luma:.4f} hue {hue * 360:.0f}deg sat {sat:.2f}: "
+        f"{palette['bar-bg']} (accent {palette['accent']}), "
+        f"separation {separation:.2f}:1 ink {ink_ratio:.2f}:1"
     )
 
     return palette
@@ -387,7 +478,7 @@ def main(argv: list[str]) -> int:
         log(f"{STYLE_CSS} not found; nothing to do")
         return 0
 
-    palette = build_palette(sample_wallpaper(wallpaper))
+    palette = build_palette(sample_wallpaper(wallpaper), load_theme())
     changed = patch_css(STYLE_CSS, palette)
 
     log(f"{os.path.basename(STYLE_CSS)} {'updated' if changed else 'already current'}")
