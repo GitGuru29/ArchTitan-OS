@@ -26,11 +26,11 @@ Item {
     }
     readonly property color typeColor: {
         var t = (root.workload.type || "").toString();
-        if (t === "AI_TASK")     return TitanTheme.mauve;
+        if (t === "AI_TASK")     return TitanTheme.accent;
         if (t === "WEB_DEV")     return TitanTheme.info;
         if (t === "ANDROID_DEV") return TitanTheme.success;
         if (t === "SYSTEM_DEV")  return TitanTheme.teal;
-        if (t === "VM")          return TitanTheme.peach;
+        if (t === "VM")          return TitanTheme.teal;
         if (t === "SERVICE")     return TitanTheme.warning;
         return TitanTheme.textMid;
     }

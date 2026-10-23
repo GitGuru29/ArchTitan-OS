@@ -595,7 +595,25 @@ def cmd_mode(mode: str) -> None:
         cmd_apply()
         print(theme["id"])
         return
-    cmd_set(target)
+
+    # Preserve current active wallpaper when toggling dark/light mode
+    active_wallpaper = theme.get("wallpaper", "")
+    try:
+        if os.path.isfile(WALLPAPER_FILE):
+            with open(WALLPAPER_FILE, "r", encoding="utf-8") as fh:
+                w = fh.readline().strip()
+                if w and os.path.isfile(w):
+                    active_wallpaper = w
+    except OSError:
+        pass
+
+    new_theme = theme_def(target)
+    if active_wallpaper:
+        new_theme["wallpaper"] = active_wallpaper
+
+    write_state(new_theme)
+    cmd_apply()
+    notify("Theme Mode", f"{'Dark' if want_dark else 'Light'} Mode")
 
 
 def cmd_cycle(step: int) -> None:

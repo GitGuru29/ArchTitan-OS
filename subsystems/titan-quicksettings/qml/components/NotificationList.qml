@@ -84,11 +84,8 @@ ColumnLayout {
                 height: 38
                 radius: 12
                 clip: true
-                gradient: Gradient {
-                    GradientStop { position: 0.0; color: TitanTheme.lavender }
-                    GradientStop { position: 1.0; color: TitanTheme.accent }
-                }
-                border.color: TitanTheme.lavender
+                color: TitanTheme.accent
+                border.color: TitanTheme.borderActive
                 border.width: 1
 
                 // Glass specular shine on album medallion

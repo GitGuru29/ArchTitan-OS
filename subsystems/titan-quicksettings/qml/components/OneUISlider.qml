@@ -114,11 +114,7 @@ RowLayout {
             }
             radius: parent.radius
 
-            gradient: Gradient {
-                orientation: Gradient.Horizontal
-                GradientStop { position: 0.0; color: sliderRoot.muted ? TitanTheme.textSubtle : TitanTheme.accent }
-                GradientStop { position: 1.0; color: sliderRoot.muted ? TitanTheme.textSubtle : TitanTheme.lavender }
-            }
+            color: sliderRoot.muted ? TitanTheme.textSubtle : sliderRoot.fillAccent
 
             Behavior on width {
                 enabled: !mouseArea.pressed

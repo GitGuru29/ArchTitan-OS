@@ -5,7 +5,7 @@
   "isDark": true,
   "accent": "#83A598",
   "accent2": "#8EC07C",
-  "wallpaper": "/usr/share/backgrounds/archtitan/titan-peach.jpg",
+  "wallpaper": "/usr/share/backgrounds/archtitan/titan-gruvbox.jpg",
   "source": "morhetz/gruvbox (dark)",
   "palette": {
     "crust": "#1D2021",

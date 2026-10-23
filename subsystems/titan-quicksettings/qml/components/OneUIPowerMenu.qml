@@ -396,8 +396,8 @@ Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 70
                 radius: TitanTheme.radiusCard
-                color: suspMa.containsMouse ? Qt.rgba(TitanTheme.lavender.r, TitanTheme.lavender.g, TitanTheme.lavender.b, 0.16) : TitanTheme.bgOneUICard
-                border.color: suspMa.containsMouse ? Qt.rgba(TitanTheme.lavender.r, TitanTheme.lavender.g, TitanTheme.lavender.b, 0.5) : TitanTheme.borderGlass
+                color: suspMa.containsMouse ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.16) : TitanTheme.bgOneUICard
+                border.color: suspMa.containsMouse ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.5) : TitanTheme.borderGlass
                 border.width: 1
                 scale: suspMa.pressed ? 0.97 : (suspMa.containsMouse ? 1.015 : 1.0)
                 Behavior on scale { NumberAnimation { duration: 130; easing.type: Easing.OutQuad } }
@@ -411,7 +411,7 @@ Rectangle {
                         width: 44
                         height: 44
                         radius: 22
-                        color: TitanTheme.lavender
+                        color: TitanTheme.accent
 
                         Text {
                             anchors.centerIn: parent

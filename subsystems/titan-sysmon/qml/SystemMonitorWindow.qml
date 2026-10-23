@@ -404,7 +404,7 @@ Window {
                         label: "Swap"
                         valueText: sysmon.swapUsedGb.toFixed(1) + " / " + sysmon.swapTotalGb.toFixed(1) + " GB"
                         pct: sysmon.swapUsedPct
-                        barColor: TitanTheme.mauve
+                        barColor: TitanTheme.accent
                     }
 
                     RowLayout {
@@ -500,7 +500,7 @@ Window {
                                 label: "VRAM"
                                 valueText: model.memUsed + " / " + model.memTotal + " MB"
                                 pct: model.memPct
-                                barColor: TitanTheme.mauve
+                                barColor: TitanTheme.teal
                             }
 
                             RowLayout {
@@ -717,9 +717,9 @@ Window {
                         Layout.preferredHeight: 36
                         visible: sysmon.thmAvailable
                         points: sysmon.thmPressureHistory
-                        lineColor: TitanTheme.mauve
-                        fillTop: Qt.rgba(TitanTheme.mauve.r, TitanTheme.mauve.g, TitanTheme.mauve.b, 0.24)
-                        fillBottom: Qt.rgba(TitanTheme.mauve.r, TitanTheme.mauve.g, TitanTheme.mauve.b, 0.0)
+                        lineColor: TitanTheme.accent
+                        fillTop: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.24)
+                        fillBottom: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.0)
                     }
 
                     Repeater {
