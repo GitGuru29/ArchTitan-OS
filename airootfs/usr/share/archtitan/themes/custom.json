@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "id": "custom",
+  "name": "ArchTitan Custom",
+  "isDark": true,
+  "accent": "#00D2FF",
+  "accent2": "#0284C7",
+  "wallpaper": "/usr/share/backgrounds/archtitan/titan-custom.jpg",
+  "source": "archtitan/custom",
+  "palette": {
+    "crust": "#0F1117",
+    "mantle": "#141720",
+    "base": "#1A1D27",
+    "surface0": "#222634",
+    "surface1": "#2D3345",
+    "surface2": "#404860",
+    "surface3": "#5A6582",
+    "border": "#222634",
+    "textHigh": "#F1F5F9",
+    "textMid": "#CBD5E1",
+    "textLow": "#64748B",
+    "success": "#10B981",
+    "warning": "#F59E0B",
+    "danger": "#EF4444",
+    "teal": "#14B8A6",
+    "mauve": "#8B5CF6",
+    "peach": "#F97316",
+    "pink": "#EC4899"
+  }
+}

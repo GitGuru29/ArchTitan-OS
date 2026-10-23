@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "id": "kanagawa",
+  "name": "Kanagawa",
+  "isDark": true,
+  "accent": "#7E9CD8",
+  "accent2": "#7FB4CA",
+  "wallpaper": "/usr/share/backgrounds/archtitan/titan-kanagawa.jpg",
+  "source": "rebelot/kanagawa.nvim",
+  "palette": {
+    "crust": "#16161D",
+    "mantle": "#181820",
+    "base": "#1F1F28",
+    "surface0": "#223249",
+    "surface1": "#2D4F67",
+    "surface2": "#54546D",
+    "surface3": "#727169",
+    "border": "#223249",
+    "textHigh": "#DCD7BA",
+    "textMid": "#C8C093",
+    "textLow": "#727169",
+    "success": "#76946A",
+    "warning": "#E6C384",
+    "danger": "#C34043",
+    "teal": "#7AA89F",
+    "mauve": "#957FB8",
+    "peach": "#FFA066",
+    "pink": "#D27E99"
+  }
+}
