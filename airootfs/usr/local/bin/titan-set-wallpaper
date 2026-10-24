@@ -83,4 +83,12 @@ if [[ -z "${TITAN_QUIET:-}" ]]; then
     NAME="$(basename "${WALLPAPER_PATH%.*}")"
     notify-send -u low -i preferences-desktop-wallpaper \
         "Wallpaper applied" "$NAME" 2>/dev/null || true
+    snd="/usr/share/sounds/freedesktop/stereo/complete.oga"
+    if [[ -f "$snd" ]]; then
+        if command -v pw-play >/dev/null 2>&1; then
+            pw-play "$snd" >/dev/null 2>&1 &
+        elif command -v paplay >/dev/null 2>&1; then
+            paplay "$snd" >/dev/null 2>&1 &
+        fi
+    fi
 fi

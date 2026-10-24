@@ -64,6 +64,7 @@ file_permissions=(
   ["/usr/local/bin/titan-theme"]="0:0:755"
   ["/usr/local/bin/titan-quicksettings"]="0:0:755"
   ["/usr/local/bin/titan-quicksettings-toggle"]="0:0:755"
+  ["/usr/local/bin/titan-screenshot"]="0:0:755"
   # Hot-zone interaction layer
   ["/usr/local/bin/titan-hotzones"]="0:0:755"
   ["/usr/local/bin/titan-zone-osd"]="0:0:755"
