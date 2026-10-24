@@ -69,9 +69,43 @@ std::string serialize_snapshot(const TelemetrySnapshot& s) {
       << ",\"mem_total_kb\":"   << s.mem_total_kb
       << ",\"mem_available_kb\":" << s.mem_available_kb
       << '}';
+    o << ",\"cpu\":{"
+      << "\"psi_valid\":"  << (s.cpu_psi_valid ? "true" : "false")
+      << ",\"psi_some_avg10\":"  << f2(s.cpu_psi_avg10)
+      << ",\"psi_some_avg60\":"  << f2(s.cpu_psi_avg60)
+      << ",\"psi_some_avg300\":" << f2(s.cpu_psi_avg300)
+      << ",\"load1\":"  << f2(s.load1)
+      << ",\"load5\":"  << f2(s.load5)
+      << ",\"load15\":" << f2(s.load15)
+      << ",\"runnable\":" << s.runnable_procs
+      << ",\"total\":"    << s.total_procs
+      << '}';
     o << ",\"governor\":\"" << esc(s.governor) << '"';
     o << ",\"workload_count\":" << s.workload_count;
     o << ",\"active_workloads\":" << s.active_workloads;
+    o << ",\"classified_workloads\":" << s.classified_workloads;
+    o << ",\"observed_workloads\":" << s.observed_workloads;
+    o << ",\"processes\":{"
+      << "\"seen\":"      << s.processes_seen
+      << ",\"protected\":" << s.processes_protected
+      << ",\"assigned\":"  << s.processes_assigned
+      << ",\"unmanaged\":" << s.processes_unmanaged
+      << ",\"hyprland_connected\":" << (s.hyprland_connected ? "true" : "false")
+      << '}';
+
+    o << ",\"top_unmanaged\":[";
+    for (size_t i = 0; i < s.top_unmanaged.size(); ++i) {
+        const auto& u = s.top_unmanaged[i];
+        if (i) o << ',';
+        o << '{'
+          << "\"pid\":"    << u.pid
+          << ",\"comm\":\"" << esc(u.comm) << '"'
+          << ",\"cpu_pct\":" << f2(u.cpu_pct)
+          << ",\"mem_mb\":"  << (u.rss_kb / 1024)
+          << ",\"reason\":\"" << esc(u.reason) << '"'
+          << '}';
+    }
+    o << ']';
 
     o << ",\"last_action\":";
     if (s.has_last_action && !s.last_action.empty()) {
@@ -96,6 +130,8 @@ std::string serialize_snapshot(const TelemetrySnapshot& s) {
           << ",\"state\":\""  << esc(w.state) << '"'
           << ",\"pids\":"     << w.pid_count
           << ",\"mem_mb\":"   << (w.mem_kb / 1024)
+          << ",\"cpu_pct\":"  << f2(w.cpu_pct)
+          << ",\"observed\":" << (w.observed ? "true" : "false")
           << '}';
     }
     o << "]}";

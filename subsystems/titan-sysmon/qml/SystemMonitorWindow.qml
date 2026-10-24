@@ -652,7 +652,8 @@ Window {
                     title: "Titan Hardware Manager"
                     glyph: "\uf0e7"
                     subtitle: sysmon.thmAvailable
-                              ? (sysmon.thmWorkloadCount + " workloads")
+                              ? (sysmon.thmClassifiedWorkloads + " classified · "
+                                 + sysmon.thmWorkloadCount + " tracked")
                               : "offline"
 
                     // Offline state
@@ -705,11 +706,27 @@ Window {
                         }
                         Item { Layout.fillWidth: true }
                         Text {
-                            text: sysmon.thmActiveWorkloads + " active / " + sysmon.thmWorkloadCount
+                            text: sysmon.thmActiveWorkloads + " active · "
+                                  + sysmon.thmClassifiedWorkloads + " classified"
                             color: TitanTheme.textMid
                             font.family: TitanTheme.monoFamily
                             font.pixelSize: 10
                         }
+                    }
+
+                    // Explain an empty classification set instead of leaving the
+                    // user with a bare "0 workloads" that looks like a bug.
+                    Text {
+                        Layout.fillWidth: true
+                        visible: sysmon.thmAvailable && sysmon.thmClassifiedWorkloads === 0
+                        text: "No dev workload classified yet — THM is tracking "
+                              + sysmon.thmWorkloadCount + " process tree(s), "
+                              + sysmon.thmProcessesUnmanaged + " unmanaged. "
+                              + "Run `titan-hwm scan` for details."
+                        color: TitanTheme.textLow
+                        font.family: TitanTheme.fontFamily
+                        font.pixelSize: 9
+                        wrapMode: Text.WordWrap
                     }
 
                     Sparkline {

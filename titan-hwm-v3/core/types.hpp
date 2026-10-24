@@ -100,6 +100,8 @@ struct ProcessNode {
     char        proc_state = '?'; // R, S, D, T, Z from /proc/pid/stat
     long        rss_kb     = 0;
     long        cpu_ticks  = 0;  // utime+stime snapshot for delta
+    float       cpu_pct    = 0.0f; // % CPU over the last sample window (100% = 1 core)
+    uid_t       uid        = 0;   // real UID from stat("/proc/<pid>")
     std::vector<pid_t> children;
 
     // Ownership — assigned by OwnershipGraph
@@ -130,6 +132,12 @@ struct Workload {
     bool          is_protected       = false; // hard block — never touch
     bool          ai_owned           = false; // AI agent owns this workload
     bool          latency_sensitive  = false; // TitanMirror, audio, real-time
+    // v3.1: observation-only workload. Tracked for telemetry so the system
+    // monitor reflects real process trees, but NEVER granted enforcement
+    // authority: PolicyEngine always returns KEEP_BACKGROUND and the daemon
+    // skips enforcement for it. A workload leaves observation-only status once
+    // the classifier identifies it.
+    bool          observed           = false;
     // ── v3.1 additions ────────────────────────────────────────────────────
     bool          is_browser_root    = false; // HC-05/06: browser root — skip SIGSTOP on FREEZE
     bool          is_reclassifiable  = false; // HC-10: allow WorkloadType re-evaluation

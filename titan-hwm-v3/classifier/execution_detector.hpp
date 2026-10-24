@@ -125,6 +125,12 @@ private:
     // Previous CPU tick counts for delta calculation (pid → utime+stime)
     std::unordered_map<pid_t, long> prev_ticks_;
 
+    // Wall-clock time of the previous sample (pid → time). Used to convert the
+    // tick delta into a true percentage — the detector is driven by the daemon
+    // tick (200 ms), not by ExecutionConfig::sample_ms, so a fixed window would
+    // mis-scale every reading.
+    std::unordered_map<pid_t, time_point> last_sample_;
+
     // Read utime+stime from /proc/<pid>/stat
     static long read_cpu_ticks(pid_t pid);
 

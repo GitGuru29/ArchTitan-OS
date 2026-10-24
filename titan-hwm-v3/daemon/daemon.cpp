@@ -38,7 +38,12 @@
 #include <filesystem>
 #include <algorithm>
 #include <sstream>
+#include <deque>
+#include <iomanip>
+#include <ctime>
+#include <unordered_set>
 #include <unistd.h>
+#include <sys/stat.h>
 
 namespace fs = std::filesystem;
 
@@ -58,6 +63,94 @@ static const char* governor_to_string(thm::GovernorHint h) {
         case thm::GovernorHint::SCHEDUTIL:
         default:                             return "schedutil";
     }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Observation-mode helpers
+//
+// THM v3 originally registered a workload only when FusionClassifier returned
+// a non-NEUTRAL type. On a desktop with no dev project open that means the
+// registry is legitimately empty and the system monitor shows "0 workloads",
+// which is truthful but useless. Observation mode fills that gap: every
+// user-session process tree root is tracked for telemetry only, with no
+// enforcement authority whatsoever.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// /proc/<pid>/stat truncates comm to TASK_COMM_LEN-1 = 15 characters. Match
+// against full names by comparing the truncated prefix, otherwise entries like
+// "xdg-document-portal" never match "xdg-document-po".
+static bool comm_set_contains(const std::unordered_set<std::string>& set,
+                              const std::string& comm) {
+    if (set.count(comm)) return true;
+    if (comm.size() != 15) return false;
+    for (const auto& name : set) {
+        if (name.size() > 15 && name.compare(0, 15, comm) == 0)
+            return true;
+    }
+    return false;
+}
+
+// Session managers: walking *through* one of these exits the user app tree.
+static bool is_session_manager_comm(const std::string& comm) {
+    static const std::unordered_set<std::string> kMgrs = {
+        "systemd", "init", "Hyprland", "hyprland", "hyprland-wr",
+        "dbus-daemon", "dbus-broker", "dbus-broker-lau"
+    };
+    return comm_set_contains(kMgrs, comm);
+}
+
+// Desktop infrastructure that is already protected/managed elsewhere. Tracking
+// these as workloads would just add noise to the monitor.
+static bool is_desktop_infra_comm(const std::string& comm) {
+    static const std::unordered_set<std::string> kInfra = {
+        "Hyprland", "hyprland", "waybar", "pipewire", "pipewire-pulse",
+        "wireplumber", "dbus-daemon", "dbus-broker", "dbus-broker-lau",
+        "systemd", "Xwayland", "xdg-desktop-portal", "xdg-desktop-portal-hyprland",
+        "xdg-desktop-portal-gtk", "xdg-document-portal", "xdg-permission-store",
+        "gnome-keyring-daemon", "gcr-ssh-agent", "ssh-agent", "kwalletd6",
+        "at-spi-bus-launcher", "at-spi2-registryd", "polkit-gnome-authentication-agent-1",
+        "xdg-user-dirs-update", "swww-daemon", "hypridle", "hyprlock",
+        "cliphist", "wl-paste", "socat", "titan-hwm-daemon",
+        // Quickshell-based desktop shell + misc session helpers
+        "qs", "quickshell", "easyeffects", "ydotoold", "start-hyprland",
+        "sd-pam", "hyprsunset", "dconf-service", "chrome_crashpad_handler",
+        "xdg-document-portal", "xdg-permission-store", "gvfsd", "gvfsd-fuse",
+        "gvfs-udisks2-volume-monitor", "udisksd", "upowerd"
+    };
+    return comm_set_contains(kInfra, comm);
+}
+
+// Walk up the process tree until the parent is a session manager, a system
+// process, or missing. The highest user-owned ancestor below the session
+// manager is the application root (terminal, IDE, browser, game, ...).
+static pid_t resolve_tree_root(
+        pid_t pid,
+        const std::unordered_map<pid_t, thm::ProcessNode>& graph) {
+    pid_t root = pid;
+    pid_t cur  = pid;
+    for (int depth = 0; depth < 64; ++depth) {
+        auto it = graph.find(cur);
+        if (it == graph.end()) break;
+        pid_t parent = it->second.ppid;
+        if (parent <= 1) break;
+        auto pit = graph.find(parent);
+        if (pit == graph.end()) break;
+        const auto& p = pit->second;
+        if (is_session_manager_comm(p.comm)) break;
+        if (p.uid < 1000) break;
+        root = parent;
+        cur  = parent;
+    }
+    return root;
+}
+
+static std::string wall_clock_hms() {
+    std::time_t t = std::time(nullptr);
+    std::tm tm{};
+    localtime_r(&t, &tm);
+    char buf[16];
+    std::strftime(buf, sizeof(buf), "%H:%M:%S", &tm);
+    return buf;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -86,6 +179,243 @@ static std::string format_status(const thm::TelemetrySnapshot& s) {
         o << "\n";
     } else {
         o << "  Last action:     none\n";
+    }
+    return o.str();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// format_workloads — `titan-hwm workloads [--classified|--observed]`
+// ─────────────────────────────────────────────────────────────────────────────
+static std::string format_workloads(const thm::TelemetrySnapshot& s,
+                                    bool only_classified,
+                                    bool only_observed) {
+    std::ostringstream o;
+    o << std::left
+      << std::setw(6)  << "ID"
+      << std::setw(8)  << "PID"
+      << std::setw(5)  << "WS"
+      << std::setw(14) << "TYPE"
+      << std::setw(23) << "STATE"
+      << std::right << std::setw(8) << "CPU%"
+      << std::setw(9) << "MEM"
+      << std::setw(7) << "PIDS"
+      << "  NAME\n";
+    o << std::string(96, '-') << "\n";
+
+    int shown = 0;
+    for (const auto& w : s.workloads) {
+        if (only_classified && w.observed) continue;
+        if (only_observed && !w.observed) continue;
+        ++shown;
+        o << std::left
+          << std::setw(6)  << w.id
+          << std::setw(8)  << w.root_pid
+          << std::setw(5)  << w.workspace_id
+          << std::setw(14) << w.type
+          << std::setw(23) << w.state
+          << std::right << std::fixed << std::setprecision(1)
+          << std::setw(8)  << w.cpu_pct
+          << std::setw(9)  << (std::to_string(w.mem_kb / 1024) + "M")
+          << std::setw(7)  << w.pid_count
+          << "  " << w.name << (w.observed ? " [observed]" : "")
+          << "\n";
+    }
+    o.unsetf(std::ios::fixed);
+    o << std::string(96, '-') << "\n";
+    o << shown << " shown  |  "
+      << s.classified_workloads << " classified, "
+      << s.observed_workloads << " observed, "
+      << s.active_workloads << " active\n";
+    return o.str();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// format_top — `titan-hwm top [N]`
+// ─────────────────────────────────────────────────────────────────────────────
+static std::string format_top(const thm::TelemetrySnapshot& s, size_t n) {
+    std::vector<thm::TelemetryWorkload> wls = s.workloads;
+    std::sort(wls.begin(), wls.end(),
+              [](const thm::TelemetryWorkload& a, const thm::TelemetryWorkload& b) {
+                  return a.cpu_pct > b.cpu_pct;
+              });
+    if (n < wls.size()) wls.resize(n);
+
+    std::ostringstream o;
+    o << std::left
+      << std::setw(6) << "ID"
+      << std::setw(8) << "PID"
+      << std::right << std::setw(8) << "CPU%"
+      << std::setw(9) << "MEM"
+      << std::left << "  TYPE          NAME\n";
+    o << std::string(80, '-') << "\n";
+    for (const auto& w : wls) {
+        o << std::left << std::setw(6) << w.id << std::setw(8) << w.root_pid
+          << std::right << std::fixed << std::setprecision(1)
+          << std::setw(8) << w.cpu_pct
+          << std::setw(9) << (std::to_string(w.mem_kb / 1024) + "M")
+          << std::left << "  " << std::setw(14) << w.type
+          << w.name << (w.observed ? " [observed]" : "") << "\n";
+    }
+    o.unsetf(std::ios::fixed);
+    return o.str();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// format_pressure — `titan-hwm pressure`
+// ─────────────────────────────────────────────────────────────────────────────
+static std::string format_pressure(const thm::TelemetrySnapshot& s) {
+    std::ostringstream o;
+    o << std::fixed << std::setprecision(2);
+    o << "Pressure level:  " << s.pressure_level << "\n";
+    o << "Memory PSI:      some " << s.psi_some_avg10
+      << "%   full " << s.psi_full_avg10 << "%  (avg10)\n";
+    o << "CPU PSI:         ";
+    if (s.cpu_psi_valid)
+        o << "some " << s.cpu_psi_avg10 << "%  (avg60 "
+          << s.cpu_psi_avg60 << "%, avg300 " << s.cpu_psi_avg300 << "%)";
+    else
+        o << "unavailable (/proc/pressure/cpu missing)";
+    o << "\n";
+    o << "Load average:    " << s.load1 << " " << s.load5 << " " << s.load15
+      << "   (" << s.runnable_procs << " runnable / " << s.total_procs << ")\n";
+    o << "Memory used:     " << s.mem_used_pct << "%  ("
+      << (s.mem_available_kb / 1024) << " MB free of "
+      << (s.mem_total_kb / 1024) << " MB)\n";
+    o << "Workloads:       " << s.active_workloads << " active / "
+      << s.workload_count << " tracked  ("
+      << s.classified_workloads << " classified, "
+      << s.observed_workloads << " observed)\n";
+    o << "Hyprland IPC:    "
+      << (s.hyprland_connected ? "connected" : "DISCONNECTED (retrying)")
+      << "\n";
+    if (s.has_last_action && !s.last_action.empty())
+        o << "Last action:     " << s.last_action << "  " << s.last_action_target
+          << " (pid " << s.last_action_pid << ")\n";
+    else
+        o << "Last action:     none\n";
+
+    // Explain the memory decision from the same thresholds compute_pressure()
+    // uses, so the level is never a black box.
+    o << "Reason:          ";
+    if (s.psi_full_avg10 >= 15.0f || s.psi_some_avg10 >= 40.0f)
+        o << "memory PSI full >= 15% or some >= 40% -> CRITICAL\n";
+    else if (s.psi_some_avg10 >= 20.0f)
+        o << "memory PSI some >= 20% -> HIGH\n";
+    else if (s.psi_some_avg10 >= 5.0f)
+        o << "memory PSI some >= 5% -> MODERATE\n";
+    else if (s.mem_total_kb > 0 && s.mem_used_pct >= 85.0f)
+        o << "RAM used >= 85% -> CRITICAL\n";
+    else if (s.mem_total_kb > 0 && s.mem_used_pct >= 75.0f)
+        o << "RAM used >= 75% -> HIGH\n";
+    else if (s.mem_total_kb > 0 && s.mem_used_pct >= 50.0f)
+        o << "RAM used >= 50% -> MODERATE\n";
+    else
+        o << "all memory signals below thresholds -> NORMAL\n";
+    o << "Note:            CPU pressure is telemetry-only; it can never "
+         "produce RECLAIM (HC-CPU-1).\n";
+    return o.str();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// format_scan — `titan-hwm scan` : why is the workload count what it is?
+// ─────────────────────────────────────────────────────────────────────────────
+static std::string format_scan(const thm::TelemetrySnapshot& s) {
+    std::ostringstream o;
+    o << "Process inventory\n";
+    o << "  seen:          " << s.processes_seen << "\n";
+    o << "  protected:     " << s.processes_protected << "\n";
+    o << "  assigned:      " << s.processes_assigned << "\n";
+    o << "  unmanaged:     " << s.processes_unmanaged << "\n\n";
+    o << "Workloads\n";
+    o << "  classified:    " << s.classified_workloads
+      << "   (enforcement-eligible)\n";
+    o << "  observed:      " << s.observed_workloads
+      << "   (telemetry only, never throttled/frozen/reclaimed)\n";
+    o << "  active:        " << s.active_workloads << "\n\n";
+    o << "Hyprland IPC:    "
+      << (s.hyprland_connected ? "connected"
+                               : "DISCONNECTED — window-title signal unavailable")
+      << "\n";
+    if (!s.has_last_action || s.last_action.empty()) {
+        // nothing notable
+    }
+
+    o << "\nTop unmanaged user processes";
+    if (s.top_unmanaged.empty()) {
+        o << ": none\n";
+    } else {
+        o << "\n";
+        o << std::left << std::setw(8) << "PID" << std::setw(20) << "COMM"
+          << std::right << std::setw(8) << "CPU%"
+          << std::setw(9) << "MEM" << std::left << "  REASON\n";
+        o << std::string(86, '-') << "\n";
+        for (const auto& u : s.top_unmanaged) {
+            o << std::left << std::setw(8) << u.pid
+              << std::setw(20) << u.comm
+              << std::right << std::fixed << std::setprecision(1)
+              << std::setw(8) << u.cpu_pct
+              << std::setw(9) << (std::to_string(u.rss_kb / 1024) + "M")
+              << std::left << "  " << u.reason << "\n";
+        }
+        o.unsetf(std::ios::fixed);
+    }
+    o << "\nClassified workloads need a dev signal (LSP/build child, project "
+         "CWD marker,\nwindow title, or a recognised service/VM/browser root). "
+         "Observed workloads\nare shown for visibility and are never enforced.\n";
+    return o.str();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// format_explain — `titan-hwm explain <workload-id|root-pid|name>`
+// ─────────────────────────────────────────────────────────────────────────────
+static std::string format_explain(const thm::TelemetrySnapshot& s,
+                                  const std::string& needle) {
+    const thm::TelemetryWorkload* found = nullptr;
+    for (const auto& w : s.workloads) {
+        if (std::to_string(w.id) == needle ||
+            std::to_string(w.root_pid) == needle ||
+            w.name == needle ||
+            (!needle.empty() && w.name.find(needle) != std::string::npos)) {
+            found = &w;
+            break;
+        }
+    }
+
+    std::ostringstream o;
+    if (!found) {
+        o << "No tracked workload matches '" << needle << "'.\n";
+        for (const auto& u : s.top_unmanaged) {
+            if (std::to_string(u.pid) == needle || u.comm == needle) {
+                o << "Found unmanaged process pid " << u.pid << " (" << u.comm
+                  << "): " << u.reason << "\n"
+                  << "It is not a workload, so no policy is applied to it.\n";
+                return o.str();
+            }
+        }
+        o << "Try `titan-hwm scan` to see unmanaged processes, or "
+             "`titan-hwm workloads`.\n";
+        return o.str();
+    }
+
+    const auto& w = *found;
+    o << "Workload " << w.id << "\n";
+    o << "  root pid:    " << w.root_pid << "\n";
+    o << "  name:        " << w.name << "\n";
+    o << "  type:        " << w.type << "\n";
+    o << "  state:       " << w.state << "\n";
+    o << "  workspace:   " << w.workspace_id
+      << (w.workspace_id == -2 ? " (headless / unknown)" : "") << "\n";
+    o << "  members:     " << w.pid_count << "\n";
+    o << "  CPU:         " << std::fixed << std::setprecision(1)
+      << w.cpu_pct << "%\n";
+    o << "  memory:      " << (w.mem_kb / 1024) << " MB\n";
+    o.unsetf(std::ios::fixed);
+    if (w.observed) {
+        o << "  authority:   OBSERVED — telemetry only. No dev signal matched,\n"
+             "               so THM will never throttle, freeze or reclaim it.\n";
+    } else {
+        o << "  authority:   CLASSIFIED — eligible for policy enforcement,\n"
+             "               subject to the protected-domain and HC invariants.\n";
     }
     return o.str();
 }
@@ -133,6 +463,14 @@ static void refresh_proc_graph(std::unordered_map<pid_t, thm::ProcessNode>& grap
             long total_pages = 0, rss_pages = 0;
             if (mf >> total_pages >> rss_pages)
                 n.rss_kb = rss_pages * 4; // 4 KB pages
+        }
+
+        // Ownership — one stat() syscall on /proc/<pid> gives the real UID.
+        // Used to keep observation mode scoped to interactive user apps.
+        {
+            struct stat st{};
+            if (::stat(("/proc/" + d).c_str(), &st) == 0)
+                n.uid = st.st_uid;
         }
 
         graph[pid] = std::move(n);
@@ -304,14 +642,79 @@ int main(int argc, char* argv[]) {
     thm::CommandServer cmd_server;
     std::mutex snap_mutex;
     thm::TelemetrySnapshot shared_snap;
-    cmd_server.set_handler([&](const std::string& cmd) -> std::string {
-        if (cmd == "status") {
-            std::lock_guard<std::mutex> lk(snap_mutex);
-            return format_status(shared_snap);
+
+    // Bounded history of enforcement actions, exposed by `titan-hwm decisions`.
+    // Guarded by snap_mutex (written from the tick loop, read from the command
+    // thread).
+    std::deque<std::string> decision_log;
+    constexpr size_t kMaxDecisionLog = 64;
+
+    cmd_server.set_handler([&](const std::string& raw) -> std::string {
+        // Split verb + arguments. One line per connection, so a simple
+        // whitespace split is sufficient.
+        std::string cmd = raw;
+        std::string verb, args;
+        auto sp = cmd.find(' ');
+        if (sp == std::string::npos) {
+            verb = cmd;
+        } else {
+            verb = cmd.substr(0, sp);
+            args = cmd.substr(sp + 1);
+            while (!args.empty() &&
+                   (args.front() == ' ' || args.front() == '\t')) args.erase(args.begin());
+            while (!args.empty() &&
+                   (args.back() == ' ' || args.back() == '\t')) args.pop_back();
         }
-        if (cmd == "ping")
+
+        if (verb == "ping")
             return "pong\n";
-        return "titan-hwm: unknown command '" + cmd + "'\n";
+
+        std::lock_guard<std::mutex> lk(snap_mutex);
+
+        if (verb == "status")    return format_status(shared_snap);
+        if (verb == "pressure")  return format_pressure(shared_snap);
+        if (verb == "scan")      return format_scan(shared_snap);
+        if (verb == "dump")      return thm::serialize_snapshot(shared_snap) + "\n";
+
+        if (verb == "workloads") {
+            bool only_classified = args.find("--classified") != std::string::npos;
+            bool only_observed   = args.find("--observed")   != std::string::npos;
+            return format_workloads(shared_snap, only_classified, only_observed);
+        }
+
+        if (verb == "top") {
+            size_t n = 10;
+            if (!args.empty()) {
+                try { n = static_cast<size_t>(std::stoul(args)); } catch (...) {}
+            }
+            if (n == 0 || n > 256) n = 10;
+            return format_top(shared_snap, n);
+        }
+
+        if (verb == "explain") {
+            if (args.empty())
+                return "usage: titan-hwm explain <workload-id|root-pid|name>\n";
+            return format_explain(shared_snap, args);
+        }
+
+        if (verb == "decisions") {
+            size_t n = 20;
+            if (!args.empty()) {
+                try { n = static_cast<size_t>(std::stoul(args)); } catch (...) {}
+            }
+            if (n == 0 || n > kMaxDecisionLog) n = kMaxDecisionLog;
+            std::ostringstream o;
+            if (decision_log.empty()) {
+                o << "No enforcement actions recorded yet.\n";
+            } else {
+                size_t start = decision_log.size() > n ? decision_log.size() - n : 0;
+                for (size_t i = start; i < decision_log.size(); ++i)
+                    o << decision_log[i] << "\n";
+            }
+            return o.str();
+        }
+
+        return "titan-hwm: unknown command '" + verb + "'\n";
     });
     if (!cmd_server.start()) {
         std::cerr << "[THM] WARNING: command server failed to start — "
@@ -340,25 +743,59 @@ int main(int argc, char* argv[]) {
         auto workspaces = ws_monitor.snapshot_workspaces();
 
         // ── (c) Read pressure ───────────────────────────────────────────────
-        thm::MemInfo  mem = thm::read_meminfo();
-        thm::PSIStats psi = thm::read_memory_psi();
+        thm::MemInfo    mem = thm::read_meminfo();
+        thm::PSIStats   psi = thm::read_memory_psi();
+        thm::CpuPSIStats cpu_psi = thm::read_cpu_psi();
+        thm::LoadAverage loadavg = thm::read_loadavg();
+        // HC-CPU-1: compute_pressure() intentionally receives memory signals
+        // only. CPU pressure is read for telemetry but never escalates.
         thm::PressureLevel pressure = thm::compute_pressure(mem, psi);
 
-        // ── (d) Classify + assign new processes ─────────────────────────────
+        // ── (d) Classify + assign new processes (observation-aware) ─────────
+        // Counters feed the telemetry `processes` block and `titan-hwm scan`,
+        // so an empty registry is always explainable instead of mysterious.
+        int processes_seen      = 0;
+        int processes_protected = 0;
+        int processes_assigned  = 0;
+
+        // Cap observed workloads so a pathological fork storm cannot turn the
+        // telemetry into an unbounded registry.
+        constexpr int kMaxObserved = 128;
+        int observed_count = 0;
+        for (uint32_t id : workload_mgr.all_ids()) {
+            auto* w = workload_mgr.get(id);
+            if (w && w->observed) ++observed_count;
+        }
+
         for (auto& [pid, node] : proc_graph) {
-            if (registry.is_protected(pid, node.comm)) continue; // skip protected
+            ++processes_seen;
+            if (registry.is_protected(pid, node.comm)) {
+                ++processes_protected;
+                continue; // skip protected
+            }
 
             uint32_t existing_wl_id = ownership.workload_of(pid);
 
             if (existing_wl_id != 0) {
-                // HC-10: Dynamic re-classification — detect cmdline drift
-                // If the root PID's cmdline changed significantly (e.g. npm → cargo),
-                // mark the workload as reclassifiable and re-run classifier.
+                ++processes_assigned;
+                // HC-10: Dynamic re-classification — detect cmdline drift.
+                // Observed workloads are retried periodically: a terminal that
+                // starts a build later has no cmdline drift but does gain a
+                // classifying child, and should be promoted to enforcement.
                 auto* wl = workload_mgr.get(existing_wl_id);
-                if (wl && wl->root_pid == pid && wl->is_reclassifiable) {
-                    if (!node.cmdline.empty() && node.cmdline != wl->root_cmdline) {
+                if (wl && wl->root_pid == pid) {
+                    bool try_reclassify = false;
+                    if (wl->observed) {
+                        try_reclassify = (tick_count % 10 == 0);
+                    } else if (wl->is_reclassifiable &&
+                               !node.cmdline.empty() &&
+                               node.cmdline != wl->root_cmdline) {
                         std::cout << "[THM] Cmdline drift on workload " << existing_wl_id
                                   << ": '" << wl->root_cmdline << "' → '" << node.cmdline << "'\n";
+                        try_reclassify = true;
+                    }
+
+                    if (try_reclassify) {
                         int ws_id = ws_monitor.focused_workspace();
                         std::string title;
                         auto ws_it = workspaces.find(ws_id);
@@ -368,8 +805,19 @@ int main(int argc, char* argv[]) {
                             wl->type          = result.type;
                             wl->confidence    = result.confidence;
                             wl->is_building   = result.is_building;
+                            wl->has_lsp       = result.has_lsp;
+                            wl->latency_sensitive = result.latency_sensitive;
+                            wl->is_browser_root   = result.is_browser_root;
+                            if (wl->observed) {
+                                std::cout << "[THM] Promoted observed workload " << wl->id
+                                          << " (" << wl->root_cmdline << ") to "
+                                          << thm::to_string(result.type) << "\n";
+                                wl->observed = false;
+                            }
                             wl->root_cmdline  = node.cmdline;
                             wl->is_reclassifiable = false; // reset until next drift
+                        } else if (!wl->observed) {
+                            wl->root_cmdline = node.cmdline;
                         }
                     }
                 }
@@ -417,7 +865,8 @@ int main(int argc, char* argv[]) {
                 wl.is_browser_root  = result.is_browser_root;  // HC-05/06
                 wl.is_reclassifiable = true;                   // HC-10: all new workloads eligible
                 wl.root_pid         = pid;
-                wl.root_cmdline     = node.cmdline;            // HC-10: drift baseline
+                wl.root_cmdline     = node.cmdline.empty() ? node.comm
+                                                           : node.cmdline; // HC-10
                 wl.state            = thm::WorkloadState::DISCOVERED;
                 wl.workspace_id     = ws_id;                   // HC-03: -2 if headless
                 wl.created_at       = thm::ms_clock::now();
@@ -425,8 +874,66 @@ int main(int argc, char* argv[]) {
                 wl.pids.push_back(pid);
                 ownership.assign(pid, wl.id);
                 workload_mgr.add(std::move(wl));
+            } else {
+                // ── Observation-mode fallback (v3.1) ──────────────────────────
+                // No dev signal matched. If this PID is not the root of its
+                // user-session process tree, leave it: the root creates the
+                // observed workload and the child inherits it on a later tick.
+                pid_t root = resolve_tree_root(pid, proc_graph);
+                if (root != pid)
+                    continue;
+
+                // Only interactive user processes. Kernel threads and system
+                // daemons stay unmanaged by design.
+                if (node.uid < 1000) continue;
+                if (is_session_manager_comm(node.comm) ||
+                    is_desktop_infra_comm(node.comm)) continue;
+                if (observed_count >= kMaxObserved) continue;
+
+                thm::Workload wl;
+                wl.id               = next_workload_id++;
+                wl.type             = thm::WorkloadType::NEUTRAL;
+                wl.observed         = true;                    // telemetry only
+                wl.is_reclassifiable = true;                   // may be promoted
+                wl.root_pid         = pid;
+                wl.root_cmdline     = node.cmdline.empty() ? node.comm : node.cmdline;
+                wl.state            = thm::WorkloadState::DISCOVERED;
+                wl.workspace_id     = ws_id;                   // HC-03: -2 if headless
+                wl.created_at       = thm::ms_clock::now();
+                wl.last_active      = thm::ms_clock::now();
+                wl.pids.push_back(pid);
+                ownership.assign(pid, wl.id);
+                workload_mgr.add(std::move(wl));
+                ++observed_count;
             }
         }
+
+        // ── (d2) Process inventory for `titan-hwm scan` ─────────────────────
+        int processes_unmanaged = 0;
+        std::vector<thm::UnmanagedProc> top_unmanaged;
+        for (auto& [pid, node] : proc_graph) {
+            if (registry.is_protected(pid, node.comm)) continue;
+            if (ownership.workload_of(pid) != 0) continue;
+            ++processes_unmanaged;
+            if (node.uid < 1000) continue;
+            if (is_session_manager_comm(node.comm) ||
+                is_desktop_infra_comm(node.comm)) continue;
+            thm::UnmanagedProc u;
+            u.pid     = pid;
+            u.comm    = node.comm;
+            u.cpu_pct = node.cpu_pct;
+            u.rss_kb  = node.rss_kb;
+            u.reason  = (observed_count >= kMaxObserved)
+                            ? "observed-workload cap reached"
+                            : "no classification signal";
+            top_unmanaged.push_back(std::move(u));
+        }
+        std::sort(top_unmanaged.begin(), top_unmanaged.end(),
+                  [](const thm::UnmanagedProc& a, const thm::UnmanagedProc& b) {
+                      return a.cpu_pct > b.cpu_pct;
+                  });
+        if (top_unmanaged.size() > 10)
+            top_unmanaged.resize(10);
 
         // ── (e) Detect execution state per process + aggregate ──────────────
         for (auto& [pid, node] : proc_graph) {
@@ -459,6 +966,13 @@ int main(int argc, char* argv[]) {
             // Drive state machine
             workload_mgr.tick(*wl, *ws, activity, pressure);
 
+            // Observation-only workloads have no enforcement authority. Skip
+            // the policy plane entirely: no cgroup moves, no signals, no
+            // governor contribution. This is belt-and-braces on top of the
+            // PolicyEngine guard.
+            if (wl->observed)
+                continue;
+
             // Evaluate policy
             thm::PolicyDecision decision = policy.evaluate(*wl, *ws, activity,
                                                             pressure, registry);
@@ -472,21 +986,39 @@ int main(int argc, char* argv[]) {
                 std::cout << "[DRY-RUN] Workload " << wl->id << " (" << wl->pids.size()
                           << " PIDs) -> Decision: " << (d_idx >= 0 && d_idx <= 4 ? dec_names[d_idx] : "UNKNOWN") << "\n";
             } else {
-                if (decision == thm::PolicyDecision::RECLAIM) {
-                    if (reclaimer.reclaim(*wl, proc_graph, all_workloads))
-                        wl->state = thm::WorkloadState::TERMINATED;
-                    last_action        = thm::to_string(decision);
+                auto record_action = [&](thm::PolicyDecision d) {
+                    const std::string dec = thm::to_string(d);
+                    const bool changed = (dec != last_action ||
+                                          wl->root_cmdline != last_action_target);
+                    last_action        = dec;
                     last_action_target = wl->root_cmdline;
                     last_action_pid    = wl->root_pid;
                     has_last_action    = true;
+
+                    // Log transitions, not every tick of a sustained action.
+                    if (changed) {
+                        std::lock_guard<std::mutex> lk(snap_mutex);
+                        std::ostringstream line;
+                        line << wall_clock_hms()
+                             << "  wl " << wl->id
+                             << "  " << (wl->root_cmdline.empty() ? "?" : wl->root_cmdline)
+                             << "  " << dec
+                             << "  pressure=" << thm::to_string(pressure);
+                        decision_log.push_back(line.str());
+                        if (decision_log.size() > kMaxDecisionLog)
+                            decision_log.pop_front();
+                    }
+                };
+
+                if (decision == thm::PolicyDecision::RECLAIM) {
+                    if (reclaimer.reclaim(*wl, proc_graph, all_workloads))
+                        wl->state = thm::WorkloadState::TERMINATED;
+                    record_action(decision);
                 } else {
                     enforcement.apply(*wl, decision);
                     if (decision == thm::PolicyDecision::THROTTLE ||
                         decision == thm::PolicyDecision::FREEZE) {
-                        last_action        = thm::to_string(decision);
-                        last_action_target = wl->root_cmdline;
-                        last_action_pid    = wl->root_pid;
-                        has_last_action    = true;
+                        record_action(decision);
                     }
                 }
             }
@@ -564,8 +1096,24 @@ int main(int argc, char* argv[]) {
             snap.mem_used_pct    = mem.used_pct();
             snap.mem_total_kb     = mem.total_kb;
             snap.mem_available_kb = mem.available_kb;
+            snap.cpu_psi_valid  = cpu_psi.valid;
+            snap.cpu_psi_avg10  = cpu_psi.some_avg10;
+            snap.cpu_psi_avg60  = cpu_psi.some_avg60;
+            snap.cpu_psi_avg300 = cpu_psi.some_avg300;
+            snap.load1          = loadavg.load1;
+            snap.load5          = loadavg.load5;
+            snap.load15         = loadavg.load15;
+            snap.runnable_procs = loadavg.running;
+            snap.total_procs    = loadavg.total;
+
             snap.governor        = governor_to_string(current_gov);
             snap.workload_count  = static_cast<int>(workload_mgr.all_ids().size());
+            snap.processes_seen      = processes_seen;
+            snap.processes_protected = processes_protected;
+            snap.processes_assigned  = processes_assigned;
+            snap.processes_unmanaged = processes_unmanaged;
+            snap.top_unmanaged       = top_unmanaged;
+            snap.hyprland_connected  = ws_monitor.connected();
             snap.has_last_action    = has_last_action;
             snap.last_action        = last_action;
             snap.last_action_target = last_action_target;
@@ -579,17 +1127,33 @@ int main(int argc, char* argv[]) {
                 tw.id           = wl->id;
                 tw.root_pid     = wl->root_pid;
                 tw.workspace_id = wl->workspace_id;
-                tw.name         = wl->root_cmdline.empty() ? std::string("?") : wl->root_cmdline;
+                tw.name         = !wl->root_cmdline.empty()
+                                      ? wl->root_cmdline
+                                      : [&]() {
+                                            auto it = proc_graph.find(wl->root_pid);
+                                            return (it != proc_graph.end() && !it->second.comm.empty())
+                                                       ? it->second.comm
+                                                       : std::string("?");
+                                        }();
                 tw.type         = thm::to_string(wl->type);
                 tw.state        = thm::to_string(wl->state);
                 tw.pid_count    = static_cast<int>(wl->pids.size());
+                tw.observed     = wl->observed;
 
-                long mem_kb = 0;
+                long  mem_kb  = 0;
+                float cpu_pct = 0.0f;
                 for (pid_t p : wl->pids) {
                     auto it = proc_graph.find(p);
-                    if (it != proc_graph.end()) mem_kb += it->second.rss_kb;
+                    if (it != proc_graph.end()) {
+                        mem_kb  += it->second.rss_kb;
+                        cpu_pct += it->second.cpu_pct;
+                    }
                 }
-                tw.mem_kb = mem_kb;
+                tw.mem_kb  = mem_kb;
+                tw.cpu_pct = cpu_pct;
+
+                if (wl->observed) snap.observed_workloads++;
+                else              snap.classified_workloads++;
 
                 if (wl->state == thm::WorkloadState::ACTIVE ||
                     wl->state == thm::WorkloadState::BACKGROUND_EXECUTING)

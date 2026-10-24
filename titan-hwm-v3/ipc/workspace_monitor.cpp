@@ -81,19 +81,19 @@ std::string WorkspaceMonitor::discover_socket_path() {
 // start / stop
 // ─────────────────────────────────────────────────────────────────────────────
 bool WorkspaceMonitor::start() {
+    // The listener thread always starts. When the compositor is not up yet
+    // (very common at boot: titan-hwm.service is pulled in by graphical.target
+    // and may win the race against Hyprland), discover_socket_path() returns
+    // empty and the thread retries with exponential backoff until the session
+    // appears — no daemon restart required.
     sock_path_ = discover_socket_path();
-    if (sock_path_.empty()) {
-        std::cerr << "[WS] No Hyprland instance found — "
-                  << "workspace monitoring disabled.\n";
-        return false;
-    }
-    if (!fs::exists(sock_path_)) {
-        std::cerr << "[WS] Hyprland socket not found: " << sock_path_ << "\n";
-        return false;
-    }
     running_ = true;
     listener_thread_ = std::thread(&WorkspaceMonitor::listen_loop, this);
-    std::cout << "[WS] Listening on " << sock_path_ << "\n";
+
+    if (sock_path_.empty())
+        std::cerr << "[WS] No Hyprland instance yet — will retry in background.\n";
+    else
+        std::cout << "[WS] Listener started for " << sock_path_ << "\n";
     return true;
 }
 
@@ -101,69 +101,103 @@ void WorkspaceMonitor::stop() {
     running_ = false;
     if (listener_thread_.joinable())
         listener_thread_.join();
+    connected_ = false;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // listen_loop — blocking read from Hyprland socket2 (event stream)
 // ─────────────────────────────────────────────────────────────────────────────
 void WorkspaceMonitor::listen_loop() {
-    std::string path = sock_path_;
-
-    int fd = socket(AF_UNIX, SOCK_STREAM, 0);
-    if (fd < 0) {
-        std::cerr << "[WS] socket() failed: " << std::strerror(errno) << "\n";
-        return;
-    }
-
-    struct sockaddr_un addr{};
-    addr.sun_family = AF_UNIX;
-    std::strncpy(addr.sun_path, path.c_str(), sizeof(addr.sun_path) - 1);
-
-    if (connect(fd, reinterpret_cast<struct sockaddr*>(&addr), sizeof(addr)) < 0) {
-        std::cerr << "[WS] connect() failed: " << std::strerror(errno) << "\n";
-        close(fd);
-        return;
-    }
-
-    char buf[4096];
-    std::string leftover;
+    // Reconnect/backoff loop. The compositor may not exist yet at boot, may
+    // restart during the session, or may live at a different instance path
+    // after a restart — so the socket is re-discovered on every attempt.
+    int backoff_ms = 1000;
+    const int backoff_max_ms = 30000;
 
     while (running_) {
-        // Poll with a bounded timeout instead of a blocking read(). A blocking
-        // read() would leave this thread stuck when stop() flips running_=false,
-        // making join() hang forever and preventing clean daemon shutdown.
-        struct pollfd pfd{};
-        pfd.fd = fd;
-        pfd.events = POLLIN;
-
-        int pr = ::poll(&pfd, 1, 500 /* ms */);
-        if (pr < 0) {
-            if (errno == EINTR) continue;
-            break;
+        if (sock_path_.empty() || !fs::exists(sock_path_)) {
+            sock_path_ = discover_socket_path();
         }
-        if (pr == 0)
-            continue; // timeout — re-check running_
-        if (!(pfd.revents & POLLIN))
-            break;
-
-        ssize_t n = read(fd, buf, sizeof(buf) - 1);
-        if (n <= 0) {
-            if (n < 0 && errno == EINTR) continue;
-            break;
+        if (sock_path_.empty()) {
+            connected_ = false;
+            for (int slept = 0; slept < backoff_ms && running_; slept += 250)
+                std::this_thread::sleep_for(std::chrono::milliseconds(250));
+            backoff_ms = std::min(backoff_ms * 2, backoff_max_ms);
+            continue;
         }
-        buf[n] = '\0';
-        leftover += buf;
 
-        // Split on newlines (Hyprland events are newline-delimited)
-        size_t pos;
-        while ((pos = leftover.find('\n')) != std::string::npos) {
-            std::string line = leftover.substr(0, pos);
-            leftover = leftover.substr(pos + 1);
-            if (!line.empty()) handle_event(line);
+        int fd = socket(AF_UNIX, SOCK_STREAM, 0);
+        if (fd < 0) {
+            std::cerr << "[WS] socket() failed: " << std::strerror(errno) << "\n";
+            return;
+        }
+
+        struct sockaddr_un addr{};
+        addr.sun_family = AF_UNIX;
+        std::strncpy(addr.sun_path, sock_path_.c_str(), sizeof(addr.sun_path) - 1);
+
+        if (connect(fd, reinterpret_cast<struct sockaddr*>(&addr), sizeof(addr)) < 0) {
+            std::cerr << "[WS] connect(" << sock_path_ << ") failed: "
+                      << std::strerror(errno) << " — retrying in "
+                      << (backoff_ms / 1000) << "s\n";
+            close(fd);
+            connected_ = false;
+            for (int slept = 0; slept < backoff_ms && running_; slept += 250)
+                std::this_thread::sleep_for(std::chrono::milliseconds(250));
+            backoff_ms = std::min(backoff_ms * 2, backoff_max_ms);
+            sock_path_.clear(); // re-discover on the next attempt
+            continue;
+        }
+
+        connected_  = true;
+        backoff_ms  = 1000;
+        std::cout << "[WS] Connected to Hyprland event socket " << sock_path_ << "\n";
+
+        char buf[4096];
+        std::string leftover;
+
+        while (running_) {
+            // Poll with a bounded timeout instead of a blocking read(). A blocking
+            // read() would leave this thread stuck when stop() flips running_=false,
+            // making join() hang forever and preventing clean daemon shutdown.
+            struct pollfd pfd{};
+            pfd.fd = fd;
+            pfd.events = POLLIN;
+
+            int pr = ::poll(&pfd, 1, 500 /* ms */);
+            if (pr < 0) {
+                if (errno == EINTR) continue;
+                break;
+            }
+            if (pr == 0)
+                continue; // timeout — re-check running_
+            if (!(pfd.revents & POLLIN))
+                break;
+
+            ssize_t n = read(fd, buf, sizeof(buf) - 1);
+            if (n <= 0) {
+                if (n < 0 && errno == EINTR) continue;
+                break;
+            }
+            buf[n] = '\0';
+            leftover += buf;
+
+            // Split on newlines (Hyprland events are newline-delimited)
+            size_t pos;
+            while ((pos = leftover.find('\n')) != std::string::npos) {
+                std::string line = leftover.substr(0, pos);
+                leftover = leftover.substr(pos + 1);
+                if (!line.empty()) handle_event(line);
+            }
+        }
+
+        close(fd);
+        connected_ = false;
+        if (running_) {
+            std::cerr << "[WS] Hyprland connection lost — reconnecting.\n";
+            sock_path_.clear();
         }
     }
-
-    close(fd);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -301,6 +335,10 @@ GovernorHint WorkspaceMonitor::compute_governor(
     bool all_idle       = true;
 
     for (const auto& [id, wl] : workloads) {
+        // Observation-only workloads must not influence power policy: they are
+        // always present in large numbers and would pin the governor above
+        // POWERSAVE even when nothing classified is running.
+        if (wl.observed) continue;
         if (wl.state == WorkloadState::ACTIVE ||
             wl.state == WorkloadState::BACKGROUND_EXECUTING) {
             all_idle = false;
