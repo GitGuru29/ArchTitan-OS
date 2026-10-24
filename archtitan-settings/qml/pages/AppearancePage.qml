@@ -49,74 +49,239 @@ ScrollView {
 
         Item { height: 24 }
 
-        // ── Theme Section ────────────────────────────────────────
+        // ── Theme Templates Section ──────────────────────────────
         ColumnLayout {
             Layout.fillWidth: true
             Layout.leftMargin: 24; Layout.rightMargin: 24
             spacing: 10
 
-            Text {
-                text: "THEME"
-                font { pixelSize: 10; family: "Inter" }
-                font.weight: Font.DemiBold
-                font.letterSpacing: 1.2
-                color: root.textLow
-            }
-
             RowLayout {
                 Layout.fillWidth: true
-                spacing: 12
+                Text {
+                    text: "THEME TEMPLATES"
+                    font { pixelSize: 10; family: "Inter" }
+                    font.weight: Font.DemiBold
+                    font.letterSpacing: 1.2
+                    color: root.textLow
+                }
+                Item { Layout.fillWidth: true }
+                Text {
+                    text: "Active: " + (SettingsBackend.currentThemeId.toUpperCase())
+                    font { pixelSize: 11; family: "Inter" }
+                    font.weight: Font.Medium
+                    color: root.accent
+                }
+            }
 
-                Repeater {
-                    model: [
-                        { name: "Dark",     bg: "#1C1C1C" },
-                        { name: "Darker",   bg: "#0A0A0A" },
-                        { name: "Midnight", bg: "#0D111A" },
-                        { name: "Dim",      bg: "#252830" }
+            ScrollView {
+                Layout.fillWidth: true
+                implicitHeight: 124
+                contentWidth: themeRow.implicitWidth
+                contentHeight: 124
+                ScrollBar.horizontal.policy: ScrollBar.AsNeeded
+                ScrollBar.vertical.policy: ScrollBar.AlwaysOff
+                clip: true
+
+                RowLayout {
+                    id: themeRow
+                    spacing: 12
+
+                    readonly property var defaultThemes: [
+                        { id: "archtitan",  name: "ArchTitan Signature", accent: "#00D2FF", wallpaper: "/usr/share/backgrounds/archtitan/wallpaper.png", base: "#1E1E2E" },
+                        { id: "mocha",      name: "Catppuccin Mocha",    accent: "#89B4FA", wallpaper: "/usr/share/backgrounds/archtitan/titan-mocha.jpg", base: "#1E1E2E" },
+                        { id: "tokyonight", name: "Tokyo Night",         accent: "#7AA2F7", wallpaper: "/usr/share/backgrounds/archtitan/titan-tokyonight.jpg", base: "#24283B" },
+                        { id: "dracula",    name: "Dracula",             accent: "#BD93F9", wallpaper: "/usr/share/backgrounds/archtitan/titan-dracula.jpg", base: "#282A36" },
+                        { id: "gruvbox",    name: "Gruvbox",             accent: "#83A598", wallpaper: "/usr/share/backgrounds/archtitan/titan-gruvbox.jpg", base: "#282828" },
+                        { id: "everforest", name: "Everforest",          accent: "#A7C080", wallpaper: "/usr/share/backgrounds/archtitan/titan-everforest.jpg", base: "#2D353B" },
+                        { id: "kanagawa",   name: "Kanagawa",            accent: "#7E9CD8", wallpaper: "/usr/share/backgrounds/archtitan/titan-kanagawa.jpg", base: "#1F1F28" },
+                        { id: "rosepine",   name: "Rosé Pine",           accent: "#C4A7E7", wallpaper: "/usr/share/backgrounds/archtitan/titan-rosepine.jpg", base: "#1F1D2E" },
+                        { id: "nord",       name: "Nord",                accent: "#88C0D0", wallpaper: "/usr/share/backgrounds/archtitan/1-nord.png", base: "#3B4252" },
+                        { id: "latte",      name: "Catppuccin Latte",    accent: "#1E66F5", wallpaper: "/usr/share/backgrounds/archtitan/titan-latte.jpg", base: "#EFF1F5" },
+                        { id: "custom",     name: "ArchTitan Custom",    accent: "#00D2FF", wallpaper: "/usr/share/backgrounds/archtitan/titan-custom.jpg", base: "#1A1D27" }
                     ]
-                    delegate: Rectangle {
-                        Layout.fillWidth: true
-                        height: 96; radius: 10
-                        color: globalBg3
-                        border.width: SettingsBackend.colorTheme === modelData.name ? 2 : 1
-                        border.color: SettingsBackend.colorTheme === modelData.name
-                                      ? root.accent : globalBorder0
-                        Behavior on border.color { ColorAnimation { duration: 150 } }
 
-                        ColumnLayout {
-                            anchors { fill: parent; margins: 12 }
-                            spacing: 8
+                    Repeater {
+                        model: (SettingsBackend.installedThemes && SettingsBackend.installedThemes.length > 0)
+                               ? SettingsBackend.installedThemes
+                               : themeRow.defaultThemes
 
-                            Rectangle {
-                                Layout.fillWidth: true
-                                height: 42; radius: 6
-                                color: modelData.bg
-                                border.width: 1; border.color: globalBorder0
+                        delegate: Rectangle {
+                            width: 148
+                            height: 114
+                            radius: 10
+                            color: globalBg3
+                            border.width: SettingsBackend.currentThemeId === modelData.id ? 2 : 1
+                            border.color: SettingsBackend.currentThemeId === modelData.id
+                                          ? root.accent : globalBorder0
+                            Behavior on border.color { ColorAnimation { duration: 150 } }
 
-                                // Titlebar dots inside preview
-                                Row {
-                                    anchors { left: parent.left; leftMargin: 8; top: parent.top; topMargin: 6 }
-                                    spacing: 4
-                                    Repeater {
-                                        model: ["#ED6A5E", "#F5BF4F", "#61C554"]
-                                        Rectangle { width: 4; height: 4; radius: 2; color: modelData }
+                            ColumnLayout {
+                                anchors { fill: parent; margins: 8 }
+                                spacing: 6
+
+                                // Mini wallpaper / theme preview
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    height: 58
+                                    radius: 6
+                                    clip: true
+                                    color: modelData.base || "#1A1D27"
+                                    border.width: 1; border.color: globalBorder0
+
+                                    Image {
+                                        anchors.fill: parent
+                                        source: modelData.wallpaper ? "file://" + modelData.wallpaper : ""
+                                        fillMode: Image.PreserveAspectCrop
+                                        asynchronous: true
+                                        smooth: true
+                                        opacity: 0.95
                                     }
+
+                                    // Accent color indicator pip
+                                    Rectangle {
+                                        anchors { right: parent.right; top: parent.top; margins: 5 }
+                                        width: 12; height: 12; radius: 6
+                                        color: modelData.accent || root.accent
+                                        border.width: 1.5; border.color: "#FFFFFF"
+                                    }
+
+                                    // Active checkmark badge
+                                    Rectangle {
+                                        visible: SettingsBackend.currentThemeId === modelData.id
+                                        anchors { left: parent.left; top: parent.top; margins: 5 }
+                                        width: 18; height: 18; radius: 9
+                                        color: root.accent
+
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: "\uf00c"
+                                            font.pixelSize: 10
+                                            color: "#FFFFFF"
+                                        }
+                                    }
+                                }
+
+                                Text {
+                                    text: modelData.name
+                                    Layout.alignment: Qt.AlignHCenter
+                                    Layout.fillWidth: true
+                                    horizontalAlignment: Text.AlignHCenter
+                                    elide: Text.ElideRight
+                                    font { pixelSize: 11; family: "Inter" }
+                                    font.weight: SettingsBackend.currentThemeId === modelData.id ? Font.DemiBold : Font.Normal
+                                    color: SettingsBackend.currentThemeId === modelData.id ? root.textHigh : root.textMid
                                 }
                             }
 
-                            Text {
-                                text: modelData.name
-                                Layout.alignment: Qt.AlignHCenter
-                                font { pixelSize: 12; family: "Inter" }
-                                font.weight: SettingsBackend.colorTheme === modelData.name ? Font.Medium : Font.Normal
-                                color: SettingsBackend.colorTheme === modelData.name ? root.textHigh : root.textMid
+                            MouseArea {
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    SettingsBackend.applyThemeTemplate(modelData.id);
+                                    WallpaperManager.refresh();
+                                }
                             }
                         }
+                    }
+                }
+            }
+        }
 
-                        MouseArea {
-                            anchors.fill: parent; hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: SettingsBackend.colorTheme = modelData.name
+        Item { height: 24 }
+
+        // ── Desktop Wallpapers Section ────────────────────────────
+        ColumnLayout {
+            Layout.fillWidth: true
+            Layout.leftMargin: 24; Layout.rightMargin: 24
+            spacing: 10
+
+            RowLayout {
+                Layout.fillWidth: true
+                Text {
+                    text: "DESKTOP WALLPAPERS"
+                    font { pixelSize: 10; family: "Inter" }
+                    font.weight: Font.DemiBold
+                    font.letterSpacing: 1.2
+                    color: root.textLow
+                }
+                Item { Layout.fillWidth: true }
+
+                TitanButton {
+                    text: "Browse Image..."
+                    primary: false
+                    width: 120
+                    height: 28
+                    onClicked: WallpaperManager.openFilePicker()
+                }
+
+                Item { width: 4 }
+
+                TitanButton {
+                    text: "Wallpaper Gallery"
+                    primary: false
+                    width: 130
+                    height: 28
+                    onClicked: WallpaperManager.launchPicker()
+                }
+            }
+
+            ScrollView {
+                Layout.fillWidth: true
+                implicitHeight: 96
+                contentWidth: wallpaperRow.implicitWidth
+                contentHeight: 96
+                ScrollBar.horizontal.policy: ScrollBar.AsNeeded
+                ScrollBar.vertical.policy: ScrollBar.AlwaysOff
+                clip: true
+
+                RowLayout {
+                    id: wallpaperRow
+                    spacing: 10
+
+                    Repeater {
+                        model: WallpaperManager.wallpaperList
+                        delegate: Rectangle {
+                            width: 130
+                            height: 84
+                            radius: 8
+                            color: globalBg3
+                            clip: true
+                            border.width: WallpaperManager.currentWallpaper === modelData ? 2 : 1
+                            border.color: WallpaperManager.currentWallpaper === modelData
+                                          ? root.accent : globalBorder0
+                            Behavior on border.color { ColorAnimation { duration: 150 } }
+
+                            Image {
+                                anchors.fill: parent
+                                anchors.margins: 2
+                                source: "file://" + modelData
+                                fillMode: Image.PreserveAspectCrop
+                                asynchronous: true
+                                smooth: true
+                            }
+
+                            // Active check badge
+                            Rectangle {
+                                visible: WallpaperManager.currentWallpaper === modelData
+                                anchors { right: parent.right; top: parent.top; margins: 4 }
+                                width: 16; height: 16; radius: 8
+                                color: root.accent
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "\uf00c"
+                                    font.pixelSize: 9
+                                    color: "#FFFFFF"
+                                }
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: WallpaperManager.setCurrentWallpaper(modelData)
+                            }
                         }
                     }
                 }

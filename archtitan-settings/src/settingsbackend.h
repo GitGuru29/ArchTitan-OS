@@ -11,6 +11,8 @@ class SettingsBackend : public QObject {
 
     // Appearance
     Q_PROPERTY(QString colorTheme READ colorTheme WRITE setColorTheme NOTIFY colorThemeChanged)
+    Q_PROPERTY(QString currentThemeId READ currentThemeId NOTIFY currentThemeIdChanged)
+    Q_PROPERTY(QVariantList installedThemes READ installedThemes NOTIFY installedThemesChanged)
     Q_PROPERTY(QString accentColor READ accentColor WRITE setAccentColor NOTIFY accentColorChanged)
     Q_PROPERTY(bool glassmorphism READ glassmorphism WRITE setGlassmorphism NOTIFY glassmorphismChanged)
     Q_PROPERTY(double panelOpacity READ panelOpacity WRITE setPanelOpacity NOTIFY panelOpacityChanged)
@@ -35,6 +37,9 @@ public:
 
     QString colorTheme() const;
     void setColorTheme(const QString &v);
+
+    QString currentThemeId() const;
+    QVariantList installedThemes() const;
 
     QString accentColor() const;
     void setAccentColor(const QString &v);
@@ -79,6 +84,7 @@ public:
     void setLockscreenRingColor(const QString &v);
 
     Q_INVOKABLE void applyAppearance();
+    Q_INVOKABLE void applyThemeTemplate(const QString &id);
     Q_INVOKABLE void applySecurity();
     Q_INVOKABLE void resetToDefaults();
     Q_INVOKABLE void applyPowerProfileNow(const QString &profile);
@@ -88,6 +94,8 @@ public:
 
 signals:
     void colorThemeChanged();
+    void currentThemeIdChanged();
+    void installedThemesChanged();
     void accentColorChanged();
     void glassmorphismChanged();
     void panelOpacityChanged();
@@ -107,6 +115,8 @@ signals:
 private:
     QSettings m_settings;
     QString m_colorTheme;
+    QString m_currentThemeId;
+    QVariantList m_installedThemes;
     QString m_accentColor;
     bool m_glassmorphism;
     double m_panelOpacity;
@@ -124,6 +134,7 @@ private:
 
     void loadSettings();
     void loadThemeState();
+    void scanThemes();
     void updateSwayidleConfig();
     bool applyPowerProfileDBus(const QString &profile);
 

@@ -41,6 +41,10 @@ import shutil
 import subprocess
 import sys
 
+# Ensure /usr/local/bin is prioritized in PATH for standalone scripts and QProcess
+if "/usr/local/bin" not in os.environ.get("PATH", "").split(":"):
+    os.environ["PATH"] = f"/usr/local/bin:{os.environ.get('PATH', '')}"
+
 THEME_DIR = os.environ.get("TITAN_THEME_DIR", "/usr/share/archtitan/themes")
 CONFIG_HOME = os.environ.get(
     "XDG_CONFIG_HOME", os.path.join(os.path.expanduser("~"), ".config")
@@ -456,16 +460,22 @@ def patch_qt5ct(path: str, t: dict) -> None:
 
 # ── Reload helpers ───────────────────────────────────────────────────────────
 
-def run_quiet(argv: list[str], env: dict | None = None) -> None:
+def run_quiet(argv: list[str], env: dict | None = None, timeout: float = 1.5) -> None:
     """Best-effort: these seams may not exist (TTY, build chroot, no session)."""
-    if not shutil.which(argv[0]):
-        return
+    binary = shutil.which(argv[0])
+    if not binary:
+        fallback = os.path.join("/usr/local/bin", argv[0])
+        if os.path.isfile(fallback) and os.access(fallback, os.X_OK):
+            binary = fallback
+        else:
+            return
+    cmd = [binary] + argv[1:]
     try:
         subprocess.run(
-            argv, check=False, env=env,
+            cmd, check=False, env=env, timeout=timeout,
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
         )
-    except OSError:
+    except (OSError, subprocess.TimeoutExpired):
         pass
 
 
@@ -483,20 +493,28 @@ def apply_hyprctl(t: dict) -> None:
     if not shutil.which("hyprctl"):
         return
     for key, value in keywords.items():
-        run_quiet(["hyprctl", "keyword", key, value])
+        run_quiet(["hyprctl", "keyword", key, value], timeout=1.0)
 
 
 def reload_shell() -> None:
-    run_quiet(["swaync-client", "-rs"])
-    run_quiet(["pkill", "-SIGUSR1", "-x", "kitty"])
-    run_quiet(["pkill", "-SIGUSR2", "-x", "waybar"])
-    if shutil.which("swayosd-server"):
+    # SwayNC: only ping if swaync daemon is actively running to prevent D-Bus freeze
+    if shutil.which("swaync-client") and shutil.which("pgrep"):
         try:
-            res = subprocess.run(["pgrep", "-x", "swayosd-server"], capture_output=True, text=True)
+            res = subprocess.run(["pgrep", "-x", "swaync"], capture_output=True, timeout=0.5)
             if res.returncode == 0:
-                run_quiet(["pkill", "-x", "swayosd-server"])
+                run_quiet(["swaync-client", "-rs"], timeout=1.0)
+        except (OSError, subprocess.TimeoutExpired):
+            pass
+
+    run_quiet(["pkill", "-SIGUSR1", "-x", "kitty"], timeout=1.0)
+    run_quiet(["pkill", "-SIGUSR2", "-x", "waybar"], timeout=1.0)
+    if shutil.which("swayosd-server") and shutil.which("pgrep"):
+        try:
+            res = subprocess.run(["pgrep", "-x", "swayosd-server"], capture_output=True, text=True, timeout=0.5)
+            if res.returncode == 0:
+                run_quiet(["pkill", "-x", "swayosd-server"], timeout=1.0)
                 subprocess.Popen(["swayosd-server"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        except OSError:
+        except (OSError, subprocess.TimeoutExpired):
             pass
 
 
@@ -508,7 +526,7 @@ def notify(title: str, body: str) -> None:
     run_quiet([
         "notify-send", "-u", "low", "-i", "preferences-desktop-color",
         title, body,
-    ])
+    ], timeout=1.5)
 
 
 # ── Commands ─────────────────────────────────────────────────────────────────
@@ -536,7 +554,7 @@ def cmd_apply() -> None:
     patch_qt5ct(QT5CT_CONF, theme)
 
     # Waybar: theme-driven @titan-adapt repatch + SIGUSR2 reload.
-    run_quiet(["titan-waybar-theme"])
+    run_quiet(["titan-waybar-theme"], timeout=2.0)
     reload_shell()
 
 
@@ -546,30 +564,26 @@ def cmd_set(tid: str) -> None:
         die(f"unknown theme '{tid}' (try: titan-theme list)")
     theme = theme_def(tid)
     write_state(theme)
-    cmd_apply()
 
-    # Wallpaper: only touch it when the theme actually wants a different one.
-    persisted = ""
-    try:
-        with open(WALLPAPER_FILE, "r", encoding="utf-8") as fh:
-            persisted = fh.readline().strip()
-    except OSError:
-        pass
+    # 1. Apply assigned wallpaper FIRST so the desktop visually switches immediately,
+    # and Waybar adaptive luminance styling samples the new wallpaper.
     target = theme.get("wallpaper", "")
-    if target and persisted != target:
-        if os.path.isfile(target):
-            # TITAN_QUIET: titan-set-wallpaper's own toast would double up.
+    if target and os.path.isfile(target):
+        set_wp = shutil.which("titan-set-wallpaper") or "/usr/local/bin/titan-set-wallpaper"
+        if os.path.isfile(set_wp) and os.access(set_wp, os.X_OK):
             env = dict(os.environ, TITAN_QUIET="1")
-            if shutil.which("titan-set-wallpaper"):
-                try:
-                    subprocess.run(
-                        ["titan-set-wallpaper", target],
-                        check=False, env=env,
-                        stdout=subprocess.DEVNULL,
-                        stderr=subprocess.DEVNULL,
-                    )
-                except OSError:
-                    pass
+            try:
+                subprocess.run(
+                    [set_wp, target],
+                    check=False, env=env, timeout=3.0,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
+            except (OSError, subprocess.TimeoutExpired):
+                pass
+
+    # 2. Update and sync all shell configuration blocks
+    cmd_apply()
 
     notify("Theme", theme["name"])
 
