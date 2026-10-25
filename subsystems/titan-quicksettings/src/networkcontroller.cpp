@@ -16,7 +16,7 @@ void NetworkController::queryStatus()
 {
     // Check radio wifi state
     QProcess radioProc;
-    radioProc.start("bash", {"-c", "nmcli radio wifi 2>/dev/null"});
+    radioProc.start("nmcli", {"radio", "wifi"});
     if (radioProc.waitForFinished(1000)) {
         QString out = radioProc.readAllStandardOutput().trimmed();
         bool enabled = (out.compare("enabled", Qt::CaseInsensitive) == 0);
@@ -117,7 +117,7 @@ void NetworkController::scanNetworks()
         proc->deleteLater();
     });
 
-    proc->start("bash", {"-c", "nmcli -t -f IN-USE,SSID,SIGNAL,SECURITY dev wifi list --rescan yes 2>/dev/null"});
+    proc->start("nmcli", {"-t", "-f", "IN-USE,SSID,SIGNAL,SECURITY", "dev", "wifi", "list", "--rescan", "yes"});
 }
 
 void NetworkController::parseWifiList(const QString &output)
@@ -228,7 +228,11 @@ void NetworkController::connectToNetwork(const QString &ssid, const QString &pas
 
 void NetworkController::disconnectNetwork()
 {
-    QProcess::startDetached("bash", {"-c", "nmcli dev disconnect $(nmcli -t -f DEVICE,TYPE dev 2>/dev/null | grep ':wifi' | head -1 | cut -d: -f1)"});
+    if (m_connected && !m_ssid.isEmpty() && m_ssid != "Not connected") {
+        QProcess::startDetached("nmcli", {"con", "down", "id", m_ssid});
+    } else {
+        QProcess::startDetached("nmcli", {"dev", "disconnect", "wlan0"});
+    }
     QTimer::singleShot(800, this, [this]() {
         queryStatus();
         scanNetworks();

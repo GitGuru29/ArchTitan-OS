@@ -294,7 +294,7 @@ Rectangle {
 
                         Rectangle {
                             Layout.fillWidth: true
-                            preferredHeight: 64
+                            Layout.preferredHeight: 64
                             radius: TitanTheme.radiusBento
                             color: TitanTheme.bgOneUICard
                             border.color: TitanTheme.accent

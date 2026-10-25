@@ -169,6 +169,14 @@ int main(int argc, char *argv[])
     parser.addOption(hideOption);
     parser.process(app);
 
+    if (parser.isSet(toggleOption)) {
+        if (IpcServer::sendCommand("toggle")) return 0;
+    } else if (parser.isSet(showOption)) {
+        if (IpcServer::sendCommand("show")) return 0;
+    } else if (parser.isSet(hideOption)) {
+        if (IpcServer::sendCommand("hide")) return 0;
+    }
+
     bool startHidden = parser.isSet(daemonOption);
 
     // Initialize backend controllers
