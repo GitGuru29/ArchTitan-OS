@@ -123,23 +123,75 @@ static bool is_desktop_infra_comm(const std::string& comm) {
 // Walk up the process tree until the parent is a session manager, a system
 // process, or missing. The highest user-owned ancestor below the session
 // manager is the application root (terminal, IDE, browser, game, ...).
+//
+// Smarter rooting (v3.1): prefer systemd scope + session ID to keep trees
+// together when processes are reparented to init/PID 1 or spawned oddly.
 static pid_t resolve_tree_root(
         pid_t pid,
         const std::unordered_map<pid_t, thm::ProcessNode>& graph) {
+    auto it_pid = graph.find(pid);
+    if (it_pid == graph.end()) return pid;
+    const auto& start = it_pid->second;
+
+    const std::string scope = start.cgroup;
+    const pid_t sid = start.sid;
+    const uid_t uid = start.uid;
+    const bool has_scope = !scope.empty() && (scope.find(".scope") != std::string::npos ||
+                                               scope.find("app.slice") != std::string::npos);
+
+    // Prefer scope/sid anchoring - keeps trees together even if reparented
+    if (has_scope || sid > 0) {
+        pid_t best = pid;
+        pid_t cur  = pid;
+        for (int depth = 0; depth < 128; ++depth) {
+            auto it = graph.find(cur);
+            if (it == graph.end()) break;
+            pid_t parent = it->second.ppid;
+            if (parent <= 0) break;
+            auto pit = graph.find(parent);
+            if (pit == graph.end()) {
+                // parent reparented to init or outside graph
+                break;
+            }
+            const auto& p = pit->second;
+            if (p.uid < 1000) break;
+            if (is_session_manager_comm(p.comm)) break;
+            if (is_desktop_infra_comm(p.comm)) break;
+            bool same_scope = has_scope && !p.cgroup.empty() && p.cgroup == scope;
+            bool same_sid   = (sid > 0 && p.sid == sid);
+            if (!same_scope && !same_sid) {
+                // don't cross scope/session boundary to arbitrary process
+                break;
+            }
+            best = parent;
+            cur  = parent;
+            if (parent == 1) break;
+        }
+        if (best <= 1) return pid;
+        // ensure best is not a session manager
+        if (auto bit = graph.find(best); bit != graph.end()) {
+            if (is_session_manager_comm(bit->second.comm)) return pid;
+            if (bit->second.uid < 1000) return pid;
+        }
+        return best;
+    }
+
     pid_t root = pid;
     pid_t cur  = pid;
     for (int depth = 0; depth < 64; ++depth) {
         auto it = graph.find(cur);
         if (it == graph.end()) break;
         pid_t parent = it->second.ppid;
-        if (parent <= 1) break;
+        if (parent <= 0) break;
         auto pit = graph.find(parent);
         if (pit == graph.end()) break;
         const auto& p = pit->second;
-        if (is_session_manager_comm(p.comm)) break;
         if (p.uid < 1000) break;
+        if (is_session_manager_comm(p.comm)) break;
+        if (is_desktop_infra_comm(p.comm)) break;
         root = parent;
         cur  = parent;
+        if (parent == 1) break;
     }
     return root;
 }
@@ -471,6 +523,52 @@ static void refresh_proc_graph(std::unordered_map<pid_t, thm::ProcessNode>& grap
             struct stat st{};
             if (::stat(("/proc/" + d).c_str(), &st) == 0)
                 n.uid = st.st_uid;
+        }
+
+        // Session ID for grouping
+        {
+            pid_t sid = ::getsid(pid);
+            if (sid >= 0) n.sid = sid;
+        }
+
+        // Exe + cgroup for smarter rooting/classification
+        {
+            char buf[4096];
+            std::string exe_link = "/proc/" + d + "/exe";
+            ssize_t elen = readlink(exe_link.c_str(), buf, sizeof(buf) - 1);
+            if (elen > 0) {
+                buf[elen] = '\0';
+                std::string es(buf);
+                auto spd = es.find(" (deleted)");
+                if (spd != std::string::npos) es = es.substr(0, spd);
+                n.exe = std::move(es);
+            }
+        }
+        {
+            std::ifstream cf("/proc/" + d + "/cgroup");
+            std::string line;
+            while (std::getline(cf, line)) {
+                if (line.find(".scope") != std::string::npos ||
+                    line.find("app.slice") != std::string::npos ||
+                    line.find("user.slice") != std::string::npos) {
+                    auto colon = line.rfind(':');
+                    if (colon != std::string::npos && colon + 1 < line.size()) {
+                        n.cgroup = line.substr(colon + 1);
+                        break;
+                    }
+                }
+            }
+            if (n.cgroup.empty()) {
+                cf.clear();
+                cf.seekg(0);
+                std::string last;
+                while (std::getline(cf, line)) {
+                    auto colon = line.rfind(':');
+                    if (colon != std::string::npos && colon + 1 < line.size())
+                        last = line.substr(colon + 1);
+                }
+                n.cgroup = last;
+            }
         }
 
         graph[pid] = std::move(n);

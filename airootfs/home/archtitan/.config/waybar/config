@@ -18,6 +18,7 @@
     ],
 
     "modules-right": [
+        "custom/titan-hwm",
         "clock",
         "group/quicksettings",
         "tray",
@@ -54,6 +55,15 @@
     },
 
     // ── RIGHT: Telemetry & Controls ────────────────────────────
+
+    "custom/titan-hwm": {
+        "exec"            : "titan-hwm-waybar",
+        "return-type"     : "json",
+        "interval"        : 3,
+        "on-click"        : "$terminal -e sh -c 'clear; echo \"Titan Hardware Manager (THM) v3\"; echo; titan-hwm status; echo; echo \"--- Workloads ---\"; titan-hwm workloads 2>&1 | tail -30; echo; echo \"Press Enter for full help or close...\"; read -r _'",
+        "on-click-right"  : "$terminal -e sh -c 'titan-hwm scan 2>&1 | tail -60; echo; echo \"Press Enter to close...\"; read -r _'",
+        "tooltip"         : true
+    },
 
     "clock": {
         "format"         : "󰥔  {:%H:%M}",

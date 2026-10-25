@@ -41,21 +41,25 @@
 static const char* SOCK_PATH = "/tmp/titan_hwm.sock";
 
 static void print_usage() {
-    std::cerr << "Titan Hardware Manager CLI\n\n"
+    std::cout << "Titan Hardware Manager v3 CLI\n\n"
               << "Usage: titan-hwm <command> [args]\n\n"
-              << "Commands:\n"
-              << "  status                  Show live daemon state\n"
+              << "Inspect THM v3 behavior:\n"
+              << "  status                  Live daemon state (pressure, memory, workloads)\n"
               << "  workloads [--classified|--observed]\n"
-              << "                          List tracked workloads\n"
-              << "  top [N]                 Top N workloads by CPU (default 10)\n"
-              << "  pressure                Pressure signals + reason\n"
-              << "  scan                    Process inventory / classification gaps\n"
-              << "  explain <id|pid|name>   Explain one workload\n"
-              << "  decisions [N]           Recent enforcement actions\n"
-              << "  slices                  cgroup v2 slice state\n"
-              << "  doctor                  Health checks\n"
-              << "  dump                    Full telemetry JSON\n"
-              << "  metrics                 Live telemetry dashboard\n";
+              << "                          All tracked workloads (observed + classified)\n"
+              << "  top [N]                 Top workloads by CPU usage (default 10)\n"
+              << "  pressure                Memory/CPU PSI, load avg + why level was set\n"
+              << "  scan                    Process inventory — why workload count is what it is\n"
+              << "  explain <id|pid|name>   Deep dive into a single workload's classification\n"
+              << "  decisions [N]           Recent enforcement actions (last N)\n"
+              << "  dump                    Full telemetry JSON (for debugging/reports)\n\n"
+              << "System / diagnostics:\n"
+              << "  slices                  cgroup v2 slice state (cpu/mem/pids/freeze)\n"
+              << "  doctor                  Health checks (daemon, telemetry, cgroups, Hyprland)\n"
+              << "  metrics                 Live TUI dashboard (PSI + slices + daemon state)\n\n"
+              << "Other:\n"
+              << "  help, -h, --help       Show this help\n\n"
+              << "Tip: 'scan' is the quickest way to understand \"why 0 classified?\" with observation mode on.\n";
 }
 
 // ── Daemon socket helpers ────────────────────────────────────────────────────

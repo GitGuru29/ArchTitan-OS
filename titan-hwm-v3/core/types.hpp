@@ -93,10 +93,12 @@ enum class PolicyDecision {
 struct ProcessNode {
     pid_t       pid        = 0;
     pid_t       ppid       = 0;
+    pid_t       sid        = 0;   // session ID (getsid)
     std::string comm;           // /proc/pid/stat field 2
     std::string exe;            // /proc/pid/exe readlink result
     std::string cmdline;        // argv[0] from /proc/pid/cmdline
     std::string cwd;            // /proc/pid/cwd readlink result
+    std::string cgroup;         // relevant systemd scope/slice from /proc/pid/cgroup
     char        proc_state = '?'; // R, S, D, T, Z from /proc/pid/stat
     long        rss_kb     = 0;
     long        cpu_ticks  = 0;  // utime+stime snapshot for delta

@@ -192,7 +192,7 @@ Window {
                         Layout.fillWidth: true
                         spacing: 0
                         Text {
-                            text: "System Monitor"
+                            text: "System Monitor — ArchTitan"
                             color: TitanTheme.textHigh
                             font.family: TitanTheme.fontFamily
                             font.pixelSize: TitanTheme.sizeTitle
@@ -649,7 +649,7 @@ Window {
 
                 // ── Titan Hardware Manager ───────────────────────────────────
                 Section {
-                    title: "Titan Hardware Manager"
+                    title: "Titan Hardware Manager (THM)"
                     glyph: "\uf0e7"
                     subtitle: sysmon.thmAvailable
                               ? (sysmon.thmClassifiedWorkloads + " classified · "
