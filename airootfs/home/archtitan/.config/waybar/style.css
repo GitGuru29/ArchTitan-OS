@@ -1,4 +1,3 @@
-@import "theme.css";
 /* ═══════════════════════════════════════════════════════════════
  * ARCHTITAN OS — Frosted Glass Bento Island Waybar Theme
  * Hardware-accelerated compositor blur, floating bento modules,
@@ -31,18 +30,17 @@
 @define-color on-bar          #ffffff;
 /* titan-theme:end */
 
-/* Global */
 * {
-    font-family: "JetBrainsMono Nerd Font", "Inter", "Font Awesome 6 Free", "Noto Sans", sans-serif;
-    font-size: 11px;
-    font-weight: 500;
-    border: none;
+    font-family  : "Inter", "JetBrainsMono Nerd Font", sans-serif;
+    font-size    : 11.5px;
+    font-weight  : 500;
+    min-height   : 0;
+    border       : none;
     border-radius: 0;
-    min-height: 0;
+    padding      : 0;
+    margin       : 0;
 }
 
-window#waybar {
-    background-color: transparent;
 /* ── Floating Bento Modules (No Outer Bar Rectangle) ─────────── */
 window#waybar {
     background    : transparent;
@@ -53,35 +51,25 @@ window#waybar {
     color         : @text-high;
 }
 
-#waybar > box {
-    background: alpha(@base, 0.72);
-    border: 1px solid alpha(@surface2, 0.8);
-    border-radius: 14px;
-    margin: 0;
-    padding: 0 8px;
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+window#waybar.hidden {
+    opacity: 0.1;
 }
 
-/* Module base */
-#clock,
-#temperature,
-#pulseaudio,
-#battery,
-#network,
-#bluetooth,
-#custom-notification,
-#tray,
-#custom-install-badge,
-#custom-titan-hwm {
-    padding: 0 10px;
-    margin: 4px 3px;
-    border-radius: 10px;
-    transition: all 150ms ease-in-out;
+.modules-left,
+.modules-center,
+.modules-right {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    margin: 0;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+ * LEFT — Live Installer & Workspaces
+ * ═══════════════════════════════════════════════════════════════ */
 
 #custom-install-badge {
-    color: @accent;
-    font-weight: 600;
     color        : @success;
     background   : rgba(166, 227, 161, 0.12);
     border       : 1px solid rgba(166, 227, 161, 0.40);
@@ -95,18 +83,10 @@ window#waybar {
 }
 
 #custom-install-badge:hover {
-    background: alpha(@accent, 0.22);
-    color: @accent;
+    background   : rgba(166, 227, 161, 0.25);
+    box-shadow   : 0 0 12px rgba(166, 227, 161, 0.35);
 }
 
-/* Titan Hardware Manager (THM) */
-#custom-titan-hwm {
-    padding: 0 10px;
-    margin: 4px 6px 4px 4px;
-    border-radius: 10px;
-    background: transparent;
-    color: @text-subtle;
-    transition: all 150ms ease-in-out;
 #workspaces {
     background   : @module-bg;
     border       : 1px solid @module-border;
@@ -117,16 +97,23 @@ window#waybar {
     transition   : background 0.3s ease, border-color 0.3s ease;
 }
 
-#custom-titan-hwm.normal {
-    color: @text;
+#workspaces button {
+    padding      : 2px 7px;
+    margin       : 1px 2px;
+    color        : @text-low;
+    background   : transparent;
+    border-radius: 8px;
+    font-size    : 11px;
+    font-weight  : 600;
+    min-width    : 20px;
+    transition   : all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-#custom-titan-hwm.moderate {
-    color: @warning;
+#workspaces button:hover {
+    color     : @text-high;
+    background: @module-hover;
 }
 
-#custom-titan-hwm.high {
-    color: @peach;
 /* Active workspace — glowing accent pill */
 #workspaces button.active {
     color        : @on-accent;
@@ -164,38 +151,23 @@ window#waybar {
     transition   : all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-#custom-titan-hwm.critical {
-    color: @red;
-    animation: thm-pulse 1.2s ease-in-out infinite;
+#custom-titan-center:hover {
+    background  : @module-hover;
+    border-color: @accent-border;
+    box-shadow  : 0 0 12px @accent-glow;
 }
 
-#custom-titan-hwm.inactive {
-    color: @overlay0;
-}
+/* Vertical Roll Keyframe Animations */
+@keyframes roll-a-fwd { from { opacity: 0; margin-top: 10px; } to { opacity: 1; margin-top: 0; } }
+@keyframes roll-b-fwd { from { opacity: 0; margin-top: 10px; } to { opacity: 1; margin-top: 0; } }
+@keyframes roll-a-rev { from { opacity: 0; margin-top: -10px; } to { opacity: 1; margin-top: 0; } }
+@keyframes roll-b-rev { from { opacity: 0; margin-top: -10px; } to { opacity: 1; margin-top: 0; } }
 
-#custom-titan-hwm:hover {
-    background: alpha(@surface2, 0.7);
-    color: @text-high;
-}
+#custom-titan-center.a-fwd { animation: roll-a-fwd 350ms cubic-bezier(0.16, 1, 0.3, 1); }
+#custom-titan-center.b-fwd { animation: roll-b-fwd 350ms cubic-bezier(0.16, 1, 0.3, 1); }
+#custom-titan-center.a-rev { animation: roll-a-rev 350ms cubic-bezier(0.16, 1, 0.3, 1); }
+#custom-titan-center.b-rev { animation: roll-b-rev 350ms cubic-bezier(0.16, 1, 0.3, 1); }
 
-@keyframes thm-pulse {
-    0% { opacity: 1; }
-    50% { opacity: 0.55; }
-    100% { opacity: 1; }
-}
-
-/* Workspaces */
-#workspaces {
-    padding: 0 4px;
-}
-
-#workspaces button {
-    padding: 0 8px;
-    margin: 4px 3px;
-    color: @text-subtle;
-    background: transparent;
-    border-radius: 10px;
-    transition: all 150ms ease-in-out;
 /* ═══════════════════════════════════════════════════════════════
  * RIGHT — Hardware, Clock, Quick Settings & Power Controls
  * ═══════════════════════════════════════════════════════════════ */
@@ -334,6 +306,32 @@ window#waybar {
     background: transparent;
 }
 
+/* Titan Hardware Manager (THM) Telemetry Capsule */
+#custom-titan-hwm {
+    color        : @text-mid;
+    background   : @module-bg;
+    border       : 1px solid @module-border;
+    border-radius: 12px;
+    font-size    : 11px;
+    font-weight  : 600;
+    padding      : 2px 10px;
+    margin       : 3px 4px;
+    box-shadow   : 0 4px 16px rgba(0, 0, 0, 0.25);
+    transition   : all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#custom-titan-hwm:hover {
+    background  : @module-hover;
+    border-color: @accent-border;
+    color       : @accent;
+    box-shadow  : 0 0 10px @accent-glow;
+}
+
+#custom-titan-hwm.inactive {
+    color  : @text-low;
+    opacity: 0.65;
+}
+
 /* Live Cava Audio Visualizer (Auto-reveals on Music Playback) */
 #custom-cava {
     color         : @accent;
@@ -455,14 +453,13 @@ window#waybar {
     transition   : all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-#workspaces button.active {
-    color: @text-high;
-    background: alpha(@accent, 0.26);
-    box-shadow: inset 0 0 0 1px alpha(@accent, 0.4);
+#clock:hover {
+    background  : @accent-soft;
+    border-color: @accent-border;
+    color       : @accent;
+    box-shadow  : 0 0 12px @accent-glow;
 }
 
-#workspaces button.occupied {
-    color: @text;
 /* Unified Control Center Capsule */
 #quicksettings {
     background   : @module-bg;
@@ -474,57 +471,65 @@ window#waybar {
     transition   : all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-#workspaces button:hover {
-    background: alpha(@surface2, 0.7);
-    color: @text-high;
+#quicksettings:hover {
+    background  : @module-hover;
+    border-color: @accent-border;
+    box-shadow  : 0 0 10px @accent-glow;
 }
 
-/* Groups */
-#quicksettings,
-#quick-controls {
-    background: alpha(@surface0, 0.6);
-    border-radius: 12px;
-    margin: 4px 3px;
-    padding: 0 4px;
+#temperature,
+#pulseaudio,
+#battery {
+    color        : @text-mid;
+    background   : transparent;
+    border       : none;
+    font-size    : 11.5px;
+    padding      : 2px 6px;
+    margin       : 0 1px;
+    border-radius: 6px;
+    transition   : all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Clock */
-#clock {
-    color: @text;
-    font-weight: 600;
-}
-
-#clock:hover {
-    background: alpha(@surface2, 0.7);
+#temperature:hover,
+#pulseaudio:hover,
+#battery:hover {
+    background: @module-hover;
+    color     : @text-high;
 }
 
 /* Temperature */
 #temperature {
-    color: @peach;
+    color: @accent;
 }
 #temperature.critical {
-    color: @red;
-    animation: thm-pulse 1.2s ease-in-out infinite;
+    color        : #ffffff;
+    background   : @danger;
+    border-radius: 6px;
+    box-shadow   : 0 0 10px rgba(243, 139, 168, 0.45);
 }
 
-/* PulseAudio */
+/* Volume / Audio */
 #pulseaudio {
-    color: @sky;
+    color: @accent;
 }
 #pulseaudio.muted {
-    color: @overlay0;
+    color  : @text-low;
+    opacity: 0.7;
 }
 
 /* Battery */
 #battery {
-    color: @green;
+    color      : @success;
+    font-weight: 500;
 }
-#battery.warning:not(.charging) {
-    color: @yellow;
+#battery.warning {
+    color: @warning;
 }
-#battery.critical:not(.charging) {
-    color: @red;
-    animation: thm-pulse 1.2s ease-in-out infinite;
+#battery.critical {
+    color        : #ffffff;
+    background   : @danger;
+    border-radius: 6px;
+    box-shadow   : 0 0 10px rgba(243, 139, 168, 0.45);
 }
 #battery.charging,
 #battery.plugged {
@@ -592,72 +597,52 @@ window#waybar {
     color     : @text-high;
 }
 
-/* Network */
+/* Notification state styling */
+#custom-notification.notification {
+    color     : @accent;
+    box-shadow: 0 0 8px @accent-glow;
+}
+#custom-notification.dnd-none,
+#custom-notification.dnd-notification {
+    color  : @text-low;
+    opacity: 0.6;
+}
+
+/* Network state styling */
 #network {
     color: @teal;
 }
 #network.disconnected,
 #network.disabled {
-    color: @text-low;
+    color  : @text-low;
     opacity: 0.6;
 }
 
-/* Bluetooth */
+/* Bluetooth state styling */
 #bluetooth {
     color: @text-mid;
 }
 #bluetooth.connected {
-    color: @accent;
+    color     : @accent;
     box-shadow: 0 0 8px @accent-glow;
 }
 #bluetooth.off,
 #bluetooth.disabled {
-    color: @text-low;
+    color  : @text-low;
     opacity: 0.6;
-}
-
-/* Notification */
-#custom-notification {
-    color: @text-mid;
-}
-#custom-notification.dnd-notification,
-#custom-notification.dnd-none {
-    color: @overlay0;
-}
-
-/* Tray */
-#tray {
-    color: @text-mid;
-}
-#tray > .passive {
-    opacity: 0.6;
-}
-#tray > .needs-attention {
-    color: @peach;
-}
-
-/* Hover states */
-#temperature:hover,
-#pulseaudio:hover,
-#battery:hover,
-#network:hover,
-#bluetooth:hover,
-#custom-notification:hover {
-    background: alpha(@surface2, 0.7);
-    color: @text-high;
 }
 
 /* Tooltips */
 tooltip {
-    background: rgba(17, 17, 27, 0.9);
-    border: 1px solid rgba(203, 166, 247, 0.25);
+    background   : rgba(17, 17, 27, 0.85); /* @titan-adapt:tip-bg */
+    border       : 1px solid rgba(255, 255, 255, 0.16); /* @titan-adapt:tip-border */
     border-radius: 12px;
-    color: @text-high;
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
+    color        : @text-high;
+    box-shadow   : 0 10px 30px rgba(0, 0, 0, 0.50);
 }
 
 tooltip label {
-    color: @text-high;
-    padding: 8px 14px;
+    color    : @text-high;
+    padding  : 6px 12px;
     font-size: 11px;
 }
