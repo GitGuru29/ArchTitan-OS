@@ -162,30 +162,36 @@ window#waybar.hidden {
     background   : transparent;
 }
 
-/* 3. Active occupied workspace: marked by circular cyan ring on the app icon */
+/* 3. Active occupied workspace: marked by circular cyan ring on the button */
 #workspaces button.active:not(.empty) {
-    background   : transparent;
-    border       : none;
+    min-width    : 22px;
+    min-height   : 22px;
+    border       : 2px solid #00D2FF;
+    border-radius: 50%;
+    margin       : 4px 1px;
     padding      : 0 2px;
-    margin       : 0 1px;
-    box-shadow   : none;
+    box-shadow   : 0 0 10px rgba(0, 210, 255, 0.80);
+    background   : alpha(#00D2FF, 0.15);
 }
 
 /* 4. App taskbar icons inside the workspace */
 #workspaces .taskbar-window {
-    padding      : 2px;
+    padding      : 0;
     margin       : 0;
     border       : none;
+    background   : transparent;
     border-radius: 50%;
     transition   : all 0.15s ease;
 }
 
-/* Focused window gets the cyan circular ring halo matching screenshot */
-#workspaces .taskbar-window.active {
-    border       : 2px solid #00D2FF;
+#workspaces .taskbar-window image {
     border-radius: 50%;
-    padding      : 1px;
-    box-shadow   : 0 0 10px rgba(0, 210, 255, 0.80);
+}
+
+#workspaces .taskbar-window.active {
+    border       : none;
+    box-shadow   : none;
+    background   : transparent;
 }
 
 #workspaces button.urgent {
