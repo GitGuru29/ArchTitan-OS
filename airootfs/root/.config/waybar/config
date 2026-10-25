@@ -39,11 +39,15 @@
     },
 
     "hyprland/workspaces": {
-        "format"                 : "{windows}",
+        "format"                 : "{icon}{windows}",
         "format-window-separator": " ",
         "on-click"               : "activate",
         "sort-by-number"         : true,
-        "persistent-workspaces"  : { "*": 5 },
+        "format-icons"           : {
+            "default": "•",
+            "empty"  : "•"
+        },
+        "persistent-workspaces"  : { "*": 10 },
         "workspace-taskbar": {
             "enable"                : true,
             "update-active-window"  : true,
