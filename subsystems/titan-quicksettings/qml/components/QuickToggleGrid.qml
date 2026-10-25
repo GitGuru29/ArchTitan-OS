@@ -35,9 +35,15 @@ ColumnLayout {
             title: "Wi-Fi"
             subtitle: (typeof networkCtrl !== "undefined" && networkCtrl && networkCtrl.wifiEnabled)
                       ? networkCtrl.ssid : "Disconnected"
-            onClicked: {
+            onToggleClicked: {
                 if (typeof networkCtrl !== "undefined" && networkCtrl)
                     networkCtrl.toggleWifi()
+            }
+            onDetailClicked: {
+                rootWindow.showWifiPage = true;
+            }
+            onClicked: {
+                rootWindow.showWifiPage = true;
             }
         }
 

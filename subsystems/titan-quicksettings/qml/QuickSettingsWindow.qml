@@ -27,6 +27,7 @@ Window {
     property bool showNotificationPanel: false
     property bool editMode: false
     property bool showPowerMenu: false
+    property bool showWifiPage: false
 
     onShowNotificationPanelChanged: {
         rootWindow.width = showNotificationPanel ? 870 : 420;
@@ -42,6 +43,7 @@ Window {
         drawerOpen = false;
         editMode = false;
         showPowerMenu = false;
+        showWifiPage = false;
         closeTimer.start();
     }
 
@@ -90,6 +92,8 @@ Window {
         Keys.onEscapePressed: {
             if (rootWindow.showPowerMenu) {
                 rootWindow.showPowerMenu = false;
+            } else if (rootWindow.showWifiPage) {
+                rootWindow.showWifiPage = false;
             } else if (rootWindow.editMode) {
                 rootWindow.editMode = false;
             } else {
@@ -231,6 +235,15 @@ Window {
                             }
                         }
                     }
+                }
+
+                // ── One UI Wi-Fi Selection Overlay ───────────────────────
+                OneUIWifiPage {
+                    id: wifiPageOverlay
+                    anchors.fill: parent
+                    visible: rootWindow.showWifiPage
+                    z: 98
+                    onCloseRequested: rootWindow.showWifiPage = false
                 }
 
                 // ── One UI Power & Session Overlay ───────────────────────
