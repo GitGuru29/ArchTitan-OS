@@ -24,5 +24,6 @@
         <file>qml/components/OneUINotificationCard.qml</file>
         <file>qml/components/QuickSettingsCustomizer.qml</file>
         <file>qml/components/OneUIPowerMenu.qml</file>
+        <file>qml/components/OneUIWifiPage.qml</file>
     </qresource>
 </RCC>
