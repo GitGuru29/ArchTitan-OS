@@ -142,6 +142,7 @@ nodejs
 npm
 python
 github-cli
+lazygit
 
 # ── Terminal Productivity & Utilities ─────────────────────────────────────────
 fish

@@ -11,7 +11,8 @@
     "modules-left": [
         "custom/install-badge",
         "hyprland/workspaces",
-        "group/hardware"
+        "group/hardware",
+        "custom/git-hud"
     ],
 
     "modules-center": [
@@ -101,6 +102,18 @@
             "warning" : 75,
             "critical": 90
         }
+    },
+
+    // ── Contextual Dev & Git HUD (Auto-reveals in Repos/IDEs) ─
+    "custom/git-hud": {
+        "exec"            : "titan-git-hud",
+        "return-type"     : "json",
+        "restart-interval": 3,
+        "format"          : "{}",
+        "tooltip"         : true,
+        "on-click"        : "titan-git-hud --action terminal",
+        "on-click-right"  : "titan-git-hud --action remote",
+        "on-click-middle" : "titan-git-hud --action copy"
     },
 
     // ── Audio Visualizer (Auto-reveals on Music Playback) ──────
