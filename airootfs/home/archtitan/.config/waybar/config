@@ -10,7 +10,9 @@
 
     "modules-left": [
         "custom/install-badge",
-        "hyprland/workspaces"
+        "hyprland/workspaces",
+        "group/hardware",
+        "custom/git-hud"
     ],
 
     "modules-center": [
@@ -19,6 +21,8 @@
 
     "modules-right": [
         "custom/titan-hwm",
+        "custom/cava",
+        "group/capture",
         "clock",
         "group/quicksettings",
         "tray",
@@ -63,6 +67,101 @@
         "on-click"        : "$terminal -e sh -c 'clear; echo \"Titan Hardware Manager (THM) v3\"; echo; titan-hwm status; echo; echo \"--- Workloads ---\"; titan-hwm workloads 2>&1 | tail -30; echo; echo \"Press Enter for full help or close...\"; read -r _'",
         "on-click-right"  : "$terminal -e sh -c 'titan-hwm scan 2>&1 | tail -60; echo; echo \"Press Enter to close...\"; read -r _'",
         "tooltip"         : true
+    "group/hardware": {
+        "orientation": "horizontal",
+        "modules": [
+            "cpu",
+            "memory#swap",
+            "memory"
+        ]
+    },
+
+    "cpu": {
+        "interval"      : 2,
+        "format"        : "  {usage}",
+        "tooltip"       : true,
+        "tooltip-format": "CPU Usage: {usage}%\nLoad: {load}\nCores: {cores}",
+        "on-click"      : "kitty -e btop 2>/dev/null || btop",
+        "states"        : {
+            "warning" : 75,
+            "critical": 90
+        }
+    },
+
+    "memory#swap": {
+        "interval"      : 3,
+        "format"        : "󰓡  {swapPercentage}",
+        "tooltip"       : true,
+        "tooltip-format": "Swap Usage: {swapPercentage}%\nUsed: {swapUsed:0.1f} GiB / {swapTotal:0.1f} GiB",
+        "on-click"      : "kitty -e btop 2>/dev/null || btop",
+        "states"        : {
+            "warning" : 60,
+            "critical": 80
+        }
+    },
+
+    "memory": {
+        "interval"      : 2,
+        "format"        : "󰾆  {percentage}",
+        "tooltip"       : true,
+        "tooltip-format": "RAM Usage: {percentage}%\nUsed: {used:0.1f} GiB / {total:0.1f} GiB\nAvailable: {avail:0.1f} GiB",
+        "on-click"      : "kitty -e btop 2>/dev/null || btop",
+        "states"        : {
+            "warning" : 75,
+            "critical": 90
+        }
+    },
+
+    // ── Contextual Dev & Git HUD (Auto-reveals in Repos/IDEs) ─
+    "custom/git-hud": {
+        "exec"            : "titan-git-hud",
+        "return-type"     : "json",
+        "restart-interval": 3,
+        "format"          : "{}",
+        "tooltip"         : true,
+        "on-click"        : "titan-git-hud --action terminal",
+        "on-click-right"  : "titan-git-hud --action remote",
+        "on-click-middle" : "titan-git-hud --action copy"
+    },
+
+    // ── Audio Visualizer (Auto-reveals on Music Playback) ──────
+    "custom/cava": {
+        "exec"            : "titan-cava",
+        "return-type"     : "json",
+        "restart-interval": 3,
+        "format"          : "{}",
+        "tooltip"         : true,
+        "on-click"        : "playerctl play-pause 2>/dev/null || true",
+        "on-scroll-up"    : "playerctl next 2>/dev/null || true",
+        "on-scroll-down"  : "playerctl previous 2>/dev/null || true"
+    },
+
+    // ── Screen Capture & Recording ─────────────────────────────
+    "group/capture": {
+        "orientation": "horizontal",
+        "modules": [
+            "custom/snip",
+            "custom/recorder"
+        ]
+    },
+
+    "custom/snip": {
+        "format"         : "󰄀",
+        "tooltip"        : true,
+        "tooltip-format" : "Screenshot Snip\nLeft-click: Select Region\nRight-click: Fullscreen\nMiddle-click: Active Window",
+        "on-click"       : "titan-screenshot --area",
+        "on-click-right" : "titan-screenshot --full",
+        "on-click-middle": "titan-screenshot --window"
+    },
+
+    "custom/recorder": {
+        "exec"           : "titan-recorder --status",
+        "return-type"    : "json",
+        "interval"       : 2,
+        "signal"         : 8,
+        "on-click"       : "titan-recorder --toggle",
+        "on-click-right" : "titan-recorder --area",
+        "tooltip"        : true
     },
 
     "clock": {
@@ -98,6 +197,11 @@
         "format"            : "󰔏 {temperatureC}°C",
         "format-critical"   : "󰔏 {temperatureC}°C",
         "interval"          : 3,
+        "hwmon-path-abs"    : [
+            "/sys/devices/platform/coretemp.0/hwmon",
+            "/sys/devices/pci0000:00/0000:00:18.3/hwmon"
+        ],
+        "input-filename"    : "temp1_input",
         "on-click"          : "titan-quicksettings --toggle",
         "tooltip"           : false
     },
@@ -145,7 +249,7 @@
 
     "custom/notification": {
         "tooltip": true,
-        "tooltip-format": "Notifications & Quick Settings (Super+N)",
+        "tooltip-format": "Notifications &amp; Quick Settings (Super+N)",
         "format": "{icon}",
         "format-icons": {
             "notification": "󱅫",

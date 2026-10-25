@@ -193,15 +193,15 @@ def waybar_body(t: dict) -> str:
     text_mid = "#4C4F69" if not dark else p["textMid"]
     text_low = "#6C6F85" if not dark else p["textLow"]
 
-    # Glassy surface tokens
-    bar_bg = rgba(crust, 0.58 if dark else 0.72)
-    bar_border = "rgba(255, 255, 255, 0.12)" if dark else "rgba(0, 0, 0, 0.08)"
-    bar_border_top = "rgba(255, 255, 255, 0.22)" if dark else "rgba(255, 255, 255, 0.85)"
-    bar_shadow = "rgba(0, 0, 0, 0.35)" if dark else "rgba(0, 0, 0, 0.08)"
+    # Floating Bento Modules (zero outer bar background)
+    bar_bg = "transparent"
+    bar_border = "transparent"
+    bar_border_top = "transparent"
+    bar_shadow = "transparent"
 
-    module_bg = "rgba(255, 255, 255, 0.05)" if dark else "rgba(255, 255, 255, 0.70)"
-    module_border = "rgba(255, 255, 255, 0.08)" if dark else "rgba(0, 0, 0, 0.06)"
-    module_hover = "rgba(255, 255, 255, 0.12)" if dark else "rgba(255, 255, 255, 0.95)"
+    module_bg = rgba(crust, 0.65) if dark else "rgba(255, 255, 255, 0.75)"
+    module_border = "rgba(255, 255, 255, 0.12)" if dark else "rgba(0, 0, 0, 0.08)"
+    module_hover = rgba(crust, 0.85) if dark else "rgba(255, 255, 255, 0.95)"
 
     accent_soft = rgba(acc, 0.16)
     accent_glow = rgba(acc, 0.35)

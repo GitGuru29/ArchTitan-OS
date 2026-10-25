@@ -83,8 +83,10 @@ hl.bind(mainMod .. " + V", hl.dsp.exec_cmd("cliphist list | rofi -dmenu | cliphi
 hl.bind(mainMod .. " + Period", hl.dsp.exec_cmd(sandboxed .. " rofi -show emoji"))  -- Emoji
 hl.bind(mainMod .. " + backslash", hl.dsp.exec_cmd("titan-wallpaper-picker"))  -- Wallpaper Picker (Super+\)
 hl.bind(mainMod .. " + SHIFT + backslash", hl.dsp.exec_cmd("titan-wallpaper-picker"))  -- Wallpaper Picker (Super+|)
-hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd('grim -g "$(slurp)" - | wl-copy'))  -- Screen snip
-hl.bind("Print", hl.dsp.exec_cmd('grim -g "$(slurp)" - | wl-copy'))
+hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd("titan-screenshot --area"))  -- Screen snip
+hl.bind("Print", hl.dsp.exec_cmd("titan-screenshot --area"))
+hl.bind(mainMod .. " + Print", hl.dsp.exec_cmd("titan-screenshot --full"))
+hl.bind(mainMod .. " + ALT + Print", hl.dsp.exec_cmd("titan-screenshot --window"))
 hl.bind(mainMod .. " + N", hl.dsp.exec_cmd("titan-quicksettings --toggle"))  -- Quick Settings & Notification Center
 
 -- Session & Power
@@ -224,6 +226,8 @@ hl.config({
 
     cursor = {
         no_hardware_cursors = true,
+        enable_hyprcursor   = true,
+        sync_gsettings_theme = true,
     },
 
     general = {
@@ -239,7 +243,7 @@ hl.config({
 
     -- Decoration -- blur, shadows, rounding
     decoration = {
-        rounding = 10,
+        rounding = 12,
 
         blur = {
             enabled           = true,
@@ -247,25 +251,25 @@ hl.config({
             passes            = 3,
             new_optimizations = true,
             ignore_opacity    = true,
-            noise             = 0.012,
-            contrast          = 0.92,
-            brightness        = 0.88,
-            vibrancy          = 0.28,
+            noise             = 0.015,
+            contrast          = 0.94,
+            brightness        = 0.90,
+            vibrancy          = 0.32,
         },
 
         shadow = {
             enabled      = true,
-            range        = 24,
+            range        = 28,
             render_power = 4,
-            offset       = { 0, 5 },
-            color        = "rgba(0b0e1499)",
+            offset       = { 0, 6 },
+            color        = "rgba(0b0e14aa)",
         },
 
-        dim_inactive   = false,
-        dim_strength   = 0.08,
+        dim_inactive   = true,
+        dim_strength   = 0.05,
 
         active_opacity   = 0.98,
-        inactive_opacity = 0.90,
+        inactive_opacity = 0.92,
     },
 
     -- Layout
@@ -289,22 +293,27 @@ hl.config({
 ---- ANIMATIONS ----
 ---------------------------
 
-hl.curve("quint", { type = "bezier", points = { { 0.23, 1 }, { 0.32, 1 } } })
-hl.curve("cubic", { type = "bezier", points = { { 0.65, 0 }, { 0.35, 1 } } })
+hl.curve("fluent_decel", { type = "bezier", points = { { 0.05, 0.9 }, { 0.1, 1.05 } } })
+hl.curve("easeOutQuint", { type = "bezier", points = { { 0.23, 1 }, { 0.32, 1 } } })
+hl.curve("easeInOutCubic", { type = "bezier", points = { { 0.65, 0 }, { 0.35, 1 } } })
+hl.curve("overshot", { type = "bezier", points = { { 0.05, 0.9 }, { 0.1, 1.1 } } })
 hl.curve("snappy", { type = "bezier", points = { { 0.1, 1 }, { 0.1, 1 } } })
 hl.curve("smooth", { type = "bezier", points = { { 0.25, 1 }, { 0.5, 1 } } })
 
 hl.config({ animations = { enabled = true } })
 
 -- fluid and snappy animations
-hl.animation({ leaf = "windows",     enabled = true, speed = 4.2, bezier = "quint", style = "popin 85%" })
-hl.animation({ leaf = "windowsOut",  enabled = true, speed = 3.2, bezier = "cubic", style = "popin 90%" })
-hl.animation({ leaf = "windowsMove", enabled = true, speed = 3.8, bezier = "snappy" })
-hl.animation({ leaf = "border",      enabled = true, speed = 6, bezier = "quint" })
-hl.animation({ leaf = "borderangle", enabled = true, speed = 30, bezier = "default", style = "loop" })
-hl.animation({ leaf = "fade",        enabled = true, speed = 3.5, bezier = "smooth" })
-hl.animation({ leaf = "fadeDim",     enabled = true, speed = 4, bezier = "smooth" })
-hl.animation({ leaf = "workspaces",  enabled = true, speed = 4.5, bezier = "quint", style = "slide" })
+hl.animation({ leaf = "windows",     enabled = true, speed = 3.8, bezier = "fluent_decel", style = "popin 82%" })
+hl.animation({ leaf = "windowsOut",  enabled = true, speed = 2.8, bezier = "easeInOutCubic", style = "popin 88%" })
+hl.animation({ leaf = "windowsMove", enabled = true, speed = 3.2, bezier = "fluent_decel" })
+hl.animation({ leaf = "border",      enabled = true, speed = 5,   bezier = "easeOutQuint" })
+hl.animation({ leaf = "borderangle", enabled = true, speed = 30,  bezier = "default", style = "loop" })
+hl.animation({ leaf = "fade",        enabled = true, speed = 3.0, bezier = "smooth" })
+hl.animation({ leaf = "fadeDim",     enabled = true, speed = 3.5, bezier = "smooth" })
+hl.animation({ leaf = "workspaces",  enabled = true, speed = 4.0, bezier = "fluent_decel", style = "slide" })
+hl.animation({ leaf = "layers",      enabled = true, speed = 3.2, bezier = "fluent_decel", style = "popin 90%" })
+hl.animation({ leaf = "layersIn",    enabled = true, speed = 3.2, bezier = "fluent_decel", style = "popin 90%" })
+hl.animation({ leaf = "layersOut",   enabled = true, speed = 2.5, bezier = "easeInOutCubic", style = "popin 92%" })
 
 ---------------------------
 ---- WINDOW RULES ----
