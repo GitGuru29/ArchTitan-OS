@@ -30,6 +30,7 @@
 #include "../enforcement/enforcement_plane.hpp"
 #include "../resources/pressure_level.hpp"
 #include "../ipc/workspace_monitor.hpp"
+#include "../ipc/telemetry_publisher.hpp"
 
 #include <iostream>
 #include <iomanip>
@@ -1255,6 +1256,325 @@ void test_tc13_browser_collateral_tier() {
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
+// TC-14: Observation-Only Workloads Never Age
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc14_observed_never_ages() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(14, "Observation-Only Workloads Never Age",
+                    "Observed workloads mirror activity but are never AGING/RECLAIMABLE");
+
+    thm::WorkloadManager mgr;
+
+    thm::Workload observed;
+    observed.id      = 201;
+    observed.observed = true;
+    observed.type    = thm::WorkloadType::NEUTRAL;
+    observed.state   = thm::WorkloadState::DISCOVERED;
+    observed.root_pid = ::getpid();
+    observed.created_at  = thm::ms_clock::now() - std::chrono::minutes(30);
+    observed.last_active = thm::ms_clock::now() - std::chrono::minutes(30);
+    mgr.add(observed);
+
+    // Control: a classified workload with the same age MUST degrade, otherwise
+    // this test would pass vacuously.
+    thm::Workload classified;
+    classified.id      = 202;
+    classified.observed = false;
+    classified.type    = thm::WorkloadType::SYSTEM_DEV;
+    classified.state   = thm::WorkloadState::IDLE;
+    classified.root_pid = ::getpid();
+    classified.created_at  = thm::ms_clock::now() - std::chrono::minutes(30);
+    classified.last_active = thm::ms_clock::now() - std::chrono::minutes(30);
+    mgr.add(classified);
+
+    thm::WorkspaceState ws;
+    ws.id = 1;
+    ws.is_focused = false;
+    ws.is_visible = false;
+
+    // Drive both through the same pressure sequence.
+    for (int i = 0; i < 12; ++i) {
+        mgr.tick(*mgr.get(201), ws, thm::ActivityState::IDLE, thm::PressureLevel::HIGH);
+        mgr.tick(*mgr.get(202), ws, thm::ActivityState::IDLE, thm::PressureLevel::HIGH);
+    }
+
+    const auto obs_state  = mgr.get(201)->state;
+    const auto ctrl_state = mgr.get(202)->state;
+
+    std::cout << "[WorkloadManager] observed state after 12 HIGH-pressure ticks: "
+              << thm::to_string(obs_state) << "\n";
+    std::cout << "[WorkloadManager] classified control state: "
+              << thm::to_string(ctrl_state) << "\n";
+
+    bool passed = (obs_state == thm::WorkloadState::IDLE) &&
+                  (ctrl_state != thm::WorkloadState::IDLE);
+
+    // Workspace return must still upgrade an observed workload to ACTIVE.
+    thm::WorkspaceState focused;
+    focused.id = 1;
+    focused.is_focused = true;
+    mgr.tick(*mgr.get(201), focused, thm::ActivityState::IDLE, thm::PressureLevel::NORMAL);
+    const bool upgrades = (mgr.get(201)->state == thm::WorkloadState::ACTIVE);
+    std::cout << "[WorkloadManager] observed state on focused workspace: "
+              << thm::to_string(mgr.get(201)->state) << "\n";
+
+    passed = passed && upgrades;
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    TestResult tr14;
+    tr14.name = "TC-14: Observed Workloads Never Age";
+    tr14.invariant = "Telemetry-only workloads never acquire enforcement states";
+    tr14.passed = passed;
+    {
+        std::ostringstream od;
+        od << "observed=" << thm::to_string(obs_state)
+           << ", control=" << thm::to_string(ctrl_state)
+           << ", focused-upgrade=" << (upgrades ? "yes" : "no");
+        tr14.details = od.str();
+    }
+    tr14.duration_ms = ms;
+    g_results.push_back(tr14);
+
+    std::cout << (passed ? ">>> PASS: observation-only workloads cannot age.\n" : ">>> FAIL!\n");
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-15: Observed Workloads Are Never Enforced
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc15_observed_policy_guard() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(15, "Observed Workloads Are Never Enforced",
+                    "PolicyEngine returns KEEP_BACKGROUND for observed workloads at CRITICAL pressure");
+
+    thm::ProtectedRegistry registry;
+    thm::PolicyEngine policy;
+
+    thm::Workload wl;
+    wl.id       = 301;
+    wl.observed = true;
+    wl.type     = thm::WorkloadType::NEUTRAL;
+    wl.state    = thm::WorkloadState::IDLE;
+    wl.root_pid = ::getpid();
+    wl.pids     = {::getpid()};
+
+    thm::WorkspaceState ws;
+    ws.id = 3;
+    ws.is_focused = false;
+    ws.is_visible = false;
+
+    thm::PolicyDecision decisions[4] = {
+        policy.evaluate(wl, ws, thm::ActivityState::IDLE, thm::PressureLevel::NORMAL, registry),
+        policy.evaluate(wl, ws, thm::ActivityState::IDLE, thm::PressureLevel::MODERATE, registry),
+        policy.evaluate(wl, ws, thm::ActivityState::IDLE, thm::PressureLevel::HIGH, registry),
+        policy.evaluate(wl, ws, thm::ActivityState::IDLE, thm::PressureLevel::CRITICAL, registry),
+    };
+
+    bool all_keep_background = true;
+    for (auto d : decisions) {
+        std::cout << "[PolicyEngine] observed decision: " << thm::to_string(d) << "\n";
+        if (d != thm::PolicyDecision::KEEP_BACKGROUND) all_keep_background = false;
+    }
+
+    // Control: an identical but classified idle workload must escalate at
+    // CRITICAL/HIGH pressure (THROTTLE/FREEZE), proving the guard is specific.
+    thm::Workload ctrl = wl;
+    ctrl.id = 302;
+    ctrl.observed = false;
+    ctrl.type = thm::WorkloadType::SYSTEM_DEV;
+    auto ctrl_decision = policy.evaluate(ctrl, ws, thm::ActivityState::IDLE,
+                                         thm::PressureLevel::CRITICAL, registry);
+    std::cout << "[PolicyEngine] classified control at CRITICAL: "
+              << thm::to_string(ctrl_decision) << "\n";
+
+    const bool ctrl_escalates = (ctrl_decision == thm::PolicyDecision::THROTTLE ||
+                                 ctrl_decision == thm::PolicyDecision::FREEZE ||
+                                 ctrl_decision == thm::PolicyDecision::RECLAIM);
+    const bool passed = all_keep_background && ctrl_escalates;
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    TestResult tr15;
+    tr15.name = "TC-15: Observed Workloads Never Enforced";
+    tr15.invariant = "Observation mode grants zero enforcement authority";
+    tr15.passed = passed;
+    tr15.details = std::string("observed=KEEP_BACKGROUND at all levels; control=") + thm::to_string(ctrl_decision);
+    tr15.duration_ms = ms;
+    g_results.push_back(tr15);
+
+    std::cout << (passed ? ">>> PASS: observed workload never enforced.\n" : ">>> FAIL!\n");
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-16: Telemetry Contract for Observation Mode
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc16_telemetry_contract() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(16, "Telemetry Contract for Observation Mode",
+                    "Snapshot exposes CPU pressure, process inventory and observed flags");
+
+    thm::TelemetrySnapshot s;
+    s.version       = "3.1.0-test";
+    s.pressure_level = "NORMAL";
+    s.mem_total_kb  = 16 * 1024 * 1024;
+
+    s.cpu_psi_valid  = true;
+    s.cpu_psi_avg10  = 3.5f;
+    s.cpu_psi_avg60  = 2.0f;
+    s.cpu_psi_avg300 = 1.0f;
+    s.load1 = 1.25f;
+    s.load5 = 1.0f;
+    s.load15 = 0.9f;
+    s.runnable_procs = 4;
+    s.total_procs    = 900;
+
+    s.workload_count       = 2;
+    s.classified_workloads = 1;
+    s.observed_workloads   = 1;
+    s.active_workloads     = 1;
+    s.processes_seen       = 500;
+    s.processes_protected  = 20;
+    s.processes_assigned   = 30;
+    s.processes_unmanaged  = 450;
+    s.hyprland_connected   = true;
+
+    thm::TelemetryWorkload classified;
+    classified.id = 1;
+    classified.root_pid = 4242;
+    classified.name = "kitty";
+    classified.type = "SYSTEM_DEV";
+    classified.state = "BACKGROUND_EXECUTING";
+    classified.cpu_pct = 12.5f;
+    classified.observed = false;
+    s.workloads.push_back(classified);
+
+    thm::TelemetryWorkload observed;
+    observed.id = 2;
+    observed.root_pid = 4343;
+    observed.name = "firefox";
+    observed.type = "NEUTRAL";
+    observed.state = "IDLE";
+    observed.observed = true;
+    s.workloads.push_back(observed);
+
+    thm::UnmanagedProc u;
+    u.pid = 5555;
+    u.comm = "mystery";
+    u.cpu_pct = 99.0f;
+    u.rss_kb = 2048;
+    u.reason = "no classification signal";
+    s.top_unmanaged.push_back(u);
+
+    const std::string json = thm::serialize_snapshot(s);
+
+    struct Check { const char* needle; const char* what; };
+    const Check checks[] = {
+        {"\"cpu\":{",                    "cpu block present"},
+        {"\"psi_some_avg10\":3.5",       "cpu psi avg10"},
+        {"\"load1\":1.25",               "load average"},
+        {"\"processes\":{",              "process inventory block"},
+        {"\"unmanaged\":450",            "unmanaged process count"},
+        {"\"hyprland_connected\":true",  "hyprland connection state"},
+        {"\"classified_workloads\":1",   "classified count"},
+        {"\"observed_workloads\":1",     "observed count"},
+        {"\"observed\":true",            "observed workload flag"},
+        {"\"cpu_pct\":12.5",             "per-workload CPU"},
+        {"\"top_unmanaged\":[",          "top unmanaged list"},
+        {"\"reason\":\"no classification signal\"", "unmanaged reason"},
+    };
+
+    bool passed = true;
+    for (const auto& c : checks) {
+        const bool found = json.find(c.needle) != std::string::npos;
+        std::cout << (found ? "[JSON] ok   " : "[JSON] MISS ") << c.what
+                  << " (" << c.needle << ")\n";
+        if (!found) passed = false;
+    }
+
+    std::cout << "[JSON] bytes=" << json.size() << "\n";
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    TestResult tr16;
+    tr16.name = "TC-16: Telemetry Contract";
+    tr16.invariant = "Snapshot JSON is additive and self-explanatory";
+    tr16.passed = passed;
+    tr16.details = std::string("checked 12 fields, bytes=") + std::to_string(json.size());
+    tr16.duration_ms = ms;
+    g_results.push_back(tr16);
+
+    std::cout << (passed ? ">>> PASS: telemetry contract verified.\n" : ">>> FAIL!\n");
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-17: Measured CPU Percentage
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc17_measured_cpu_percent() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(17, "Measured CPU Percentage",
+                    "ExecutionDetector reports real CPU% using the measured sample interval");
+
+    thm::ExecutionConfig cfg{50, 0.5f, 2}; // 50ms default window
+    thm::ExecutionDetector detector(cfg);
+
+    pid_t burner = fork_cpu_burner("tc17-burner");
+    pid_t idle   = fork_idle_process();
+    std::this_thread::sleep_for(std::chrono::milliseconds(120));
+
+    thm::ProcessNode bnode;
+    bnode.pid = burner;
+    bnode.comm = "tc17-burner";
+    bnode.proc_state = read_proc_state(burner);
+
+    thm::ProcessNode inode;
+    inode.pid = idle;
+    inode.comm = "tc17-idle";
+    inode.proc_state = read_proc_state(idle);
+
+    // First sample establishes the baseline.
+    detector.detect(bnode, {});
+    detector.detect(inode, {});
+
+    // The daemon ticks every 200ms; use 300ms so the measured interval (not
+    // the configured 50ms) is exercised.
+    std::this_thread::sleep_for(std::chrono::milliseconds(300));
+    bnode.proc_state = read_proc_state(burner);
+    inode.proc_state = read_proc_state(idle);
+    detector.detect(bnode, {});
+    detector.detect(inode, {});
+
+    std::cout << "[Detector] burner CPU% = " << bnode.cpu_pct
+              << "  idle CPU% = " << inode.cpu_pct << "\n";
+
+    // A single-threaded burner over 300ms on a 50ms-configured window would
+    // report ~600% if the interval were not measured; assert a sane range.
+    const bool burner_ok = bnode.cpu_pct > 5.0f && bnode.cpu_pct <= 100.0f;
+    const bool idle_ok   = inode.cpu_pct < 5.0f;
+
+    std::cout << "[Detector] burner in expected range: "
+              << (burner_ok ? "yes" : "NO")
+              << "  idle below threshold: " << (idle_ok ? "yes" : "NO") << "\n";
+
+    safe_reap(burner);
+    safe_reap(idle);
+
+    const bool passed = burner_ok && idle_ok;
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    TestResult tr17;
+    tr17.name = "TC-17: Measured CPU Percentage";
+    tr17.invariant = "CPU% uses the real sampling interval and is bounded";
+    tr17.passed = passed;
+    std::ostringstream d17;
+    d17 << std::fixed << std::setprecision(1) << "burner=" << bnode.cpu_pct << "%, idle=" << inode.cpu_pct << "%";
+    tr17.details = d17.str();
+    tr17.duration_ms = ms;
+    g_results.push_back(tr17);
+
+    std::cout << (passed ? ">>> PASS: CPU percentage correctly scaled.\n" : ">>> FAIL!\n");
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
 // Main Test Harness Entry Point
 // ═════════════════════════════════════════════════════════════════════════════
 int main() {
@@ -1276,6 +1596,10 @@ int main() {
     test_tc11_governor_pressure_authority();
     test_tc12_protected_sigkill_guard();
     test_tc13_browser_collateral_tier();
+    test_tc14_observed_never_ages();
+    test_tc15_observed_policy_guard();
+    test_tc16_telemetry_contract();
+    test_tc17_measured_cpu_percent();
 
     // Summary Table
     std::cout << "\n════════════════════════════════════════════════════════════════════════════════\n";

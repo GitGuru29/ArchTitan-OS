@@ -75,19 +75,36 @@ void ExecutionDetector::detect(ProcessNode& node,
         // PID ever observed (including short-lived and reclaimed workloads)
         // is retained for the lifetime of the daemon.
         prev_ticks_.erase(pid);
+        last_sample_.erase(pid);
+    }
+
+    // Measured sampling interval (ms) for this PID. Falls back to the
+    // configured window on the first observation.
+    int sample_ms = cfg_.sample_ms;
+    auto now = ms_clock::now();
+    auto ls_it = last_sample_.find(pid);
+    if (ls_it != last_sample_.end()) {
+        long measured = std::chrono::duration_cast<std::chrono::milliseconds>(
+                            now - ls_it->second).count();
+        if (measured > 0) sample_ms = static_cast<int>(measured);
     }
 
     bool cpu_active = false;
     if (t0 >= 0 && t1 >= 0) {
-        cpu_active = cpu_pct(t0, t1, cfg_.sample_ms) >= cfg_.idle_cpu_pct;
+        node.cpu_pct = cpu_pct(t0, t1, sample_ms);
+        cpu_active = node.cpu_pct >= cfg_.idle_cpu_pct;
     } else if (t1 >= 0) {
+        node.cpu_pct = 0.0f;
         // First observation: initialize baseline; if kernel state is R or D, flag active
         if (node.proc_state == 'R' || node.proc_state == 'D')
             cpu_active = true;
     }
 
     // Update baseline for next call
-    if (t1 >= 0) prev_ticks_[pid] = t1;
+    if (t1 >= 0) {
+        prev_ticks_[pid] = t1;
+        last_sample_[pid] = now;
+    }
     node.cpu_ticks = (t1 >= 0) ? t1 : node.cpu_ticks;
 
     // ── Signal 2: Child set changed ────────────────────────────────────────
@@ -165,6 +182,7 @@ void ExecutionDetector::update_baseline(pid_t pid, long ticks) {
 
 void ExecutionDetector::remove_baseline(pid_t pid) {
     prev_ticks_.erase(pid);
+    last_sample_.erase(pid);
 }
 
 } // namespace thm

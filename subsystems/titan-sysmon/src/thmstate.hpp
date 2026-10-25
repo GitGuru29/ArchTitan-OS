@@ -29,6 +29,15 @@ struct ThmState
     QString  governor;                   // powersave / schedutil / performance
     int      workloadCount   = 0;
     int      activeWorkloads = 0;
+    int      classifiedWorkloads = 0;    // non-observed (enforcement-eligible)
+    int      observedWorkloads   = 0;    // telemetry-only
+    double   cpuPsiSome      = 0.0;      // /proc/pressure/cpu some avg10
+    double   load1           = 0.0;
+    int      processesSeen      = 0;
+    int      processesProtected = 0;
+    int      processesAssigned  = 0;
+    int      processesUnmanaged = 0;
+    bool     hyprlandConnected  = false;
     bool     hasLastAction   = false;
     QString  lastAction;                 // e.g. THROTTLE / FREEZE / RECLAIM
     QString  lastActionTarget;

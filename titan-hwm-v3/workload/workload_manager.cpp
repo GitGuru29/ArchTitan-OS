@@ -90,6 +90,18 @@ void WorkloadManager::tick(Workload&           wl,
         return;
     }
 
+    // Observation-only workloads mirror activity for telemetry but never age:
+    // AGING/RECLAIMABLE imply enforcement authority they do not have.
+    if (wl.observed) {
+        if (ws.is_focused || ws.is_visible)
+            wl.state = WorkloadState::ACTIVE;
+        else if (activity == ActivityState::EXECUTING)
+            wl.state = WorkloadState::BACKGROUND_EXECUTING;
+        else
+            wl.state = WorkloadState::IDLE;
+        return;
+    }
+
     switch (wl.state) {
 
     case WorkloadState::DISCOVERED:

@@ -139,10 +139,56 @@ ClassificationResult FusionClassifier::from_children(
     std::vector<std::pair<pid_t, std::string>> children;
     walk_child_procs_recursive(pid, graph, children, 3);
 
+    // Also use the root process' exe/cmdline for stronger signals
+    {
+        auto rit = graph.find(pid);
+        if (rit != graph.end()) {
+            const auto& rn = rit->second;
+            std::string exe_base;
+            if (!rn.exe.empty()) {
+                auto sl = rn.exe.rfind('/');
+                exe_base = (sl != std::string::npos) ? rn.exe.substr(sl + 1) : rn.exe;
+                // strip (deleted)
+                auto spd2 = exe_base.find(" (deleted)");
+                if (spd2 != std::string::npos) exe_base = exe_base.substr(0, spd2);
+            }
+            if (exe_base == "android-studio" || exe_base == "studio" || exe_base == "studio.sh") {
+                scores[static_cast<int>(WorkloadType::ANDROID_DEV)] += 0.4f;
+            } else if (exe_base == "code" || exe_base == "codium" || exe_base == "cursor" ||
+                       exe_base == "vscodium" || exe_base == "code-oss") {
+                scores[static_cast<int>(WorkloadType::SYSTEM_DEV)] += 0.3f;
+            } else if (rn.exe.find("jbr/bin/java") != std::string::npos ||
+                       rn.exe.find("android-studio") != std::string::npos) {
+                scores[static_cast<int>(WorkloadType::ANDROID_DEV)] += 0.3f;
+            }
+        }
+    }
+
     for (const auto& [cpid, cmd] : children) {
         if (cmd.empty()) continue;
         // ISSUE-11: verify exe path
         if (!is_valid_executable_path(cpid)) continue;
+
+        // exe-based hints (untruncated)
+        {
+            auto cit = graph.find(cpid);
+            if (cit != graph.end()) {
+                const std::string& cexe = cit->second.exe;
+                if (cexe.find("android-studio") != std::string::npos ||
+                    cexe.find("jbr/bin/java") != std::string::npos) {
+                    scores[static_cast<int>(WorkloadType::ANDROID_DEV)] += 0.25f;
+                }
+                if (cexe.find("/node") != std::string::npos || cexe.find("/bun") != std::string::npos) {
+                    scores[static_cast<int>(WorkloadType::WEB_DEV)] += 0.2f;
+                }
+                if (cexe.find("rust-analyzer") != std::string::npos ||
+                    cexe.find("/clangd") != std::string::npos ||
+                    cexe.find("/gopls") != std::string::npos ||
+                    cexe.find("/rustc") != std::string::npos) {
+                    scores[static_cast<int>(WorkloadType::SYSTEM_DEV)] += 0.25f;
+                }
+            }
+        }
 
         // HC-08: VM host process
         if (vm_set.count(cmd)) {
