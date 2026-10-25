@@ -70,6 +70,7 @@ file_permissions=(
   ["/usr/local/bin/titan-cava"]="0:0:755"
   ["/usr/local/bin/titan-git-hud"]="0:0:755"
   ["/usr/local/bin/titan-workspace-hud"]="0:0:755"
+  ["/usr/local/bin/waybar"]="0:0:755"
   # Hot-zone interaction layer
   ["/usr/local/bin/titan-hotzones"]="0:0:755"
   ["/usr/local/bin/titan-zone-osd"]="0:0:755"

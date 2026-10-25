@@ -45,10 +45,12 @@
         "sort-by-number"         : true,
         "persistent-workspaces"  : { "*": 5 },
         "workspace-taskbar": {
-            "enable"              : true,
-            "update-active-window": true,
-            "format"              : "{icon}",
-            "icon-size"           : 17
+            "enable"                : true,
+            "update-active-window"  : true,
+            "active-window-position": "first",
+            "max-icons"             : 1,
+            "format"                : "{icon}",
+            "icon-size"             : 17
         }
     },
 
