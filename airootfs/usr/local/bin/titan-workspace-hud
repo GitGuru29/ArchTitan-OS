@@ -1,0 +1,251 @@
+#!/usr/bin/env python3
+"""
+ArchTitan OS — Workspace Peek HUD (titan-workspace-hud)
+Reveals workspace numbers and active windows when Super key is held.
+Dismisses immediately on key release or quick shortcut execution.
+"""
+
+import sys
+import os
+import json
+import subprocess
+import signal
+import time
+
+PID_FILE = f"/tmp/titan-ws-hud-{os.getuid()}.pid"
+SOCKET_FILE = f"/tmp/titan-ws-hud-{os.getuid()}.sock"
+
+def cmd_hold():
+    # If already running or triggered, return
+    if os.path.exists(PID_FILE):
+        return
+
+    pid = os.fork()
+    if pid > 0:
+        # Parent exits immediately so Hyprland keybind is completely non-blocking
+        return
+
+    # Child process
+    os.setsid()
+    with open(PID_FILE, "w") as f:
+        f.write(str(os.getpid()))
+
+    try:
+        # Hold threshold: 280ms. Quick taps / shortcuts exit before this fires.
+        time.sleep(0.28)
+        if not os.path.exists(PID_FILE):
+            return
+        
+        # Launch GUI
+        run_gui()
+    finally:
+        if os.path.exists(PID_FILE):
+            try:
+                os.remove(PID_FILE)
+            except OSError:
+                pass
+
+def cmd_release():
+    if os.path.exists(PID_FILE):
+        try:
+            with open(PID_FILE, "r") as f:
+                pid = int(f.read().strip())
+            os.remove(PID_FILE)
+            os.kill(pid, signal.SIGTERM)
+        except Exception:
+            pass
+
+def get_hyprland_state():
+    try:
+        workspaces_out = subprocess.check_output(["hyprctl", "workspaces", "-j"], timeout=1)
+        clients_out = subprocess.check_output(["hyprctl", "clients", "-j"], timeout=1)
+        monitors_out = subprocess.check_output(["hyprctl", "monitors", "-j"], timeout=1)
+        
+        workspaces = json.loads(workspaces_out.decode("utf-8"))
+        clients = json.loads(clients_out.decode("utf-8"))
+        monitors = json.loads(monitors_out.decode("utf-8"))
+        
+        active_ws_id = 1
+        for m in monitors:
+            if m.get("focused"):
+                active_ws_id = m.get("activeWorkspace", {}).get("id", 1)
+                break
+                
+        # Group windows by workspace ID
+        ws_windows = {}
+        for c in clients:
+            ws_id = c.get("workspace", {}).get("id")
+            if ws_id:
+                ws_windows.setdefault(ws_id, []).append({
+                    "class": c.get("class", ""),
+                    "title": c.get("title", "")
+                })
+                
+        return active_ws_id, ws_windows
+    except Exception:
+        return 1, {}
+
+def run_gui():
+    import gi
+    gi.require_version('Gtk', '3.0')
+    gi.require_version('GtkLayerShell', '0.1')
+    from gi.repository import Gtk, Gdk, GLib, GtkLayerShell
+
+    active_ws, ws_windows = get_hyprland_state()
+
+    win = Gtk.Window()
+    win.set_title("titan-workspace-hud")
+    GtkLayerShell.init_for_window(win)
+    GtkLayerShell.set_layer(win, GtkLayerShell.Layer.OVERLAY)
+    GtkLayerShell.set_namespace(win, "titan-workspace-hud")
+    GtkLayerShell.set_anchor(win, GtkLayerShell.Edge.TOP, True)
+    GtkLayerShell.set_margin(win, GtkLayerShell.Edge.TOP, 46) # Just below waybar (38px + 8px gap)
+    GtkLayerShell.set_keyboard_interactivity(win, False)
+
+    # CSS Styling matching ArchTitan OS Liquid Glass
+    css = b"""
+    window {
+        background: transparent;
+    }
+    .hud-card {
+        background: rgba(17, 17, 27, 0.88);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 16px;
+        padding: 8px 16px 10px 16px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
+    }
+    .hud-title {
+        color: rgba(205, 214, 244, 0.50);
+        font-family: 'JetBrainsMono Nerd Font', monospace;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 1.5px;
+        margin-bottom: 6px;
+    }
+    .ws-box {
+        background: rgba(30, 30, 46, 0.65);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        padding: 6px 12px;
+        min-width: 64px;
+        transition: all 0.2s ease;
+    }
+    .ws-box.active {
+        background: rgba(0, 210, 255, 0.18);
+        border: 1.5px solid #00D2FF;
+        box-shadow: 0 0 14px rgba(0, 210, 255, 0.35);
+    }
+    .ws-num {
+        color: #CDD6F4;
+        font-family: 'Inter', sans-serif;
+        font-size: 20px;
+        font-weight: 800;
+    }
+    .ws-box.active .ws-num {
+        color: #00D2FF;
+    }
+    .ws-hint {
+        color: rgba(205, 214, 244, 0.40);
+        font-family: 'JetBrainsMono Nerd Font', monospace;
+        font-size: 9px;
+        font-weight: 600;
+    }
+    .ws-box.active .ws-hint {
+        color: rgba(0, 210, 255, 0.75);
+    }
+    .ws-app {
+        color: rgba(205, 214, 244, 0.70);
+        font-family: 'Inter', sans-serif;
+        font-size: 10px;
+        font-weight: 500;
+    }
+    """
+    provider = Gtk.CssProvider()
+    provider.load_from_data(css)
+    Gtk.StyleContext.add_provider_for_screen(
+        Gdk.Screen.get_default(),
+        provider,
+        Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+    )
+
+    card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+    card.get_style_context().add_class("hud-card")
+
+    title_label = Gtk.Label(label="WORKSPACE SELECTOR  ·  SUPER + [1..5]")
+    title_label.get_style_context().add_class("hud-title")
+    card.pack_start(title_label, False, False, 0)
+
+    row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+
+    icon_theme = Gtk.IconTheme.get_default()
+
+    for ws_id in range(1, 6):
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+        box.get_style_context().add_class("ws-box")
+        if ws_id == active_ws:
+            box.get_style_context().add_class("active")
+
+        # Number
+        num_lbl = Gtk.Label(label=str(ws_id))
+        num_lbl.get_style_context().add_class("ws-num")
+        box.pack_start(num_lbl, False, False, 0)
+
+        # App icons or status
+        apps = ws_windows.get(ws_id, [])
+        if apps:
+            app_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
+            app_box.set_halign(Gtk.Align.CENTER)
+            for app in apps[:3]:
+                c_name = app["class"].lower()
+                icon_name = "application-x-executable"
+                if "chrome" in c_name: icon_name = "google-chrome"
+                elif "firefox" in c_name: icon_name = "firefox"
+                elif "kitty" in c_name: icon_name = "kitty"
+                elif "code" in c_name or "antigravity" in c_name: icon_name = "code"
+                elif "terminal" in c_name: icon_name = "utilities-terminal"
+                
+                if icon_theme.has_icon(icon_name):
+                    img = Gtk.Image.new_from_icon_name(icon_name, Gtk.IconSize.MENU)
+                    app_box.pack_start(img, False, False, 0)
+                else:
+                    short_title = app["class"][:6]
+                    t_lbl = Gtk.Label(label=short_title)
+                    t_lbl.get_style_context().add_class("ws-app")
+                    app_box.pack_start(t_lbl, False, False, 0)
+            box.pack_start(app_box, False, False, 0)
+        else:
+            empty_lbl = Gtk.Label(label="•")
+            empty_lbl.get_style_context().add_class("ws-hint")
+            box.pack_start(empty_lbl, False, False, 0)
+
+        # Shortcut hint
+        hint_lbl = Gtk.Label(label=f"󰘳 {ws_id}")
+        hint_lbl.get_style_context().add_class("ws-hint")
+        box.pack_start(hint_lbl, False, False, 2)
+
+        row.pack_start(box, False, False, 0)
+
+    card.pack_start(row, False, False, 0)
+    win.add(card)
+    win.show_all()
+
+    # Handle termination signal cleanly
+    def on_term(signum, frame):
+        Gtk.main_quit()
+    signal.signal(signal.SIGTERM, on_term)
+
+    # Monitor PID file existence every 50ms
+    def check_alive():
+        if not os.path.exists(PID_FILE):
+            Gtk.main_quit()
+            return False
+        return True
+    GLib.timeout_add(50, check_alive)
+
+    Gtk.main()
+
+if __name__ == "__main__":
+    if len(sys.argv) > 1 and sys.argv[1] == "release":
+        cmd_release()
+    else:
+        cmd_hold()

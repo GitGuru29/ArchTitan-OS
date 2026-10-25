@@ -39,10 +39,17 @@
     },
 
     "hyprland/workspaces": {
-        "format"              : "{id}",
-        "on-click"            : "activate",
-        "sort-by-number"      : true,
-        "persistent-workspaces": { "*": 5 }
+        "format"                 : "{windows}",
+        "format-window-separator": " ",
+        "on-click"               : "activate",
+        "sort-by-number"         : true,
+        "persistent-workspaces"  : { "*": 5 },
+        "workspace-taskbar": {
+            "enable"              : true,
+            "update-active-window": true,
+            "format"              : "{icon}",
+            "icon-size"           : 17
+        }
     },
 
     // ── CENTER: Embedded Rolling Viewport ──────────────────────

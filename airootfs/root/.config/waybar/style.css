@@ -91,38 +91,91 @@ window#waybar.hidden {
     background   : @module-bg;
     border       : 1px solid @module-border;
     border-radius: 12px;
-    padding      : 2px 4px;
+    padding      : 1px 5px;
     margin       : 3px 4px 3px 2px;
     box-shadow   : 0 4px 16px rgba(0, 0, 0, 0.25);
-    transition   : background 0.3s ease, border-color 0.3s ease;
-}
-
-#workspaces button {
-    padding      : 2px 7px;
-    margin       : 1px 2px;
-    color        : @text-low;
-    background   : transparent;
-    border-radius: 8px;
-    font-size    : 11px;
-    font-weight  : 600;
-    min-width    : 20px;
     transition   : all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-#workspaces button:hover {
-    color     : @text-high;
-    background: @module-hover;
+#workspaces:hover {
+    background  : @module-hover;
+    border-color: @accent-border;
+    box-shadow  : 0 0 10px @accent-glow;
 }
 
-/* Active workspace — glowing accent pill */
-#workspaces button.active {
-    color        : @on-accent;
-    background   : #00D2FF; /* @titan-adapt:accent */
-    border       : 1px solid rgba(0, 210, 255, 0.55); /* @titan-adapt:accent-line */
+#workspaces button {
+    padding      : 0;
+    margin       : 1px 2px;
+    border       : none;
     border-radius: 8px;
-    font-weight  : 700;
-    padding      : 2px 11px;
-    box-shadow   : 0 0 12px @accent-glow;
+    background   : transparent;
+    transition   : all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* 1. Empty workspaces (no apps): subtle clean circular dot */
+#workspaces button.empty {
+    min-width    : 6px;
+    min-height   : 6px;
+    padding      : 0;
+    margin       : 6px 5px;
+    border-radius: 50%;
+    background   : rgba(255, 255, 255, 0.28);
+}
+
+#workspaces button.empty:hover {
+    background   : rgba(255, 255, 255, 0.65);
+}
+
+/* 2. Active empty workspace: cyber cyan pill indicator */
+#workspaces button.empty.active {
+    min-width    : 16px;
+    min-height   : 6px;
+    padding      : 0;
+    margin       : 6px 3px;
+    border-radius: 3px;
+    background   : #00D2FF; /* @titan-adapt:accent */
+    box-shadow   : 0 0 10px @accent-glow;
+}
+
+/* 3. Occupied workspace (inactive): frosted bento capsule showing open app icons */
+#workspaces button:not(.empty) {
+    background   : alpha(@surface0, 0.55);
+    border       : 1px solid alpha(@border-glass, 0.5);
+    border-radius: 9px;
+    padding      : 1px 5px;
+    margin       : 1px 2px;
+}
+
+#workspaces button:not(.empty):hover {
+    background  : @module-hover;
+    border-color: @accent-border;
+    box-shadow  : 0 0 8px @accent-glow;
+}
+
+/* 4. Active occupied workspace: vibrant cyber cyan glow capsule */
+#workspaces button.active:not(.empty) {
+    background   : alpha(#00D2FF, 0.20);
+    border       : 1px solid rgba(0, 210, 255, 0.60);
+    border-radius: 9px;
+    padding      : 1px 6px;
+    margin       : 1px 2px;
+    box-shadow   : 0 0 12px alpha(#00D2FF, 0.35);
+}
+
+/* 5. App taskbar icons inside the workspace */
+#workspaces .taskbar-window {
+    padding      : 0 2px;
+    margin       : 0 1px;
+    border       : none;
+    border-radius: 4px;
+    transition   : all 0.15s ease;
+}
+
+/* Focused window gets the cyan circular ring halo matching screenshot */
+#workspaces .taskbar-window.active {
+    background   : alpha(#00D2FF, 0.25);
+    box-shadow   : inset 0 0 0 1.5px #00D2FF;
+    border-radius: 50%;
 }
 
 #workspaces button.urgent {
