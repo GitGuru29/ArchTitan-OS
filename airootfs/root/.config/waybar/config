@@ -189,6 +189,11 @@
         "format"            : "󰔏 {temperatureC}°C",
         "format-critical"   : "󰔏 {temperatureC}°C",
         "interval"          : 3,
+        "hwmon-path-abs"    : [
+            "/sys/devices/platform/coretemp.0/hwmon",
+            "/sys/devices/pci0000:00/0000:00:18.3/hwmon"
+        ],
+        "input-filename"    : "temp1_input",
         "on-click"          : "titan-quicksettings --toggle",
         "tooltip"           : false
     },
