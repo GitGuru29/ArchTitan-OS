@@ -81,6 +81,7 @@ swaync
 swayosd
 grim
 slurp
+wf-recorder
 wl-clipboard
 cliphist
 hyprpicker
@@ -98,6 +99,7 @@ pipewire-jack
 wireplumber
 pavucontrol
 playerctl
+cava
 brightnessctl
 power-profiles-daemon
 

@@ -1,0 +1,104 @@
+#!/usr/bin/env bash
+# titan-recorder — ArchTitan screen recording utility via wf-recorder
+# Toggles hardware-accelerated screen capture, displays real-time recording state,
+# and outputs MP4 recordings to ~/Videos/Recordings.
+
+set -euo pipefail
+
+TARGET_DIR="${XDG_VIDEOS_DIR:-$HOME/Videos}/Recordings"
+PID_FILE="${XDG_RUNTIME_DIR:-/tmp}/titan-recorder.pid"
+
+is_recording() {
+    if [[ -f "$PID_FILE" ]]; then
+        local pid
+        pid="$(cat "$PID_FILE" 2>/dev/null || true)"
+        if [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null; then
+            return 0
+        fi
+        rm -f "$PID_FILE" 2>/dev/null || true
+    fi
+    return 1
+}
+
+notify_msg() {
+    local title="$1"
+    local body="$2"
+    local urgency="${3:-normal}"
+    notify-send -u "$urgency" -a "ArchTitan" "$title" "$body" 2>/dev/null || true
+}
+
+stop_recording() {
+    if is_recording; then
+        local pid
+        pid="$(cat "$PID_FILE")"
+        kill -SIGINT "$pid" 2>/dev/null || true
+        rm -f "$PID_FILE"
+        sleep 0.5
+        notify_msg "Recording Saved" "Saved to ~/Videos/Recordings" "normal"
+        pkill -RTMIN+8 waybar 2>/dev/null || true
+    fi
+}
+
+start_recording() {
+    mkdir -p "$TARGET_DIR"
+    local timestamp
+    timestamp="$(date +'%Y-%m-%d_%H-%M-%S')"
+    local file="${TARGET_DIR}/Recording_${timestamp}.mp4"
+
+    local geom=""
+    if [[ "${1:-}" == "--area" ]]; then
+        geom="$(slurp -d -c "00d2ff88" -b "00000044" -s "00d2ff22" -w 2 2>/dev/null || true)"
+        if [[ -z "$geom" ]]; then
+            exit 0
+        fi
+    fi
+
+    notify_msg "Recording Started" "Click the REC button in Waybar to finish" "low"
+    if [[ -n "$geom" ]]; then
+        wf-recorder -g "$geom" -f "$file" >/dev/null 2>&1 &
+    else
+        wf-recorder -f "$file" >/dev/null 2>&1 &
+    fi
+
+    echo $! > "$PID_FILE"
+    pkill -RTMIN+8 waybar 2>/dev/null || true
+}
+
+toggle_recording() {
+    if is_recording; then
+        stop_recording
+    else
+        start_recording "${1:-}"
+    fi
+}
+
+status_json() {
+    if is_recording; then
+        echo '{"text": "󰑋 REC", "class": "recording", "tooltip": "Screen recording in progress\nClick to stop recording"}'
+    else
+        echo '{"text": "󰑋", "class": "idle", "tooltip": "Screen Recorder\nLeft-click: Record display\nRight-click: Record region"}'
+    fi
+}
+
+case "${1:---toggle}" in
+    --toggle)
+        toggle_recording
+        ;;
+    --area)
+        if is_recording; then
+            stop_recording
+        else
+            start_recording --area
+        fi
+        ;;
+    --stop)
+        stop_recording
+        ;;
+    --status)
+        status_json
+        ;;
+    *)
+        echo "Usage: titan-recorder [--toggle|--area|--stop|--status]" >&2
+        exit 1
+        ;;
+esac

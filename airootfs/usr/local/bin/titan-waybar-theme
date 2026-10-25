@@ -338,9 +338,9 @@ def build_palette(avg_rgb, theme: dict | None = None) -> dict[str, str]:
         tip_border = f"rgba(0, 0, 0, {0.08 - 0.02 * t:.2f})"
 
     palette = {
-        "bar-bg": _rgba(bar, bar_alpha),
-        "bar-border": bar_border,
-        "bar-shadow": bar_shadow,
+        "bar-bg": "transparent",
+        "bar-border": "transparent",
+        "bar-shadow": "none",
         "accent": _hex(accent),
         "accent-soft": _rgba(accent, 0.16),
         "accent-line": _rgba(accent, 0.38),

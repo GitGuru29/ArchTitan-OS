@@ -10,7 +10,8 @@
 
     "modules-left": [
         "custom/install-badge",
-        "hyprland/workspaces"
+        "hyprland/workspaces",
+        "group/hardware"
     ],
 
     "modules-center": [
@@ -18,6 +19,8 @@
     ],
 
     "modules-right": [
+        "custom/cava",
+        "group/capture",
         "clock",
         "group/quicksettings",
         "tray",
@@ -54,6 +57,91 @@
     },
 
     // ── RIGHT: Telemetry & Controls ────────────────────────────
+
+    "group/hardware": {
+        "orientation": "horizontal",
+        "modules": [
+            "cpu",
+            "memory#swap",
+            "memory"
+        ]
+    },
+
+    "cpu": {
+        "interval"      : 2,
+        "format"        : "  {usage}",
+        "tooltip"       : true,
+        "tooltip-format": "CPU Usage: {usage}%\nLoad: {load}\nCores: {cores}",
+        "on-click"      : "kitty -e btop 2>/dev/null || btop",
+        "states"        : {
+            "warning" : 75,
+            "critical": 90
+        }
+    },
+
+    "memory#swap": {
+        "interval"      : 3,
+        "format"        : "󰓡  {swapPercentage}",
+        "tooltip"       : true,
+        "tooltip-format": "Swap Usage: {swapPercentage}%\nUsed: {swapUsed:0.1f} GiB / {swapTotal:0.1f} GiB",
+        "on-click"      : "kitty -e btop 2>/dev/null || btop",
+        "states"        : {
+            "warning" : 60,
+            "critical": 80
+        }
+    },
+
+    "memory": {
+        "interval"      : 2,
+        "format"        : "󰾆  {percentage}",
+        "tooltip"       : true,
+        "tooltip-format": "RAM Usage: {percentage}%\nUsed: {used:0.1f} GiB / {total:0.1f} GiB\nAvailable: {avail:0.1f} GiB",
+        "on-click"      : "kitty -e btop 2>/dev/null || btop",
+        "states"        : {
+            "warning" : 75,
+            "critical": 90
+        }
+    },
+
+    // ── Audio Visualizer (Auto-reveals on Music Playback) ──────
+    "custom/cava": {
+        "exec"            : "titan-cava",
+        "return-type"     : "json",
+        "restart-interval": 3,
+        "format"          : "{}",
+        "tooltip"         : true,
+        "on-click"        : "playerctl play-pause 2>/dev/null || true",
+        "on-scroll-up"    : "playerctl next 2>/dev/null || true",
+        "on-scroll-down"  : "playerctl previous 2>/dev/null || true"
+    },
+
+    // ── Screen Capture & Recording ─────────────────────────────
+    "group/capture": {
+        "orientation": "horizontal",
+        "modules": [
+            "custom/snip",
+            "custom/recorder"
+        ]
+    },
+
+    "custom/snip": {
+        "format"         : "󰄀",
+        "tooltip"        : true,
+        "tooltip-format" : "Screenshot Snip\nLeft-click: Select Region\nRight-click: Fullscreen\nMiddle-click: Active Window",
+        "on-click"       : "titan-screenshot --area",
+        "on-click-right" : "titan-screenshot --full",
+        "on-click-middle": "titan-screenshot --window"
+    },
+
+    "custom/recorder": {
+        "exec"           : "titan-recorder --status",
+        "return-type"    : "json",
+        "interval"       : 2,
+        "signal"         : 8,
+        "on-click"       : "titan-recorder --toggle",
+        "on-click-right" : "titan-recorder --area",
+        "tooltip"        : true
+    },
 
     "clock": {
         "format"         : "󰥔  {:%H:%M}",
@@ -135,7 +223,7 @@
 
     "custom/notification": {
         "tooltip": true,
-        "tooltip-format": "Notifications & Quick Settings (Super+N)",
+        "tooltip-format": "Notifications &amp; Quick Settings (Super+N)",
         "format": "{icon}",
         "format-icons": {
             "notification": "󱅫",
