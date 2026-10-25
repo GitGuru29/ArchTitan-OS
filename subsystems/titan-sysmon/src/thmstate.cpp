@@ -61,6 +61,19 @@ ThmState ThmReader::read(const QString &path)
     s.governor       = o.value(QStringLiteral("governor")).toString();
     s.workloadCount  = o.value(QStringLiteral("workload_count")).toInt();
     s.activeWorkloads = o.value(QStringLiteral("active_workloads")).toInt();
+    s.classifiedWorkloads = o.value(QStringLiteral("classified_workloads")).toInt();
+    s.observedWorkloads   = o.value(QStringLiteral("observed_workloads")).toInt();
+
+    const QJsonObject cpu = o.value(QStringLiteral("cpu")).toObject();
+    s.cpuPsiSome = cpu.value(QStringLiteral("psi_some_avg10")).toDouble();
+    s.load1      = cpu.value(QStringLiteral("load1")).toDouble();
+
+    const QJsonObject procs = o.value(QStringLiteral("processes")).toObject();
+    s.processesSeen      = procs.value(QStringLiteral("seen")).toInt();
+    s.processesProtected = procs.value(QStringLiteral("protected")).toInt();
+    s.processesAssigned  = procs.value(QStringLiteral("assigned")).toInt();
+    s.processesUnmanaged = procs.value(QStringLiteral("unmanaged")).toInt();
+    s.hyprlandConnected  = procs.value(QStringLiteral("hyprland_connected")).toBool();
 
     const QJsonValue last = o.value(QStringLiteral("last_action"));
     if (last.isObject()) {
@@ -85,6 +98,8 @@ ThmState ThmReader::read(const QString &path)
         m.insert(QStringLiteral("state"),     w.value(QStringLiteral("state")).toString());
         m.insert(QStringLiteral("pids"),      w.value(QStringLiteral("pids")).toInt());
         m.insert(QStringLiteral("memMb"),     static_cast<qint64>(w.value(QStringLiteral("mem_mb")).toDouble()));
+        m.insert(QStringLiteral("cpuPct"),    w.value(QStringLiteral("cpu_pct")).toDouble());
+        m.insert(QStringLiteral("observed"),  w.value(QStringLiteral("observed")).toBool());
         s.workloads.append(m);
     }
 

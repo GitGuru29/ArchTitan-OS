@@ -141,6 +141,13 @@ public:
     QString thmGovernor() const { return m_thm.governor; }
     int thmWorkloadCount() const { return m_thm.workloadCount; }
     int thmActiveWorkloads() const { return m_thm.activeWorkloads; }
+    int thmClassifiedWorkloads() const { return m_thm.classifiedWorkloads; }
+    int thmObservedWorkloads() const { return m_thm.observedWorkloads; }
+    int thmProcessesSeen() const { return m_thm.processesSeen; }
+    int thmProcessesUnmanaged() const { return m_thm.processesUnmanaged; }
+    bool thmHyprlandConnected() const { return m_thm.hyprlandConnected; }
+    double thmCpuPsi() const { return m_thm.cpuPsiSome; }
+    double thmLoad1() const { return m_thm.load1; }
     QString thmLastAction() const { return m_thm.lastAction; }
     QString thmLastActionTarget() const { return m_thm.lastActionTarget; }
     QVariantList thmWorkloads() const { return m_thm.workloads; }

@@ -54,6 +54,11 @@ public:
     // ── State queries ────────────────────────────────────────────────────────
     int  focused_workspace() const { return focused_ws_.load(); }
 
+    // True while the Hyprland event socket is connected. The listener retries
+    // with backoff, so a daemon that starts before the compositor recovers
+    // automatically instead of running headless for the rest of the session.
+    bool connected() const { return connected_.load(); }
+
     // Get current WorkspaceState map (thread-safe snapshot)
     std::unordered_map<int, WorkspaceState> snapshot_workspaces() const;
 
@@ -80,6 +85,7 @@ private:
 
     std::atomic<int>  focused_ws_{1};
     std::atomic<bool> running_{false};
+    std::atomic<bool> connected_{false};
     std::thread       listener_thread_;
 
     mutable std::mutex ws_mtx_;

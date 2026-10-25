@@ -20,6 +20,7 @@
     ],
 
     "modules-right": [
+        "custom/titan-hwm",
         "custom/cava",
         "group/capture",
         "clock",
@@ -58,6 +59,15 @@
     },
 
     // ── RIGHT: Telemetry & Controls ────────────────────────────
+
+    "custom/titan-hwm": {
+        "exec"            : "titan-hwm-waybar",
+        "return-type"     : "json",
+        "interval"        : 3,
+        "on-click"        : "kitty -e sh -c 'clear; echo \"Titan Hardware Manager (THM) v3\"; echo; titan-hwm status; echo; echo \"--- Workloads ---\"; titan-hwm workloads 2>&1 | tail -30; echo; echo \"Press Enter for full help or close...\"; read -r _' 2>/dev/null",
+        "on-click-right"  : "kitty -e sh -c 'titan-hwm scan 2>&1 | tail -60; echo; echo \"Press Enter to close...\"; read -r _' 2>/dev/null",
+        "tooltip"         : true
+    },
 
     "group/hardware": {
         "orientation": "horizontal",

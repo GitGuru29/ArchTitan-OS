@@ -9,7 +9,7 @@
 STATE="${THM_TELEMETRY_PATH:-/run/archtitan/thm-state.json}"
 
 inactive() {
-    printf '{"text":"⚙ HWM","class":"inactive","tooltip":"Titan HWM: daemon not running\\nNo telemetry at %s"}\n' "$STATE"
+    printf '{"text":"󰒋 THM","class":"inactive","tooltip":"Titan Hardware Manager (THM)\\nDaemon not running\\nNo telemetry at %s\\n\\nClick: Open THM status (or run: titan-hwm help)"}\n' "$STATE"
     exit 0
 }
 
@@ -39,16 +39,16 @@ acount=$(jget '.active_workloads' '0')
 action=$(jget '.last_action.decision' 'none')
 
 case "$level" in
-    NORMAL)   icon="🛡";  css_class="normal"   ;;
-    MODERATE) icon="⚠️";  css_class="moderate" ;;
-    HIGH)     icon="🔥"; css_class="high"     ;;
-    CRITICAL) icon="❗"; css_class="critical" ;;
-    *)        icon="⚙";  css_class="inactive" ;;
+    NORMAL)   icon="󰒋";  css_class="normal"   ;;
+    MODERATE) icon="󰒋";  css_class="moderate" ;;
+    HIGH)     icon="󰒋"; css_class="high"     ;;
+    CRITICAL) icon="󰒋"; css_class="critical" ;;
+    *)        icon="󰒋";  css_class="inactive" ;;
 esac
 
-text="${icon} ${level}"
+text="THM ${level}"
 
-tooltip="Pressure: ${level}\\nPSI (10s some): ${psi}%\\nRAM Used: ${mem_used}%\\nCPU Governor: ${governor}\\nWorkloads: ${acount} active / ${wcount} tracked\\nLast action: ${action}"
+tooltip="Titan Hardware Manager (THM) v3\\nPressure: ${level}\\nPSI (10s some): ${psi}%\\nRAM Used: ${mem_used}%\\nCPU Governor: ${governor}\\nWorkloads: ${acount} active / ${wcount} tracked\\nLast action: ${action}\\n\\nClick: View THM status & scan\\nSuper+Shift+H: THM quick view\\nRun: titan-hwm help"
 
 printf '{"text":"%s","class":"%s","tooltip":"%s"}\n' \
     "$text" "$css_class" "$tooltip"
