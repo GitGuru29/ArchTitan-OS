@@ -65,7 +65,7 @@ CHOSEN=$(
     emit_rows | \
     rofi -dmenu \
         -i \
-        -p "  Wallpaper" \
+        -p "󰸉 Wallpaper" \
         -theme /usr/share/rofi/themes/archtitan-wallpaper.rasi \
         -show-icons \
         2>/dev/null

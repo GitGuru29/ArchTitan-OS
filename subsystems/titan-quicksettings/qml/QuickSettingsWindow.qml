@@ -138,6 +138,24 @@ Window {
                 border.width: 1
                 clip: true
 
+                // Top specular edge highlight
+                Rectangle {
+                    anchors.top: parent.top
+                    anchors.topMargin: 1
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: parent.width * 0.7
+                    height: 1
+                    radius: 1
+                    z: 10
+                    gradient: Gradient {
+                        orientation: Gradient.Horizontal
+                        GradientStop { position: 0.0; color: "transparent" }
+                        GradientStop { position: 0.3; color: "#25FFFFFF" }
+                        GradientStop { position: 0.7; color: "#25FFFFFF" }
+                        GradientStop { position: 1.0; color: "transparent" }
+                    }
+                }
+
                 ColumnLayout {
                     anchors.fill: parent
                     anchors.margins: 14
@@ -269,6 +287,24 @@ Window {
                 border.color: TitanTheme.borderGlass
                 border.width: 1
                 clip: true
+
+                // Top specular edge highlight
+                Rectangle {
+                    anchors.top: parent.top
+                    anchors.topMargin: 1
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: parent.width * 0.7
+                    height: 1
+                    radius: 1
+                    z: 10
+                    gradient: Gradient {
+                        orientation: Gradient.Horizontal
+                        GradientStop { position: 0.0; color: "transparent" }
+                        GradientStop { position: 0.3; color: "#25FFFFFF" }
+                        GradientStop { position: 0.7; color: "#25FFFFFF" }
+                        GradientStop { position: 1.0; color: "transparent" }
+                    }
+                }
 
                 ColumnLayout {
                     anchors.fill: parent

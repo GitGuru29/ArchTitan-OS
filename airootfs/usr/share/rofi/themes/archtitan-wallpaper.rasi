@@ -28,10 +28,10 @@
 /* ── Window ─────────────────────────────────────────────── */
 window {
     width:            960px;
-    border-radius:    20px;
+    border-radius:    22px;
     border:           1px solid;
-    border-color:     #cba6f72e;
-    background-color: #11111beb;
+    border-color:     #89b4fa40;
+    background-color: #11111bf2;
     padding:          24px;
     location:         center;
     anchor:           center;
@@ -46,11 +46,11 @@ mainbox {
 /* ── Search bar ─────────────────────────────────────────── */
 inputbar {
     background-color: #31324499;
-    border-radius:    12px;
+    border-radius:    14px;
     border:           1px solid;
-    border-color:     #cba6f71f;
-    padding:          10px 16px;
-    spacing:          10px;
+    border-color:     #ffffff0d;
+    padding:          12px 18px;
+    spacing:          12px;
     children:         [ prompt, entry ];
 }
 
@@ -90,10 +90,10 @@ listview {
 /* ── Each wallpaper card ────────────────────────────────── */
 element {
     background-color: #31324473;
-    border-radius:    14px;
+    border-radius:    16px;
     border:           1px solid;
     border-color:     #ffffff0d;
-    padding:          10px;
+    padding:          12px;
     spacing:          0px;
     orientation:      vertical;
     cursor:           pointer;
@@ -102,7 +102,7 @@ element {
 
 element-icon {
     size:             160px;
-    border-radius:    10px;
+    border-radius:    12px;
     background-color: @surface0;
     cursor:           inherit;
 }
@@ -113,7 +113,7 @@ element-text {
     horizontal-align: 0.5;
     vertical-align:   0.5;
     padding:          8px 4px 2px 4px;
-    font:             "JetBrainsMono Nerd Font 10";
+    font:             "JetBrainsMono Nerd Font 10.5";
     cursor:           inherit;
 }
 
@@ -129,14 +129,14 @@ element alternate.normal {
 }
 
 element selected.normal {
-    background-color: #89b4fa24;
+    background-color: #89b4fa26;
     border:           1px solid;
     border-color:     @blue;
 }
 
 element selected.normal element-text {
     text-color: @lavender;
-    font:       "JetBrainsMono Nerd Font Bold 10";
+    font:       "JetBrainsMono Nerd Font Bold 10.5";
 }
 
 /* ── Scrollbar (fallback if enabled) ───────────────────── */
