@@ -3,18 +3,42 @@ import QtQuick.Controls
 
 Rectangle {
     id: card
+    property int cardIndex: 0
     property int wsId: 1
     property bool isActive: false
     property var windowList: []
     property int winCount: 0
+    property bool hasAudio: false
 
     width: 236
     height: 136
     radius: 16
 
+    opacity: hudRoot.isOpen ? 1.0 : 0.0
+    transform: Translate {
+        id: cardTrans
+        y: hudRoot.isOpen ? 0 : 16
+    }
+
+    Behavior on opacity {
+        NumberAnimation {
+            duration: 220
+            easing.type: Easing.OutCubic
+        }
+    }
+
+    Behavior on transform {
+        NumberAnimation {
+            target: cardTrans
+            property: "y"
+            duration: 250
+            easing.type: Easing.OutBack
+        }
+    }
+
     color: isActive ? "#D9181825" : (dropArea.containsDrag ? "#4000D2FF" : (cardMouse.containsMouse ? "#B3252838" : "#8C1E1E2E"))
     border.color: isActive ? "#00D2FF" : (dropArea.containsDrag ? "#00D2FF" : (cardMouse.containsMouse ? "#26FFFFFF" : "#12FFFFFF"))
-    border.width: isActive || dropArea.containsDrag ? 2 : 1.5
+    border.width: isActive || dropArea.containsDrag ? 2.5 : 1.5
 
     Behavior on color { ColorAnimation { duration: 160 } }
     Behavior on border.color { ColorAnimation { duration: 160 } }
@@ -41,6 +65,38 @@ Rectangle {
             font.pixelSize: 10
             font.bold: true
             color: isActive ? "#00D2FF" : "#80CDD6F4"
+        }
+    }
+
+    // Live Audio Stream Badge (Pulsing 󰕾)
+    Rectangle {
+        id: audioPill
+        visible: hasAudio
+        anchors.top: parent.top
+        anchors.right: countPill.visible ? countPill.left : parent.right
+        anchors.margins: 8
+        anchors.rightMargin: countPill.visible ? 4 : 8
+        width: 22
+        height: 18
+        radius: 6
+        color: "#33A6E3A1"
+        border.color: "#80A6E3A1"
+        border.width: 1
+        z: 6
+
+        Text {
+            id: audioGlyph
+            anchors.centerIn: parent
+            text: "󰕾"
+            font.pixelSize: 10
+            color: "#A6E3A1"
+
+            SequentialAnimation on opacity {
+                running: hasAudio
+                loops: Animation.Infinite
+                NumberAnimation { to: 0.4; duration: 600; easing.type: Easing.InOutQuad }
+                NumberAnimation { to: 1.0; duration: 600; easing.type: Easing.InOutQuad }
+            }
         }
     }
 
@@ -97,6 +153,7 @@ Rectangle {
                 appClass: modelData.class
                 windowTitle: modelData.title
                 iconSource: modelData.icon
+                isFocused: modelData.isFocused || false
             }
         }
     }
@@ -109,6 +166,29 @@ Rectangle {
             if (drop.source && drop.source.windowAddress) {
                 hyprland.moveWindowToWorkspace(drop.source.windowAddress, wsId);
             }
+        }
+    }
+
+    // Drag Over Hint
+    Rectangle {
+        id: dropHint
+        anchors.centerIn: parent
+        width: 100
+        height: 24
+        radius: 12
+        color: "#CC11111B"
+        border.color: "#8000D2FF"
+        border.width: 1
+        visible: dropArea.containsDrag
+        z: 30
+
+        Text {
+            anchors.centerIn: parent
+            text: "Move here"
+            font.family: "Inter, sans-serif"
+            font.pixelSize: 10
+            font.weight: Font.DemiBold
+            color: "#00D2FF"
         }
     }
 

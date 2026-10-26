@@ -21,10 +21,12 @@ Rectangle {
         Repeater {
             model: hyprland.workspaces
             delegate: WorkspaceCard {
+                cardIndex: index
                 wsId: modelData.id
                 isActive: modelData.active
                 winCount: modelData.windowCount
                 windowList: modelData.windows
+                hasAudio: modelData.hasAudio || false
             }
         }
     }

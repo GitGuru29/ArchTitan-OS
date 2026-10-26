@@ -9,25 +9,42 @@ Item {
     property string iconSource: ""
     property int tileWidth: 48
     property int tileHeight: 48
+    property bool isFocused: false
 
     width: tileWidth
     height: tileHeight
+
+    scale: dragArea.drag.active ? 1.08 : (dragArea.containsMouse ? 1.02 : 1.0)
+    rotation: dragArea.drag.active ? 2.5 : 0.0
+
+    Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutBack } }
+    Behavior on rotation { NumberAnimation { duration: 180; easing.type: Easing.OutBack } }
 
     Drag.active: dragArea.drag.active
     Drag.source: windowTile
     Drag.hotSpot.x: width / 2
     Drag.hotSpot.y: height / 2
 
+    // Elevation drop shadow while dragging
+    Rectangle {
+        id: dropShadow
+        anchors.fill: bgCard
+        anchors.topMargin: 6
+        radius: 12
+        color: "#60000000"
+        visible: dragArea.drag.active
+        z: -1
+    }
+
     Rectangle {
         id: bgCard
         anchors.fill: parent
         radius: 10
         color: "#F0181825"
-        border.color: dragArea.containsMouse ? "#B300D2FF" : "#28FFFFFF"
-        border.width: dragArea.containsMouse ? 1.5 : 1
+        border.color: isFocused ? "#00D2FF" : (dragArea.containsMouse ? "#B300D2FF" : "#28FFFFFF")
+        border.width: isFocused || dragArea.containsMouse ? 1.5 : 1
 
         Behavior on border.color { ColorAnimation { duration: 150 } }
-        Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutQuad } }
 
         // Subtle document/code scanline texture
         Canvas {
@@ -41,6 +58,20 @@ Item {
                     ctx.fillRect(8, y, width - 16, 2);
                 }
             }
+        }
+
+        // Active focused window dot indicator
+        Rectangle {
+            id: focusIndicator
+            visible: isFocused
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.margins: 5
+            width: 6
+            height: 6
+            radius: 3
+            color: "#00D2FF"
+            z: 10
         }
 
         // Centered App Icon
@@ -85,6 +116,36 @@ Item {
                 }
             }
         }
+
+        // Floating Title Tooltip on hover
+        Rectangle {
+            id: titleTooltip
+            anchors.bottom: parent.bottom
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.bottomMargin: 4
+            width: Math.min(parent.width - 8, titleText.implicitWidth + 12)
+            height: 16
+            radius: 4
+            color: "#E611111B"
+            border.color: "#33FFFFFF"
+            border.width: 1
+            opacity: dragArea.containsMouse && !dragArea.drag.active ? 1.0 : 0.0
+            visible: opacity > 0
+            Behavior on opacity { NumberAnimation { duration: 120 } }
+            z: 20
+
+            Text {
+                id: titleText
+                anchors.centerIn: parent
+                width: parent.width - 6
+                text: windowTitle
+                elide: Text.ElideRight
+                font.family: "Inter, sans-serif"
+                font.pixelSize: 8
+                font.weight: Font.Medium
+                color: "#CDD6F4"
+            }
+        }
     }
 
     MouseArea {
@@ -96,12 +157,10 @@ Item {
 
         onPressed: {
             hudRoot.isDragging = true;
-            windowTile.scale = 1.05;
         }
 
         onReleased: {
             hudRoot.isDragging = false;
-            windowTile.scale = 1.0;
             if (hudRoot.pendingClose) {
                 hudRoot.closeHud();
             }

@@ -8,6 +8,8 @@
 #include <QFileInfo>
 #include <QDir>
 #include <QIcon>
+#include <QSet>
+#include <QRegularExpression>
 #include <QDebug>
 
 HyprlandController::HyprlandController(QObject *parent)
@@ -104,6 +106,33 @@ void HyprlandController::refresh()
 {
     QByteArray monData = queryHyprland("j/monitors");
     QByteArray clientData = queryHyprland("j/clients");
+    QByteArray activeWinData = queryHyprland("j/activewindow");
+
+    QString activeWinAddress;
+    if (!activeWinData.isEmpty()) {
+        QJsonDocument doc = QJsonDocument::fromJson(activeWinData);
+        if (doc.isObject()) {
+            activeWinAddress = doc.object().value("address").toString();
+        }
+    }
+
+    // Audio PIDs from PulseAudio/PipeWire sink-inputs
+    QSet<int> audioPids;
+    QProcess proc;
+    proc.start("pactl", QStringList{"list", "sink-inputs"});
+    if (proc.waitForFinished(100)) {
+        QString out = QString::fromUtf8(proc.readAllStandardOutput());
+        const QStringList blocks = out.split("Sink Input #", Qt::SkipEmptyParts);
+        static QRegularExpression pidRe(R"RAW(application\.process\.id\s*=\s*"(\d+)")RAW");
+        for (const QString &blk : blocks) {
+            if (blk.contains("Corked: no")) {
+                auto match = pidRe.match(blk);
+                if (match.hasMatch()) {
+                    audioPids.insert(match.captured(1).toInt());
+                }
+            }
+        }
+    }
 
     int activeWs = 1;
     double monW = 1920.0;
@@ -199,12 +228,23 @@ void HyprlandController::refresh()
             winObj["ry"] = ry;
             winObj["rw"] = rw;
             winObj["rh"] = rh;
+            winObj["isFocused"] = (!activeWinAddress.isEmpty() && address == activeWinAddress);
 
             winList.append(winObj);
         }
 
+        bool wsHasAudio = false;
+        for (const QJsonObject &c : clients) {
+            int pid = c.value("pid").toInt(-1);
+            if (pid > 0 && audioPids.contains(pid)) {
+                wsHasAudio = true;
+                break;
+            }
+        }
+
         wsObj["windows"] = winList;
         wsObj["windowCount"] = numWins;
+        wsObj["hasAudio"] = wsHasAudio;
         wsList.append(wsObj);
     }
 

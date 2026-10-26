@@ -13,15 +13,18 @@ Window {
 
     property bool isDragging: false
     property bool pendingClose: false
+    property bool isOpen: false
 
     function openHud() {
         pendingClose = false;
         hudRoot.visible = true;
+        hudRoot.isOpen = true;
         hudRoot.requestActivate();
     }
 
     function closeHud() {
         if (!isDragging) {
+            hudRoot.isOpen = false;
             hudRoot.visible = false;
             pendingClose = false;
         } else {
