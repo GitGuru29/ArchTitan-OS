@@ -25,7 +25,7 @@ window#osd {
     background: @base;
     border-radius: 20px;
     border: 1px solid @border-highlight;
-    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.65), 0 0 16px alpha(@cyan-active, 0.15);
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.65), 0 0 16px alpha(@cyan-active, 0.15), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
     padding: 12px 18px;
     margin: 12px;
 }

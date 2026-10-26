@@ -36,7 +36,7 @@
     background-color: @base;
     border: 1px solid @border-highlight;
     border-radius: 22px;
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.75), 0 0 20px alpha(@cyan-active, 0.12);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.75), 0 0 20px alpha(@cyan-active, 0.12), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
     padding: 16px;
     margin: 8px;
 }
@@ -166,6 +166,7 @@
     padding: 5px 12px;
     font-size: 12px;
     font-weight: 600;
+    transition: all 180ms ease;
 }
 
 .widget-title > button:hover {
@@ -189,15 +190,17 @@
 .notification {
     background: @surface;
     border: 1px solid @border-color;
-    border-radius: 14px;
-    padding: 12px;
-    margin: 5px 0;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    border-radius: 16px;
+    padding: 12px 14px;
+    margin: 6px 0;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+    transition: all 200ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .notification:hover {
     background: @surface-alt;
     border-color: @border-highlight;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45), 0 0 0 1px alpha(@cyan-active, 0.25) inset;
 }
 
 .notification-content {
@@ -225,12 +228,15 @@
 .close-button {
     background: transparent;
     color: @text-sub;
-    border-radius: 8px;
-    padding: 2px 6px;
+    border-radius: 50%;
+    min-width: 22px;
+    min-height: 22px;
+    padding: 2px;
+    transition: all 150ms ease;
 }
 
 .close-button:hover {
-    background: alpha(@danger, 0.2);
+    background: alpha(@danger, 0.25);
     color: @danger;
 }
 
@@ -238,15 +244,19 @@
     background: @surface-alt;
     color: @text-main;
     border: 1px solid @border-color;
-    border-radius: 8px;
-    margin: 4px 2px;
-    padding: 4px 8px;
-    font-size: 12px;
+    border-radius: 10px;
+    margin: 4px 3px;
+    padding: 6px 12px;
+    font-size: 11.5px;
+    font-weight: 600;
+    transition: all 180ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .notification-action:hover {
     background: @surface-hover;
     border-color: @cyan-active;
+    color: @cyan-active;
+    box-shadow: 0 0 8px alpha(@cyan-active, 0.25);
 }
 
 /* --- Do Not Disturb Widget --- */
