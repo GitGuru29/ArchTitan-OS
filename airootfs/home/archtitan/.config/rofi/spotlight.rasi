@@ -34,8 +34,8 @@
 window {
     location:         center;
     anchor:           center;
-    width:            660px;
-    border-radius:    20px;
+    width:            680px;
+    border-radius:    22px;
     background-color: @bg-card;
     border:           1px;
     border-color:     @border-accent;
@@ -45,7 +45,7 @@ window {
 mainbox {
     background-color: transparent;
     children:         [ inputbar, message, listview, mode-switcher ];
-    padding:          16px;
+    padding:          18px 20px 14px 20px;
     spacing:          12px;
 }
 
@@ -105,7 +105,7 @@ listview {
 /* ── Result Row Element ─────────────────────────────────────── */
 element {
     background-color: transparent;
-    padding:          10px 14px;
+    padding:          9px 14px;
     border-radius:    12px;
     spacing:          14px;
     orientation:      horizontal;
@@ -113,6 +113,12 @@ element {
     cursor:           pointer;
     border:           1px;
     border-color:     transparent;
+}
+
+element.normal.normal,
+element.alternate.normal {
+    background-color: transparent;
+    text-color:       @text-primary;
 }
 
 element-icon {
@@ -161,20 +167,24 @@ mode-switcher {
     background-color: transparent;
     border:           1px 0px 0px 0px;
     border-color:     @border-subtle;
-    padding:          10px 6px 2px 6px;
+    padding:          10px 4px 2px 4px;
     spacing:          8px;
 }
 
 button {
-    background-color: transparent;
-    text-color:       @text-dim;
-    font:             "Inter 10.5";
-    padding:          5px 12px;
-    border-radius:    8px;
+    background-color: rgba(255, 255, 255, 0.03);
+    text-color:       @text-secondary;
+    font:             "Inter 11";
+    padding:          6px 14px;
+    border-radius:    10px;
+    border:           1px;
+    border-color:     @border-subtle;
     cursor:           pointer;
 }
 
 button.selected {
     background-color: @bg-selected;
     text-color:       @text-accent;
+    border:           1px;
+    border-color:     @border-accent;
 }

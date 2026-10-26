@@ -1,10 +1,11 @@
 * {
     bg-base:      #11111ba6; /* Deep dark translucent background */
-    bg-element:   #18182580; /* Glass effect for buttons */
-    bg-hover:     #89b4fa33; /* Soft blue glow on hover */
-    border-color: #45475a;
+    bg-element:   #18182599; /* Glass effect for buttons */
+    bg-hover:     rgba(137, 180, 250, 0.22); /* Soft blue glow on hover */
+    border-subtle: rgba(255, 255, 255, 0.08);
     text-normal:  #a6adc8;
     text-accent:  #89b4fa;
+    text-selected: #ffffff;
     
     background-color: transparent;
     text-color:       @text-normal;
@@ -14,7 +15,7 @@
 window {
     fullscreen: true;
     background-color: @bg-base;
-    padding: 30% 15%; /* Centers the grid vertically */
+    padding: 30% 16%; /* Centers the grid vertically */
 }
 
 mainbox {
@@ -25,19 +26,25 @@ mainbox {
 listview {
     background-color: transparent;
     layout: horizontal;
-    spacing: 40px;
+    spacing: 32px;
     lines: 5;
     align: center;
 }
 
 element {
     background-color: @bg-element;
-    padding: 60px 40px;
-    border-radius: 20px;
-    border: 2px solid;
-    border-color: @border-color;
+    padding: 52px 36px;
+    border-radius: 24px;
+    border: 1px;
+    border-color: @border-subtle;
     orientation: vertical;
     cursor: pointer;
+}
+
+element normal.normal,
+element alternate.normal {
+    background-color: @bg-element;
+    text-color:       @text-normal;
 }
 
 element-text {
@@ -48,8 +55,11 @@ element-text {
     cursor: inherit;
 }
 
-element selected {
+element selected.normal,
+element selected.urgent,
+element selected.active {
     background-color: @bg-hover;
+    border: 1px;
     border-color: @text-accent;
-    text-color: @text-accent;
+    text-color: @text-selected;
 }
