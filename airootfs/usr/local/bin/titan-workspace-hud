@@ -3,7 +3,7 @@
 ArchTitan OS — Mission Control Workspace Grid HUD (titan-workspace-hud)
 Reveals an interactive 2x5 workspace overview grid when the Super key is held
 for >= 280ms. Provides live window preview tiles, application icons, click-to-switch,
-and drag-and-drop window relocation between workspaces.
+close window buttons, direct keyboard shortcut badges, and drag-and-drop window relocation.
 """
 
 import sys
@@ -200,6 +200,31 @@ class WorkspaceGridHUD(Gtk.Window):
         .workspace-card.active .workspace-empty-num {
             color: rgba(0, 210, 255, 0.55);
         }
+        .workspace-shortcut-badge {
+            background: rgba(17, 17, 27, 0.75);
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            border-radius: 6px;
+            padding: 1px 6px;
+            font-family: 'JetBrainsMono Nerd Font', monospace;
+            font-size: 10px;
+            font-weight: 700;
+            color: rgba(205, 214, 244, 0.50);
+        }
+        .workspace-card.active .workspace-shortcut-badge {
+            background: rgba(0, 210, 255, 0.18);
+            border-color: rgba(0, 210, 255, 0.50);
+            color: #00D2FF;
+        }
+        .workspace-count-badge {
+            background: rgba(17, 17, 27, 0.80);
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            border-radius: 6px;
+            padding: 1px 6px;
+            font-family: 'Inter', sans-serif;
+            font-size: 9px;
+            font-weight: 600;
+            color: rgba(205, 214, 244, 0.65);
+        }
         .window-tile {
             background: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.025) 0px, rgba(255, 255, 255, 0.025) 2px, transparent 2px, transparent 6px), rgba(24, 25, 38, 0.94);
             border: 1px solid rgba(255, 255, 255, 0.15);
@@ -211,6 +236,22 @@ class WorkspaceGridHUD(Gtk.Window):
             background: repeating-linear-gradient(0deg, rgba(0, 210, 255, 0.05) 0px, rgba(0, 210, 255, 0.05) 2px, transparent 2px, transparent 6px), rgba(36, 38, 56, 0.98);
             border-color: rgba(0, 210, 255, 0.70);
             box-shadow: 0 0 14px rgba(0, 210, 255, 0.35);
+        }
+        .tile-close-btn {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            transition: all 0.15s ease;
+        }
+        .tile-close-btn:hover {
+            background: #F38BA8;
+        }
+        .tile-close-lbl {
+            color: rgba(205, 214, 244, 0.60);
+            font-size: 9px;
+            font-weight: 700;
+        }
+        .tile-close-btn:hover .tile-close-lbl {
+            color: #11111B;
         }
         """
         provider = Gtk.CssProvider()
@@ -262,15 +303,27 @@ class WorkspaceGridHUD(Gtk.Window):
                 offset_x = 8
                 offset_y = 8
 
-                for win in windows:
+                num_wins = len(windows)
+                for idx, win in enumerate(windows):
                     wx, wy = win["at"]
                     ww, wh = win["size"]
 
-                    # Scale proportionally to monitor dimensions
-                    rx = int((wx / mon_w) * usable_w) + offset_x
-                    ry = int((wy / mon_h) * usable_h) + offset_y
-                    rw = max(48, int((ww / mon_w) * usable_w))
-                    rh = max(48, int((wh / mon_h) * usable_h))
+                    if num_wins <= 4:
+                        # Scale proportionally to monitor dimensions
+                        rx = int((wx / mon_w) * usable_w) + offset_x
+                        ry = int((wy / mon_h) * usable_h) + offset_y
+                        rw = max(48, int((ww / mon_w) * usable_w))
+                        rh = max(48, int((wh / mon_h) * usable_h))
+                    else:
+                        # Clean mini 2x2 grid for busy workspaces (5+ windows)
+                        sub_col = idx % 2
+                        sub_row = (idx // 2) % 2
+                        rw = (usable_w - 6) // 2
+                        rh = (usable_h - 6) // 2
+                        rx = offset_x + sub_col * (rw + 6)
+                        ry = offset_y + sub_row * (rh + 6)
+                        if idx >= 4:
+                            break
 
                     # Ensure tile stays inside the card
                     rx = max(6, min(rx, self.card_w - rw - 6))
@@ -281,11 +334,13 @@ class WorkspaceGridHUD(Gtk.Window):
                     tile_event.get_style_context().add_class("window-tile")
                     tile_event.set_tooltip_text(f"{win['class']}\n{win['title']}")
 
+                    tile_overlay = Gtk.Overlay()
+
                     tile_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
                     tile_box.set_valign(Gtk.Align.CENTER)
                     tile_box.set_halign(Gtk.Align.CENTER)
 
-                    icon_size = 42 if (rw >= 64 and rh >= 64) else 32
+                    icon_size = 40 if (rw >= 64 and rh >= 64) else 28
                     pixbuf = load_app_pixbuf(win["class"], icon_size)
                     if pixbuf:
                         img = Gtk.Image.new_from_pixbuf(pixbuf)
@@ -295,7 +350,23 @@ class WorkspaceGridHUD(Gtk.Window):
                         lbl.get_style_context().add_class("workspace-badge")
                         tile_box.pack_start(lbl, True, True, 0)
 
-                    tile_event.add(tile_box)
+                    tile_overlay.add(tile_box)
+
+                    # Close window button on mini-tile
+                    close_box = Gtk.EventBox()
+                    close_box.set_size_request(16, 16)
+                    close_box.get_style_context().add_class("tile-close-btn")
+                    close_lbl = Gtk.Label(label="✕")
+                    close_lbl.get_style_context().add_class("tile-close-lbl")
+                    close_box.add(close_lbl)
+                    close_box.set_halign(Gtk.Align.END)
+                    close_box.set_valign(Gtk.Align.START)
+                    close_box.set_margin_top(3)
+                    close_box.set_margin_end(4)
+                    close_box.connect("button-press-event", self.on_close_clicked, win["address"])
+                    tile_overlay.add_overlay(close_box)
+
+                    tile_event.add(tile_overlay)
 
                     # DND drag source
                     tile_event.drag_source_set(Gdk.ModifierType.BUTTON1_MASK, dnd_targets, Gdk.DragAction.MOVE)
@@ -307,6 +378,12 @@ class WorkspaceGridHUD(Gtk.Window):
                     tile_event.connect("button-press-event", self.on_window_clicked, win["address"])
 
                     fixed.put(tile_event, rx, ry)
+
+                # Window count badge if workspace has >= 3 windows
+                if num_wins >= 3:
+                    count_lbl = Gtk.Label(label=f"{num_wins} wins")
+                    count_lbl.get_style_context().add_class("workspace-count-badge")
+                    fixed.put(count_lbl, self.card_w - 56, 8)
             else:
                 # Empty workspace: Big elegant centered number
                 center_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -319,12 +396,25 @@ class WorkspaceGridHUD(Gtk.Window):
                 center_box.pack_start(num_lbl, True, True, 0)
                 fixed.put(center_box, 0, 0)
 
+            # Direct keyboard shortcut badge (󰘳 1 .. 󰘳 0)
+            shortcut_key = "0" if ws_id == 10 else str(ws_id)
+            shortcut_badge = Gtk.Label(label=f"󰘳 {shortcut_key}")
+            shortcut_badge.get_style_context().add_class("workspace-shortcut-badge")
+            fixed.put(shortcut_badge, 8, 8)
+
             card_event.add(fixed)
             grid.attach(card_event, col, row, 1, 1)
 
         main_box.pack_start(grid, True, True, 0)
         self.add(main_box)
         self.show_all()
+
+    def on_close_clicked(self, widget, event, address):
+        if event.button == 1:
+            subprocess.run(["hyprctl", "dispatch", "closewindow", f"address:{address}"])
+            GLib.idle_add(self.rebuild_ui)
+            return True
+        return False
 
     def on_key_press(self, widget, event):
         if event.keyval == Gdk.KEY_Escape:
@@ -407,5 +497,7 @@ def run_gui():
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "release":
         cmd_release()
+    elif len(sys.argv) > 1 and sys.argv[1] == "gui":
+        run_gui()
     else:
         cmd_hold()
