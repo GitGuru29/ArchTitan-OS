@@ -94,7 +94,7 @@ def get_hyprland_state():
     except Exception:
         return 1, {}, 1920, 1080
 
-def load_app_pixbuf(app_class, size=32):
+def load_app_pixbuf(app_class, size=40):
     icon_theme = Gtk.IconTheme.get_default()
     name = app_class.lower()
     candidates = [
@@ -146,11 +146,12 @@ class WorkspaceGridHUD(Gtk.Window):
         GtkLayerShell.set_layer(self, GtkLayerShell.Layer.OVERLAY)
         GtkLayerShell.set_namespace(self, "titan-workspace-hud")
         GtkLayerShell.set_anchor(self, GtkLayerShell.Edge.TOP, True)
-        GtkLayerShell.set_margin(self, GtkLayerShell.Edge.TOP, 130)
+        GtkLayerShell.set_margin(self, GtkLayerShell.Edge.TOP, 110)
         GtkLayerShell.set_keyboard_mode(self, GtkLayerShell.KeyboardMode.ON_DEMAND)
 
-        self.card_w = 180
-        self.card_h = 104
+        # Scaled-up card dimensions (16:9 proportional)
+        self.card_w = 236
+        self.card_h = 136
         self.is_dragging = False
         self.pending_dismiss = False
 
@@ -166,14 +167,14 @@ class WorkspaceGridHUD(Gtk.Window):
         .overview-container {
             background: rgba(18, 19, 28, 0.94);
             border: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: 22px;
-            padding: 14px;
-            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.75);
+            border-radius: 24px;
+            padding: 18px;
+            box-shadow: 0 28px 70px rgba(0, 0, 0, 0.80);
         }
         .workspace-card {
             background: rgba(30, 31, 46, 0.55);
             border: 1.5px solid rgba(255, 255, 255, 0.07);
-            border-radius: 14px;
+            border-radius: 16px;
             transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
         }
         .workspace-card:hover {
@@ -183,17 +184,17 @@ class WorkspaceGridHUD(Gtk.Window):
         .workspace-card.active {
             background: rgba(24, 26, 42, 0.85);
             border: 2px solid #00D2FF;
-            box-shadow: 0 0 20px rgba(0, 210, 255, 0.38);
+            box-shadow: 0 0 24px rgba(0, 210, 255, 0.40);
         }
         .workspace-card.drag-hover {
             background: rgba(0, 210, 255, 0.18);
             border: 2px dashed #00D2FF;
-            box-shadow: 0 0 24px rgba(0, 210, 255, 0.55);
+            box-shadow: 0 0 28px rgba(0, 210, 255, 0.60);
         }
         .workspace-empty-num {
             color: rgba(205, 214, 244, 0.22);
             font-family: 'Inter', 'Noto Sans', sans-serif;
-            font-size: 38px;
+            font-size: 52px;
             font-weight: 700;
         }
         .workspace-card.active .workspace-empty-num {
@@ -202,14 +203,14 @@ class WorkspaceGridHUD(Gtk.Window):
         .window-tile {
             background: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.025) 0px, rgba(255, 255, 255, 0.025) 2px, transparent 2px, transparent 6px), rgba(24, 25, 38, 0.94);
             border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 8px;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.45);
+            border-radius: 10px;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.45);
             transition: background 0.12s ease, border-color 0.12s ease;
         }
         .window-tile:hover {
             background: repeating-linear-gradient(0deg, rgba(0, 210, 255, 0.05) 0px, rgba(0, 210, 255, 0.05) 2px, transparent 2px, transparent 6px), rgba(36, 38, 56, 0.98);
             border-color: rgba(0, 210, 255, 0.70);
-            box-shadow: 0 0 12px rgba(0, 210, 255, 0.35);
+            box-shadow: 0 0 14px rgba(0, 210, 255, 0.35);
         }
         """
         provider = Gtk.CssProvider()
@@ -228,8 +229,8 @@ class WorkspaceGridHUD(Gtk.Window):
 
         # 2x5 Grid
         grid = Gtk.Grid()
-        grid.set_column_spacing(10)
-        grid.set_row_spacing(10)
+        grid.set_column_spacing(12)
+        grid.set_row_spacing(12)
 
         # Targets for DND
         dnd_targets = [Gtk.TargetEntry.new("text/plain", Gtk.TargetFlags.SAME_APP, 0)]
@@ -256,10 +257,10 @@ class WorkspaceGridHUD(Gtk.Window):
 
             windows = ws_windows.get(ws_id, [])
             if windows:
-                usable_w = self.card_w - 12
-                usable_h = self.card_h - 12
-                offset_x = 6
-                offset_y = 6
+                usable_w = self.card_w - 16
+                usable_h = self.card_h - 16
+                offset_x = 8
+                offset_y = 8
 
                 for win in windows:
                     wx, wy = win["at"]
@@ -268,12 +269,12 @@ class WorkspaceGridHUD(Gtk.Window):
                     # Scale proportionally to monitor dimensions
                     rx = int((wx / mon_w) * usable_w) + offset_x
                     ry = int((wy / mon_h) * usable_h) + offset_y
-                    rw = max(38, int((ww / mon_w) * usable_w))
-                    rh = max(38, int((wh / mon_h) * usable_h))
+                    rw = max(48, int((ww / mon_w) * usable_w))
+                    rh = max(48, int((wh / mon_h) * usable_h))
 
                     # Ensure tile stays inside the card
-                    rx = max(4, min(rx, self.card_w - rw - 4))
-                    ry = max(4, min(ry, self.card_h - rh - 4))
+                    rx = max(6, min(rx, self.card_w - rw - 6))
+                    ry = max(6, min(ry, self.card_h - rh - 6))
 
                     tile_event = Gtk.EventBox()
                     tile_event.set_size_request(rw, rh)
@@ -284,7 +285,7 @@ class WorkspaceGridHUD(Gtk.Window):
                     tile_box.set_valign(Gtk.Align.CENTER)
                     tile_box.set_halign(Gtk.Align.CENTER)
 
-                    icon_size = 32 if (rw >= 52 and rh >= 52) else 24
+                    icon_size = 42 if (rw >= 64 and rh >= 64) else 32
                     pixbuf = load_app_pixbuf(win["class"], icon_size)
                     if pixbuf:
                         img = Gtk.Image.new_from_pixbuf(pixbuf)
