@@ -132,6 +132,9 @@ void HyprlandController::refresh()
                 }
             }
         }
+    } else {
+        proc.kill();
+        proc.waitForFinished(30);
     }
 
     int activeWs = 1;

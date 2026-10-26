@@ -14,27 +14,6 @@ Rectangle {
     height: 136
     radius: 16
 
-    opacity: hudRoot.isOpen ? 1.0 : 0.0
-    transform: Translate {
-        id: cardTrans
-        y: hudRoot.isOpen ? 0 : 16
-    }
-
-    Behavior on opacity {
-        NumberAnimation {
-            duration: 220
-            easing.type: Easing.OutCubic
-        }
-    }
-
-    Behavior on transform {
-        NumberAnimation {
-            target: cardTrans
-            property: "y"
-            duration: 250
-            easing.type: Easing.OutBack
-        }
-    }
 
     color: isActive ? "#D9181825" : (dropArea.containsDrag ? "#4000D2FF" : (cardMouse.containsMouse ? "#B3252838" : "#8C1E1E2E"))
     border.color: isActive ? "#00D2FF" : (dropArea.containsDrag ? "#00D2FF" : (cardMouse.containsMouse ? "#26FFFFFF" : "#12FFFFFF"))

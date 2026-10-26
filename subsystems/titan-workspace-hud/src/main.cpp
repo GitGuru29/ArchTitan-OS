@@ -98,6 +98,10 @@ int main(int argc, char *argv[])
             if (IpcServer::sendCommand("TOGGLE")) {
                 return 0;
             }
+        } else if (arg == "show" || arg == "--show") {
+            if (IpcServer::sendCommand("SHOW")) {
+                return 0;
+            }
         } else if (arg == "hide" || arg == "--hide") {
             if (IpcServer::sendCommand("HIDE")) {
                 return 0;
