@@ -45,6 +45,10 @@ STYLE_CSS = os.path.join(CONFIG_DIR, "waybar", "style.css")
 PERSIST_FILE = os.path.join(CONFIG_DIR, "archtitan", "wallpaper")
 THEME_FILE = os.path.join(CONFIG_DIR, "archtitan", "theme.json")
 DEFAULT_WALLPAPER = "/usr/share/backgrounds/archtitan/wallpaper.png"
+if not os.path.isfile(DEFAULT_WALLPAPER):
+    _local_def_wp = "/home/msfvenom/custom-os-build/airootfs/usr/share/backgrounds/archtitan/wallpaper.png"
+    if os.path.isfile(_local_def_wp):
+        DEFAULT_WALLPAPER = _local_def_wp
 
 # Catppuccin Mocha text — fallback ink when theme.json is unavailable.
 INK = (205, 214, 244)

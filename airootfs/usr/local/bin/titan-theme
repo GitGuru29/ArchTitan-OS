@@ -40,12 +40,17 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 
 # Ensure /usr/local/bin is prioritized in PATH for standalone scripts and QProcess
 if "/usr/local/bin" not in os.environ.get("PATH", "").split(":"):
     os.environ["PATH"] = f"/usr/local/bin:{os.environ.get('PATH', '')}"
 
 THEME_DIR = os.environ.get("TITAN_THEME_DIR", "/usr/share/archtitan/themes")
+if not os.path.isdir(THEME_DIR):
+    _local_themes = "/home/msfvenom/custom-os-build/airootfs/usr/share/archtitan/themes"
+    if os.path.isdir(_local_themes):
+        THEME_DIR = _local_themes
 CONFIG_HOME = os.environ.get(
     "XDG_CONFIG_HOME", os.path.join(os.path.expanduser("~"), ".config")
 )
@@ -517,6 +522,7 @@ def reload_shell() -> None:
             pass
 
     run_quiet(["pkill", "-SIGUSR1", "-x", "kitty"], timeout=1.0)
+    time.sleep(0.35)
     run_quiet(["pkill", "-SIGUSR2", "-x", "waybar"], timeout=1.0)
     if shutil.which("swayosd-server") and shutil.which("pgrep"):
         try:
@@ -584,6 +590,10 @@ def cmd_set(tid: str) -> None:
     # 1. Apply assigned wallpaper FIRST so the desktop visually switches immediately,
     # and Waybar adaptive luminance styling samples the new wallpaper.
     target = theme.get("wallpaper", "")
+    if target and not os.path.isfile(target):
+        _local_wp = os.path.normpath(os.path.join("/home/msfvenom/custom-os-build/airootfs", target.lstrip("/")))
+        if os.path.isfile(_local_wp):
+            target = _local_wp
     if target and os.path.isfile(target):
         set_wp = shutil.which("titan-set-wallpaper") or "/usr/local/bin/titan-set-wallpaper"
         if os.path.isfile(set_wp) and os.access(set_wp, os.X_OK):
