@@ -460,8 +460,11 @@ def reload_waybar() -> None:
 
 
 def main(argv: list[str]) -> int:
-    if argv:
-        wallpaper = argv[0]
+    no_reload = "--no-reload" in argv
+    args = [a for a in argv if a != "--no-reload"]
+
+    if args:
+        wallpaper = args[0]
     elif os.path.isfile(PERSIST_FILE):
         with open(PERSIST_FILE, "r", encoding="utf-8") as handle:
             wallpaper = handle.readline().strip()
@@ -483,7 +486,7 @@ def main(argv: list[str]) -> int:
     changed = patch_css(STYLE_CSS, palette)
 
     log(f"{os.path.basename(STYLE_CSS)} {'updated' if changed else 'already current'}")
-    if changed:
+    if changed and not no_reload:
         reload_waybar()
 
     return 0

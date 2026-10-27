@@ -199,13 +199,23 @@ def waybar_body(t: dict) -> str:
     bar_border_top = "transparent"
     bar_shadow = "transparent"
 
-    module_bg = rgba(crust, 0.65) if dark else "rgba(255, 255, 255, 0.75)"
-    module_border = "rgba(255, 255, 255, 0.12)" if dark else "rgba(0, 0, 0, 0.08)"
-    module_hover = rgba(crust, 0.85) if dark else "rgba(255, 255, 255, 0.95)"
-
-    accent_soft = rgba(acc, 0.16)
-    accent_glow = rgba(acc, 0.35)
-    accent_border = rgba(acc, 0.55)
+    if dark:
+        module_bg = rgba(crust, 0.65)
+        module_border = "rgba(255, 255, 255, 0.12)"
+        module_hover = rgba(crust, 0.85)
+        accent_soft = rgba(acc, 0.16)
+        accent_glow = rgba(acc, 0.35)
+        accent_border = rgba(acc, 0.55)
+    else:
+        # Soothing, glare-free light frosted glass using theme's mantle & surface tones
+        mantle = p.get("mantle", "#E6E9EF")
+        surface0 = p.get("surface0", "#CCD0DA")
+        module_bg = rgba(mantle, 0.78)
+        module_border = "rgba(108, 112, 134, 0.18)"
+        module_hover = rgba(surface0, 0.88)
+        accent_soft = rgba(acc, 0.14)
+        accent_glow = rgba(acc, 0.22)
+        accent_border = rgba(acc, 0.45)
 
     on_bar = "#FFFFFF" if dark else "#1E1E2E"
     on_accent = fg.lower()
@@ -553,8 +563,14 @@ def cmd_apply() -> None:
         patch_gtk(ini, theme)
     patch_qt5ct(QT5CT_CONF, theme)
 
-    # Waybar: theme-driven @titan-adapt repatch + SIGUSR2 reload.
-    run_quiet(["titan-waybar-theme"], timeout=2.0)
+    # Sync GTK portal gsettings
+    scheme = "prefer-dark" if theme["isDark"] else "prefer-light"
+    gtk_theme = "adw-gtk3-dark" if theme["isDark"] else "adw-gtk3"
+    run_quiet(["gsettings", "set", "org.gnome.desktop.interface", "color-scheme", scheme], timeout=1.0)
+    run_quiet(["gsettings", "set", "org.gnome.desktop.interface", "gtk-theme", gtk_theme], timeout=1.0)
+
+    # Waybar: theme-driven @titan-adapt repatch (without redundant reload).
+    run_quiet(["titan-waybar-theme", "--no-reload"], timeout=2.0)
     reload_shell()
 
 
@@ -610,23 +626,7 @@ def cmd_mode(mode: str) -> None:
         print(theme["id"])
         return
 
-    # Preserve current active wallpaper when toggling dark/light mode
-    active_wallpaper = theme.get("wallpaper", "")
-    try:
-        if os.path.isfile(WALLPAPER_FILE):
-            with open(WALLPAPER_FILE, "r", encoding="utf-8") as fh:
-                w = fh.readline().strip()
-                if w and os.path.isfile(w):
-                    active_wallpaper = w
-    except OSError:
-        pass
-
-    new_theme = theme_def(target)
-    if active_wallpaper:
-        new_theme["wallpaper"] = active_wallpaper
-
-    write_state(new_theme)
-    cmd_apply()
+    cmd_set(target)
     notify("Theme Mode", f"{'Dark' if want_dark else 'Light'} Mode")
 
 

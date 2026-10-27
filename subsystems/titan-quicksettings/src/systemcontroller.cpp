@@ -205,6 +205,9 @@ void SystemController::setThemeDark(bool dark)
         m_themeDark = dark;
         emit themeDarkChanged();
     }
+    m_themeSwitching = true;
+    m_themeSwitchingTime = QDateTime::currentMSecsSinceEpoch();
+
     // Switch OS theme via ArchTitan central theme engine
     QProcess::startDetached("titan-theme", {"mode", dark ? "dark" : "light"});
 
@@ -221,6 +224,26 @@ void SystemController::setThemeDark(bool dark)
 
 void SystemController::updateTheme()
 {
+    // If a theme switch is actively in flight, avoid stale reads / race conditions reverting the toggle
+    if (m_themeSwitching) {
+        if (QDateTime::currentMSecsSinceEpoch() - m_themeSwitchingTime < 4000) {
+            QString cfgDir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
+            QFile file(cfgDir + "/archtitan/theme.json");
+            if (file.open(QIODevice::ReadOnly)) {
+                QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
+                if (doc.isObject()) {
+                    bool dark = doc.object().value("isDark").toBool(true);
+                    if (dark == m_themeDark) {
+                        m_themeSwitching = false; // Target theme verified on disk
+                    }
+                }
+            }
+            return;
+        } else {
+            m_themeSwitching = false; // Transition grace period elapsed
+        }
+    }
+
     QString cfgDir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
     QFile file(cfgDir + "/archtitan/theme.json");
     if (file.open(QIODevice::ReadOnly)) {

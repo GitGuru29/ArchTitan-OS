@@ -74,7 +74,10 @@ fi
 
 # ── Retint the Waybar to suit the new wallpaper ─────────────────────────────
 # Best-effort: a theming failure must never fail the wallpaper change.
-titan-waybar-theme "$WALLPAPER_PATH" >/dev/null 2>&1 || true
+# Suppressed when TITAN_QUIET is set (`titan-theme set/apply` synchronizes Waybar atomically).
+if [[ -z "${TITAN_QUIET:-}" ]]; then
+    titan-waybar-theme "$WALLPAPER_PATH" >/dev/null 2>&1 || true
+fi
 
 # ── Notify ──────────────────────────────────────────────────────────────────
 # TITAN_QUIET=1 suppresses this toast — `titan-theme set` already sends its
