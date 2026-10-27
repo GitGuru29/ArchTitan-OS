@@ -159,36 +159,6 @@ Window {
                     }
                 }
 
-                // Full curved inner specular refraction rim
-                Rectangle {
-                    anchors.fill: parent
-                    anchors.margins: 1
-                    radius: parent.radius - 1
-                    color: "transparent"
-                    border.width: 1
-                    border.color: TitanTheme.isDark ? Qt.rgba(1.0, 1.0, 1.0, 0.12) : Qt.rgba(1.0, 1.0, 1.0, 0.65)
-                    z: 1
-                }
-
-                // Focused top specular horizon gleam
-                Rectangle {
-                    anchors.top: parent.top
-                    anchors.topMargin: 1
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    width: parent.width * 0.85
-                    height: 1
-                    radius: 1
-                    z: 10
-                    gradient: Gradient {
-                        orientation: Gradient.Horizontal
-                        GradientStop { position: 0.0; color: "transparent" }
-                        GradientStop { position: 0.2; color: TitanTheme.isDark ? "#35FFFFFF" : "#70FFFFFF" }
-                        GradientStop { position: 0.5; color: TitanTheme.isDark ? "#60FFFFFF" : "#B5FFFFFF" }
-                        GradientStop { position: 0.8; color: TitanTheme.isDark ? "#35FFFFFF" : "#70FFFFFF" }
-                        GradientStop { position: 1.0; color: "transparent" }
-                    }
-                }
-
                 ColumnLayout {
                     anchors.fill: parent
                     anchors.margins: 14
@@ -339,36 +309,6 @@ Window {
                         color: TitanTheme.isDark ?
                             Qt.rgba(TitanTheme.bgWindow.r * 0.85, TitanTheme.bgWindow.g * 0.85, TitanTheme.bgWindow.b * 0.85, 0.40) :
                             Qt.rgba(TitanTheme.bgWindow.r * 0.95, TitanTheme.bgWindow.g * 0.95, TitanTheme.bgWindow.b * 0.95, 0.52)
-                    }
-                }
-
-                // Full curved inner specular refraction rim
-                Rectangle {
-                    anchors.fill: parent
-                    anchors.margins: 1
-                    radius: parent.radius - 1
-                    color: "transparent"
-                    border.width: 1
-                    border.color: TitanTheme.isDark ? Qt.rgba(1.0, 1.0, 1.0, 0.12) : Qt.rgba(1.0, 1.0, 1.0, 0.65)
-                    z: 1
-                }
-
-                // Focused top specular horizon gleam
-                Rectangle {
-                    anchors.top: parent.top
-                    anchors.topMargin: 1
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    width: parent.width * 0.85
-                    height: 1
-                    radius: 1
-                    z: 10
-                    gradient: Gradient {
-                        orientation: Gradient.Horizontal
-                        GradientStop { position: 0.0; color: "transparent" }
-                        GradientStop { position: 0.2; color: TitanTheme.isDark ? "#35FFFFFF" : "#70FFFFFF" }
-                        GradientStop { position: 0.5; color: TitanTheme.isDark ? "#60FFFFFF" : "#B5FFFFFF" }
-                        GradientStop { position: 0.8; color: TitanTheme.isDark ? "#35FFFFFF" : "#70FFFFFF" }
-                        GradientStop { position: 1.0; color: "transparent" }
                     }
                 }
 

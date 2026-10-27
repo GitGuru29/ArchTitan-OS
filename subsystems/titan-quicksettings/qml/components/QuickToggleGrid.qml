@@ -70,18 +70,6 @@ ColumnLayout {
         border.width: 1
         clip: true
 
-        // Top specular edge highlight (macOS glass bevel)
-        Rectangle {
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.margins: 1
-            height: 1
-            radius: parent.radius
-            color: TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(1, 1, 1, 0.45)
-            z: 2
-        }
-
         RowLayout {
             id: primaryCol
             anchors.fill: parent
@@ -175,18 +163,6 @@ ColumnLayout {
         visible: (typeof systemCtrl !== "undefined" && systemCtrl)
                  ? (systemCtrl.tileVisibilityRevision >= 0 && systemCtrl.getTileVisible("sliders", true)) : true
 
-        // Top specular edge highlight (macOS glass bevel)
-        Rectangle {
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.margins: 1
-            height: 1
-            radius: parent.radius
-            color: TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(1, 1, 1, 0.45)
-            z: 2
-        }
-
         ColumnLayout {
             id: sliderCol
             anchors.fill: parent
@@ -253,18 +229,6 @@ ColumnLayout {
                                            ? (systemCtrl.tileVisibilityRevision >= 0 && systemCtrl.getTileVisible("record", true)) : true
         readonly property bool showAirplane: (typeof systemCtrl !== "undefined" && systemCtrl)
                                              ? (systemCtrl.tileVisibilityRevision >= 0 && systemCtrl.getTileVisible("airplane", true)) : true
-
-        // Top specular edge highlight (macOS glass bevel)
-        Rectangle {
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.margins: 1
-            height: 1
-            radius: parent.radius
-            color: TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(1, 1, 1, 0.45)
-            z: 2
-        }
 
         GridLayout {
             id: actionGrid
@@ -432,18 +396,6 @@ ColumnLayout {
         visible: (typeof systemCtrl !== "undefined" && systemCtrl)
                  ? (systemCtrl.tileVisibilityRevision >= 0 && systemCtrl.getTileVisible("deviceMedia", true)) : true
 
-        // Top specular edge highlight (macOS glass bevel)
-        Rectangle {
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.margins: 1
-            height: 1
-            radius: parent.radius
-            color: TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(1, 1, 1, 0.45)
-            z: 2
-        }
-
         // Tactile Liquid Touch: spring bounce on hover and press
         scale: medMa.pressed ? 0.97 : (medMa.containsMouse ? 1.015 : 1.0)
         Behavior on scale {
@@ -524,18 +476,6 @@ ColumnLayout {
         border.color: activeFocus ? TitanTheme.accent : TitanTheme.borderGlass
         border.width: activeFocus ? 2 : 1
         clip: true
-
-        // Top specular edge highlight (macOS glass bevel)
-        Rectangle {
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.margins: 1
-            height: 1
-            radius: parent.radius
-            color: TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(1, 1, 1, 0.45)
-            z: 2
-        }
 
         // Tactile Liquid Touch: spring bounce on hover and press
         scale: devMa.pressed ? 0.97 : (devMa.containsMouse ? 1.015 : 1.0)

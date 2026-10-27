@@ -72,18 +72,6 @@ ColumnLayout {
         border.width: 1
         clip: true
 
-        // Top specular edge highlight (macOS glass bevel)
-        Rectangle {
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.margins: 1
-            height: 1
-            radius: parent.radius
-            color: TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(1, 1, 1, 0.45)
-            z: 2
-        }
-
         RowLayout {
             anchors.fill: parent
             anchors.leftMargin: 12

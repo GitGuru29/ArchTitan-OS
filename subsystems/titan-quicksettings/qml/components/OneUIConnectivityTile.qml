@@ -25,18 +25,6 @@ Rectangle {
     Keys.onSpacePressed:  (event) => { tileRoot.clicked(); event.accepted = true }
     clip: true
 
-    // Top specular edge highlight (macOS glass bevel)
-    Rectangle {
-        anchors.top: parent.top
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.margins: 1
-        height: 1
-        radius: parent.radius
-        color: tileRoot.active ? Qt.rgba(1, 1, 1, 0.35) : (TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(1, 1, 1, 0.45))
-        z: 2
-    }
-
     property bool active: false
     property string iconGlyph: "\uf1eb"
     property string title: "Wi-Fi"
