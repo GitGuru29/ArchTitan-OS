@@ -34,8 +34,8 @@
 window {
     location:         center;
     anchor:           center;
-    width:            680px;
-    border-radius:    22px;
+    width:            720px;
+    border-radius:    24px;
     background-color: @bg-card;
     border:           1px;
     border-color:     @border-accent;
@@ -45,18 +45,18 @@ window {
 mainbox {
     background-color: transparent;
     children:         [ inputbar, message, listview, mode-switcher ];
-    padding:          18px 20px 14px 20px;
-    spacing:          12px;
+    padding:          20px 22px 16px 22px;
+    spacing:          14px;
 }
 
 /* ── Search Input Field ─────────────────────────────────────── */
 inputbar {
     background-color: @bg-input;
-    border-radius:    14px;
+    border-radius:    16px;
     border:           1px;
     border-color:     @border-subtle;
-    padding:          12px 16px;
-    spacing:          12px;
+    padding:          13px 18px;
+    spacing:          14px;
     children:         [ prompt, entry ];
 }
 
@@ -93,8 +93,8 @@ textbox {
 listview {
     background-color: transparent;
     padding:          4px 0px;
-    spacing:          4px;
-    lines:            7;
+    spacing:          5px;
+    lines:            8;
     columns:          1;
     scrollbar:        true;
     fixed-height:     false;
@@ -105,9 +105,9 @@ listview {
 /* ── Result Row Element ─────────────────────────────────────── */
 element {
     background-color: transparent;
-    padding:          9px 14px;
-    border-radius:    12px;
-    spacing:          14px;
+    padding:          10px 16px;
+    border-radius:    14px;
+    spacing:          16px;
     orientation:      horizontal;
     children:         [ element-icon, element-text ];
     cursor:           pointer;
@@ -122,7 +122,7 @@ element.alternate.normal {
 }
 
 element-icon {
-    size:             34px;
+    size:             36px;
     background-color: transparent;
     vertical-align:   0.5;
     cursor:           pointer;
@@ -131,7 +131,7 @@ element-icon {
 element-text {
     background-color: transparent;
     text-color:       @text-primary;
-    font:             "Inter 12.5";
+    font:             "Inter 13";
     vertical-align:   0.5;
     cursor:           pointer;
     highlight:        @text-highlight;
@@ -167,16 +167,16 @@ mode-switcher {
     background-color: transparent;
     border:           1px 0px 0px 0px;
     border-color:     @border-subtle;
-    padding:          10px 4px 2px 4px;
-    spacing:          8px;
+    padding:          12px 4px 2px 4px;
+    spacing:          10px;
 }
 
 button {
     background-color: rgba(255, 255, 255, 0.03);
     text-color:       @text-secondary;
-    font:             "Inter 11";
-    padding:          6px 14px;
-    border-radius:    10px;
+    font:             "Inter 11.5";
+    padding:          7px 16px;
+    border-radius:    12px;
     border:           1px;
     border-color:     @border-subtle;
     cursor:           pointer;

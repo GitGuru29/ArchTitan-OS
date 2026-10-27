@@ -30,6 +30,8 @@ signals:
 private:
     QByteArray queryHyprland(const QString &cmd);
     void dispatchHyprland(const QString &cmd);
+    void captureActiveThumbnails(const QList<QJsonObject> &activeClients);
+    void updateThumbnails();
 
     int m_activeWorkspace = 1;
     QVariantList m_workspaces;

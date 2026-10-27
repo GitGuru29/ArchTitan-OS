@@ -7,6 +7,7 @@ Item {
     property string appClass: ""
     property string windowTitle: ""
     property string iconSource: ""
+    property string thumbnailSource: ""
     property int tileWidth: 48
     property int tileHeight: 48
     property bool isFocused: false
@@ -46,9 +47,87 @@ Item {
 
         Behavior on border.color { ColorAnimation { duration: 150 } }
 
-        // Subtle document/code scanline texture
+        // Live Window Preview (macOS Mission Control Thumbnail)
+        Image {
+            id: winThumbnail
+            anchors.fill: parent
+            anchors.margins: 1
+            visible: thumbnailSource !== "" && status === Image.Ready
+            source: thumbnailSource !== "" ? thumbnailSource : ""
+            fillMode: Image.PreserveAspectCrop
+            smooth: true
+            mipmap: true
+            opacity: dragArea.containsMouse ? 0.98 : 0.88
+            clip: true
+        }
+
+        // Top mini window header bar when thumbnail is visible
+        Rectangle {
+            id: winHeaderBar
+            visible: winThumbnail.visible
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.margins: 1
+            height: 18
+            radius: 8
+            color: "#CC11111B"
+            z: 5
+
+            Row {
+                anchors.left: parent.left
+                anchors.leftMargin: 6
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: 5
+
+                Image {
+                    width: 12
+                    height: 12
+                    source: iconSource
+                    fillMode: Image.PreserveAspectFit
+                }
+
+                Text {
+                    text: windowTitle !== "" ? windowTitle : appClass
+                    font.family: "Inter, sans-serif"
+                    font.pixelSize: 8.5
+                    font.weight: Font.Medium
+                    color: "#CDD6F4"
+                    elide: Text.ElideRight
+                    width: Math.min(implicitWidth, bgCard.width - 45)
+                }
+            }
+        }
+
+        // Bottom floating app badge when thumbnail is visible (macOS style)
+        Rectangle {
+            id: appBadge
+            visible: winThumbnail.visible && tileWidth >= 64 && tileHeight >= 64
+            anchors.bottom: parent.bottom
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.bottomMargin: 6
+            width: 24
+            height: 24
+            radius: 6
+            color: "#D9181825"
+            border.color: "#33FFFFFF"
+            border.width: 1
+            z: 8
+
+            Image {
+                anchors.centerIn: parent
+                width: 16
+                height: 16
+                source: iconSource
+                fillMode: Image.PreserveAspectFit
+                smooth: true
+            }
+        }
+
+        // Subtle document/code scanline texture (fallback when thumbnail not yet cached)
         Canvas {
             anchors.fill: parent
+            visible: !winThumbnail.visible
             opacity: 0.12
             onPaint: {
                 var ctx = getContext("2d");
@@ -74,9 +153,10 @@ Item {
             z: 10
         }
 
-        // Centered App Icon
+        // Centered App Icon (fallback when thumbnail not yet cached)
         Image {
             id: appIcon
+            visible: !winThumbnail.visible
             anchors.centerIn: parent
             width: tileWidth >= 64 && tileHeight >= 64 ? 40 : 28
             height: width

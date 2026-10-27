@@ -3,16 +3,17 @@ configuration {
     modi:                "drun,run,window";
     show-icons:          true;
     icon-theme:          "Papirus-Dark";
-    drun-display-format: "{name}";
+    drun-display-format: "{name} [<span size='small' alpha='65%'>({generic})</span>]";
     display-drun:        "󰀻 Apps";
     display-run:         " Run";
     display-window:      " Windows";
     terminal:            "kitty";
     font:                "Inter 13";
 
-    /* Case-insensitive fuzzy search */
+    /* Case-insensitive fuzzy search & rich metadata matching */
     case-sensitive:      false;
     matching:            "fuzzy";
+    drun-match-fields:   "name,generic,exec,categories,keywords";
 
     /* Behaviour */
     cycle:               false;

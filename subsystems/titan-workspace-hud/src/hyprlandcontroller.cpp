@@ -10,6 +10,8 @@
 #include <QIcon>
 #include <QSet>
 #include <QRegularExpression>
+#include <QStandardPaths>
+#include <QDateTime>
 #include <QDebug>
 
 HyprlandController::HyprlandController(QObject *parent)
@@ -233,6 +235,16 @@ void HyprlandController::refresh()
             winObj["rh"] = rh;
             winObj["isFocused"] = (!activeWinAddress.isEmpty() && address == activeWinAddress);
 
+            QString cleanAddress = address;
+            cleanAddress.remove("0x");
+            QString thumbDir = "/tmp/titan-thumbs";
+            QString thumbPath = QString("%1/%2.png").arg(thumbDir, cleanAddress);
+            if (QFile::exists(thumbPath)) {
+                winObj["thumbnail"] = "file://" + thumbPath;
+            } else {
+                winObj["thumbnail"] = "";
+            }
+
             winList.append(winObj);
         }
 
@@ -253,4 +265,82 @@ void HyprlandController::refresh()
 
     m_workspaces = wsList;
     emit stateChanged();
+
+    if (activeWs >= 1 && activeWs <= 10) {
+        captureActiveThumbnails(clientMap.value(activeWs));
+    }
+}
+
+void HyprlandController::captureActiveThumbnails(const QList<QJsonObject> &activeClients)
+{
+    static qint64 lastCaptureMs = 0;
+    qint64 nowMs = QDateTime::currentMSecsSinceEpoch();
+    if (nowMs - lastCaptureMs < 1200) {
+        return;
+    }
+    lastCaptureMs = nowMs;
+
+    QString grimBin = QStandardPaths::findExecutable("grim");
+    if (grimBin.isEmpty()) return;
+
+    QString thumbDir = "/tmp/titan-thumbs";
+    QDir().mkpath(thumbDir);
+
+    for (const QJsonObject &c : activeClients) {
+        QString address = c.value("address").toString();
+        if (address.isEmpty()) continue;
+
+        QString cleanAddress = address;
+        cleanAddress.remove("0x");
+        QString thumbPath = QString("%1/%2.png").arg(thumbDir, cleanAddress);
+
+        QJsonArray atArr = c.value("at").toArray();
+        QJsonArray szArr = c.value("size").toArray();
+        int wx = atArr.size() >= 2 ? atArr.at(0).toInt(0) : 0;
+        int wy = atArr.size() >= 2 ? atArr.at(1).toInt(0) : 0;
+        int ww = szArr.size() >= 2 ? szArr.at(0).toInt(0) : 0;
+        int wh = szArr.size() >= 2 ? szArr.at(1).toInt(0) : 0;
+
+        if (ww > 50 && wh > 50) {
+            QString geom = QString("%1,%2 %3x%4").arg(wx).arg(wy).arg(ww).arg(wh);
+            QProcess *p = new QProcess(this);
+            connect(p, &QProcess::finished, this, [this, p]() {
+                p->deleteLater();
+                updateThumbnails();
+            });
+            p->start(grimBin, QStringList{"-g", geom, thumbPath});
+        }
+    }
+}
+
+void HyprlandController::updateThumbnails()
+{
+    QString thumbDir = "/tmp/titan-thumbs";
+    bool anyChanged = false;
+    for (int i = 0; i < m_workspaces.size(); ++i) {
+        QVariantMap wsObj = m_workspaces.at(i).toMap();
+        QVariantList winList = wsObj.value("windows").toList();
+        for (int j = 0; j < winList.size(); ++j) {
+            QVariantMap winObj = winList.at(j).toMap();
+            QString address = winObj.value("address").toString();
+            QString cleanAddress = address;
+            cleanAddress.remove("0x");
+            QString thumbPath = QString("%1/%2.png").arg(thumbDir, cleanAddress);
+            if (QFile::exists(thumbPath)) {
+                QString uri = "file://" + thumbPath;
+                if (winObj.value("thumbnail").toString() != uri) {
+                    winObj["thumbnail"] = uri;
+                    winList[j] = winObj;
+                    anyChanged = true;
+                }
+            }
+        }
+        if (anyChanged) {
+            wsObj["windows"] = winList;
+            m_workspaces[i] = wsObj;
+        }
+    }
+    if (anyChanged) {
+        emit stateChanged();
+    }
 }

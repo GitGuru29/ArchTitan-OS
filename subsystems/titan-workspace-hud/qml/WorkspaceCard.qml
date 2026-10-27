@@ -132,6 +132,7 @@ Rectangle {
                 appClass: modelData.class
                 windowTitle: modelData.title
                 iconSource: modelData.icon
+                thumbnailSource: modelData.thumbnail || ""
                 isFocused: modelData.isFocused || false
             }
         }

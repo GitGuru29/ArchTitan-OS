@@ -258,14 +258,19 @@ def waybar_body(t: dict) -> str:
 def swaync_body(t: dict) -> str:
     p, dark = t["palette"], t["isDark"]
     acc, fg = t["accent"], accent_fg(t["accent"])
-    border = "rgba(255, 255, 255, 0.08)" if dark else "rgba(0, 0, 0, 0.12)"
+    border = "rgba(255, 255, 255, 0.10)" if dark else "rgba(0, 0, 0, 0.10)"
+    base_alpha = 0.78 if dark else 0.72
+    surface_alpha = 0.68 if dark else 0.62
+    surface_alt_alpha = 0.75 if dark else 0.70
+    surface_hover_alpha = 0.82 if dark else 0.76
+    border_alpha = 0.38 if dark else 0.45
     rows = [
-        ("base", rgba(p["crust"], 0.94)),
-        ("surface", rgba(p["base"], 0.88)),
-        ("surface-alt", rgba(p["border"], 0.92)),
-        ("surface-hover", rgba(p["surface0"], 0.95)),
+        ("base", rgba(p["crust"], base_alpha)),
+        ("surface", rgba(p["base"], surface_alpha)),
+        ("surface-alt", rgba(p["surface0"], surface_alt_alpha)),
+        ("surface-hover", rgba(p["surface1"], surface_hover_alpha)),
         ("border-color", border),
-        ("border-highlight", rgba(acc, 0.35)),
+        ("border-highlight", rgba(acc, border_alpha)),
         (None, None),
         ("cyan-active", acc.lower()),
         ("cyan-glow", rgba(acc, 0.45)),
@@ -289,11 +294,13 @@ def swaync_body(t: dict) -> str:
 def swayosd_body(t: dict) -> str:
     p, dark = t["palette"], t["isDark"]
     acc = t["accent"]
-    border_alpha = 0.35 if dark else 0.40
-    trough = "rgba(255, 255, 255, 0.12)" if dark else "rgba(0, 0, 0, 0.10)"
+    border_alpha = 0.38 if dark else 0.45
+    trough = "rgba(255, 255, 255, 0.14)" if dark else "rgba(0, 0, 0, 0.10)"
+    base_alpha = 0.78 if dark else 0.72
+    surface_alpha = 0.70 if dark else 0.65
     rows = [
-        ("base", rgba(p["crust"], 0.88)),
-        ("surface", rgba(p["base"], 0.85)),
+        ("base", rgba(p["crust"], base_alpha)),
+        ("surface", rgba(p["base"], surface_alpha)),
         ("border-highlight", rgba(acc, border_alpha)),
         ("cyan-active", acc.lower()),
         ("cyan-glow", rgba(acc, 0.45)),
@@ -312,11 +319,12 @@ def rofi_body(t: dict) -> str:
     acc = t["accent"]
     neutral = "255, 255, 255" if dark else "0, 0, 0"
     subtle = "0.08" if dark else "0.10"
+    card_alpha = "D0" if dark else "D8"
     rows = [
-        ("bg-card", f"{p['crust'].upper()}E8"),
-        ("bg-input", f"rgba({neutral}, 0.05)"),
-        ("bg-selected", rgba(acc, 0.18)),
-        ("bg-hover", f"rgba({neutral}, 0.04)"),
+        ("bg-card", f"{p['crust'].upper()}{card_alpha}"),
+        ("bg-input", f"rgba({neutral}, 0.06)"),
+        ("bg-selected", rgba(acc, 0.22 if dark else 0.18)),
+        ("bg-hover", f"rgba({neutral}, 0.05)"),
         ("border-accent", rgba(acc, 0.45)),
         ("border-subtle", f"rgba({neutral}, {subtle})"),
         ("text-primary", p["textHigh"]),
