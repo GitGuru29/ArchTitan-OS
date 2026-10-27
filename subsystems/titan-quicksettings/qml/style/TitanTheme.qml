@@ -19,27 +19,27 @@ QtObject {
     readonly property string fontFamily: TDL.TitanTheme.fontFamily
     readonly property string monoFamily: TDL.TitanTheme.monoFamily
 
-    // ── Window / bento surfaces ────────────────────────────────────────────
-    readonly property color bgWindow:          TDL.TitanTheme.bg1        // translucent window shell
-    readonly property color bgSurface:         TDL.TitanTheme.bg2        // raised container
-    readonly property color bgSurfaceAlt:      TDL.TitanTheme.bg3        // elevated squircle tile
-    readonly property color bgInset:           TDL.TitanTheme.bgInset    // recessed track
-    readonly property color bgHover:           isDark ? TDL.TitanTheme.borderHover : Qt.rgba(0, 0, 0, 0.08)
-    readonly property color bgPressed:         isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.12)
+    // ── Window / bento surfaces (macOS Liquid Frosted Glass) ──────────────
+    readonly property color bgWindow:          isDark ? Qt.rgba(TDL.TitanTheme.base.r, TDL.TitanTheme.base.g, TDL.TitanTheme.base.b, 0.46) : Qt.rgba(TDL.TitanTheme.base.r, TDL.TitanTheme.base.g, TDL.TitanTheme.base.b, 0.62)
+    readonly property color bgSurface:         isDark ? Qt.rgba(1, 1, 1, 0.05) : Qt.rgba(1, 1, 1, 0.45)
+    readonly property color bgSurfaceAlt:      isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(1, 1, 1, 0.60)
+    readonly property color bgInset:           isDark ? Qt.rgba(0, 0, 0, 0.28) : Qt.rgba(0, 0, 0, 0.05)
+    readonly property color bgHover:           isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(1, 1, 1, 0.70)
+    readonly property color bgPressed:         isDark ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(0, 0, 0, 0.10)
     readonly property color bgActive:          TDL.TitanTheme.accent
 
-    readonly property color bgOneUICard:       TDL.TitanTheme.glassCard  // frosted bento card
-    readonly property color bgOneUICardAlt:    TDL.TitanTheme.bg4
-    readonly property color bgOneUITrack:      TDL.TitanTheme.bgInset
-    readonly property color bgOneUIPill:       isDark ? TDL.TitanTheme.bg4 : Qt.rgba(0, 0, 0, 0.04)
-    readonly property color bgMenu:            isDark ? Qt.rgba(TDL.TitanTheme.bg0.r, TDL.TitanTheme.bg0.g, TDL.TitanTheme.bg0.b, 0.90) : Qt.rgba(1, 1, 1, 0.92) // power menu scrim
+    readonly property color bgOneUICard:       isDark ? Qt.rgba(1, 1, 1, 0.06) : Qt.rgba(1, 1, 1, 0.50)
+    readonly property color bgOneUICardAlt:    isDark ? Qt.rgba(1, 1, 1, 0.09) : Qt.rgba(1, 1, 1, 0.65)
+    readonly property color bgOneUITrack:      isDark ? Qt.rgba(0, 0, 0, 0.25) : Qt.rgba(0, 0, 0, 0.06)
+    readonly property color bgOneUIPill:       isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(1, 1, 1, 0.60)
+    readonly property color bgMenu:            isDark ? Qt.rgba(TDL.TitanTheme.bg0.r, TDL.TitanTheme.bg0.g, TDL.TitanTheme.bg0.b, 0.75) : Qt.rgba(1, 1, 1, 0.88)
 
     // ── Borders & glass contours ───────────────────────────────────────────
-    readonly property color borderSubtle:      TDL.TitanTheme.borderSubtle
-    readonly property color borderHover:       TDL.TitanTheme.borderHover
+    readonly property color borderSubtle:      isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.08)
+    readonly property color borderHover:       isDark ? Qt.rgba(1, 1, 1, 0.22) : Qt.rgba(0, 0, 0, 0.20)
     readonly property color borderActive:      TDL.TitanTheme.accentEdge
-    readonly property color borderGlass:       isDark ? TDL.TitanTheme.borderHover : TDL.TitanTheme.borderSubtle
-    readonly property color borderOneUIGlass:  isDark ? TDL.TitanTheme.borderHover : TDL.TitanTheme.borderSubtle
+    readonly property color borderGlass:       isDark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0, 0, 0, 0.12)
+    readonly property color borderOneUIGlass:  isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.10)
 
     // ── Accents & indicators ───────────────────────────────────────────────
     readonly property color accent:            TDL.TitanTheme.accent

@@ -133,25 +133,58 @@ Window {
                 Layout.fillWidth: !showNotificationPanel
                 Layout.fillHeight: true
                 radius: TitanTheme.radiusWindow
-                color: TitanTheme.bgWindow
                 border.color: TitanTheme.borderGlass
                 border.width: 1
                 clip: true
 
-                // Top specular edge highlight
+                // Ambient vertical luminance gradient (macOS .ultraThinMaterial)
+                gradient: Gradient {
+                    GradientStop {
+                        position: 0.0
+                        color: TitanTheme.isDark ?
+                            Qt.rgba(TitanTheme.bgWindow.r + 0.06, TitanTheme.bgWindow.g + 0.06, TitanTheme.bgWindow.b + 0.08, 0.52) :
+                            Qt.rgba(1.0, 1.0, 1.0, 0.72)
+                    }
+                    GradientStop {
+                        position: 0.35
+                        color: TitanTheme.isDark ?
+                            Qt.rgba(TitanTheme.bgWindow.r, TitanTheme.bgWindow.g, TitanTheme.bgWindow.b, 0.46) :
+                            Qt.rgba(TitanTheme.bgWindow.r, TitanTheme.bgWindow.g, TitanTheme.bgWindow.b, 0.60)
+                    }
+                    GradientStop {
+                        position: 1.0
+                        color: TitanTheme.isDark ?
+                            Qt.rgba(TitanTheme.bgWindow.r * 0.85, TitanTheme.bgWindow.g * 0.85, TitanTheme.bgWindow.b * 0.85, 0.40) :
+                            Qt.rgba(TitanTheme.bgWindow.r * 0.95, TitanTheme.bgWindow.g * 0.95, TitanTheme.bgWindow.b * 0.95, 0.52)
+                    }
+                }
+
+                // Full curved inner specular refraction rim
+                Rectangle {
+                    anchors.fill: parent
+                    anchors.margins: 1
+                    radius: parent.radius - 1
+                    color: "transparent"
+                    border.width: 1
+                    border.color: TitanTheme.isDark ? Qt.rgba(1.0, 1.0, 1.0, 0.12) : Qt.rgba(1.0, 1.0, 1.0, 0.65)
+                    z: 1
+                }
+
+                // Focused top specular horizon gleam
                 Rectangle {
                     anchors.top: parent.top
                     anchors.topMargin: 1
                     anchors.horizontalCenter: parent.horizontalCenter
-                    width: parent.width * 0.7
+                    width: parent.width * 0.85
                     height: 1
                     radius: 1
                     z: 10
                     gradient: Gradient {
                         orientation: Gradient.Horizontal
                         GradientStop { position: 0.0; color: "transparent" }
-                        GradientStop { position: 0.3; color: "#25FFFFFF" }
-                        GradientStop { position: 0.7; color: "#25FFFFFF" }
+                        GradientStop { position: 0.2; color: TitanTheme.isDark ? "#35FFFFFF" : "#70FFFFFF" }
+                        GradientStop { position: 0.5; color: TitanTheme.isDark ? "#60FFFFFF" : "#B5FFFFFF" }
+                        GradientStop { position: 0.8; color: TitanTheme.isDark ? "#35FFFFFF" : "#70FFFFFF" }
                         GradientStop { position: 1.0; color: "transparent" }
                     }
                 }
@@ -283,25 +316,58 @@ Window {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 radius: TitanTheme.radiusWindow
-                color: TitanTheme.bgWindow
                 border.color: TitanTheme.borderGlass
                 border.width: 1
                 clip: true
 
-                // Top specular edge highlight
+                // Ambient vertical luminance gradient (macOS .ultraThinMaterial)
+                gradient: Gradient {
+                    GradientStop {
+                        position: 0.0
+                        color: TitanTheme.isDark ?
+                            Qt.rgba(TitanTheme.bgWindow.r + 0.06, TitanTheme.bgWindow.g + 0.06, TitanTheme.bgWindow.b + 0.08, 0.52) :
+                            Qt.rgba(1.0, 1.0, 1.0, 0.72)
+                    }
+                    GradientStop {
+                        position: 0.35
+                        color: TitanTheme.isDark ?
+                            Qt.rgba(TitanTheme.bgWindow.r, TitanTheme.bgWindow.g, TitanTheme.bgWindow.b, 0.46) :
+                            Qt.rgba(TitanTheme.bgWindow.r, TitanTheme.bgWindow.g, TitanTheme.bgWindow.b, 0.60)
+                    }
+                    GradientStop {
+                        position: 1.0
+                        color: TitanTheme.isDark ?
+                            Qt.rgba(TitanTheme.bgWindow.r * 0.85, TitanTheme.bgWindow.g * 0.85, TitanTheme.bgWindow.b * 0.85, 0.40) :
+                            Qt.rgba(TitanTheme.bgWindow.r * 0.95, TitanTheme.bgWindow.g * 0.95, TitanTheme.bgWindow.b * 0.95, 0.52)
+                    }
+                }
+
+                // Full curved inner specular refraction rim
+                Rectangle {
+                    anchors.fill: parent
+                    anchors.margins: 1
+                    radius: parent.radius - 1
+                    color: "transparent"
+                    border.width: 1
+                    border.color: TitanTheme.isDark ? Qt.rgba(1.0, 1.0, 1.0, 0.12) : Qt.rgba(1.0, 1.0, 1.0, 0.65)
+                    z: 1
+                }
+
+                // Focused top specular horizon gleam
                 Rectangle {
                     anchors.top: parent.top
                     anchors.topMargin: 1
                     anchors.horizontalCenter: parent.horizontalCenter
-                    width: parent.width * 0.7
+                    width: parent.width * 0.85
                     height: 1
                     radius: 1
                     z: 10
                     gradient: Gradient {
                         orientation: Gradient.Horizontal
                         GradientStop { position: 0.0; color: "transparent" }
-                        GradientStop { position: 0.3; color: "#25FFFFFF" }
-                        GradientStop { position: 0.7; color: "#25FFFFFF" }
+                        GradientStop { position: 0.2; color: TitanTheme.isDark ? "#35FFFFFF" : "#70FFFFFF" }
+                        GradientStop { position: 0.5; color: TitanTheme.isDark ? "#60FFFFFF" : "#B5FFFFFF" }
+                        GradientStop { position: 0.8; color: TitanTheme.isDark ? "#35FFFFFF" : "#70FFFFFF" }
                         GradientStop { position: 1.0; color: "transparent" }
                     }
                 }

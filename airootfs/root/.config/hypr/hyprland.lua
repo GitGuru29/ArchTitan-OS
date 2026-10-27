@@ -248,14 +248,16 @@ hl.config({
 
         blur = {
             enabled           = true,
-            size              = 6,
-            passes            = 3,
+            size              = 8,
+            passes            = 4,
             new_optimizations = true,
             ignore_opacity    = true,
-            noise             = 0.015,
-            contrast          = 0.94,
-            brightness        = 0.90,
-            vibrancy          = 0.32,
+            noise             = 0.020,
+            contrast          = 1.05,
+            brightness        = 1.02,
+            vibrancy          = 0.42,
+            vibrancy_darkness = 0.12,
+            popups            = true,
         },
 
         shadow = {
@@ -375,11 +377,11 @@ hl.layer_rule({ match = { namespace = "^waybar$" }, blur = true, ignore_alpha = 
 hl.layer_rule({ match = { namespace = "^rofi$" }, blur = true, ignore_alpha = 0 })
 hl.layer_rule({ match = { namespace = "^swaync-control-center$" }, blur = true, ignore_alpha = 0 })
 hl.layer_rule({ match = { namespace = "^swaync-notification-window$" }, blur = true, ignore_alpha = 0 })
-hl.layer_rule({ match = { namespace = "^titan-quicksettings$" }, blur = true, ignore_alpha = 0.5 })
-hl.layer_rule({ match = { namespace = "^titan-quicksettings-blur$" }, blur = true, ignore_alpha = 0.5 })
-hl.layer_rule({ match = { namespace = "^titan-sysmon$" }, blur = true, ignore_alpha = 0.5 })
-hl.layer_rule({ match = { namespace = "^titan-menu$" }, blur = true, ignore_alpha = 0.5 })
-hl.layer_rule({ match = { namespace = "^swayosd$" }, blur = true, ignore_alpha = 0.5 })
+hl.layer_rule({ match = { namespace = "^titan-quicksettings$" }, blur = true, ignore_alpha = 0 })
+hl.layer_rule({ match = { namespace = "^titan-quicksettings-blur$" }, blur = true, ignore_alpha = 0 })
+hl.layer_rule({ match = { namespace = "^titan-sysmon$" }, blur = true, ignore_alpha = 0 })
+hl.layer_rule({ match = { namespace = "^titan-menu$" }, blur = true, ignore_alpha = 0 })
+hl.layer_rule({ match = { namespace = "^swayosd$" }, blur = true, ignore_alpha = 0 })
 
 -- Hot-zone / gesture OSD overlay. Full-screen and input-transparent; opacity is
 -- animated inside the surface, so suppress the compositor's map/unmap fade.
