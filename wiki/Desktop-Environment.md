@@ -60,7 +60,9 @@ graph TD
 | **Titan Media HUD** | Dynamic Island overlay & power menu | `subsystems/titan-media-hud/` |
 | **TitanBrowser** | First-party Qt6 WebEngine browser | `titan-browser-source/` |
 | **ArchTitan Settings** | System configuration GUI | `archtitan-settings/` |
-| **Rofi (Wayland)** | Application launcher, window switcher, power menu | `~/.config/rofi/config.rasi` |
+| **Titan Spotlight** | macOS-style native app launcher, instant calculator & search modal | `subsystems/titan-spotlight/` |
+| **ArchTitan Menu** | Central command palette & shortcuts cheat sheet | `subsystems/titan-menu/` |
+| **Titan Workspace HUD** | 10-Workspace interactive Mission Control overlay | `subsystems/titan-workspace-hud/` |
 | **Kitty** | GPU-accelerated terminal emulator | `~/.config/kitty/kitty.conf` |
 | **Fish Shell** | Interactive shell with auto-suggestions & syntax highlighting | `~/.config/fish/config.fish` |
 | **Starship** | Cross-shell developer prompt | `~/.config/starship.toml` |
@@ -76,14 +78,16 @@ All keybindings use the **Super** key (Windows/Cmd key) as the main modifier:
 
 | Keybinding | Action |
 | :--- | :--- |
+| <kbd>Super</kbd> (Single Tap) | Open **Titan Spotlight** (macOS-style Search, Calculator & Launcher) |
+| <kbd>Super</kbd> + <kbd>Space</kbd> | Open **ArchTitan Menu** (Central Command Palette) |
+| <kbd>Super</kbd> + <kbd>Tab</kbd> | Toggle **Titan Workspace HUD** (10-Workspace Mission Control Grid) |
 | <kbd>Super</kbd> + <kbd>Return</kbd> | Open Kitty Terminal |
-| <kbd>Super</kbd> / <kbd>Super</kbd> + <kbd>Space</kbd> | Open Rofi App Launcher |
 | <kbd>Super</kbd> + <kbd>W</kbd> | Launch Default Web Browser (**TitanBrowser**) |
 | <kbd>Super</kbd> + <kbd>E</kbd> | Launch Ranger File Manager |
 | <kbd>Super</kbd> + <kbd>I</kbd> | Launch Calamares Graphical Installer (via `launch-installer`) |
-| <kbd>Super</kbd> + <kbd>V</kbd> | Open Rofi Clipboard History Manager |
+| <kbd>Super</kbd> + <kbd>V</kbd> | Open Spotlight Clipboard History Manager |
 | <kbd>Super</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd> | Take Region Screenshot (via `grim` + `slurp`) |
-| <kbd>Super</kbd> + <kbd>Escape</kbd> | Open Titan Power Menu / Rofi Power Menu |
+| <kbd>Super</kbd> + <kbd>Escape</kbd> | Open Titan Power Menu |
 
 ### Window Management
 

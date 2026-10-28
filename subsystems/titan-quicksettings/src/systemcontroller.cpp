@@ -388,7 +388,7 @@ void SystemController::updateAirplaneMode()
 
 void SystemController::openClipboard()
 {
-    QProcess::startDetached("bash", {"-c", "cliphist list | rofi -dmenu -p 'Clipboard' | cliphist decode | wl-copy"});
+    QProcess::startDetached("titan-spotlight", {"--clipboard"});
 }
 
 void SystemController::openSettings()

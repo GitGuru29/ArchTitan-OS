@@ -1,0 +1,10 @@
+<RCC>
+    <qresource prefix="/">
+        <file>qml/SpotlightWindow.qml</file>
+        <file>qml/SpotlightCard.qml</file>
+        <file>qml/SpotlightInput.qml</file>
+        <file>qml/SpotlightResultRow.qml</file>
+        <file>qml/SpotlightCalcPreview.qml</file>
+        <file>qml/SpotlightFooter.qml</file>
+    </qresource>
+</RCC>

@@ -52,6 +52,7 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("bash -c 'sleep 3 && titan-quicksettings --daemon'")
     hl.exec_cmd("bash -c 'sleep 3 && titan-menu --daemon'")
     hl.exec_cmd("bash -c 'sleep 3 && titan-workspace-hud --daemon'")
+    hl.exec_cmd("bash -c 'sleep 3 && titan-spotlight --daemon'")
     hl.exec_cmd("titan-hotzones")
     hl.exec_cmd("titan-zone-osd")
     hl.exec_cmd("swayosd-server")
@@ -70,18 +71,18 @@ end)
 
 local mainMod = "SUPER"
 
--- Shell & Utilities (ArchTitan Central Command Palette)
-hl.bind("SUPER_L", hl.dsp.exec_cmd("titan-menu --toggle"), { release = true })  -- Windows logo tap opens ArchTitan Menu
-hl.bind("SUPER_R", hl.dsp.exec_cmd("titan-menu --toggle"), { release = true })
+-- Shell & Utilities (ArchTitan Central Command Palette & Spotlight)
+hl.bind("SUPER_L", hl.dsp.exec_cmd("titan-spotlight --toggle"), { release = true })  -- Windows/Super logo tap opens Spotlight
+hl.bind("SUPER_R", hl.dsp.exec_cmd("titan-spotlight --toggle"), { release = true })
 hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd("titan-menu --toggle"))   -- Super+Space: ArchTitan Central Palette
-hl.bind(mainMod .. " + D", hl.dsp.exec_cmd("titan-menu --toggle"))       -- Super+D: App Launcher (Tiling WM standard)
-hl.bind(mainMod .. " + R", hl.dsp.exec_cmd(sandboxed .. " rofi -show drun"))  -- Super+R: Secondary App runner
+hl.bind(mainMod .. " + Tab", hl.dsp.exec_cmd("titan-workspace-hud --toggle"))          -- Super+Tab: 10-Workspace HUD Shower
+hl.bind(mainMod .. " + D", hl.dsp.exec_cmd("titan-spotlight --toggle"))       -- Super+D: App Launcher (Spotlight)
+hl.bind(mainMod .. " + R", hl.dsp.exec_cmd("titan-spotlight --toggle"))  -- Super+R: Secondary App runner (Spotlight)
 hl.bind(mainMod .. " + slash", hl.dsp.exec_cmd("titan-menu --toggle"))        -- Help & Shortcuts Cheat Sheet (Super+/)
 hl.bind(mainMod .. " + question", hl.dsp.exec_cmd("titan-menu --toggle"))     -- Super+?
 hl.bind(mainMod .. " + F1", hl.dsp.exec_cmd("titan-menu --toggle"))           -- Help & Shortcuts Cheat Sheet (Super+F1)
-hl.bind(mainMod .. " + Tab", hl.dsp.exec_cmd("titan-menu --toggle"))          -- Toggle overview/palette
-hl.bind(mainMod .. " + V", hl.dsp.exec_cmd("cliphist list | rofi -dmenu | cliphist decode | wl-copy"))  -- Clipboard
-hl.bind(mainMod .. " + Period", hl.dsp.exec_cmd(sandboxed .. " rofi -show emoji"))  -- Emoji
+hl.bind(mainMod .. " + V", hl.dsp.exec_cmd("titan-spotlight --clipboard"))  -- Clipboard History Manager
+hl.bind(mainMod .. " + Period", hl.dsp.exec_cmd("titan-spotlight --toggle"))  -- Quick symbols/emoji
 hl.bind(mainMod .. " + backslash", hl.dsp.exec_cmd("titan-wallpaper-picker"))  -- Wallpaper Picker (Super+\)
 hl.bind(mainMod .. " + SHIFT + backslash", hl.dsp.exec_cmd("titan-wallpaper-picker"))  -- Wallpaper Picker (Super+|)
 hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd("titan-screenshot --area"))  -- Screen snip
@@ -374,7 +375,7 @@ hl.window_rule({
 -- Frosted-glass surfaces. (On Hyprland >= 0.55 these live here, not in
 -- hyprland.conf -- the .lua file supersedes .conf entirely.)
 hl.layer_rule({ match = { namespace = "^waybar$" }, blur = true, ignore_alpha = 0 })
-hl.layer_rule({ match = { namespace = "^rofi$" }, blur = true, ignore_alpha = 0 })
+hl.layer_rule({ match = { namespace = "^titan-spotlight$" }, blur = true, ignore_alpha = 0 })
 hl.layer_rule({ match = { namespace = "^swaync-control-center$" }, blur = true, ignore_alpha = 0 })
 hl.layer_rule({ match = { namespace = "^swaync-notification-window$" }, blur = true, ignore_alpha = 0 })
 hl.layer_rule({ match = { namespace = "^titan-quicksettings$" }, blur = true, ignore_alpha = 0 })

@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# ArchTitan OS — rofi drop-in compatibility wrapper
+# Seamlessly bridges legacy calls to native ArchTitan subsystems:
+# - titan-spotlight (macOS-style spotlight launcher & clipboard)
+# - titan-menu (central command palette)
+# - titan-workspace-hud (10-workspace mission control)
+
+if [[ "$*" == *"-show window"* ]]; then
+    exec /usr/local/bin/titan-workspace-hud --toggle
+elif [[ "$*" == *"cliphist"* ]] || [[ "$*" == *"-dmenu"* && "$*" == *"Clipboard"* ]]; then
+    exec /usr/local/bin/titan-spotlight --clipboard
+elif [[ "$*" == *"-dmenu"* ]]; then
+    # Read stdin lines
+    mapfile -t lines
+    if [[ ${#lines[@]} -eq 0 ]]; then
+        exit 0
+    fi
+    # If it's a power menu query:
+    if [[ "${lines[*]}" == *"Lock"* && "${lines[*]}" == *"Shutdown"* ]]; then
+        exec /usr/local/bin/titan-menu --toggle
+    fi
+    # Default to echoing the first item
+    printf '%s\n' "${lines[0]}"
+else
+    exec /usr/local/bin/titan-spotlight --toggle
+fi

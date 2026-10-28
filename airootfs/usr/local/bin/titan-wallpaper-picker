@@ -27,6 +27,10 @@ if [[ ${#CANDIDATES[@]} -eq 0 ]]; then
     exit 0
 fi
 
+if command -v titan-wallpaper-picker-ui >/dev/null 2>&1; then
+    exec titan-wallpaper-picker-ui
+fi
+
 # ── Build Rofi display list ─────────────────────────────────────────────────
 # Row format, as parsed by rofi's dmenu row-option parser:
 #     <label>\0icon\x1f<absolute-path>\n

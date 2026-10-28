@@ -5,15 +5,16 @@
       "title": "Apps",
       "hint": "Launch an application",
       "icon": "\uf00a",
-      "keys": "Super / Super+Space",
-      "exec": "titan-exec-hook rofi -show drun"
+      "keys": "Super",
+      "exec": "titan-spotlight --toggle"
     },
     {
       "id": "windows",
       "title": "Windows",
       "hint": "Switch between open windows",
       "icon": "\uf2d0",
-      "exec": "rofi -show window"
+      "keys": "Super+Tab",
+      "exec": "titan-workspace-hud --toggle"
     },
     {
       "id": "theme",
@@ -58,7 +59,7 @@
           "exec": "titan-quicksettings-toggle colorpicker" },
         { "id": "clipboard", "title": "Clipboard history", "hint": "Search what you copied earlier",
           "icon": "\uf0ea", "keys": "Super+V", "requires": "cliphist",
-          "exec": "cliphist list | rofi -dmenu | cliphist decode | wl-copy" }
+          "exec": "titan-spotlight --clipboard" }
       ]
     },
     {
@@ -146,7 +147,7 @@
         { "id": "sc-media", "title": "Media Island HUD", "hint": "Playback controls & info", "icon": "\uf001",
           "keys": "Super+M", "exec": "titan-media-hud --toggle" },
         { "id": "sc-clip", "title": "Clipboard History", "hint": "Search and paste clipboard", "icon": "\uf0ea",
-          "keys": "Super+V", "exec": "cliphist list | rofi -dmenu | cliphist decode | wl-copy" },
+          "keys": "Super+V", "exec": "titan-spotlight --clipboard" },
         { "id": "sc-snip", "title": "Screen Snip", "hint": "Select region to clipboard", "icon": "\uf030",
           "keys": "Super+Shift+S", "exec": "grim -g \"$(slurp)\" - | wl-copy --type image/png" },
         { "id": "sc-wall", "title": "Wallpaper Picker", "hint": "Browse and set desktop background", "icon": "\uf03e",
