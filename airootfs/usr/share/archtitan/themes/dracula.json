@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "id": "dracula",
+  "name": "Dracula",
+  "isDark": true,
+  "accent": "#BD93F9",
+  "accent2": "#8BE9FD",
+  "wallpaper": "/usr/share/backgrounds/archtitan/titan-dracula.jpg",
+  "source": "dracula/theme",
+  "palette": {
+    "crust": "#191A21",
+    "mantle": "#21222C",
+    "base": "#282A36",
+    "surface0": "#343746",
+    "surface1": "#44475A",
+    "surface2": "#6272A4",
+    "surface3": "#6272A4",
+    "border": "#343746",
+    "textHigh": "#F8F8F2",
+    "textMid": "#E2E2DC",
+    "textLow": "#6272A4",
+    "success": "#50FA7B",
+    "warning": "#F1FA8C",
+    "danger": "#FF5555",
+    "teal": "#8BE9FD",
+    "mauve": "#BD93F9",
+    "peach": "#FFB86C",
+    "pink": "#FF79C6"
+  }
+}

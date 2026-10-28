@@ -9,6 +9,7 @@
 #include <QDBusInterface>
 #include <QDBusReply>
 #include <QDBusVariant>
+#include <QStandardPaths>
 
 SettingsBackend::SettingsBackend(QObject *parent)
     : QObject(parent)
@@ -16,6 +17,7 @@ SettingsBackend::SettingsBackend(QObject *parent)
 {
     loadSettings();
     loadThemeState();
+    scanThemes();
 
     // Listen to external D-Bus changes for power profile (try both common service names)
     QDBusConnection::systemBus().connect(
@@ -63,11 +65,25 @@ void SettingsBackend::loadThemeState() {
     const QString path =
         QDir::homePath() + QStringLiteral("/.config/archtitan/theme.json");
     QFile file(path);
-    if (!file.open(QIODevice::ReadOnly))
+    if (!file.open(QIODevice::ReadOnly)) {
+        m_currentThemeId = QStringLiteral("archtitan");
+        emit currentThemeIdChanged();
         return;
+    }
     const QJsonObject theme = QJsonDocument::fromJson(file.readAll()).object();
     if (theme.isEmpty())
         return;
+
+    if (theme.contains(QStringLiteral("id"))) {
+        const QString tid = theme.value(QStringLiteral("id")).toString();
+        if (tid != m_currentThemeId) {
+            m_currentThemeId = tid;
+            emit currentThemeIdChanged();
+        }
+    } else {
+        m_currentThemeId = QStringLiteral("archtitan");
+        emit currentThemeIdChanged();
+    }
 
     if (theme.contains(QStringLiteral("isDark")))
         m_colorTheme = theme.value(QStringLiteral("isDark")).toBool()
@@ -76,7 +92,62 @@ void SettingsBackend::loadThemeState() {
     if (!accent.isEmpty())
         m_accentColor = accent;
 
-    qDebug() << "[SettingsBackend] Theme state adopted:" << m_colorTheme << m_accentColor;
+    qDebug() << "[SettingsBackend] Theme state adopted:" << m_currentThemeId << m_colorTheme << m_accentColor;
+}
+
+void SettingsBackend::scanThemes() {
+    m_installedThemes.clear();
+    QString themeDir = QStringLiteral("/usr/share/archtitan/themes");
+    if (!QDir(themeDir).exists()) {
+        themeDir = QDir::currentPath() + QStringLiteral("/airootfs/usr/share/archtitan/themes");
+    }
+    QDir d(themeDir);
+    if (d.exists()) {
+        const QStringList files = d.entryList({QStringLiteral("*.json")}, QDir::Files, QDir::Name);
+        for (const QString &file : files) {
+            QFile f(d.filePath(file));
+            if (!f.open(QIODevice::ReadOnly))
+                continue;
+            const QJsonObject obj = QJsonDocument::fromJson(f.readAll()).object();
+            if (obj.isEmpty())
+                continue;
+
+            QVariantMap item;
+            item[QStringLiteral("id")] = obj.value(QStringLiteral("id")).toString();
+            item[QStringLiteral("name")] = obj.value(QStringLiteral("name")).toString();
+            item[QStringLiteral("isDark")] = obj.value(QStringLiteral("isDark")).toBool(true);
+            item[QStringLiteral("accent")] = obj.value(QStringLiteral("accent")).toString();
+            item[QStringLiteral("accent2")] = obj.value(QStringLiteral("accent2")).toString();
+            item[QStringLiteral("wallpaper")] = obj.value(QStringLiteral("wallpaper")).toString();
+
+            const QJsonObject pal = obj.value(QStringLiteral("palette")).toObject();
+            item[QStringLiteral("base")] = pal.value(QStringLiteral("base")).toString("#1E1E2E");
+            item[QStringLiteral("crust")] = pal.value(QStringLiteral("crust")).toString("#11111B");
+            item[QStringLiteral("textHigh")] = pal.value(QStringLiteral("textHigh")).toString("#CDD6F4");
+
+            m_installedThemes.append(item);
+        }
+    }
+    emit installedThemesChanged();
+}
+
+QString SettingsBackend::currentThemeId() const { return m_currentThemeId; }
+QVariantList SettingsBackend::installedThemes() const { return m_installedThemes; }
+
+void SettingsBackend::applyThemeTemplate(const QString &id) {
+    if (id.isEmpty()) return;
+    m_currentThemeId = id;
+    emit currentThemeIdChanged();
+
+    QString bin = QStandardPaths::findExecutable("titan-theme");
+    if (bin.isEmpty()) bin = QStringLiteral("/usr/local/bin/titan-theme");
+    QProcess::startDetached(bin, {"set", id});
+
+    // Refresh state
+    loadThemeState();
+    emit colorThemeChanged();
+    emit accentColorChanged();
+    emit settingsSaved();
 }
 
 void SettingsBackend::applyAppearance() {

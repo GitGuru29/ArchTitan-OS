@@ -63,6 +63,62 @@ PSIStats read_memory_psi() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// read_cpu_psi — parse /proc/pressure/cpu
+//
+// NOTE: this is telemetry only. `full` is intentionally not parsed because the
+// CPU PSI "full" line is always zero (CPU is not a fully-preemptible resource),
+// and CPU pressure must never drive compute_pressure() — see HC-CPU-1.
+// ─────────────────────────────────────────────────────────────────────────────
+CpuPSIStats read_cpu_psi() {
+    CpuPSIStats p;
+    std::ifstream f("/proc/pressure/cpu");
+    if (!f.is_open()) return p;
+
+    std::string line;
+    while (std::getline(f, line)) {
+        std::istringstream ss(line);
+        std::string kind;
+        ss >> kind;
+        if (kind != "some") continue;
+
+        std::string tok;
+        while (ss >> tok) {
+            auto grab = [&](const char* key, float& out) {
+                const std::string k(key);
+                if (tok.rfind(k + "=", 0) == 0)
+                    try { out = std::stof(tok.substr(k.size() + 1)); } catch (...) {}
+            };
+            grab("avg10",  p.some_avg10);
+            grab("avg60",  p.some_avg60);
+            grab("avg300", p.some_avg300);
+        }
+    }
+    p.valid = true;
+    return p;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// read_loadavg — parse /proc/loadavg
+// Format: "0.52 0.58 0.59 2/812 12345"
+// ─────────────────────────────────────────────────────────────────────────────
+LoadAverage read_loadavg() {
+    LoadAverage l;
+    std::ifstream f("/proc/loadavg");
+    if (!f.is_open()) return l;
+    std::string run;
+    if (f >> l.load1 >> l.load5 >> l.load15 >> run) {
+        auto slash = run.find('/');
+        if (slash != std::string::npos) {
+            try {
+                l.running = std::stoi(run.substr(0, slash));
+                l.total   = std::stoi(run.substr(slash + 1));
+            } catch (...) {}
+        }
+    }
+    return l;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // compute_pressure — aggregate MemInfo + PSI → PressureLevel
 // ─────────────────────────────────────────────────────────────────────────────
 PressureLevel compute_pressure(const MemInfo& mem, const PSIStats& psi) {

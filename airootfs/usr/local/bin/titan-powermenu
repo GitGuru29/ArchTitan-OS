@@ -8,6 +8,10 @@ LOGOUT="󰍃\nLogout"
 REBOOT="󰑓\nReboot"
 SHUTDOWN="󰐥\nShutdown"
 
+if ! command -v rofi >/dev/null 2>&1; then
+    exec /usr/local/bin/titan-menu --toggle
+fi
+
 THEME="/usr/share/rofi/themes/archtitan-powermenu.rasi"
 if [ ! -f "$THEME" ]; then
     THEME="$HOME/.config/rofi/archtitan-powermenu.rasi"
@@ -16,7 +20,7 @@ fi
 CHOSEN=$(printf '%b\n' "$LOCK" "$SLEEP" "$LOGOUT" "$REBOOT" "$SHUTDOWN" | rofi \
     -dmenu \
     -i \
-    -theme "$THEME")
+    -theme "$THEME" 2>/dev/null) || true
 
 case "$CHOSEN" in
     *"Lock"*)

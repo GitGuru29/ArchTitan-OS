@@ -76,10 +76,6 @@ RowLayout {
         Layout.alignment: Qt.AlignVCenter
         radius: 18
         color: TitanTheme.bgOneUITrack
-        border.color: TitanTheme.borderGlass
-        border.width: 1
-        radius: 18
-        color: TitanTheme.bgOneUITrack
         border.color: activeFocus ? TitanTheme.accent : TitanTheme.borderGlass
         border.width: activeFocus ? 2 : 1
         clip: true
@@ -93,8 +89,15 @@ RowLayout {
         Keys.onDownPressed:  (event) => { sliderRoot.nudge(-1); event.accepted = true }
         Keys.onRightPressed: (event) => { sliderRoot.nudge(1);  event.accepted = true }
         Keys.onUpPressed:    (event) => { sliderRoot.nudge(1);  event.accepted = true }
-        Keys.onHomePressed:  (event) => { sliderRoot.commit(sliderRoot.from); event.accepted = true }
-        Keys.onEndPressed:   (event) => { sliderRoot.commit(sliderRoot.to);   event.accepted = true }
+        Keys.onPressed: (event) => {
+            if (event.key === Qt.Key_Home) {
+                sliderRoot.commit(sliderRoot.from);
+                event.accepted = true;
+            } else if (event.key === Qt.Key_End) {
+                sliderRoot.commit(sliderRoot.to);
+                event.accepted = true;
+            }
+        }
 
         // Active fill with One UI 9 gradient
         Rectangle {
@@ -111,11 +114,7 @@ RowLayout {
             }
             radius: parent.radius
 
-            gradient: Gradient {
-                orientation: Gradient.Horizontal
-                GradientStop { position: 0.0; color: sliderRoot.muted ? TitanTheme.textSubtle : TitanTheme.accent }
-                GradientStop { position: 1.0; color: sliderRoot.muted ? TitanTheme.textSubtle : TitanTheme.lavender }
-            }
+            color: sliderRoot.muted ? TitanTheme.textSubtle : sliderRoot.fillAccent
 
             Behavior on width {
                 enabled: !mouseArea.pressed

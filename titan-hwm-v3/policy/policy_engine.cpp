@@ -19,6 +19,13 @@ PolicyDecision PolicyEngine::evaluate(
     if (wl.is_protected) return PolicyDecision::KEEP_FULL;
     if (registry.is_protected_any(wl.pids)) return PolicyDecision::KEEP_FULL;
 
+    // ── Step 1a (v3.1): Observation-only workloads ───────────────────────────
+    // Tracked so the system monitor reflects reality, but they were never
+    // classified and therefore have no enforcement authority. This is a hard
+    // guard, not just a daemon-side convenience: an observed workload may
+    // never be throttled, frozen or reclaimed.
+    if (wl.observed) return PolicyDecision::KEEP_BACKGROUND;
+
     // ── Step 1b (HC-07): SERVICE workloads — DB servers, containers ──────────
     // These headless services have no window and low CPU but must stay alive.
     // Minimum decision: KEEP_BACKGROUND. Never FREEZE or RECLAIM.

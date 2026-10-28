@@ -90,10 +90,10 @@ Window {
             layer.enabled: true
             layer.effect: MultiEffect {
                 shadowEnabled: true
-                shadowColor: "#B0000000"
-                shadowBlur: 0.9
-                shadowVerticalOffset: 12
-                shadowHorizontalOffset: 4
+                shadowColor: TitanTheme.isDark ? "#B0000000" : "#1A000000"
+                shadowBlur: 0.8
+                shadowVerticalOffset: TitanTheme.isDark ? 12 : 6
+                shadowHorizontalOffset: 0
                 autoPaddingEnabled: true
             }
 
@@ -104,11 +104,13 @@ Window {
                 gradient: Gradient {
                     GradientStop {
                         position: 0.0
-                        color: Qt.rgba(TitanTheme.mantle.r, TitanTheme.mantle.g, TitanTheme.mantle.b, 0.74)
+                        color: TitanTheme.isDark ? Qt.rgba(TitanTheme.mantle.r, TitanTheme.mantle.g, TitanTheme.mantle.b, 0.74)
+                                                 : Qt.rgba(1, 1, 1, 0.88)
                     }
                     GradientStop {
                         position: 1.0
-                        color: Qt.rgba(TitanTheme.base.r, TitanTheme.base.g, TitanTheme.base.b, 0.56)
+                        color: TitanTheme.isDark ? Qt.rgba(TitanTheme.base.r, TitanTheme.base.g, TitanTheme.base.b, 0.56)
+                                                 : Qt.rgba(1, 1, 1, 0.78)
                     }
                 }
             }
@@ -129,7 +131,7 @@ Window {
                 y: 0
                 width: glassCard.width - glassCard.radius * 2
                 height: 1
-                color: "#14FFFFFF"
+                color: TitanTheme.isDark ? "#14FFFFFF" : "#60FFFFFF"
             }
 
             // Faint accent edge glow along the left rim
@@ -190,7 +192,7 @@ Window {
                         Layout.fillWidth: true
                         spacing: 0
                         Text {
-                            text: "System Monitor"
+                            text: "System Monitor — ArchTitan"
                             color: TitanTheme.textHigh
                             font.family: TitanTheme.fontFamily
                             font.pixelSize: TitanTheme.sizeTitle
@@ -402,7 +404,7 @@ Window {
                         label: "Swap"
                         valueText: sysmon.swapUsedGb.toFixed(1) + " / " + sysmon.swapTotalGb.toFixed(1) + " GB"
                         pct: sysmon.swapUsedPct
-                        barColor: TitanTheme.mauve
+                        barColor: TitanTheme.accent
                     }
 
                     RowLayout {
@@ -498,7 +500,7 @@ Window {
                                 label: "VRAM"
                                 valueText: model.memUsed + " / " + model.memTotal + " MB"
                                 pct: model.memPct
-                                barColor: TitanTheme.mauve
+                                barColor: TitanTheme.teal
                             }
 
                             RowLayout {
@@ -589,7 +591,7 @@ Window {
                                 Layout.fillWidth: true
                                 implicitHeight: 58
                                 radius: TitanTheme.radiusMd
-                                color: TitanTheme.bgInset
+                                color: TitanTheme.isDark ? TitanTheme.bgInset : Qt.rgba(0, 0, 0, 0.04)
                                 border.width: 1
                                 border.color: TitanTheme.borderSubtle
 
@@ -647,10 +649,11 @@ Window {
 
                 // ── Titan Hardware Manager ───────────────────────────────────
                 Section {
-                    title: "Titan Hardware Manager"
+                    title: "Titan Hardware Manager (THM)"
                     glyph: "\uf0e7"
                     subtitle: sysmon.thmAvailable
-                              ? (sysmon.thmWorkloadCount + " workloads")
+                              ? (sysmon.thmClassifiedWorkloads + " classified · "
+                                 + sysmon.thmWorkloadCount + " tracked")
                               : "offline"
 
                     // Offline state
@@ -703,11 +706,27 @@ Window {
                         }
                         Item { Layout.fillWidth: true }
                         Text {
-                            text: sysmon.thmActiveWorkloads + " active / " + sysmon.thmWorkloadCount
+                            text: sysmon.thmActiveWorkloads + " active · "
+                                  + sysmon.thmClassifiedWorkloads + " classified"
                             color: TitanTheme.textMid
                             font.family: TitanTheme.monoFamily
                             font.pixelSize: 10
                         }
+                    }
+
+                    // Explain an empty classification set instead of leaving the
+                    // user with a bare "0 workloads" that looks like a bug.
+                    Text {
+                        Layout.fillWidth: true
+                        visible: sysmon.thmAvailable && sysmon.thmClassifiedWorkloads === 0
+                        text: "No dev workload classified yet — THM is tracking "
+                              + sysmon.thmWorkloadCount + " process tree(s), "
+                              + sysmon.thmProcessesUnmanaged + " unmanaged. "
+                              + "Run `titan-hwm scan` for details."
+                        color: TitanTheme.textLow
+                        font.family: TitanTheme.fontFamily
+                        font.pixelSize: 9
+                        wrapMode: Text.WordWrap
                     }
 
                     Sparkline {
@@ -715,9 +734,9 @@ Window {
                         Layout.preferredHeight: 36
                         visible: sysmon.thmAvailable
                         points: sysmon.thmPressureHistory
-                        lineColor: TitanTheme.mauve
-                        fillTop: Qt.rgba(TitanTheme.mauve.r, TitanTheme.mauve.g, TitanTheme.mauve.b, 0.24)
-                        fillBottom: Qt.rgba(TitanTheme.mauve.r, TitanTheme.mauve.g, TitanTheme.mauve.b, 0.0)
+                        lineColor: TitanTheme.accent
+                        fillTop: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.24)
+                        fillBottom: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.0)
                     }
 
                     Repeater {

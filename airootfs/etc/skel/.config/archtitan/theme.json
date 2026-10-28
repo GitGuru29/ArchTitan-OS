@@ -1,10 +1,10 @@
 {
   "version": 1,
   "id": "archtitan",
-  "name": "ArchTitan Electric",
+  "name": "ArchTitan Signature",
   "isDark": true,
   "accent": "#00D2FF",
-  "accent2": "#7C3AED",
+  "accent2": "#0284C7",
   "wallpaper": "/usr/share/backgrounds/archtitan/wallpaper.png",
   "source": "archtitan/signature",
   "palette": {
@@ -23,8 +23,8 @@
     "warning": "#F9E2AF",
     "danger": "#F38BA8",
     "teal": "#94E2D5",
-    "mauve": "#CBA6F7",
-    "peach": "#FAB387",
-    "pink": "#F5C2E7"
+    "mauve": "#0284C7",
+    "peach": "#38BDF8",
+    "pink": "#89B4FA"
   }
 }

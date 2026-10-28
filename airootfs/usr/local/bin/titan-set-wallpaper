@@ -53,9 +53,31 @@ disown
 mkdir -p "$PERSIST_DIR"
 printf '%s\n%s\n' "$WALLPAPER_PATH" "$SCALE_MODE" > "$PERSIST_FILE"
 
+# ── Sync active wallpaper into theme.json (for hyprlock and Qt backend) ─────
+if [[ -f "${PERSIST_DIR}/theme.json" ]]; then
+    python3 -c "
+import json, sys
+p = sys.argv[1]
+wp = sys.argv[2]
+try:
+    with open(p, 'r', encoding='utf-8') as f:
+        d = json.load(f)
+    if d.get('wallpaper') != wp:
+        d['wallpaper'] = wp
+        with open(p, 'w', encoding='utf-8') as f:
+            json.dump(d, f, indent=2, ensure_ascii=False)
+            f.write('\n')
+except Exception:
+    pass
+" "${PERSIST_DIR}/theme.json" "$WALLPAPER_PATH" 2>/dev/null || true
+fi
+
 # ── Retint the Waybar to suit the new wallpaper ─────────────────────────────
 # Best-effort: a theming failure must never fail the wallpaper change.
-titan-waybar-theme "$WALLPAPER_PATH" >/dev/null 2>&1 || true
+# Suppressed when TITAN_QUIET is set (`titan-theme set/apply` synchronizes Waybar atomically).
+if [[ -z "${TITAN_QUIET:-}" ]]; then
+    titan-waybar-theme "$WALLPAPER_PATH" >/dev/null 2>&1 || true
+fi
 
 # ── Notify ──────────────────────────────────────────────────────────────────
 # TITAN_QUIET=1 suppresses this toast — `titan-theme set` already sends its
@@ -64,4 +86,12 @@ if [[ -z "${TITAN_QUIET:-}" ]]; then
     NAME="$(basename "${WALLPAPER_PATH%.*}")"
     notify-send -u low -i preferences-desktop-wallpaper \
         "Wallpaper applied" "$NAME" 2>/dev/null || true
+    snd="/usr/share/sounds/freedesktop/stereo/complete.oga"
+    if [[ -f "$snd" ]]; then
+        if command -v pw-play >/dev/null 2>&1; then
+            pw-play "$snd" >/dev/null 2>&1 &
+        elif command -v paplay >/dev/null 2>&1; then
+            paplay "$snd" >/dev/null 2>&1 &
+        fi
+    fi
 fi

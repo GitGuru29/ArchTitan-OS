@@ -97,6 +97,8 @@ private:
   QString m_currentDateString;
   bool m_caffeineActive{false};
   bool m_themeDark{true};
+  bool m_themeSwitching{false};
+  qint64 m_themeSwitchingTime{0};
   bool m_visualizerActive{true};
   bool m_gameModeActive{false};
   bool m_vpnActive{false};
@@ -106,4 +108,5 @@ private:
   int m_tileVisibilityRevision{0};
 
   QTimer *m_timer;
+  class QFileSystemWatcher *m_themeWatcher{nullptr};
 };

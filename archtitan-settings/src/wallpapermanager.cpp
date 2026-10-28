@@ -18,11 +18,14 @@ WallpaperManager::WallpaperManager(QObject *parent) : QObject(parent) {
 
 QString WallpaperManager::currentWallpaper() const { return m_currentWallpaper; }
 void WallpaperManager::setCurrentWallpaper(const QString &path) {
+    if (path.isEmpty()) return;
     if (m_currentWallpaper == path) return;
     m_currentWallpaper = path;
     calculateBrightness();
     // Apply with titan-set-wallpaper helper script (swaybg + persistence)
-    QProcess::startDetached("titan-set-wallpaper", {path});
+    QString bin = QStandardPaths::findExecutable("titan-set-wallpaper");
+    if (bin.isEmpty()) bin = QStringLiteral("/usr/local/bin/titan-set-wallpaper");
+    QProcess::startDetached(bin, {path});
     emit currentWallpaperChanged();
     emit isDarkChanged();
 }
@@ -51,6 +54,7 @@ void WallpaperManager::scanWallpapers() {
     m_wallpaperList.clear();
     QStringList searchDirs = {
         "/usr/share/backgrounds/archtitan",
+        QDir::currentPath() + "/airootfs/usr/share/backgrounds/archtitan",
         "/usr/share/wallpapers",
         QDir::homePath() + "/.local/share/backgrounds",
         QDir::homePath() + "/Pictures/Wallpapers",
@@ -61,18 +65,42 @@ void WallpaperManager::scanWallpapers() {
     for (const QString &dir : searchDirs) {
         QDir d(dir);
         if (!d.exists()) continue;
-        for (const QString &f : d.entryList(exts, QDir::Files))
-            m_wallpaperList.append(d.absoluteFilePath(f));
+        for (const QString &f : d.entryList(exts, QDir::Files)) {
+            const QString fullPath = d.absoluteFilePath(f);
+            if (!m_wallpaperList.contains(fullPath))
+                m_wallpaperList.append(fullPath);
+        }
     }
     emit wallpaperListChanged();
 }
 
 void WallpaperManager::openFilePicker() {
-    // This must be called from a non-GUI thread via QFileDialog signal
-    // Since QML can invoke this, we use QProcess to open a portal
+    // kdialog or zenity portal
     QProcess p;
-    p.start("bash", {"-c", "zenity --file-selection --file-filter='Images | *.png *.jpg *.jpeg *.webp' 2>/dev/null"});
-    p.waitForFinished(30000);
+    p.start("bash", {"-c", "kdialog --getopenfilename ~ 'Images (*.png *.jpg *.jpeg *.webp)' 2>/dev/null || zenity --file-selection --file-filter='Images | *.png *.jpg *.jpeg *.webp' 2>/dev/null"});
+    p.waitForFinished(60000);
     QString chosen = p.readAllStandardOutput().trimmed();
-    if (!chosen.isEmpty()) setCurrentWallpaper(chosen);
+    if (!chosen.isEmpty() && QFile::exists(chosen)) {
+        setCurrentWallpaper(chosen);
+    }
+}
+
+void WallpaperManager::launchPicker() {
+    QString bin = QStandardPaths::findExecutable("titan-wallpaper-picker");
+    if (bin.isEmpty()) bin = QStringLiteral("/usr/local/bin/titan-wallpaper-picker");
+    QProcess::startDetached(bin, {});
+}
+
+void WallpaperManager::refresh() {
+    QProcess p;
+    p.start("bash", {"-c", "sed -n '1p' ~/.config/archtitan/wallpaper 2>/dev/null || echo ''"});
+    p.waitForFinished(500);
+    QString wp = p.readAllStandardOutput().trimmed();
+    if (!wp.isEmpty() && wp != m_currentWallpaper) {
+        m_currentWallpaper = wp;
+        calculateBrightness();
+        emit currentWallpaperChanged();
+        emit isDarkChanged();
+    }
+    scanWallpapers();
 }

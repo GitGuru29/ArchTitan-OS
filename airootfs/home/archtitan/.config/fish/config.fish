@@ -24,3 +24,15 @@ if status is-interactive
     alias e='nvim'
     alias c='code'
 end
+
+# THM help by default
+function help
+    if test (count $argv) -eq 0
+        if command -s titan-hwm >/dev/null
+            command titan-hwm help
+            return 0
+        end
+    end
+    echo "fish help disabled. Use 'titan-hwm help' for THM commands or 'man <cmd>' for docs."
+    return 0
+end

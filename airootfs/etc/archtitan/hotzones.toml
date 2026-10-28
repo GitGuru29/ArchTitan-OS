@@ -24,7 +24,7 @@ ignore_classes     = ["mpv", "org.kde.*", "*gamescope*"]
 
 [hotzones.zones]
 top_right     = "titan-quicksettings --toggle"
-top_left      = "rofi -show drun"
+top_left      = "titan-spotlight --toggle"
 bottom_right  = "titan-quicksettings --notifications"
 bottom_left   = ""
 right_center  = "hyprctl dispatch workspace e+1"

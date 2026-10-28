@@ -40,8 +40,17 @@ import re
 import shutil
 import subprocess
 import sys
+import time
+
+# Ensure /usr/local/bin is prioritized in PATH for standalone scripts and QProcess
+if "/usr/local/bin" not in os.environ.get("PATH", "").split(":"):
+    os.environ["PATH"] = f"/usr/local/bin:{os.environ.get('PATH', '')}"
 
 THEME_DIR = os.environ.get("TITAN_THEME_DIR", "/usr/share/archtitan/themes")
+if not os.path.isdir(THEME_DIR):
+    _local_themes = "/home/msfvenom/custom-os-build/airootfs/usr/share/archtitan/themes"
+    if os.path.isdir(_local_themes):
+        THEME_DIR = _local_themes
 CONFIG_HOME = os.environ.get(
     "XDG_CONFIG_HOME", os.path.join(os.path.expanduser("~"), ".config")
 )
@@ -185,25 +194,35 @@ def waybar_body(t: dict) -> str:
     acc = t["accent"]
     fg = accent_fg(acc)
     crust = p["crust"]
-    text_high = p["textHigh"]
-    text_mid = p["textMid"]
-    text_low = p["textLow"]
+    text_high = "#1E1E2E" if not dark else p["textHigh"]
+    text_mid = "#4C4F69" if not dark else p["textMid"]
+    text_low = "#6C6F85" if not dark else p["textLow"]
 
-    # Glassy surface tokens
-    bar_bg = rgba(crust, 0.58 if dark else 0.72)
-    bar_border = "rgba(255, 255, 255, 0.12)" if dark else "rgba(0, 0, 0, 0.08)"
-    bar_border_top = "rgba(255, 255, 255, 0.22)" if dark else "rgba(255, 255, 255, 0.85)"
-    bar_shadow = "rgba(0, 0, 0, 0.35)" if dark else "rgba(0, 0, 0, 0.08)"
+    # Floating Bento Modules (zero outer bar background)
+    bar_bg = "transparent"
+    bar_border = "transparent"
+    bar_border_top = "transparent"
+    bar_shadow = "transparent"
 
-    module_bg = "rgba(255, 255, 255, 0.05)" if dark else "rgba(0, 0, 0, 0.04)"
-    module_border = "rgba(255, 255, 255, 0.08)" if dark else "rgba(0, 0, 0, 0.06)"
-    module_hover = "rgba(255, 255, 255, 0.12)" if dark else "rgba(0, 0, 0, 0.08)"
+    if dark:
+        module_bg = rgba(crust, 0.65)
+        module_border = "rgba(255, 255, 255, 0.12)"
+        module_hover = rgba(crust, 0.85)
+        accent_soft = rgba(acc, 0.16)
+        accent_glow = rgba(acc, 0.35)
+        accent_border = rgba(acc, 0.55)
+    else:
+        # Soothing, glare-free light frosted glass using theme's mantle & surface tones
+        mantle = p.get("mantle", "#E6E9EF")
+        surface0 = p.get("surface0", "#CCD0DA")
+        module_bg = rgba(mantle, 0.78)
+        module_border = "rgba(108, 112, 134, 0.18)"
+        module_hover = rgba(surface0, 0.88)
+        accent_soft = rgba(acc, 0.14)
+        accent_glow = rgba(acc, 0.22)
+        accent_border = rgba(acc, 0.45)
 
-    accent_soft = rgba(acc, 0.16)
-    accent_glow = rgba(acc, 0.35)
-    accent_border = rgba(acc, 0.55)
-
-    on_bar = "#FFFFFF" if dark else "#000000"
+    on_bar = "#FFFFFF" if dark else "#1E1E2E"
     on_accent = fg.lower()
 
     rows = [
@@ -239,14 +258,19 @@ def waybar_body(t: dict) -> str:
 def swaync_body(t: dict) -> str:
     p, dark = t["palette"], t["isDark"]
     acc, fg = t["accent"], accent_fg(t["accent"])
-    border = "rgba(255, 255, 255, 0.08)" if dark else "rgba(0, 0, 0, 0.12)"
+    border = "rgba(255, 255, 255, 0.10)" if dark else "rgba(0, 0, 0, 0.10)"
+    base_alpha = 0.78 if dark else 0.72
+    surface_alpha = 0.68 if dark else 0.62
+    surface_alt_alpha = 0.75 if dark else 0.70
+    surface_hover_alpha = 0.82 if dark else 0.76
+    border_alpha = 0.38 if dark else 0.45
     rows = [
-        ("base", rgba(p["crust"], 0.94)),
-        ("surface", rgba(p["base"], 0.88)),
-        ("surface-alt", rgba(p["border"], 0.92)),
-        ("surface-hover", rgba(p["surface0"], 0.95)),
+        ("base", rgba(p["crust"], base_alpha)),
+        ("surface", rgba(p["base"], surface_alpha)),
+        ("surface-alt", rgba(p["surface0"], surface_alt_alpha)),
+        ("surface-hover", rgba(p["surface1"], surface_hover_alpha)),
         ("border-color", border),
-        ("border-highlight", rgba(acc, 0.35)),
+        ("border-highlight", rgba(acc, border_alpha)),
         (None, None),
         ("cyan-active", acc.lower()),
         ("cyan-glow", rgba(acc, 0.45)),
@@ -270,11 +294,13 @@ def swaync_body(t: dict) -> str:
 def swayosd_body(t: dict) -> str:
     p, dark = t["palette"], t["isDark"]
     acc = t["accent"]
-    border_alpha = 0.35 if dark else 0.40
-    trough = "rgba(255, 255, 255, 0.12)" if dark else "rgba(0, 0, 0, 0.10)"
+    border_alpha = 0.38 if dark else 0.45
+    trough = "rgba(255, 255, 255, 0.14)" if dark else "rgba(0, 0, 0, 0.10)"
+    base_alpha = 0.78 if dark else 0.72
+    surface_alpha = 0.70 if dark else 0.65
     rows = [
-        ("base", rgba(p["crust"], 0.88)),
-        ("surface", rgba(p["base"], 0.85)),
+        ("base", rgba(p["crust"], base_alpha)),
+        ("surface", rgba(p["base"], surface_alpha)),
         ("border-highlight", rgba(acc, border_alpha)),
         ("cyan-active", acc.lower()),
         ("cyan-glow", rgba(acc, 0.45)),
@@ -293,11 +319,12 @@ def rofi_body(t: dict) -> str:
     acc = t["accent"]
     neutral = "255, 255, 255" if dark else "0, 0, 0"
     subtle = "0.08" if dark else "0.10"
+    card_alpha = "D0" if dark else "D8"
     rows = [
-        ("bg-card", f"{p['crust'].upper()}E8"),
-        ("bg-input", f"rgba({neutral}, 0.05)"),
-        ("bg-selected", rgba(acc, 0.18)),
-        ("bg-hover", f"rgba({neutral}, 0.04)"),
+        ("bg-card", f"{p['crust'].upper()}{card_alpha}"),
+        ("bg-input", f"rgba({neutral}, 0.06)"),
+        ("bg-selected", rgba(acc, 0.22 if dark else 0.18)),
+        ("bg-hover", f"rgba({neutral}, 0.05)"),
         ("border-accent", rgba(acc, 0.45)),
         ("border-subtle", f"rgba({neutral}, {subtle})"),
         ("text-primary", p["textHigh"]),
@@ -456,16 +483,22 @@ def patch_qt5ct(path: str, t: dict) -> None:
 
 # ── Reload helpers ───────────────────────────────────────────────────────────
 
-def run_quiet(argv: list[str], env: dict | None = None) -> None:
+def run_quiet(argv: list[str], env: dict | None = None, timeout: float = 1.5) -> None:
     """Best-effort: these seams may not exist (TTY, build chroot, no session)."""
-    if not shutil.which(argv[0]):
-        return
+    binary = shutil.which(argv[0])
+    if not binary:
+        fallback = os.path.join("/usr/local/bin", argv[0])
+        if os.path.isfile(fallback) and os.access(fallback, os.X_OK):
+            binary = fallback
+        else:
+            return
+    cmd = [binary] + argv[1:]
     try:
         subprocess.run(
-            argv, check=False, env=env,
+            cmd, check=False, env=env, timeout=timeout,
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
         )
-    except OSError:
+    except (OSError, subprocess.TimeoutExpired):
         pass
 
 
@@ -483,20 +516,29 @@ def apply_hyprctl(t: dict) -> None:
     if not shutil.which("hyprctl"):
         return
     for key, value in keywords.items():
-        run_quiet(["hyprctl", "keyword", key, value])
+        run_quiet(["hyprctl", "keyword", key, value], timeout=1.0)
 
 
 def reload_shell() -> None:
-    run_quiet(["swaync-client", "-rs"])
-    run_quiet(["pkill", "-SIGUSR1", "-x", "kitty"])
-    run_quiet(["pkill", "-SIGUSR2", "-x", "waybar"])
-    if shutil.which("swayosd-server"):
+    # SwayNC: only ping if swaync daemon is actively running to prevent D-Bus freeze
+    if shutil.which("swaync-client") and shutil.which("pgrep"):
         try:
-            res = subprocess.run(["pgrep", "-x", "swayosd-server"], capture_output=True, text=True)
+            res = subprocess.run(["pgrep", "-x", "swaync"], capture_output=True, timeout=0.5)
             if res.returncode == 0:
-                run_quiet(["pkill", "-x", "swayosd-server"])
+                run_quiet(["swaync-client", "-rs"], timeout=1.0)
+        except (OSError, subprocess.TimeoutExpired):
+            pass
+
+    run_quiet(["pkill", "-SIGUSR1", "-x", "kitty"], timeout=1.0)
+    time.sleep(0.35)
+    run_quiet(["pkill", "-SIGUSR2", "-x", "waybar"], timeout=1.0)
+    if shutil.which("swayosd-server") and shutil.which("pgrep"):
+        try:
+            res = subprocess.run(["pgrep", "-x", "swayosd-server"], capture_output=True, text=True, timeout=0.5)
+            if res.returncode == 0:
+                run_quiet(["pkill", "-x", "swayosd-server"], timeout=1.0)
                 subprocess.Popen(["swayosd-server"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        except OSError:
+        except (OSError, subprocess.TimeoutExpired):
             pass
 
 
@@ -508,7 +550,7 @@ def notify(title: str, body: str) -> None:
     run_quiet([
         "notify-send", "-u", "low", "-i", "preferences-desktop-color",
         title, body,
-    ])
+    ], timeout=1.5)
 
 
 # ── Commands ─────────────────────────────────────────────────────────────────
@@ -535,8 +577,14 @@ def cmd_apply() -> None:
         patch_gtk(ini, theme)
     patch_qt5ct(QT5CT_CONF, theme)
 
-    # Waybar: theme-driven @titan-adapt repatch + SIGUSR2 reload.
-    run_quiet(["titan-waybar-theme"])
+    # Sync GTK portal gsettings
+    scheme = "prefer-dark" if theme["isDark"] else "prefer-light"
+    gtk_theme = "adw-gtk3-dark" if theme["isDark"] else "adw-gtk3"
+    run_quiet(["gsettings", "set", "org.gnome.desktop.interface", "color-scheme", scheme], timeout=1.0)
+    run_quiet(["gsettings", "set", "org.gnome.desktop.interface", "gtk-theme", gtk_theme], timeout=1.0)
+
+    # Waybar: theme-driven @titan-adapt repatch (without redundant reload).
+    run_quiet(["titan-waybar-theme", "--no-reload"], timeout=2.0)
     reload_shell()
 
 
@@ -546,30 +594,30 @@ def cmd_set(tid: str) -> None:
         die(f"unknown theme '{tid}' (try: titan-theme list)")
     theme = theme_def(tid)
     write_state(theme)
-    cmd_apply()
 
-    # Wallpaper: only touch it when the theme actually wants a different one.
-    persisted = ""
-    try:
-        with open(WALLPAPER_FILE, "r", encoding="utf-8") as fh:
-            persisted = fh.readline().strip()
-    except OSError:
-        pass
+    # 1. Apply assigned wallpaper FIRST so the desktop visually switches immediately,
+    # and Waybar adaptive luminance styling samples the new wallpaper.
     target = theme.get("wallpaper", "")
-    if target and persisted != target:
-        if os.path.isfile(target):
-            # TITAN_QUIET: titan-set-wallpaper's own toast would double up.
+    if target and not os.path.isfile(target):
+        _local_wp = os.path.normpath(os.path.join("/home/msfvenom/custom-os-build/airootfs", target.lstrip("/")))
+        if os.path.isfile(_local_wp):
+            target = _local_wp
+    if target and os.path.isfile(target):
+        set_wp = shutil.which("titan-set-wallpaper") or "/usr/local/bin/titan-set-wallpaper"
+        if os.path.isfile(set_wp) and os.access(set_wp, os.X_OK):
             env = dict(os.environ, TITAN_QUIET="1")
-            if shutil.which("titan-set-wallpaper"):
-                try:
-                    subprocess.run(
-                        ["titan-set-wallpaper", target],
-                        check=False, env=env,
-                        stdout=subprocess.DEVNULL,
-                        stderr=subprocess.DEVNULL,
-                    )
-                except OSError:
-                    pass
+            try:
+                subprocess.run(
+                    [set_wp, target],
+                    check=False, env=env, timeout=3.0,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
+            except (OSError, subprocess.TimeoutExpired):
+                pass
+
+    # 2. Update and sync all shell configuration blocks
+    cmd_apply()
 
     notify("Theme", theme["name"])
 
@@ -595,7 +643,9 @@ def cmd_mode(mode: str) -> None:
         cmd_apply()
         print(theme["id"])
         return
+
     cmd_set(target)
+    notify("Theme Mode", f"{'Dark' if want_dark else 'Light'} Mode")
 
 
 def cmd_cycle(step: int) -> None:

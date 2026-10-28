@@ -27,6 +27,7 @@ Window {
     property bool showNotificationPanel: false
     property bool editMode: false
     property bool showPowerMenu: false
+    property bool showWifiPage: false
 
     onShowNotificationPanelChanged: {
         rootWindow.width = showNotificationPanel ? 870 : 420;
@@ -42,6 +43,7 @@ Window {
         drawerOpen = false;
         editMode = false;
         showPowerMenu = false;
+        showWifiPage = false;
         closeTimer.start();
     }
 
@@ -90,6 +92,8 @@ Window {
         Keys.onEscapePressed: {
             if (rootWindow.showPowerMenu) {
                 rootWindow.showPowerMenu = false;
+            } else if (rootWindow.showWifiPage) {
+                rootWindow.showWifiPage = false;
             } else if (rootWindow.editMode) {
                 rootWindow.editMode = false;
             } else {
@@ -129,10 +133,31 @@ Window {
                 Layout.fillWidth: !showNotificationPanel
                 Layout.fillHeight: true
                 radius: TitanTheme.radiusWindow
-                color: TitanTheme.bgWindow
                 border.color: TitanTheme.borderGlass
                 border.width: 1
                 clip: true
+
+                // Ambient vertical luminance gradient (macOS .ultraThinMaterial)
+                gradient: Gradient {
+                    GradientStop {
+                        position: 0.0
+                        color: TitanTheme.isDark ?
+                            Qt.rgba(TitanTheme.bgWindow.r + 0.06, TitanTheme.bgWindow.g + 0.06, TitanTheme.bgWindow.b + 0.08, 0.52) :
+                            Qt.rgba(1.0, 1.0, 1.0, 0.72)
+                    }
+                    GradientStop {
+                        position: 0.35
+                        color: TitanTheme.isDark ?
+                            Qt.rgba(TitanTheme.bgWindow.r, TitanTheme.bgWindow.g, TitanTheme.bgWindow.b, 0.46) :
+                            Qt.rgba(TitanTheme.bgWindow.r, TitanTheme.bgWindow.g, TitanTheme.bgWindow.b, 0.60)
+                    }
+                    GradientStop {
+                        position: 1.0
+                        color: TitanTheme.isDark ?
+                            Qt.rgba(TitanTheme.bgWindow.r * 0.85, TitanTheme.bgWindow.g * 0.85, TitanTheme.bgWindow.b * 0.85, 0.40) :
+                            Qt.rgba(TitanTheme.bgWindow.r * 0.95, TitanTheme.bgWindow.g * 0.95, TitanTheme.bgWindow.b * 0.95, 0.52)
+                    }
+                }
 
                 ColumnLayout {
                     anchors.fill: parent
@@ -233,6 +258,15 @@ Window {
                     }
                 }
 
+                // ── One UI Wi-Fi Selection Overlay ───────────────────────
+                OneUIWifiPage {
+                    id: wifiPageOverlay
+                    anchors.fill: parent
+                    visible: rootWindow.showWifiPage
+                    z: 98
+                    onCloseRequested: rootWindow.showWifiPage = false
+                }
+
                 // ── One UI Power & Session Overlay ───────────────────────
                 OneUIPowerMenu {
                     id: powerMenuOverlay
@@ -252,10 +286,31 @@ Window {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 radius: TitanTheme.radiusWindow
-                color: TitanTheme.bgWindow
                 border.color: TitanTheme.borderGlass
                 border.width: 1
                 clip: true
+
+                // Ambient vertical luminance gradient (macOS .ultraThinMaterial)
+                gradient: Gradient {
+                    GradientStop {
+                        position: 0.0
+                        color: TitanTheme.isDark ?
+                            Qt.rgba(TitanTheme.bgWindow.r + 0.06, TitanTheme.bgWindow.g + 0.06, TitanTheme.bgWindow.b + 0.08, 0.52) :
+                            Qt.rgba(1.0, 1.0, 1.0, 0.72)
+                    }
+                    GradientStop {
+                        position: 0.35
+                        color: TitanTheme.isDark ?
+                            Qt.rgba(TitanTheme.bgWindow.r, TitanTheme.bgWindow.g, TitanTheme.bgWindow.b, 0.46) :
+                            Qt.rgba(TitanTheme.bgWindow.r, TitanTheme.bgWindow.g, TitanTheme.bgWindow.b, 0.60)
+                    }
+                    GradientStop {
+                        position: 1.0
+                        color: TitanTheme.isDark ?
+                            Qt.rgba(TitanTheme.bgWindow.r * 0.85, TitanTheme.bgWindow.g * 0.85, TitanTheme.bgWindow.b * 0.85, 0.40) :
+                            Qt.rgba(TitanTheme.bgWindow.r * 0.95, TitanTheme.bgWindow.g * 0.95, TitanTheme.bgWindow.b * 0.95, 0.52)
+                    }
+                }
 
                 ColumnLayout {
                     anchors.fill: parent

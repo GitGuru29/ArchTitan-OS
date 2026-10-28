@@ -5,7 +5,7 @@
   "isDark": true,
   "accent": "#7AA2F7",
   "accent2": "#BB9AF7",
-  "wallpaper": "/usr/share/backgrounds/archtitan/titan-blue.jpg",
+  "wallpaper": "/usr/share/backgrounds/archtitan/titan-tokyonight.jpg",
   "source": "folke/tokyonight.nvim (storm)",
   "palette": {
     "crust": "#1B1E2D",

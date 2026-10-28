@@ -125,6 +125,9 @@ private:
     static std::string  read_cwd(pid_t pid);
     static std::string  read_comm(pid_t pid);
     static pid_t        read_ppid(pid_t pid);
+    static std::string  read_exe(pid_t pid);
+    static std::string  read_cgroup(pid_t pid);
+    static pid_t        read_sid(pid_t pid);
 };
 
 } // namespace thm

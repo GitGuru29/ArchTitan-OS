@@ -51,6 +51,8 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("titan-wallpaper-restore")
     hl.exec_cmd("bash -c 'sleep 3 && titan-quicksettings --daemon'")
     hl.exec_cmd("bash -c 'sleep 3 && titan-menu --daemon'")
+    hl.exec_cmd("bash -c 'sleep 3 && titan-workspace-hud --daemon'")
+    hl.exec_cmd("bash -c 'sleep 3 && titan-spotlight --daemon'")
     hl.exec_cmd("titan-hotzones")
     hl.exec_cmd("titan-zone-osd")
     hl.exec_cmd("swayosd-server")
@@ -69,22 +71,24 @@ end)
 
 local mainMod = "SUPER"
 
--- Shell & Utilities (ArchTitan Central Command Palette)
-hl.bind("SUPER_L", hl.dsp.exec_cmd("titan-menu --toggle"), { release = true })  -- Windows logo tap opens ArchTitan Menu
-hl.bind("SUPER_R", hl.dsp.exec_cmd("titan-menu --toggle"), { release = true })
+-- Shell & Utilities (ArchTitan Central Command Palette & Spotlight)
+hl.bind("SUPER_L", hl.dsp.exec_cmd("titan-spotlight --toggle"), { release = true })  -- Windows/Super logo tap opens Spotlight
+hl.bind("SUPER_R", hl.dsp.exec_cmd("titan-spotlight --toggle"), { release = true })
 hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd("titan-menu --toggle"))   -- Super+Space: ArchTitan Central Palette
-hl.bind(mainMod .. " + D", hl.dsp.exec_cmd("titan-menu --toggle"))       -- Super+D: App Launcher (Tiling WM standard)
-hl.bind(mainMod .. " + R", hl.dsp.exec_cmd(sandboxed .. " rofi -show drun"))  -- Super+R: Secondary App runner
+hl.bind(mainMod .. " + Tab", hl.dsp.exec_cmd("titan-workspace-hud --toggle"))          -- Super+Tab: 10-Workspace HUD Shower
+hl.bind(mainMod .. " + D", hl.dsp.exec_cmd("titan-spotlight --toggle"))       -- Super+D: App Launcher (Spotlight)
+hl.bind(mainMod .. " + R", hl.dsp.exec_cmd("titan-spotlight --toggle"))  -- Super+R: Secondary App runner (Spotlight)
 hl.bind(mainMod .. " + slash", hl.dsp.exec_cmd("titan-menu --toggle"))        -- Help & Shortcuts Cheat Sheet (Super+/)
 hl.bind(mainMod .. " + question", hl.dsp.exec_cmd("titan-menu --toggle"))     -- Super+?
 hl.bind(mainMod .. " + F1", hl.dsp.exec_cmd("titan-menu --toggle"))           -- Help & Shortcuts Cheat Sheet (Super+F1)
-hl.bind(mainMod .. " + Tab", hl.dsp.exec_cmd("titan-menu --toggle"))          -- Toggle overview/palette
-hl.bind(mainMod .. " + V", hl.dsp.exec_cmd("cliphist list | rofi -dmenu | cliphist decode | wl-copy"))  -- Clipboard
-hl.bind(mainMod .. " + Period", hl.dsp.exec_cmd(sandboxed .. " rofi -show emoji"))  -- Emoji
+hl.bind(mainMod .. " + V", hl.dsp.exec_cmd("titan-spotlight --clipboard"))  -- Clipboard History Manager
+hl.bind(mainMod .. " + Period", hl.dsp.exec_cmd("titan-spotlight --toggle"))  -- Quick symbols/emoji
 hl.bind(mainMod .. " + backslash", hl.dsp.exec_cmd("titan-wallpaper-picker"))  -- Wallpaper Picker (Super+\)
 hl.bind(mainMod .. " + SHIFT + backslash", hl.dsp.exec_cmd("titan-wallpaper-picker"))  -- Wallpaper Picker (Super+|)
-hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd('grim -g "$(slurp)" - | wl-copy'))  -- Screen snip
-hl.bind("Print", hl.dsp.exec_cmd('grim -g "$(slurp)" - | wl-copy'))
+hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd("titan-screenshot --area"))  -- Screen snip
+hl.bind("Print", hl.dsp.exec_cmd("titan-screenshot --area"))
+hl.bind(mainMod .. " + Print", hl.dsp.exec_cmd("titan-screenshot --full"))
+hl.bind(mainMod .. " + ALT + Print", hl.dsp.exec_cmd("titan-screenshot --window"))
 hl.bind(mainMod .. " + N", hl.dsp.exec_cmd("titan-quicksettings --toggle"))  -- Quick Settings & Notification Center
 
 -- Session & Power
@@ -224,6 +228,8 @@ hl.config({
 
     cursor = {
         no_hardware_cursors = true,
+        enable_hyprcursor   = true,
+        sync_gsettings_theme = true,
     },
 
     general = {
@@ -239,33 +245,35 @@ hl.config({
 
     -- Decoration -- blur, shadows, rounding
     decoration = {
-        rounding = 10,
+        rounding = 12,
 
         blur = {
             enabled           = true,
-            size              = 6,
-            passes            = 3,
+            size              = 8,
+            passes            = 4,
             new_optimizations = true,
             ignore_opacity    = true,
-            noise             = 0.012,
-            contrast          = 0.92,
-            brightness        = 0.88,
-            vibrancy          = 0.28,
+            noise             = 0.020,
+            contrast          = 1.05,
+            brightness        = 1.02,
+            vibrancy          = 0.42,
+            vibrancy_darkness = 0.12,
+            popups            = true,
         },
 
         shadow = {
             enabled      = true,
-            range        = 24,
+            range        = 28,
             render_power = 4,
-            offset       = { 0, 5 },
-            color        = "rgba(0b0e1499)",
+            offset       = { 0, 6 },
+            color        = "rgba(0b0e14aa)",
         },
 
-        dim_inactive   = false,
-        dim_strength   = 0.08,
+        dim_inactive   = true,
+        dim_strength   = 0.05,
 
         active_opacity   = 0.98,
-        inactive_opacity = 0.90,
+        inactive_opacity = 0.92,
     },
 
     -- Layout
@@ -289,22 +297,29 @@ hl.config({
 ---- ANIMATIONS ----
 ---------------------------
 
-hl.curve("quint", { type = "bezier", points = { { 0.23, 1 }, { 0.32, 1 } } })
-hl.curve("cubic", { type = "bezier", points = { { 0.65, 0 }, { 0.35, 1 } } })
+hl.curve("fluent_decel", { type = "bezier", points = { { 0.05, 0.9 }, { 0.1, 1.05 } } })
+hl.curve("easeOutQuint", { type = "bezier", points = { { 0.23, 1 }, { 0.32, 1 } } })
+hl.curve("easeInOutCubic", { type = "bezier", points = { { 0.65, 0 }, { 0.35, 1 } } })
+hl.curve("overshot", { type = "bezier", points = { { 0.05, 0.9 }, { 0.1, 1.1 } } })
 hl.curve("snappy", { type = "bezier", points = { { 0.1, 1 }, { 0.1, 1 } } })
 hl.curve("smooth", { type = "bezier", points = { { 0.25, 1 }, { 0.5, 1 } } })
+hl.curve("spring", { type = "bezier", points = { { 0.34, 1.3 }, { 0.64, 1 } } })
 
 hl.config({ animations = { enabled = true } })
 
 -- fluid and snappy animations
-hl.animation({ leaf = "windows",     enabled = true, speed = 4.2, bezier = "quint", style = "popin 85%" })
-hl.animation({ leaf = "windowsOut",  enabled = true, speed = 3.2, bezier = "cubic", style = "popin 90%" })
-hl.animation({ leaf = "windowsMove", enabled = true, speed = 3.8, bezier = "snappy" })
-hl.animation({ leaf = "border",      enabled = true, speed = 6, bezier = "quint" })
-hl.animation({ leaf = "borderangle", enabled = true, speed = 30, bezier = "default", style = "loop" })
-hl.animation({ leaf = "fade",        enabled = true, speed = 3.5, bezier = "smooth" })
-hl.animation({ leaf = "fadeDim",     enabled = true, speed = 4, bezier = "smooth" })
-hl.animation({ leaf = "workspaces",  enabled = true, speed = 4.5, bezier = "quint", style = "slide" })
+hl.animation({ leaf = "windows",          enabled = true, speed = 3.2, bezier = "fluent_decel", style = "popin 82%" })
+hl.animation({ leaf = "windowsOut",       enabled = true, speed = 2.6, bezier = "easeInOutCubic", style = "popin 88%" })
+hl.animation({ leaf = "windowsMove",      enabled = true, speed = 3.0, bezier = "fluent_decel" })
+hl.animation({ leaf = "border",           enabled = true, speed = 5,   bezier = "easeOutQuint" })
+hl.animation({ leaf = "borderangle",      enabled = true, speed = 30,  bezier = "default", style = "loop" })
+hl.animation({ leaf = "fade",             enabled = true, speed = 3.0, bezier = "smooth" })
+hl.animation({ leaf = "fadeDim",          enabled = true, speed = 3.5, bezier = "smooth" })
+hl.animation({ leaf = "workspaces",       enabled = true, speed = 3.6, bezier = "fluent_decel", style = "slide" })
+hl.animation({ leaf = "specialWorkspace", enabled = true, speed = 3.6, bezier = "fluent_decel", style = "slidevert" })
+hl.animation({ leaf = "layers",           enabled = true, speed = 3.0, bezier = "fluent_decel", style = "popin 90%" })
+hl.animation({ leaf = "layersIn",         enabled = true, speed = 2.8, bezier = "fluent_decel", style = "popin 90%" })
+hl.animation({ leaf = "layersOut",        enabled = true, speed = 2.4, bezier = "easeInOutCubic", style = "popin 92%" })
 
 ---------------------------
 ---- WINDOW RULES ----
@@ -360,14 +375,14 @@ hl.window_rule({
 -- Frosted-glass surfaces. (On Hyprland >= 0.55 these live here, not in
 -- hyprland.conf -- the .lua file supersedes .conf entirely.)
 hl.layer_rule({ match = { namespace = "^waybar$" }, blur = true, ignore_alpha = 0 })
-hl.layer_rule({ match = { namespace = "^rofi$" }, blur = true, ignore_alpha = 0 })
+hl.layer_rule({ match = { namespace = "^titan-spotlight$" }, blur = true, ignore_alpha = 0 })
 hl.layer_rule({ match = { namespace = "^swaync-control-center$" }, blur = true, ignore_alpha = 0 })
 hl.layer_rule({ match = { namespace = "^swaync-notification-window$" }, blur = true, ignore_alpha = 0 })
-hl.layer_rule({ match = { namespace = "^titan-quicksettings$" }, blur = true, ignore_alpha = 0.5 })
-hl.layer_rule({ match = { namespace = "^titan-quicksettings-blur$" }, blur = true, ignore_alpha = 0.5 })
-hl.layer_rule({ match = { namespace = "^titan-sysmon$" }, blur = true, ignore_alpha = 0.5 })
-hl.layer_rule({ match = { namespace = "^titan-menu$" }, blur = true, ignore_alpha = 0.5 })
-hl.layer_rule({ match = { namespace = "^swayosd$" }, blur = true, ignore_alpha = 0.5 })
+hl.layer_rule({ match = { namespace = "^titan-quicksettings$" }, blur = true, ignore_alpha = 0 })
+hl.layer_rule({ match = { namespace = "^titan-quicksettings-blur$" }, blur = true, ignore_alpha = 0 })
+hl.layer_rule({ match = { namespace = "^titan-sysmon$" }, blur = true, ignore_alpha = 0 })
+hl.layer_rule({ match = { namespace = "^titan-menu$" }, blur = true, ignore_alpha = 0 })
+hl.layer_rule({ match = { namespace = "^swayosd$" }, blur = true, ignore_alpha = 0 })
 
 -- Hot-zone / gesture OSD overlay. Full-screen and input-transparent; opacity is
 -- animated inside the surface, so suppress the compositor's map/unmap fade.

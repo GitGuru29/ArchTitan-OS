@@ -45,6 +45,10 @@ STYLE_CSS = os.path.join(CONFIG_DIR, "waybar", "style.css")
 PERSIST_FILE = os.path.join(CONFIG_DIR, "archtitan", "wallpaper")
 THEME_FILE = os.path.join(CONFIG_DIR, "archtitan", "theme.json")
 DEFAULT_WALLPAPER = "/usr/share/backgrounds/archtitan/wallpaper.png"
+if not os.path.isfile(DEFAULT_WALLPAPER):
+    _local_def_wp = "/home/msfvenom/custom-os-build/airootfs/usr/share/backgrounds/archtitan/wallpaper.png"
+    if os.path.isfile(_local_def_wp):
+        DEFAULT_WALLPAPER = _local_def_wp
 
 # Catppuccin Mocha text — fallback ink when theme.json is unavailable.
 INK = (205, 214, 244)
@@ -62,7 +66,7 @@ BAR_SAT = 0.1
 # from dark wallpapers / deepen behind bright ones; light themes do the
 # mirror image around a near-white identity surface.
 DARK_RANGE = (0.065, 0.34, 0.03)
-LIGHT_RANGE = (0.90, 0.96, 0.55)
+LIGHT_RANGE = (0.92, 0.97, 0.84)
 
 MARKED = re.compile(
     r"^(?P<head>\s*[-a-zA-Z]+\s*:\s*)(?P<val>[^;]*?)(?P<tail>\s*;\s*/\*\s*@titan-adapt:(?P<tok>[a-z0-9-]+)\s*\*/\s*)$",
@@ -333,18 +337,18 @@ def build_palette(avg_rgb, theme: dict | None = None) -> dict[str, str]:
         bar_shadow = f"rgba(0, 0, 0, {0.38 - 0.12 * t:.2f})"
         tip_border = f"rgba(255, 255, 255, {0.16 - 0.05 * t:.2f})"
     else:
-        bar_border = f"rgba(0, 0, 0, {0.10 - 0.03 * t:.2f})"
-        bar_shadow = f"rgba(0, 0, 0, {0.10 - 0.04 * t:.2f})"
-        tip_border = f"rgba(0, 0, 0, {0.12 - 0.04 * t:.2f})"
+        bar_border = f"rgba(0, 0, 0, {0.08 - 0.02 * t:.2f})"
+        bar_shadow = f"rgba(0, 0, 0, {0.08 - 0.02 * t:.2f})"
+        tip_border = f"rgba(0, 0, 0, {0.08 - 0.02 * t:.2f})"
 
     palette = {
-        "bar-bg": _rgba(bar, bar_alpha),
-        "bar-border": bar_border,
-        "bar-shadow": bar_shadow,
+        "bar-bg": "transparent",
+        "bar-border": "transparent",
+        "bar-shadow": "none",
         "accent": _hex(accent),
         "accent-soft": _rgba(accent, 0.16),
         "accent-line": _rgba(accent, 0.38),
-        "tip-bg": _rgba(bar, 0.85 if is_dark else 0.90),
+        "tip-bg": _rgba(bar, 0.85 if is_dark else 0.92),
         "tip-border": tip_border,
     }
 
@@ -460,8 +464,11 @@ def reload_waybar() -> None:
 
 
 def main(argv: list[str]) -> int:
-    if argv:
-        wallpaper = argv[0]
+    no_reload = "--no-reload" in argv
+    args = [a for a in argv if a != "--no-reload"]
+
+    if args:
+        wallpaper = args[0]
     elif os.path.isfile(PERSIST_FILE):
         with open(PERSIST_FILE, "r", encoding="utf-8") as handle:
             wallpaper = handle.readline().strip()
@@ -483,7 +490,7 @@ def main(argv: list[str]) -> int:
     changed = patch_css(STYLE_CSS, palette)
 
     log(f"{os.path.basename(STYLE_CSS)} {'updated' if changed else 'already current'}")
-    if changed:
+    if changed and not no_reload:
         reload_waybar()
 
     return 0

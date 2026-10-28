@@ -37,21 +37,21 @@ QtObject {
 
     // Semantic background roles
     readonly property color bg0:      crust                             // deepest
-    readonly property color bg1:      Qt.rgba(base.r, base.g, base.b, 0.702)   // window shell (translucent)
-    readonly property color bg2:      Qt.rgba(base.r, base.g, base.b, 0.6)     // card
-    readonly property color bg3:      base                              // elevated
-    readonly property color bg4:      surface0                          // hover
-    readonly property color bgInset:  Qt.rgba(crust.r, crust.g, crust.b, 0.502) // recessed
+    readonly property color bg1:      isDark ? Qt.rgba(base.r, base.g, base.b, 0.702) : Qt.rgba(1, 1, 1, 0.84)   // window shell (translucent)
+    readonly property color bg2:      isDark ? Qt.rgba(base.r, base.g, base.b, 0.6) : Qt.rgba(1, 1, 1, 0.90)     // card
+    readonly property color bg3:      isDark ? base : Qt.rgba(1, 1, 1, 0.96)                              // elevated
+    readonly property color bg4:      isDark ? surface0 : Qt.rgba(0, 0, 0, 0.05)                          // hover / pill
+    readonly property color bgInset:  isDark ? Qt.rgba(crust.r, crust.g, crust.b, 0.502) : Qt.rgba(0, 0, 0, 0.06) // recessed
 
     // Frosted glass / overlay
-    readonly property color glass:     Qt.rgba(crust.r, crust.g, crust.b, 0.722)
-    readonly property color glassAlt:  Qt.rgba(mantle.r, mantle.g, mantle.b, 0.439)
-    readonly property color glassCard: Qt.rgba(mantle.r, mantle.g, mantle.b, 0.4)
+    readonly property color glass:     isDark ? Qt.rgba(crust.r, crust.g, crust.b, 0.722) : Qt.rgba(1, 1, 1, 0.84)
+    readonly property color glassAlt:  isDark ? Qt.rgba(mantle.r, mantle.g, mantle.b, 0.439) : Qt.rgba(1, 1, 1, 0.75)
+    readonly property color glassCard: isDark ? Qt.rgba(mantle.r, mantle.g, mantle.b, 0.4) : Qt.rgba(1, 1, 1, 0.80)
 
     // ── Borders ─────────────────────────────────────────────────────────────
-    readonly property color border:       ThemeBackend.border
-    readonly property color borderSubtle: isDark ? "#18FFFFFF" : "#1A000000"
-    readonly property color borderHover:  isDark ? "#40FFFFFF" : "#30000000"
+    readonly property color border:       isDark ? ThemeBackend.border : Qt.rgba(0, 0, 0, 0.08)
+    readonly property color borderSubtle: isDark ? "#18FFFFFF" : Qt.rgba(0, 0, 0, 0.06)
+    readonly property color borderHover:  isDark ? "#40FFFFFF" : Qt.rgba(0, 0, 0, 0.14)
     readonly property color borderStrong: accentEdge
 
     // ── Text ────────────────────────────────────────────────────────────────

@@ -22,25 +22,26 @@
 }
 
 window#osd {
-    background: @base;
-    border-radius: 20px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 40%, rgba(0, 0, 0, 0.12) 100%), @base;
+    border-radius: 24px;
     border: 1px solid @border-highlight;
-    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.65), 0 0 16px alpha(@cyan-active, 0.15);
-    padding: 12px 18px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.65), 0 0 20px alpha(@cyan-active, 0.18), 0 1px 0 0 rgba(255, 255, 255, 0.12) inset;
+    padding: 14px 22px;
     margin: 12px;
 }
 
 window#osd #container {
-    margin: 4px;
+    margin: 4px 6px;
 }
 
 window#osd image,
 window#osd label {
     color: @text-main;
+    margin-right: 8px;
 }
 
 window#osd progressbar {
-    min-height: 8px;
+    min-height: 10px;
     border-radius: 9999px;
     background: transparent;
 }
@@ -48,14 +49,16 @@ window#osd progressbar {
 window#osd trough {
     background-color: @trough-bg;
     border-radius: 9999px;
-    min-height: 8px;
-    min-width: 160px;
+    min-height: 10px;
+    min-width: 180px;
     border: none;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35) inset;
 }
 
 window#osd progress {
-    background-color: @cyan-active;
+    background: linear-gradient(90deg, @cyan-active, alpha(@cyan-active, 0.85));
     border-radius: 9999px;
-    min-height: 8px;
+    min-height: 10px;
     border: none;
+    box-shadow: 0 0 12px @cyan-glow, 0 1px 0 0 rgba(255, 255, 255, 0.25) inset;
 }

@@ -39,10 +39,34 @@ struct PSIStats {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
+// CpuPSIStats / LoadAverage — read-only CPU-pressure telemetry
+//
+// CPU pressure is reported for observability ONLY. It never feeds
+// compute_pressure() and therefore can never influence a kill decision
+// (invariant HC-CPU-1: CPU pressure may never produce RECLAIM).
+// ─────────────────────────────────────────────────────────────────────────────
+struct CpuPSIStats {
+    bool  valid       = false;
+    float some_avg10  = 0.0f; // % of time at least one task was runnable-stalled
+    float some_avg60  = 0.0f;
+    float some_avg300 = 0.0f;
+};
+
+struct LoadAverage {
+    float load1  = 0.0f;
+    float load5  = 0.0f;
+    float load15 = 0.0f;
+    int   running = 0; // currently runnable
+    int   total   = 0; // total schedulable
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Readers
 // ─────────────────────────────────────────────────────────────────────────────
 MemInfo  read_meminfo();
 PSIStats read_memory_psi();
+CpuPSIStats read_cpu_psi();
+LoadAverage read_loadavg();
 
 // ─────────────────────────────────────────────────────────────────────────────
 // compute_pressure — derive PressureLevel from combined signals

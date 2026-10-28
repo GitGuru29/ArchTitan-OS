@@ -43,7 +43,7 @@ COLOUR_RE = re.compile(r"\bproperty\s+(?:readonly\s+)?color\s+(\w+)")
 SCALAR_RE = re.compile(
     r"\bproperty\s+(?:readonly\s+)?(int|real|string|bool)\s+(\w+)\s*:\s*([^\n]+)")
 RGBA_RE = re.compile(
-    r"\bproperty\s+color\s+(\w+)\s*:\s*Qt\.rgba\(\s*[^,]+,\s*[^,]+,\s*[^,]+,\s*([0-9.]+)\s*\)")
+    r"\bproperty\s+color\s+(\w+)\s*:\s*(?:isDark\s*\?\s*)?Qt\.rgba\(\s*[^,]+,\s*[^,]+,\s*[^,]+,\s*([0-9.]+)\s*\)")
 ACCESSOR_RE = re.compile(
     r"inline\s+(?:QColor|QString|int|double|bool)\s+(\w+)\s*\(\s*\)")
 RETURN_RE = re.compile(r"\breturn\s+(.+?);", re.DOTALL)
@@ -104,7 +104,8 @@ def parse_header() -> tuple[set[str], dict[str, str], dict[str, int]]:
 
     alphas: dict[str, int] = {}
     for name in DERIVED:
-        tm = TRAILING_INT_RE.search(returns.get(name, ""))
+        ret = returns.get(name, "")
+        tm = re.search(r",\s*(\d{1,3})\s*\)", ret)
         if tm:
             alphas[name] = int(tm.group(1))
 

@@ -33,11 +33,11 @@
 
 /* --- Control Center Container --- */
 .control-center {
-    background-color: @base;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.01) 35%, rgba(0, 0, 0, 0.10) 100%), @base;
     border: 1px solid @border-highlight;
-    border-radius: 22px;
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.75), 0 0 20px alpha(@cyan-active, 0.12);
-    padding: 16px;
+    border-radius: 24px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.60), 0 0 20px alpha(@cyan-active, 0.12), 0 1px 0 0 rgba(255, 255, 255, 0.10) inset;
+    padding: 18px;
     margin: 8px;
 }
 
@@ -45,6 +45,15 @@
 .notification-window {
     background: transparent;
     margin: 8px;
+}
+
+.notification-window .notification {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.01) 100%), @surface;
+    border: 1px solid @border-highlight;
+    border-radius: 20px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55), 0 0 16px alpha(@cyan-active, 0.15), 0 1px 0 0 rgba(255, 255, 255, 0.10) inset;
+    padding: 14px 16px;
+    margin: 6px 0;
 }
 
 /* --- Header Button Grid (.header) --- */
@@ -58,8 +67,8 @@
     background: @surface;
     color: @text-main;
     border: 1px solid @border-color;
-    border-radius: 12px;
-    padding: 8px 10px;
+    border-radius: 14px;
+    padding: 8px 12px;
     font-size: 13px;
     font-weight: 600;
 }
@@ -74,7 +83,7 @@
 .header button:hover {
     background: @surface-hover;
     border-color: @border-highlight;
-    box-shadow: 0 0 8px alpha(@cyan-active, 0.2);
+    box-shadow: 0 0 10px alpha(@cyan-active, 0.25);
 }
 
 /* --- Primary Quick Settings Pills (.row1, .row2) --- */
@@ -87,7 +96,7 @@
     background-color: @surface;
     color: @text-main;
     border: 1px solid @border-color;
-    border-radius: 14px;
+    border-radius: 16px;
     padding: 12px 14px;
     font-size: 13px;
     font-weight: 600;
@@ -123,8 +132,8 @@
     background-color: @surface;
     color: @text-muted;
     border: 1px solid @border-color;
-    border-radius: 14px;
-    padding: 10px;
+    border-radius: 16px;
+    padding: 11px;
     font-size: 16px;
 }
 
@@ -162,10 +171,11 @@
     background: alpha(@on-surface, 0.07);
     color: @text-muted;
     border: 1px solid @border-color;
-    border-radius: 10px;
+    border-radius: 12px;
     padding: 5px 12px;
     font-size: 12px;
     font-weight: 600;
+    transition: all 180ms ease;
 }
 
 .widget-title > button:hover {
@@ -187,17 +197,19 @@
 }
 
 .notification {
-    background: @surface;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%), @surface;
     border: 1px solid @border-color;
-    border-radius: 14px;
-    padding: 12px;
-    margin: 5px 0;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    border-radius: 18px;
+    padding: 13px 15px;
+    margin: 6px 0;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), 0 1px 0 0 rgba(255, 255, 255, 0.08) inset;
+    transition: all 200ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .notification:hover {
-    background: @surface-alt;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%), @surface-alt;
     border-color: @border-highlight;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45), 0 0 12px alpha(@cyan-active, 0.20), 0 1px 0 0 rgba(255, 255, 255, 0.12) inset;
 }
 
 .notification-content {
@@ -225,12 +237,15 @@
 .close-button {
     background: transparent;
     color: @text-sub;
-    border-radius: 8px;
-    padding: 2px 6px;
+    border-radius: 50%;
+    min-width: 22px;
+    min-height: 22px;
+    padding: 2px;
+    transition: all 150ms ease;
 }
 
 .close-button:hover {
-    background: alpha(@danger, 0.2);
+    background: alpha(@danger, 0.25);
     color: @danger;
 }
 
@@ -238,24 +253,29 @@
     background: @surface-alt;
     color: @text-main;
     border: 1px solid @border-color;
-    border-radius: 8px;
-    margin: 4px 2px;
-    padding: 4px 8px;
-    font-size: 12px;
+    border-radius: 12px;
+    margin: 4px 3px;
+    padding: 6px 12px;
+    font-size: 11.5px;
+    font-weight: 600;
+    transition: all 180ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .notification-action:hover {
     background: @surface-hover;
     border-color: @cyan-active;
+    color: @cyan-active;
+    box-shadow: 0 0 8px alpha(@cyan-active, 0.25);
 }
 
 /* --- Do Not Disturb Widget --- */
 .widget-dnd {
     background: @surface;
     border: 1px solid @border-color;
-    border-radius: 12px;
-    padding: 8px 12px;
+    border-radius: 16px;
+    padding: 10px 14px;
     margin: 8px 0;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2), 0 1px 0 0 rgba(255, 255, 255, 0.06) inset;
 }
 
 .widget-dnd > switch {
@@ -271,9 +291,10 @@
 .widget-calendar {
     background: @surface;
     border: 1px solid @border-color;
-    border-radius: 14px;
-    padding: 10px;
+    border-radius: 18px;
+    padding: 12px;
     margin-top: 8px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25), 0 1px 0 0 rgba(255, 255, 255, 0.06) inset;
 }
 
 .widget-calendar calendar {

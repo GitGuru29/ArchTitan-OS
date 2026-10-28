@@ -61,9 +61,9 @@ declare -A APP_POLICY=(
     [zed]="system-dev.toml"
     [nvim]="system-dev.toml"
     [kitty]="system-dev.toml"
-    [alacritty]="system-dev.toml"
-    # Rofi/wofi launcher — general-gui (it's not a dev tool)
-    [rofi]="general-gui.toml"
+    # Launchers
+    [titan-spotlight]="general-gui.toml"
+    [titan-menu]="general-gui.toml"
     [wofi]="general-gui.toml"
 )
 

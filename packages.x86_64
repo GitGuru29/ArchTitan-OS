@@ -73,14 +73,13 @@ hypridle
 hyprlock
 waybar
 kitty
-rofi-wayland
-rofi-emoji
 swaybg
 swaylock
 swaync
 swayosd
 grim
 slurp
+wf-recorder
 wl-clipboard
 cliphist
 hyprpicker
@@ -98,6 +97,7 @@ pipewire-jack
 wireplumber
 pavucontrol
 playerctl
+cava
 brightnessctl
 power-profiles-daemon
 
@@ -115,6 +115,7 @@ noto-fonts
 noto-fonts-emoji
 papirus-icon-theme
 breeze-cursors
+sound-theme-freedesktop
 qt5ct
 xdg-utils
 libnotify
@@ -139,6 +140,7 @@ nodejs
 npm
 python
 github-cli
+lazygit
 
 # ── Terminal Productivity & Utilities ─────────────────────────────────────────
 fish

@@ -34,6 +34,20 @@ struct TelemetryWorkload {
     std::string state;                // to_string(WorkloadState)
     int         pid_count    = 0;
     long        mem_kb       = 0;     // summed RSS of member PIDs
+    float       cpu_pct      = 0.0f;  // summed CPU% of member PIDs
+    bool        observed     = false; // telemetry-only (no enforcement authority)
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// UnmanagedProc — a process tree root THM sees but does not manage.
+// Surfaced by `titan-hwm scan` so an empty registry is never a mystery.
+// ─────────────────────────────────────────────────────────────────────────────
+struct UnmanagedProc {
+    pid_t       pid      = 0;
+    std::string comm;
+    float       cpu_pct  = 0.0f;
+    long        rss_kb   = 0;
+    std::string reason;               // why it is not a tracked workload
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -52,10 +66,33 @@ struct TelemetrySnapshot {
     long        mem_total_kb     = 0;
     long        mem_available_kb = 0;
 
+    // CPU pressure — telemetry only (HC-CPU-1: never drives a kill decision)
+    bool        cpu_psi_valid    = false;
+    float       cpu_psi_avg10    = 0.0f;
+    float       cpu_psi_avg60    = 0.0f;
+    float       cpu_psi_avg300   = 0.0f;
+    float       load1            = 0.0f;
+    float       load5            = 0.0f;
+    float       load15           = 0.0f;
+    int         runnable_procs   = 0;
+    int         total_procs      = 0;
+
     // Orchestration
     std::string governor = "schedutil";      // powersave|schedutil|performance
-    int         workload_count   = 0;
-    int         active_workloads = 0;
+    int         workload_count      = 0;     // all tracked entries
+    int         active_workloads    = 0;     // ACTIVE + BACKGROUND_EXECUTING
+    int         classified_workloads = 0;    // non-observed (enforcement-eligible)
+    int         observed_workloads   = 0;    // telemetry-only
+
+    // Process inventory — makes `0 workloads` self-explanatory.
+    int         processes_seen      = 0;
+    int         processes_protected = 0;
+    int         processes_assigned  = 0;     // covered by a tracked workload
+    int         processes_unmanaged = 0;     // seen, not protected, not assigned
+    bool        hyprland_connected  = false;
+
+    // Top unmanaged user processes (bounded list, sorted by CPU desc).
+    std::vector<UnmanagedProc> top_unmanaged;
 
     // Most recent non-trivial enforcement action ("" when none yet).
     bool        has_last_action = false;
