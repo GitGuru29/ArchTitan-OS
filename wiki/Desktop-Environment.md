@@ -57,7 +57,8 @@ graph TD
 | :--- | :--- | :--- |
 | **Hyprland** | Wayland Tiling Compositor (v0.53+/v0.56+ block syntax) | `~/.config/hypr/hyprland.lua` (falls back to `.conf` if absent) |
 | **Waybar** | Top dark-pill status panel with center media capsule & THM badge | `~/.config/waybar/config` & `style.css` |
-| **Titan Media HUD** | Dynamic Island overlay & power menu | `subsystems/titan-media-hud/` |
+| **Titan Media HUD** | Dynamic Island overlay | `subsystems/titan-media-hud/` |
+| **Titan Power Menu** | Native C++/Qt6 glass session & power overlay (Lock, Sleep, Logout, Reboot, Shutdown) | `subsystems/titan-powermenu/` |
 | **TitanBrowser** | First-party Qt6 WebEngine browser | `titan-browser-source/` |
 | **ArchTitan Settings** | System configuration GUI | `archtitan-settings/` |
 | **Titan Spotlight** | macOS-style native app launcher, instant calculator & search modal | `subsystems/titan-spotlight/` |

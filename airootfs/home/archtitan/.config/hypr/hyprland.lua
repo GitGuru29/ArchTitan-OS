@@ -376,6 +376,7 @@ hl.window_rule({
 -- hyprland.conf -- the .lua file supersedes .conf entirely.)
 hl.layer_rule({ match = { namespace = "^waybar$" }, blur = true, ignore_alpha = 0 })
 hl.layer_rule({ match = { namespace = "^titan-spotlight$" }, blur = true, ignore_alpha = 0 })
+hl.layer_rule({ match = { namespace = "^titan-powermenu$" }, blur = true, ignore_alpha = 0 })
 hl.layer_rule({ match = { namespace = "^swaync-control-center$" }, blur = true, ignore_alpha = 0 })
 hl.layer_rule({ match = { namespace = "^swaync-notification-window$" }, blur = true, ignore_alpha = 0 })
 hl.layer_rule({ match = { namespace = "^titan-quicksettings$" }, blur = true, ignore_alpha = 0 })

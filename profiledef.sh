@@ -61,6 +61,7 @@ file_permissions=(
   ["/usr/local/bin/titan-hud-context"]="0:0:755"
   ["/usr/local/bin/titan-hud-gpu"]="0:0:755"
   ["/usr/local/bin/titan-powermenu"]="0:0:755"
+  ["/usr/bin/titan-powermenu"]="0:0:755"
   ["/usr/local/bin/titan-wallpaper-picker"]="0:0:755"
   ["/usr/local/bin/titan-wallpaper-picker-ui"]="0:0:755"
   ["/usr/local/bin/titan-set-wallpaper"]="0:0:755"
