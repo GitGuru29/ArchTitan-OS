@@ -43,11 +43,11 @@
 
 /* ── Floating Bento Modules (No Outer Bar Rectangle) ─────────── */
 window#waybar {
-    background    : transparent;
-    border        : none;
-    border-radius : 0;
-    padding       : 0;
-    box-shadow    : none;
+    background    : rgba(17, 17, 27, 0.58); /* @titan-adapt:bar-bg */
+    border        : 1px solid rgba(255, 255, 255, 0.12); /* @titan-adapt:bar-border */
+    border-radius : 14px;
+    padding       : 0 6px;
+    box-shadow    : 0 8px 32px rgba(0, 0, 0, 0.35); /* @titan-adapt:bar-shadow */
     color         : @text-high;
 }
 
@@ -65,12 +65,31 @@ window#waybar.hidden {
     margin: 0;
 }
 
+/* ── Unified Bento Module Pill Geometry ──────────────────────── */
+#custom-install-badge,
+#workspaces,
+#custom-titan-center,
+#clock,
+#quicksettings,
+#tray,
+#quick-controls {
+    background   : @module-bg;
+    border       : 1px solid @module-border;
+    border-radius: 10px;
+    min-height   : 26px;
+    margin       : 5px 3px;
+    transition   : all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 /* ═══════════════════════════════════════════════════════════════
  * LEFT — Live Installer & Workspaces
  * ═══════════════════════════════════════════════════════════════ */
 
 #custom-install-badge {
     color        : @success;
+    background   : rgba(166, 227, 161, 0.12);
+    border       : 1px solid rgba(166, 227, 161, 0.40);
+    padding      : 0 10px;
     background   : alpha(@success, 0.12);
     border       : 1px solid alpha(@success, 0.40);
     border-radius: 12px;
@@ -79,7 +98,6 @@ window#waybar.hidden {
     box-shadow   : 0 4px 16px rgba(0, 0, 0, 0.20);
     font-size    : 11px;
     font-weight  : 700;
-    transition   : all 0.2s ease;
 }
 
 #custom-install-badge:hover {
@@ -88,6 +106,20 @@ window#waybar.hidden {
 }
 
 #workspaces {
+    padding: 1px 3px;
+}
+
+#workspaces button {
+    padding      : 1px 7px;
+    margin       : 1px;
+    color        : @text-low;
+    background   : transparent;
+    border-radius: 6px;
+    font-size    : 11px;
+    font-weight  : 600;
+    min-width    : 20px;
+    min-height   : 22px;
+    transition   : all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     background   : @module-bg;
     border       : 1px solid @module-border;
     border-radius: 12px;
@@ -121,87 +153,22 @@ window#waybar.hidden {
     background   : transparent;
 }
 
-#workspaces button label.workspace-label {
-    font-size  : 16px;
-    color      : @text-low;
-    opacity    : 0.45;
-    padding    : 0;
-    margin     : 0;
-    transition : all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-#workspaces button.empty:hover label.workspace-label {
-    color      : @text-high;
-    opacity    : 0.95;
-}
-
-#workspaces button.empty.active {
-    min-width    : 22px;
-    min-height   : 22px;
-    border       : 2px solid @accent;
-    border-radius: 50%;
-    margin       : 4px 1px;
-    padding      : 0;
-    box-shadow   : 0 0 10px @accent-glow;
-    background   : @accent-soft;
-}
-
-#workspaces button.empty.active label.workspace-label {
-    color      : @accent;
-    opacity    : 1.0;
-    font-size  : 14px;
-    text-shadow: 0 0 6px @accent-glow;
-}
-
-/* 2. Occupied workspace (inactive): clean app icon without rectangular border */
-#workspaces button:not(.empty) {
-    background   : transparent;
-    border       : none;
-    padding      : 0 2px;
-    margin       : 0 1px;
-}
-
-#workspaces button:not(.empty):hover {
-    background   : transparent;
-}
-
-/* 3. Active occupied workspace: marked by circular accent ring on the button */
-#workspaces button.active:not(.empty) {
-    min-width    : 22px;
-    min-height   : 22px;
-    border       : 2px solid @accent;
-    border-radius: 50%;
-    margin       : 4px 1px;
-    padding      : 0 2px;
-    box-shadow   : 0 0 10px @accent-glow;
-    background   : @accent-soft;
-}
-
-/* 4. App taskbar icons inside the workspace */
-#workspaces .taskbar-window {
-    padding      : 0;
-    margin       : 0;
-    border       : none;
-    background   : transparent;
-    border-radius: 50%;
-    transition   : all 0.15s ease;
-}
-
-#workspaces .taskbar-window image {
-    border-radius: 50%;
-}
-
-#workspaces .taskbar-window.active {
-    border       : none;
-    box-shadow   : none;
-    background   : transparent;
+/* Active workspace — glowing accent pill */
+#workspaces button.active {
+    color        : @on-accent;
+    background   : #00D2FF; /* @titan-adapt:accent */
+    border       : 1px solid rgba(0, 210, 255, 0.55); /* @titan-adapt:accent-line */
+    border-radius: 6px;
+    font-weight  : 700;
+    padding      : 1px 11px;
+    box-shadow   : 0 0 12px @accent-glow;
 }
 
 #workspaces button.urgent {
     color        : @on-accent;
     background   : @danger;
     border       : 1px solid @danger;
-    border-radius: 8px;
+    border-radius: 6px;
     box-shadow   : 0 0 10px rgba(243, 139, 168, 0.45);
 }
 
@@ -211,13 +178,9 @@ window#waybar.hidden {
 
 #custom-titan-center {
     color        : @text-high;
-    background   : @module-bg;
-    border       : 1px solid @module-border;
-    border-radius: 12px;
     font-size    : 11.5px;
     font-weight  : 500;
-    padding      : 2px 16px;
-    margin       : 3px 0;
+    padding      : 0 16px;
     min-width    : 360px;
     box-shadow   : 0 1px 0 0 rgba(255, 255, 255, 0.14) inset, 0 4px 16px rgba(0, 0, 0, 0.25);
     transition   : all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
@@ -241,75 +204,7 @@ window#waybar.hidden {
 #custom-titan-center.b-rev { animation: roll-b-rev 350ms cubic-bezier(0.16, 1, 0.3, 1); }
 
 /* ═══════════════════════════════════════════════════════════════
- * RIGHT — Hardware, Clock, Quick Settings & Power Controls
- * ═══════════════════════════════════════════════════════════════ */
-
-/* Hardware Performance Capsule (CPU, Swap, RAM) */
-#hardware {
-    background   : @module-bg;
-    border       : 1px solid @module-border;
-    border-radius: 12px;
-    padding      : 2px 6px;
-    margin       : 3px 4px;
-    box-shadow   : 0 1px 0 0 rgba(255, 255, 255, 0.14) inset, 0 4px 16px rgba(0, 0, 0, 0.25);
-    transition   : all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-#hardware:hover {
-    background  : @module-hover;
-    border-color: @accent-border;
-    box-shadow  : 0 0 10px @accent-glow;
-}
-
-#cpu,
-#memory.swap,
-#memory {
-    color        : @text-mid;
-    background   : transparent;
-    border       : none;
-    font-size    : 11.5px;
-    font-weight  : 600;
-    padding      : 2px 6px;
-    margin       : 0 1px;
-    border-radius: 8px;
-    transition   : all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-#cpu:hover,
-#memory.swap:hover,
-#memory:hover {
-    background: @module-hover;
-    color     : @text-high;
-}
-
-#cpu {
-    color: @accent;
-}
-
-#memory.swap {
-    color: @teal;
-}
-
-#memory {
-    color: @mauve;
-}
-
-#cpu.warning,
-#memory.warning {
-    color: @warning;
-}
-
-#cpu.critical,
-#memory.critical,
-#memory.swap.critical {
-    color        : #ffffff;
-    background   : @danger;
-    border-radius: 6px;
-    box-shadow   : 0 0 10px rgba(243, 139, 168, 0.45);
-}
-
-/* ═══════════════════════════════════════════════════════════════
- * Contextual Dev & Git HUD Bento Capsule
+ * RIGHT — Clock, Telemetry & 3-Button Control Pack
  * ═══════════════════════════════════════════════════════════════ */
 #custom-git-hud {
     font-size    : 11.5px;
@@ -514,6 +409,9 @@ window#waybar.hidden {
 /* Clock Capsule */
 #clock {
     color        : @text-high;
+    font-weight  : 600;
+    font-size    : 11.5px;
+    padding      : 0 11px;
     background   : @module-bg;
     border       : 1px solid @module-border;
     border-radius: 12px;
@@ -532,8 +430,9 @@ window#waybar.hidden {
     box-shadow  : 0 0 12px @accent-glow;
 }
 
-/* Unified Control Center Capsule */
+/* Unified Telemetry Capsule (Temperature, Audio, Battery) */
 #quicksettings {
+    padding: 0 4px;
     background   : @module-bg;
     border       : 1px solid @module-border;
     border-radius: 12px;
@@ -556,9 +455,10 @@ window#waybar.hidden {
     background   : transparent;
     border       : none;
     font-size    : 11.5px;
-    padding      : 2px 6px;
-    margin       : 0 1px;
+    padding      : 0 6px;
+    margin       : 2px 1px;
     border-radius: 6px;
+    min-height   : 22px;
     transition   : all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -617,6 +517,7 @@ window#waybar.hidden {
 
 /* System Tray */
 #tray {
+    padding: 0 8px;
     background   : @module-bg;
     border       : 1px solid @module-border;
     border-radius: 12px;
@@ -634,6 +535,7 @@ window#waybar.hidden {
 
 /* 3-Button Control Pack (Notification, Wi-Fi, Bluetooth) */
 #quick-controls {
+    padding: 0 4px;
     background   : @module-bg;
     border       : 1px solid @module-border;
     border-radius: 12px;
@@ -655,10 +557,11 @@ window#waybar.hidden {
     color        : @text-mid;
     background   : transparent;
     border       : none;
-    font-size    : 13px;
-    padding      : 2px 7px;
-    margin       : 0 1px;
+    font-size    : 12px;
+    padding      : 0 7px;
+    margin       : 2px 1px;
     border-radius: 6px;
+    min-height   : 22px;
     transition   : all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
