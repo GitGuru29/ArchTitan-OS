@@ -229,6 +229,30 @@ window#waybar.hidden {
     background   : transparent;
 }
 
+/* Only show the active/primary application icon in each workspace */
+#workspaces button > box > widget:nth-child(n+3) .taskbar-window {
+    min-width   : 0;
+    min-height  : 0;
+    padding     : 0;
+    margin      : 0;
+    margin-right: -16px;
+    border      : none;
+    opacity     : 0;
+    font-size   : 0;
+    -gtk-icon-transform: scale(0);
+}
+
+#workspaces button > box > widget:nth-child(n+3) .taskbar-window * {
+    min-width : 0;
+    min-height: 0;
+    padding   : 0;
+    margin    : 0;
+    border    : none;
+    opacity   : 0;
+    font-size : 0;
+    -gtk-icon-transform: scale(0);
+}
+
 #workspaces button.urgent {
     color        : @on-accent;
     background   : @danger;
