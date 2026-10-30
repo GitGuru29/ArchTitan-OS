@@ -334,17 +334,18 @@ def build_palette(avg_rgb, theme: dict | None = None) -> dict[str, str]:
 
     if is_dark:
         bar_border = f"rgba(255, 255, 255, {0.14 - 0.04 * t:.2f})"
-        bar_shadow = f"rgba(0, 0, 0, {0.38 - 0.12 * t:.2f})"
         tip_border = f"rgba(255, 255, 255, {0.16 - 0.05 * t:.2f})"
     else:
         bar_border = f"rgba(0, 0, 0, {0.08 - 0.02 * t:.2f})"
-        bar_shadow = f"rgba(0, 0, 0, {0.08 - 0.02 * t:.2f})"
         tip_border = f"rgba(0, 0, 0, {0.08 - 0.02 * t:.2f})"
 
+    # The rounded frosted island is painted on `window#waybar > box`. There is
+    # deliberately no `bar-shadow` token: the layer surface is a plain
+    # rectangle, so an outer shadow can only render clipped to it and shows up
+    # as square corners behind the rounded bar.
     palette = {
-        "bar-bg": "transparent",
-        "bar-border": "transparent",
-        "bar-shadow": "none",
+        "bar-bg": _rgba(bar, bar_alpha),
+        "bar-border": bar_border,
         "accent": _hex(accent),
         "accent-soft": _rgba(accent, 0.16),
         "accent-line": _rgba(accent, 0.38),
@@ -369,7 +370,7 @@ def build_palette(avg_rgb, theme: dict | None = None) -> dict[str, str]:
                 f"(a {bar_word} bar tops out at {ceiling:.2f}:1); achieved "
                 f"{separation:.2f}:1, "
                 f"{separation / ceiling * 100:.0f}% of the ceiling, relying on the "
-                f"{palette['bar-border']} border and shadow to delineate"
+                f"{palette['bar-border']} border to delineate"
             )
         else:
             log(
@@ -396,7 +397,7 @@ def patch_css(css_path: str, palette: dict[str, str]) -> bool:
     Only the *colour* inside a marked declaration is replaced, never the whole
     value. Tokens are reused across properties that need different surrounding
     syntax -- `accent-line` drives both `border:` and `border-color:`, and
-    `bar-border`/`bar-shadow` appear on shorthands -- so swapping the value
+    `bar-border` appears on a shorthand -- so swapping the value
     wholesale would emit `border: rgba(...)` or `box-shadow: rgba(...)`, which
     are invalid and get dropped silently by GTK, leaving the bar unstyled.
     Rewriting just the colour function keeps the width, style and blur intact.

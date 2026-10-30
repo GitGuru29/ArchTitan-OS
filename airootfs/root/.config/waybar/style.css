@@ -41,14 +41,25 @@
     margin       : 0;
 }
 
-/* ── Floating Bento Modules (No Outer Bar Rectangle) ─────────── */
+/* ── Floating Bento Modules (Outer Bar) ───────────────────────── */
 window#waybar {
+    background    : transparent;
+    border        : none;
+    border-radius : 0;
+    padding       : 0;
+    box-shadow    : none;
+    color         : @text-high;
+}
+
+window#waybar > box {
     background    : rgba(17, 17, 27, 0.58); /* @titan-adapt:bar-bg */
     border        : 1px solid rgba(255, 255, 255, 0.12); /* @titan-adapt:bar-border */
-    border-radius : 14px;
+    border-radius : 18px;
     padding       : 0 6px;
-    box-shadow    : 0 8px 32px rgba(0, 0, 0, 0.35); /* @titan-adapt:bar-shadow */
-    color         : @text-high;
+    /* No outer drop shadow: the layer surface is a plain rectangle, so a
+     * shadow can only render clipped to it and paints square corners
+     * behind the rounded island (which Hyprland then blurs as well). */
+    box-shadow    : none;
 }
 
 window#waybar.hidden {
@@ -75,9 +86,9 @@ window#waybar.hidden {
 #quick-controls {
     background   : @module-bg;
     border       : 1px solid @module-border;
-    border-radius: 10px;
+    border-radius: 12px;
     min-height   : 26px;
-    margin       : 5px 3px;
+    margin       : 3px;
     transition   : all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -87,15 +98,12 @@ window#waybar.hidden {
 
 #custom-install-badge {
     color        : @success;
-    background   : rgba(166, 227, 161, 0.12);
-    border       : 1px solid rgba(166, 227, 161, 0.40);
-    padding      : 0 10px;
     background   : alpha(@success, 0.12);
     border       : 1px solid alpha(@success, 0.40);
     border-radius: 12px;
     padding      : 2px 10px;
     margin       : 3px 6px 3px 2px;
-    box-shadow   : 0 4px 16px rgba(0, 0, 0, 0.20);
+    box-shadow   : 0 1px 3px rgba(0, 0, 0, 0.18);
     font-size    : 11px;
     font-weight  : 700;
 }
@@ -106,26 +114,12 @@ window#waybar.hidden {
 }
 
 #workspaces {
-    padding: 1px 3px;
-}
-
-#workspaces button {
-    padding      : 1px 7px;
-    margin       : 1px;
-    color        : @text-low;
-    background   : transparent;
-    border-radius: 6px;
-    font-size    : 11px;
-    font-weight  : 600;
-    min-width    : 20px;
-    min-height   : 22px;
-    transition   : all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     background   : @module-bg;
     border       : 1px solid @module-border;
-    border-radius: 12px;
-    padding      : 1px 5px;
+    border-radius: 14px;
+    padding      : 1px 6px;
     margin       : 3px 4px 3px 2px;
-    box-shadow   : 0 1px 0 0 rgba(255, 255, 255, 0.14) inset, 0 4px 16px rgba(0, 0, 0, 0.25);
+    box-shadow   : 0 1px 0 0 rgba(255, 255, 255, 0.14) inset, 0 1px 3px rgba(0, 0, 0, 0.18);
     transition   : all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -136,39 +130,110 @@ window#waybar.hidden {
 }
 
 #workspaces button {
+    min-width    : 22px;
+    min-height   : 22px;
     padding      : 0;
-    margin       : 1px 2px;
-    border       : none;
-    border-radius: 8px;
+    margin       : 2px;
+    border       : 2px solid transparent;
+    border-radius: 999px;
     background   : transparent;
+    box-shadow   : none;
+    color        : @text-low;
     transition   : all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#workspaces button:hover {
+    background   : rgba(255, 255, 255, 0.08);
+    color        : @text-high;
 }
 
 /* 1. Empty workspaces (no apps): subtle clean circular dot */
 #workspaces button.empty {
-    min-width    : 18px;
-    padding      : 0 2px;
-    margin       : 0 1px;
-    border       : none;
+    min-width    : 22px;
+    min-height   : 22px;
+    padding      : 0;
+    margin       : 2px;
+    border       : 2px solid transparent;
     background   : transparent;
+    box-shadow   : none;
 }
 
-/* Active workspace — glowing accent pill */
-#workspaces button.active {
-    color        : @on-accent;
-    background   : #00D2FF; /* @titan-adapt:accent */
-    border       : 1px solid rgba(0, 210, 255, 0.55); /* @titan-adapt:accent-line */
-    border-radius: 6px;
-    font-weight  : 700;
-    padding      : 1px 11px;
-    box-shadow   : 0 0 12px @accent-glow;
+#workspaces button label.workspace-label {
+    font-size  : 14px;
+    color      : @text-low;
+    opacity    : 0.55;
+    padding    : 0;
+    margin     : 0;
+    transition : all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#workspaces button:not(.empty) label.workspace-label {
+    font-size  : 0;
+    min-width  : 0;
+    padding    : 0;
+    margin     : 0;
+}
+
+#workspaces button.empty:hover label.workspace-label {
+    color      : @text-high;
+    opacity    : 0.95;
+}
+
+/* 2. Occupied workspace (inactive): clean app icon without individual border */
+#workspaces button:not(.empty) {
+    background   : transparent;
+    border       : 2px solid transparent;
+    box-shadow   : none;
+    padding      : 0 2px;
+    margin       : 2px;
+}
+
+/* 3. Active workspace — circular cyan accent ring (matches host ii indicator) */
+#workspaces button.active,
+#workspaces button.empty.active,
+#workspaces button.active:not(.empty) {
+    min-width    : 22px;
+    min-height   : 22px;
+    color        : @accent;
+    background   : rgba(0, 210, 255, 0.18);
+    border       : 2px solid #00D2FF; /* @titan-adapt:accent-line */
+    border-radius: 999px;
+    padding      : 0 2px;
+    margin       : 2px;
+    box-shadow   : 0 0 8px @accent-glow;
+}
+
+#workspaces button.empty.active label.workspace-label {
+    color      : @accent;
+    opacity    : 1.0;
+    font-size  : 14px;
+}
+
+/* 4. App taskbar icons inside the workspace */
+#workspaces .taskbar-window {
+    padding      : 0;
+    margin       : 0;
+    border       : none;
+    background   : transparent;
+    border-radius: 999px;
+    transition   : all 0.15s ease;
+}
+
+#workspaces .taskbar-window image {
+    border-radius: 999px;
+}
+
+#workspaces .taskbar-window.active {
+    border       : none;
+    box-shadow   : none;
+    background   : transparent;
 }
 
 #workspaces button.urgent {
     color        : @on-accent;
     background   : @danger;
-    border       : 1px solid @danger;
-    border-radius: 6px;
+    border       : 2px solid @danger;
+    border-radius: 999px;
     box-shadow   : 0 0 10px rgba(243, 139, 168, 0.45);
 }
 
@@ -182,7 +247,7 @@ window#waybar.hidden {
     font-weight  : 500;
     padding      : 0 16px;
     min-width    : 360px;
-    box-shadow   : 0 1px 0 0 rgba(255, 255, 255, 0.14) inset, 0 4px 16px rgba(0, 0, 0, 0.25);
+    box-shadow   : 0 1px 0 0 rgba(255, 255, 255, 0.14) inset, 0 1px 3px rgba(0, 0, 0, 0.18);
     transition   : all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -206,6 +271,70 @@ window#waybar.hidden {
 /* ═══════════════════════════════════════════════════════════════
  * RIGHT — Clock, Telemetry & 3-Button Control Pack
  * ═══════════════════════════════════════════════════════════════ */
+/* Hardware Performance Capsule (CPU, Swap, RAM) */
+#hardware {
+    background   : @module-bg;
+    border       : 1px solid @module-border;
+    border-radius: 12px;
+    padding      : 2px 6px;
+    margin       : 3px 4px;
+    box-shadow   : 0 1px 0 0 rgba(255, 255, 255, 0.14) inset, 0 1px 3px rgba(0, 0, 0, 0.18);
+    transition   : all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#hardware:hover {
+    background  : @module-hover;
+    border-color: @accent-border;
+    box-shadow  : 0 0 10px @accent-glow;
+}
+
+#cpu,
+#memory.swap,
+#memory {
+    color        : @text-mid;
+    background   : transparent;
+    border       : none;
+    font-size    : 11.5px;
+    font-weight  : 600;
+    padding      : 2px 6px;
+    margin       : 0 1px;
+    border-radius: 8px;
+    transition   : all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#cpu:hover,
+#memory.swap:hover,
+#memory:hover {
+    background: @module-hover;
+    color     : @text-high;
+}
+
+#cpu {
+    color: @accent;
+}
+
+#memory.swap {
+    color: @teal;
+}
+
+#memory {
+    color: @mauve;
+}
+
+#cpu.warning,
+#memory.warning {
+    color: @warning;
+}
+
+#cpu.critical,
+#memory.critical,
+#memory.swap.critical {
+    color        : #ffffff;
+    background   : @danger;
+    border-radius: 6px;
+    box-shadow   : 0 0 10px rgba(243, 139, 168, 0.45);
+}
+
 #custom-git-hud {
     font-size    : 11.5px;
     font-weight  : 600;
@@ -218,7 +347,7 @@ window#waybar.hidden {
     border-radius: 12px;
     padding      : 2px 10px;
     margin       : 3px 4px;
-    box-shadow   : 0 1px 0 0 rgba(255, 255, 255, 0.14) inset, 0 4px 16px rgba(0, 0, 0, 0.25);
+    box-shadow   : 0 1px 0 0 rgba(255, 255, 255, 0.14) inset, 0 1px 3px rgba(0, 0, 0, 0.18);
     color        : @text-high;
 }
 
@@ -236,7 +365,7 @@ window#waybar.hidden {
 #custom-git-hud.dirty {
     border-color: rgba(249, 226, 175, 0.50);
     color       : @warning;
-    box-shadow  : 0 4px 16px rgba(0, 0, 0, 0.25);
+    box-shadow  : 0 1px 3px rgba(0, 0, 0, 0.18);
 }
 
 #custom-git-hud.staged {
@@ -283,7 +412,7 @@ window#waybar.hidden {
     font-weight  : 600;
     padding      : 2px 10px;
     margin       : 3px 4px;
-    box-shadow   : 0 1px 0 0 rgba(255, 255, 255, 0.14) inset, 0 4px 16px rgba(0, 0, 0, 0.25);
+    box-shadow   : 0 1px 0 0 rgba(255, 255, 255, 0.14) inset, 0 1px 3px rgba(0, 0, 0, 0.18);
     transition   : all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -313,7 +442,7 @@ window#waybar.hidden {
     border-radius : 12px;
     padding       : 2px 10px;
     margin        : 3px 4px;
-    box-shadow    : 0 1px 0 0 rgba(255, 255, 255, 0.14) inset, 0 4px 16px rgba(0, 0, 0, 0.25);
+    box-shadow    : 0 1px 0 0 rgba(255, 255, 255, 0.14) inset, 0 1px 3px rgba(0, 0, 0, 0.18);
     animation     : cava-glow 3s ease-in-out infinite alternate;
 }
 
@@ -351,7 +480,7 @@ window#waybar.hidden {
     border-radius: 12px;
     padding      : 2px 6px;
     margin       : 3px 4px;
-    box-shadow   : 0 1px 0 0 rgba(255, 255, 255, 0.14) inset, 0 4px 16px rgba(0, 0, 0, 0.25);
+    box-shadow   : 0 1px 0 0 rgba(255, 255, 255, 0.14) inset, 0 1px 3px rgba(0, 0, 0, 0.18);
     transition   : all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -419,7 +548,7 @@ window#waybar.hidden {
     font-size    : 11.5px;
     padding      : 2px 11px;
     margin       : 3px 4px;
-    box-shadow   : 0 1px 0 0 rgba(255, 255, 255, 0.14) inset, 0 4px 16px rgba(0, 0, 0, 0.25);
+    box-shadow   : 0 1px 0 0 rgba(255, 255, 255, 0.14) inset, 0 1px 3px rgba(0, 0, 0, 0.18);
     transition   : all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -438,7 +567,7 @@ window#waybar.hidden {
     border-radius: 12px;
     padding      : 2px 6px;
     margin       : 3px 4px;
-    box-shadow   : 0 1px 0 0 rgba(255, 255, 255, 0.14) inset, 0 4px 16px rgba(0, 0, 0, 0.25);
+    box-shadow   : 0 1px 0 0 rgba(255, 255, 255, 0.14) inset, 0 1px 3px rgba(0, 0, 0, 0.18);
     transition   : all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -523,7 +652,7 @@ window#waybar.hidden {
     border-radius: 12px;
     padding      : 2px 8px;
     margin       : 3px 4px;
-    box-shadow   : 0 1px 0 0 rgba(255, 255, 255, 0.14) inset, 0 4px 16px rgba(0, 0, 0, 0.25);
+    box-shadow   : 0 1px 0 0 rgba(255, 255, 255, 0.14) inset, 0 1px 3px rgba(0, 0, 0, 0.18);
 }
 #tray > .passive {
     -gtk-icon-effect: dim;
@@ -541,7 +670,7 @@ window#waybar.hidden {
     border-radius: 12px;
     padding      : 2px 6px;
     margin       : 3px 2px 3px 4px;
-    box-shadow   : 0 1px 0 0 rgba(255, 255, 255, 0.14) inset, 0 4px 16px rgba(0, 0, 0, 0.25);
+    box-shadow   : 0 1px 0 0 rgba(255, 255, 255, 0.14) inset, 0 1px 3px rgba(0, 0, 0, 0.18);
     transition   : all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 

@@ -1,10 +1,10 @@
 {
     "layer"        : "top",
     "position"     : "top",
-    "height"       : 38,
-    "margin-top"   : 8,
-    "margin-left"  : 14,
-    "margin-right" : 14,
+    "height"       : 40,
+    "margin-top"   : 5,
+    "margin-left"  : 5,
+    "margin-right" : 5,
     "spacing"      : 0,
     "exclusive"    : true,
 
@@ -40,11 +40,11 @@
 
     "hyprland/workspaces": {
         "format"                 : "{icon}{windows}",
-        "format-window-separator": " ",
+        "format-window-separator": "",
         "on-click"               : "activate",
         "sort-by-number"         : true,
         "format-icons"           : {
-            "default": "•",
+            "default": "",
             "empty"  : "•"
         },
         "persistent-workspaces"  : { "*": 10 },
@@ -54,7 +54,7 @@
             "active-window-position": "first",
             "max-icons"             : 1,
             "format"                : "{icon}",
-            "icon-size"             : 15
+            "icon-size"             : 16
         }
     },
 
