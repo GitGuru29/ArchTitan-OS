@@ -316,8 +316,11 @@ def build_palette(avg_rgb, theme: dict | None = None) -> dict[str, str]:
     identity, lift_to, deepen_to = DARK_RANGE if is_dark else LIGHT_RANGE
     t = _clamp(luma / 0.14) if is_dark else _clamp((1.0 - luma) / 0.14)
 
-    # Frosted glass translucency: let wallpaper blur through while maintaining legibility
-    bar_alpha = _clamp(0.58 + t * 0.08, 0.54, 0.68) if is_dark else _clamp(0.70 + t * 0.06, 0.66, 0.78)
+    # Frosted glass translucency driven by theme glassOpacity
+    glass_opacity = float(theme.get("glassOpacity", 0.35)) if theme else 0.35
+    glass_factor = glass_opacity / 0.35
+
+    bar_alpha = _clamp((0.58 + t * 0.08) * glass_factor, 0.12, 0.95) if is_dark else _clamp((0.70 + t * 0.06) * glass_factor, 0.20, 0.95)
     bar_l = _solve_lightness(
         hue,
         BAR_SAT,

@@ -123,14 +123,14 @@ Window {
                 GradientStop {
                     position: 0.0
                     color: TitanTheme.isDark
-                           ? Qt.rgba(TitanTheme.surface1.r, TitanTheme.surface1.g, TitanTheme.surface1.b, 0.32)
-                           : Qt.rgba(1, 1, 1, 0.88)
+                           ? Qt.rgba(TitanTheme.surface1.r, TitanTheme.surface1.g, TitanTheme.surface1.b, Math.min(0.95, 0.32 * TitanTheme.glassFactor))
+                           : Qt.rgba(1, 1, 1, Math.min(0.98, 0.88 * TitanTheme.glassFactor))
                 }
                 GradientStop {
                     position: 1.0
                     color: TitanTheme.isDark
-                           ? Qt.rgba(TitanTheme.surface0.r, TitanTheme.surface0.g, TitanTheme.surface0.b, 0.18)
-                           : Qt.rgba(1, 1, 1, 0.74)
+                           ? Qt.rgba(TitanTheme.surface0.r, TitanTheme.surface0.g, TitanTheme.surface0.b, Math.min(0.90, 0.18 * TitanTheme.glassFactor))
+                           : Qt.rgba(1, 1, 1, Math.min(0.95, 0.74 * TitanTheme.glassFactor))
                 }
             }
 

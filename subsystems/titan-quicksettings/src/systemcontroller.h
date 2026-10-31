@@ -25,6 +25,7 @@ class SystemController : public QObject {
   Q_PROPERTY(bool airplaneMode READ airplaneMode WRITE setAirplaneMode NOTIFY
                  airplaneModeChanged)
   Q_PROPERTY(int brightness READ brightness NOTIFY brightnessChanged)
+  Q_PROPERTY(int glassOpacity READ glassOpacity WRITE setGlassOpacity NOTIFY glassOpacityChanged)
   Q_PROPERTY(int tileVisibilityRevision READ tileVisibilityRevision NOTIFY tileVisibilityChanged)
 
 public:
@@ -41,6 +42,7 @@ public:
   bool screenRecordingActive() const { return m_screenRecordingActive; }
   bool airplaneMode() const { return m_airplaneMode; }
   int brightness() const { return m_brightness; }
+  int glassOpacity() const { return m_glassOpacity; }
   int tileVisibilityRevision() const { return m_tileVisibilityRevision; }
 
   void setCaffeineActive(bool active);
@@ -49,6 +51,7 @@ public:
   void setGameModeActive(bool active);
   void setVpnActive(bool active);
   void setAirplaneMode(bool active);
+  void setGlassOpacity(int value);
 
   Q_INVOKABLE bool getTileVisible(const QString &tileKey, bool defaultVal = true) const;
   Q_INVOKABLE void setTileVisible(const QString &tileKey, bool visible);
@@ -83,6 +86,7 @@ signals:
   void screenRecordingActiveChanged();
   void airplaneModeChanged();
   void brightnessChanged();
+  void glassOpacityChanged();
   void tileVisibilityChanged();
 
 private:
@@ -105,8 +109,10 @@ private:
   bool m_screenRecordingActive{false};
   bool m_airplaneMode{false};
   int m_brightness{80};
+  int m_glassOpacity{35};
   int m_tileVisibilityRevision{0};
 
   QTimer *m_timer;
+  QTimer *m_glassApplyTimer{nullptr};
   class QFileSystemWatcher *m_themeWatcher{nullptr};
 };

@@ -56,8 +56,13 @@ QString SystemController::userName() const
 SystemController::SystemController(QObject *parent)
     : QObject(parent)
     , m_timer(new QTimer(this))
+    , m_glassApplyTimer(new QTimer(this))
     , m_themeWatcher(new QFileSystemWatcher(this))
 {
+    m_glassApplyTimer->setSingleShot(true);
+    connect(m_glassApplyTimer, &QTimer::timeout, this, []() {
+        QProcess::startDetached("titan-theme", {"apply"});
+    });
     updateUptime();
     updateDate();
     updateBrightness();
@@ -176,6 +181,38 @@ void SystemController::setBrightness(int value)
     QProcess::startDetached("brightnessctl", {"set", QString("%1%").arg(value)});
 }
 
+void SystemController::setGlassOpacity(int value)
+{
+    value = qBound(10, value, 95);
+    if (value == m_glassOpacity)
+        return;
+
+    m_glassOpacity = value;
+    emit glassOpacityChanged();
+
+    QString cfgDir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
+    QString themeFile = cfgDir + "/archtitan/theme.json";
+    QJsonObject rootObj;
+
+    QFile readFile(themeFile);
+    if (readFile.open(QIODevice::ReadOnly)) {
+        rootObj = QJsonDocument::fromJson(readFile.readAll()).object();
+        readFile.close();
+    }
+
+    rootObj["glassOpacity"] = std::round((value / 100.0) * 100.0) / 100.0;
+
+    QFile writeFile(themeFile);
+    if (writeFile.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+        writeFile.write(QJsonDocument(rootObj).toJson(QJsonDocument::Indented));
+        writeFile.close();
+    }
+
+    if (m_glassApplyTimer) {
+        m_glassApplyTimer->start(150);
+    }
+}
+
 void SystemController::refresh()
 {
     updateUptime();
@@ -236,6 +273,14 @@ void SystemController::updateTheme()
                     if (dark == m_themeDark) {
                         m_themeSwitching = false; // Target theme verified on disk
                     }
+                    if (doc.object().contains("glassOpacity")) {
+                        int g = static_cast<int>(std::round(doc.object().value("glassOpacity").toDouble(0.35) * 100.0));
+                        g = qBound(10, g, 95);
+                        if (m_glassOpacity != g) {
+                            m_glassOpacity = g;
+                            emit glassOpacityChanged();
+                        }
+                    }
                 }
             }
             return;
@@ -253,6 +298,14 @@ void SystemController::updateTheme()
             if (m_themeDark != dark) {
                 m_themeDark = dark;
                 emit themeDarkChanged();
+            }
+            if (doc.object().contains("glassOpacity")) {
+                int g = static_cast<int>(std::round(doc.object().value("glassOpacity").toDouble(0.35) * 100.0));
+                g = qBound(10, g, 95);
+                if (m_glassOpacity != g) {
+                    m_glassOpacity = g;
+                    emit glassOpacityChanged();
+                }
             }
             return;
         }

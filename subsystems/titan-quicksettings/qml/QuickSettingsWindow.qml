@@ -142,20 +142,20 @@ Window {
                     GradientStop {
                         position: 0.0
                         color: TitanTheme.isDark ?
-                            Qt.rgba(TitanTheme.bgWindow.r + 0.06, TitanTheme.bgWindow.g + 0.06, TitanTheme.bgWindow.b + 0.08, 0.52) :
-                            Qt.rgba(1.0, 1.0, 1.0, 0.72)
+                            Qt.rgba(TitanTheme.bgWindow.r + 0.06, TitanTheme.bgWindow.g + 0.06, TitanTheme.bgWindow.b + 0.08, Math.min(0.95, 0.52 * TitanTheme.glassFactor)) :
+                            Qt.rgba(1.0, 1.0, 1.0, Math.min(0.95, 0.72 * TitanTheme.glassFactor))
                     }
                     GradientStop {
                         position: 0.35
                         color: TitanTheme.isDark ?
-                            Qt.rgba(TitanTheme.bgWindow.r, TitanTheme.bgWindow.g, TitanTheme.bgWindow.b, 0.46) :
-                            Qt.rgba(TitanTheme.bgWindow.r, TitanTheme.bgWindow.g, TitanTheme.bgWindow.b, 0.60)
+                            Qt.rgba(TitanTheme.bgWindow.r, TitanTheme.bgWindow.g, TitanTheme.bgWindow.b, Math.min(0.95, 0.46 * TitanTheme.glassFactor)) :
+                            Qt.rgba(TitanTheme.bgWindow.r, TitanTheme.bgWindow.g, TitanTheme.bgWindow.b, Math.min(0.95, 0.60 * TitanTheme.glassFactor))
                     }
                     GradientStop {
                         position: 1.0
                         color: TitanTheme.isDark ?
-                            Qt.rgba(TitanTheme.bgWindow.r * 0.85, TitanTheme.bgWindow.g * 0.85, TitanTheme.bgWindow.b * 0.85, 0.40) :
-                            Qt.rgba(TitanTheme.bgWindow.r * 0.95, TitanTheme.bgWindow.g * 0.95, TitanTheme.bgWindow.b * 0.95, 0.52)
+                            Qt.rgba(TitanTheme.bgWindow.r * 0.85, TitanTheme.bgWindow.g * 0.85, TitanTheme.bgWindow.b * 0.85, Math.min(0.95, 0.40 * TitanTheme.glassFactor)) :
+                            Qt.rgba(TitanTheme.bgWindow.r * 0.95, TitanTheme.bgWindow.g * 0.95, TitanTheme.bgWindow.b * 0.95, Math.min(0.95, 0.52 * TitanTheme.glassFactor))
                     }
                 }
 
@@ -295,20 +295,20 @@ Window {
                     GradientStop {
                         position: 0.0
                         color: TitanTheme.isDark ?
-                            Qt.rgba(TitanTheme.bgWindow.r + 0.06, TitanTheme.bgWindow.g + 0.06, TitanTheme.bgWindow.b + 0.08, 0.52) :
-                            Qt.rgba(1.0, 1.0, 1.0, 0.72)
+                            Qt.rgba(TitanTheme.bgWindow.r + 0.06, TitanTheme.bgWindow.g + 0.06, TitanTheme.bgWindow.b + 0.08, Math.min(0.95, 0.52 * TitanTheme.glassFactor)) :
+                            Qt.rgba(1.0, 1.0, 1.0, Math.min(0.95, 0.72 * TitanTheme.glassFactor))
                     }
                     GradientStop {
                         position: 0.35
                         color: TitanTheme.isDark ?
-                            Qt.rgba(TitanTheme.bgWindow.r, TitanTheme.bgWindow.g, TitanTheme.bgWindow.b, 0.46) :
-                            Qt.rgba(TitanTheme.bgWindow.r, TitanTheme.bgWindow.g, TitanTheme.bgWindow.b, 0.60)
+                            Qt.rgba(TitanTheme.bgWindow.r, TitanTheme.bgWindow.g, TitanTheme.bgWindow.b, Math.min(0.95, 0.46 * TitanTheme.glassFactor)) :
+                            Qt.rgba(TitanTheme.bgWindow.r, TitanTheme.bgWindow.g, TitanTheme.bgWindow.b, Math.min(0.95, 0.60 * TitanTheme.glassFactor))
                     }
                     GradientStop {
                         position: 1.0
                         color: TitanTheme.isDark ?
-                            Qt.rgba(TitanTheme.bgWindow.r * 0.85, TitanTheme.bgWindow.g * 0.85, TitanTheme.bgWindow.b * 0.85, 0.40) :
-                            Qt.rgba(TitanTheme.bgWindow.r * 0.95, TitanTheme.bgWindow.g * 0.95, TitanTheme.bgWindow.b * 0.95, 0.52)
+                            Qt.rgba(TitanTheme.bgWindow.r * 0.85, TitanTheme.bgWindow.g * 0.85, TitanTheme.bgWindow.b * 0.85, Math.min(0.95, 0.40 * TitanTheme.glassFactor)) :
+                            Qt.rgba(TitanTheme.bgWindow.r * 0.95, TitanTheme.bgWindow.g * 0.95, TitanTheme.bgWindow.b * 0.95, Math.min(0.95, 0.52 * TitanTheme.glassFactor))
                     }
                 }
 

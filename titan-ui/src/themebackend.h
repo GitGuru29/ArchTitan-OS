@@ -50,6 +50,8 @@ class ThemeBackend : public QObject
     Q_PROPERTY(QColor mauve READ mauve NOTIFY changed)
     Q_PROPERTY(QColor peach READ peach NOTIFY changed)
     Q_PROPERTY(QColor pink READ pink NOTIFY changed)
+    Q_PROPERTY(qreal glassOpacity READ glassOpacity NOTIFY changed)
+    Q_PROPERTY(qreal glassFactor READ glassFactor NOTIFY changed)
 
 public:
     explicit ThemeBackend(QObject *parent = nullptr);
@@ -57,6 +59,8 @@ public:
     QString id() const { return m_id; }
     QString name() const { return m_name; }
     bool isDark() const { return m_isDark; }
+    qreal glassOpacity() const { return m_glassOpacity; }
+    qreal glassFactor() const { return m_glassOpacity / 0.35; }
     QColor accent() const { return color("accent"); }
     QColor accentFg() const;
     QColor accent2() const { return color("accent2"); }
@@ -99,5 +103,6 @@ private:
     QString m_id = QStringLiteral("mocha");
     QString m_name = QStringLiteral("Catppuccin Mocha");
     bool m_isDark = true;
+    qreal m_glassOpacity = 0.35;
     QFileSystemWatcher m_watcher;
 };

@@ -15,12 +15,14 @@ import ArchTitan.TitanUI as TDL
  */
 QtObject {
     readonly property bool isDark: TDL.TitanTheme.isDark
+    readonly property real glassOpacity: TDL.TitanTheme.glassOpacity
+    readonly property real glassFactor: TDL.TitanTheme.glassFactor
 
     readonly property string fontFamily: TDL.TitanTheme.fontFamily
     readonly property string monoFamily: TDL.TitanTheme.monoFamily
 
     // ── Window / bento surfaces (macOS Liquid Frosted Glass) ──────────────
-    readonly property color bgWindow:          isDark ? Qt.rgba(TDL.TitanTheme.base.r, TDL.TitanTheme.base.g, TDL.TitanTheme.base.b, 0.46) : Qt.rgba(TDL.TitanTheme.base.r, TDL.TitanTheme.base.g, TDL.TitanTheme.base.b, 0.62)
+    readonly property color bgWindow:          isDark ? Qt.rgba(TDL.TitanTheme.base.r, TDL.TitanTheme.base.g, TDL.TitanTheme.base.b, Math.min(0.95, 0.46 * glassFactor)) : Qt.rgba(TDL.TitanTheme.base.r, TDL.TitanTheme.base.g, TDL.TitanTheme.base.b, Math.min(0.95, 0.62 * glassFactor))
     readonly property color bgSurface:         isDark ? Qt.rgba(1, 1, 1, 0.05) : Qt.rgba(1, 1, 1, 0.45)
     readonly property color bgSurfaceAlt:      isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(1, 1, 1, 0.60)
     readonly property color bgInset:           isDark ? Qt.rgba(0, 0, 0, 0.28) : Qt.rgba(0, 0, 0, 0.05)

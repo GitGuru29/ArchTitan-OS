@@ -67,6 +67,7 @@ inline const QHash<QString, QColor> &mocha()
 struct Snapshot {
     QHash<QString, QColor> pal;
     bool dark = true;
+    double glassOpacity = 0.35;
     QString id = QStringLiteral("mocha");
     QString name = QStringLiteral("Catppuccin Mocha");
 };
@@ -97,6 +98,8 @@ inline Snapshot load()
         s.name = obj.value(QStringLiteral("name")).toString();
     if (obj.contains(QStringLiteral("isDark")))
         s.dark = obj.value(QStringLiteral("isDark")).toBool(true);
+    if (obj.contains(QStringLiteral("glassOpacity")))
+        s.glassOpacity = obj.value(QStringLiteral("glassOpacity")).toDouble(0.35);
 
     for (const QString &key : {QStringLiteral("accent"), QStringLiteral("accent2")}) {
         const QString v = obj.value(key).toString();
@@ -258,6 +261,8 @@ inline int easingEnter()    { return QEasingCurve::OutCubic; }
 inline int easingExit()     { return QEasingCurve::InCubic; }
 inline int easingEmphasis() { return QEasingCurve::OutQuart; }
 inline double pressScale() { return 0.97; }
+inline double glassOpacity() { return detail::snap().glassOpacity; }
+inline double glassFactor()  { return detail::snap().glassOpacity / 0.35; }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 inline QString hex(const QColor &c)  { return c.name(QColor::HexRgb); }

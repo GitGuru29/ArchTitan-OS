@@ -241,6 +241,24 @@ Module {
             lineNumber: 52
             isReadonly: true
         }
-        Signal { name: "changed"; lineNumber: 84 }
+        Property {
+            name: "glassOpacity"
+            type: "double"
+            read: "glassOpacity"
+            notify: "changed"
+            index: 25
+            lineNumber: 53
+            isReadonly: true
+        }
+        Property {
+            name: "glassFactor"
+            type: "double"
+            read: "glassFactor"
+            notify: "changed"
+            index: 26
+            lineNumber: 54
+            isReadonly: true
+        }
+        Signal { name: "changed"; lineNumber: 88 }
     }
 }

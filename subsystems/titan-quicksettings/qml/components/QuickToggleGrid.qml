@@ -197,6 +197,19 @@ ColumnLayout {
                     if (typeof audioCtrl !== "undefined" && audioCtrl) audioCtrl.setVolume(v)
                 }
             }
+
+            // Glass Transparency / Opacity Slider
+            OneUISlider {
+                iconGlyph: "\uf043" // water droplet / glass tint
+                from: 10
+                to: 95
+                value: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.glassOpacity : 35
+                fillAccent: TitanTheme.cyan
+                suffix: "%"
+                onChanged: (v) => {
+                    if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.setGlassOpacity(v)
+                }
+            }
         }
     }
 

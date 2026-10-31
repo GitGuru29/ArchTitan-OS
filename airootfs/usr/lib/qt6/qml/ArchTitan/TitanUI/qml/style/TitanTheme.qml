@@ -26,6 +26,10 @@ QtObject {
     readonly property color accentSofter:          Qt.rgba(accent.r, accent.g, accent.b, 0.10)
     readonly property color accentEdge:            Qt.rgba(accent.r, accent.g, accent.b, 0.55)
 
+    // ── Glass & Transparency ────────────────────────────────────────────────
+    readonly property real glassOpacity: ThemeBackend.glassOpacity
+    readonly property real glassFactor:  ThemeBackend.glassFactor
+
     // ── Theme surfaces ──────────────────────────────────────────────────────
     readonly property color crust:    ThemeBackend.crust
     readonly property color mantle:   ThemeBackend.mantle

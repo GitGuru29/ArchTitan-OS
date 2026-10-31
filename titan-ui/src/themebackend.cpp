@@ -69,6 +69,7 @@ void ThemeBackend::reload()
     QString id = QStringLiteral("mocha");
     QString name = QStringLiteral("Catppuccin Mocha");
     bool dark = true;
+    qreal glassOpacity = 0.35;
 
     QFile f(configPath());
     if (f.open(QIODevice::ReadOnly)) {
@@ -81,6 +82,11 @@ void ThemeBackend::reload()
                 name = obj.value("name").toString();
             if (obj.contains("isDark"))
                 dark = obj.value("isDark").toBool(true);
+            if (obj.contains("glassOpacity")) {
+                glassOpacity = obj.value("glassOpacity").toDouble(0.35);
+                if (glassOpacity < 0.05) glassOpacity = 0.05;
+                if (glassOpacity > 1.0) glassOpacity = 1.0;
+            }
 
             // Accent first: an explicit palette accent still wins, but the
             // top-level keys are the ones titan-theme writes.
@@ -98,11 +104,12 @@ void ThemeBackend::reload()
         }
     }
 
-    if (pal != m_pal || dark != m_isDark || id != m_id || name != m_name) {
+    if (pal != m_pal || dark != m_isDark || id != m_id || name != m_name || !qFuzzyCompare(glassOpacity, m_glassOpacity)) {
         m_pal = pal;
         m_isDark = dark;
         m_id = id;
         m_name = name;
+        m_glassOpacity = glassOpacity;
         emit changed();
     }
 

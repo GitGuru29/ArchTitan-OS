@@ -17,6 +17,7 @@ Usage:
   titan-theme next | prev          Cycle themes (alphabetical by id)
   titan-theme random               Switch to a random theme
   titan-theme accent <#rrggbb>     Override the accent, keep theme + wallpaper
+  titan-theme glass <value>        Configure system-wide glass transparency (10..95% or 0.1..0.95)
   titan-theme mode <dark|light>    Switch to the baseline theme for a mode
   titan-theme apply                Re-apply the active theme in place
                                    (startup sync: no wallpaper change, no toast)
@@ -198,6 +199,9 @@ def waybar_body(t: dict) -> str:
     text_mid = "#4C4F69" if not dark else p["textMid"]
     text_low = "#6C6F85" if not dark else p["textLow"]
 
+    glass_opacity = float(t.get("glassOpacity", 0.35))
+    glass_factor = glass_opacity / 0.35
+
     # Floating Bento Modules (zero outer bar background)
     bar_bg = "transparent"
     bar_border = "transparent"
@@ -205,9 +209,12 @@ def waybar_body(t: dict) -> str:
     bar_shadow = "transparent"
 
     if dark:
-        module_bg = rgba(crust, 0.65)
-        module_border = "rgba(255, 255, 255, 0.12)"
-        module_hover = rgba(crust, 0.85)
+        mod_alpha = max(0.12, min(0.95, 0.65 * glass_factor))
+        hov_alpha = max(0.20, min(0.98, 0.85 * glass_factor))
+        border_alpha = max(0.04, min(0.35, 0.12 * glass_factor))
+        module_bg = rgba(crust, mod_alpha)
+        module_border = f"rgba(255, 255, 255, {border_alpha:.2f})"
+        module_hover = rgba(crust, hov_alpha)
         accent_soft = rgba(acc, 0.16)
         accent_glow = rgba(acc, 0.35)
         accent_border = rgba(acc, 0.55)
@@ -215,9 +222,12 @@ def waybar_body(t: dict) -> str:
         # Soothing, glare-free light frosted glass using theme's mantle & surface tones
         mantle = p.get("mantle", "#E6E9EF")
         surface0 = p.get("surface0", "#CCD0DA")
-        module_bg = rgba(mantle, 0.78)
-        module_border = "rgba(108, 112, 134, 0.18)"
-        module_hover = rgba(surface0, 0.88)
+        mod_alpha = max(0.15, min(0.95, 0.78 * glass_factor))
+        hov_alpha = max(0.25, min(0.98, 0.88 * glass_factor))
+        border_alpha = max(0.06, min(0.40, 0.18 * glass_factor))
+        module_bg = rgba(mantle, mod_alpha)
+        module_border = f"rgba(108, 112, 134, {border_alpha:.2f})"
+        module_hover = rgba(surface0, hov_alpha)
         accent_soft = rgba(acc, 0.14)
         accent_glow = rgba(acc, 0.22)
         accent_border = rgba(acc, 0.45)
@@ -648,6 +658,22 @@ def cmd_mode(mode: str) -> None:
     notify("Theme Mode", f"{'Dark' if want_dark else 'Light'} Mode")
 
 
+def cmd_glass(val_str: str) -> None:
+    try:
+        raw = val_str.strip().rstrip("%")
+        v = float(raw)
+    except ValueError:
+        die(f"bad glass value '{val_str}' (expected percentage 10..95 or float 0.1..0.95)")
+    if v > 1.0:
+        v /= 100.0
+    v = max(0.10, min(0.95, round(v, 2)))
+    theme = read_state()
+    theme["glassOpacity"] = v
+    write_state(theme)
+    cmd_apply()
+    notify("Glass Transparency", f"{int(v * 100)}% Opacity")
+
+
 def cmd_cycle(step: int) -> None:
     ids = installed_ids()
     if not ids:
@@ -700,6 +726,10 @@ def main(argv: list[str]) -> int:
         if not rest:
             die("accent: missing colour")
         cmd_accent(rest[0])
+    elif cmd == "glass":
+        if not rest:
+            die("glass: missing value (e.g. 35 or 0.35)")
+        cmd_glass(rest[0])
     elif cmd == "mode":
         if not rest:
             die("mode: missing dark|light")
