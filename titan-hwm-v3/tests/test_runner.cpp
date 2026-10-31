@@ -48,6 +48,10 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/prctl.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <poll.h>
+#include <functional>
 #include <unistd.h>
 
 namespace fs = std::filesystem;
@@ -1575,6 +1579,171 @@ void test_tc17_measured_cpu_percent() {
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
+// TC-18: Hyprland IPC late start + reconnect
+//
+// Regression for the boot race: THM (a system service) can start before the
+// SDDM autologin session creates Hyprland's socket. The monitor used to look
+// exactly once and then stay "headless" for the whole session. It must connect
+// when the socket appears later, survive the compositor restarting, and still
+// shut down promptly.
+//
+// Uses a fake Hyprland socket in a temp tree (THM_RUN_USER_DIR) so it never
+// touches a real compositor on the host.
+// ═════════════════════════════════════════════════════════════════════════════
+static int tc18_listen(const std::string& path) {
+    fs::create_directories(fs::path(path).parent_path());
+    ::unlink(path.c_str());
+    int fd = ::socket(AF_UNIX, SOCK_STREAM, 0);
+    if (fd < 0) return -1;
+    struct sockaddr_un a{};
+    a.sun_family = AF_UNIX;
+    std::strncpy(a.sun_path, path.c_str(), sizeof(a.sun_path) - 1);
+    if (::bind(fd, reinterpret_cast<struct sockaddr*>(&a), sizeof(a)) != 0 ||
+        ::listen(fd, 4) != 0) {
+        ::close(fd);
+        return -1;
+    }
+    return fd;
+}
+
+static int tc18_accept(int listen_fd, int timeout_ms) {
+    struct pollfd p{};
+    p.fd = listen_fd;
+    p.events = POLLIN;
+    if (::poll(&p, 1, timeout_ms) <= 0) return -1;
+    return ::accept(listen_fd, nullptr, nullptr);
+}
+
+static bool tc18_wait(const std::function<bool()>& pred, int timeout_ms) {
+    auto deadline = std::chrono::steady_clock::now() +
+                    std::chrono::milliseconds(timeout_ms);
+    while (std::chrono::steady_clock::now() < deadline) {
+        if (pred()) return true;
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    }
+    return pred();
+}
+
+void test_tc18_hyprland_late_start_reconnect() {
+    log_test_header(18, "Hyprland IPC late start + reconnect",
+                    "THM connects when Hyprland appears after boot and survives its restart");
+    auto t0 = std::chrono::steady_clock::now();
+    std::vector<std::string> failures;
+
+    const fs::path root = fs::temp_directory_path() /
+                          ("thm-tc18-" + std::to_string(::getpid()));
+    const std::string sock = (root / "1000" / "hypr" / "testsig" / ".socket2.sock").string();
+    fs::remove_all(root);
+    fs::create_directories(root);
+
+    // Force the scan path into our temp tree and away from any real session.
+    ::setenv("THM_RUN_USER_DIR", root.c_str(), 1);
+    const char* old_xdg = std::getenv("XDG_RUNTIME_DIR");
+    const char* old_sig = std::getenv("HYPRLAND_INSTANCE_SIGNATURE");
+    const std::string saved_xdg = old_xdg ? old_xdg : "";
+    const std::string saved_sig = old_sig ? old_sig : "";
+    ::unsetenv("XDG_RUNTIME_DIR");
+    ::unsetenv("HYPRLAND_INSTANCE_SIGNATURE");
+
+    {
+        thm::WorkspaceMonitor mon;
+
+        // ── 1. Start with NO Hyprland: must not give up or crash ──
+        const bool started = mon.start();
+        std::this_thread::sleep_for(std::chrono::milliseconds(400));
+        std::cout << "[WS-Retry] started=" << started
+                  << " connected(no socket)=" << mon.connected() << "\n";
+        if (!started)       failures.push_back("start() failed with no Hyprland present");
+        if (mon.connected()) failures.push_back("claims connected with no socket");
+
+        // ── 2. Hyprland appears LATER: monitor must connect on its own ──
+        int srv = tc18_listen(sock);
+        if (srv < 0) {
+            failures.push_back("test setup: could not create fake Hyprland socket");
+        } else {
+            int cli = tc18_accept(srv, 6000);
+            const bool late_connect = tc18_wait([&] { return mon.connected(); }, 1000);
+            std::cout << "[WS-Retry] late connect: accepted=" << (cli >= 0)
+                      << " connected=" << late_connect << "\n";
+            if (cli < 0 || !late_connect)
+                failures.push_back("did not connect after Hyprland appeared late");
+
+            if (cli >= 0) {
+                const char ev[] = "workspace>>7\n";
+                (void)::write(cli, ev, sizeof(ev) - 1);
+                const bool got = tc18_wait([&] { return mon.focused_workspace() == 7; }, 2000);
+                std::cout << "[WS-Retry] event after late connect: focused_ws="
+                          << mon.focused_workspace() << "\n";
+                if (!got) failures.push_back("event not delivered after late connect");
+
+                // ── 3. Compositor 'restarts': drop connection + socket ──
+                ::close(cli);
+                ::close(srv);
+                ::unlink(sock.c_str());
+                const bool dropped = tc18_wait([&] { return !mon.connected(); }, 2500);
+                std::cout << "[WS-Retry] after Hyprland exit: connected="
+                          << mon.connected() << "\n";
+                if (!dropped) failures.push_back("still 'connected' after Hyprland exited");
+
+                // ── 4. New instance comes up: monitor must reconnect ──
+                int srv2 = tc18_listen(sock);
+                if (srv2 < 0) {
+                    failures.push_back("test setup: could not recreate fake socket");
+                } else {
+                    int cli2 = tc18_accept(srv2, 6000);
+                    const bool re = tc18_wait([&] { return mon.connected(); }, 1000);
+                    std::cout << "[WS-Retry] reconnect: accepted=" << (cli2 >= 0)
+                              << " connected=" << re << "\n";
+                    if (cli2 < 0 || !re)
+                        failures.push_back("did not reconnect after Hyprland restart");
+                    if (cli2 >= 0) {
+                        const char ev2[] = "workspace>>9\n";
+                        (void)::write(cli2, ev2, sizeof(ev2) - 1);
+                        if (!tc18_wait([&] { return mon.focused_workspace() == 9; }, 2000))
+                            failures.push_back("event not delivered after reconnect");
+                        ::close(cli2);
+                    }
+                    ::close(srv2);
+                }
+            } else {
+                ::close(srv);
+            }
+        }
+
+        // ── 5. stop() must return promptly (no hang while retrying/streaming) ──
+        auto s0 = std::chrono::steady_clock::now();
+        mon.stop();
+        long stop_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                           std::chrono::steady_clock::now() - s0).count();
+        std::cout << "[WS-Retry] stop() took " << stop_ms << "ms\n";
+        if (stop_ms > 1500)
+            failures.push_back("stop() took " + std::to_string(stop_ms) + "ms (hang)");
+    }
+
+    // Restore environment + clean up.
+    ::unsetenv("THM_RUN_USER_DIR");
+    if (old_xdg) ::setenv("XDG_RUNTIME_DIR", saved_xdg.c_str(), 1);
+    if (old_sig) ::setenv("HYPRLAND_INSTANCE_SIGNATURE", saved_sig.c_str(), 1);
+    fs::remove_all(root);
+
+    const bool passed = failures.empty();
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-18: Hyprland Late Start/Reconnect",
+                        "THM connects when Hyprland appears after boot and survives its restart",
+                        passed,
+                        passed ? "late connect, restart reconnect, prompt stop"
+                               : "see failure list above",
+                        ms});
+
+    if (passed) {
+        std::cout << ">>> PASS: monitor connects late, reconnects, and stops cleanly.\n";
+    } else {
+        for (const auto& f : failures) std::cout << ">>> FAIL: " << f << "\n";
+    }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
 // Main Test Harness Entry Point
 // ═════════════════════════════════════════════════════════════════════════════
 int main() {
@@ -1600,6 +1769,7 @@ int main() {
     test_tc15_observed_policy_guard();
     test_tc16_telemetry_contract();
     test_tc17_measured_cpu_percent();
+    test_tc18_hyprland_late_start_reconnect();
 
     // Summary Table
     std::cout << "\n════════════════════════════════════════════════════════════════════════════════\n";
