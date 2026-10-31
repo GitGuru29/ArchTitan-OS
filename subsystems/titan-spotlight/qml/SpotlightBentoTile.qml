@@ -133,8 +133,6 @@ Item {
                     asynchronous: true
                     scale: (bentoRoot.isSelected || bentoMouse.containsMouse) ? 1.08 : 1.0
                     Behavior on scale { NumberAnimation { duration: 120 } }
-                    smooth: true
-                    asynchronous: true
 
                     Text {
                         anchors.centerIn: parent
