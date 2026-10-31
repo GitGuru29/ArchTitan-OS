@@ -15,6 +15,9 @@
 - [Titan Browser](Titan-Browser)
 - [ArchTitan Settings](ArchTitan-Settings)
 - [Titan Media HUD](Titan-Media-HUD)
+- [Titan Menu](Titan-Menu)
+- [Titan Quick Settings](Titan-QuickSettings)
+- [Titan System Monitor](Titan-Sysmon)
 - [Titan Share](Titan-Share)
 - [Desktop Environment](Desktop-Environment)
 
