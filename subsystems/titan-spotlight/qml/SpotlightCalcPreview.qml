@@ -6,18 +6,20 @@ Rectangle {
     width: parent.width
     height: 64
     radius: 14
-    color: TitanTheme.isDark ? Qt.rgba(0, 0, 0, 0.38) : Qt.rgba(0, 0, 0, 0.04)
-    border.width: isSelected ? 1.5 : 0
-    border.color: isSelected ? TitanTheme.accent : "transparent"
+    color: calcCard.isSelected
+           ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.28)
+           : Qt.rgba(1, 1, 1, 0.08)
+    border.width: calcCard.isSelected ? 1.5 : 1
+    border.color: calcCard.isSelected ? TitanTheme.accent : Qt.rgba(1, 1, 1, 0.12)
 
-    // 3D Drop Shadow
+    // Ambient glow halo
     Rectangle {
         anchors.fill: parent
-        anchors.topMargin: 2
-        anchors.bottomMargin: -2
-        radius: calcCard.radius
+        anchors.margins: -1
+        radius: calcCard.radius + 1
         z: -1
-        color: Qt.rgba(0, 0, 0, 0.30)
+        color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.20)
+        visible: calcCard.isSelected
     }
 
     property bool isSelected: false

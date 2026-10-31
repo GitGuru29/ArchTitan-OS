@@ -84,7 +84,7 @@ Window {
     // ── Scrim ────────────────────────────────────────────────────────────────
     Rectangle {
         anchors.fill: parent
-        color: Qt.rgba(0, 0, 0, 0.50)
+        color: Qt.rgba(0, 0, 0, 0.14)
         opacity: root.menuOpen ? 1.0 : 0.0
         Behavior on opacity { NumberAnimation { duration: TitanTheme.durBase; easing.type: TitanTheme.easingStandard } }
 
@@ -120,8 +120,18 @@ Window {
             border.color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.42)
 
             gradient: Gradient {
-                GradientStop { position: 0.0; color: Qt.rgba(TitanTheme.mantle.r, TitanTheme.mantle.g, TitanTheme.mantle.b, 0.62) }
-                GradientStop { position: 1.0; color: Qt.rgba(TitanTheme.crust.r, TitanTheme.crust.g, TitanTheme.crust.b, 0.50) }
+                GradientStop {
+                    position: 0.0
+                    color: TitanTheme.isDark
+                           ? Qt.rgba(TitanTheme.surface1.r, TitanTheme.surface1.g, TitanTheme.surface1.b, 0.32)
+                           : Qt.rgba(1, 1, 1, 0.88)
+                }
+                GradientStop {
+                    position: 1.0
+                    color: TitanTheme.isDark
+                           ? Qt.rgba(TitanTheme.surface0.r, TitanTheme.surface0.g, TitanTheme.surface0.b, 0.18)
+                           : Qt.rgba(1, 1, 1, 0.74)
+                }
             }
 
             // 3D Glass Specular Sheen (Curved top-light wash)
@@ -406,16 +416,6 @@ Window {
                         }
                         Behavior on scale { NumberAnimation { duration: 130; easing.type: Easing.OutBack } }
 
-                        // 3D Drop Shadow behind tile
-                        Rectangle {
-                            anchors.fill: gridTile
-                            anchors.topMargin: tileDelegate.current ? 4 : (tileHover.containsMouse ? 3 : 2)
-                            anchors.bottomMargin: tileDelegate.current ? -4 : (tileHover.containsMouse ? -3 : -2)
-                            radius: gridTile.radius + 1
-                            z: -2
-                            color: Qt.rgba(0, 0, 0, tileDelegate.current ? 0.55 : (tileHover.containsMouse ? 0.45 : 0.30))
-                        }
-
                         // Outer glowing halo
                         Rectangle {
                             anchors.fill: gridTile
@@ -440,27 +440,27 @@ Window {
                                 GradientStop {
                                     position: 0.0
                                     color: gridTile.current
-                                           ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.26)
+                                           ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.38)
                                            : (tileHover.containsMouse
-                                              ? (TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.05))
-                                              : (TitanTheme.isDark ? Qt.rgba(0, 0, 0, 0.35) : Qt.rgba(1, 1, 1, 0.70)))
+                                              ? Qt.rgba(1, 1, 1, 0.22)
+                                              : Qt.rgba(1, 1, 1, 0.12))
                                 }
                                 GradientStop {
                                     position: 1.0
                                     color: gridTile.current
-                                           ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.11)
+                                           ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.16)
                                            : (tileHover.containsMouse
-                                              ? (TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.03) : Qt.rgba(0, 0, 0, 0.03))
-                                              : (TitanTheme.isDark ? Qt.rgba(0, 0, 0, 0.50) : Qt.rgba(1, 1, 1, 0.50)))
+                                              ? Qt.rgba(1, 1, 1, 0.07)
+                                              : Qt.rgba(1, 1, 1, 0.04))
                                 }
                             }
 
-                            border.width: gridTile.current ? 1.5 : (tileHover.containsMouse ? 1 : 0)
+                            border.width: gridTile.current ? 1.5 : 1
                             border.color: gridTile.current
                                           ? TitanTheme.accent
                                           : (tileHover.containsMouse
-                                             ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.40)
-                                             : "transparent")
+                                             ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.45)
+                                             : Qt.rgba(1, 1, 1, 0.12))
 
                             Column {
                                 anchors.centerIn: parent
@@ -472,19 +472,11 @@ Window {
                                     height: 40
                                     radius: 12
                                     anchors.horizontalCenter: parent.horizontalCenter
-                                    color: gridTile.current ? TitanTheme.accentSoft : Qt.rgba(0, 0, 0, 0.35)
-                                    border.width: gridTile.current ? 1 : 0
-                                    border.color: gridTile.current ? TitanTheme.accentEdge : "transparent"
-
-                                    // Subtle pedestal shadow
-                                    Rectangle {
-                                        anchors.fill: parent
-                                        anchors.topMargin: 2
-                                        anchors.bottomMargin: -2
-                                        radius: parent.radius
-                                        z: -1
-                                        color: Qt.rgba(0, 0, 0, 0.25)
-                                    }
+                                    color: gridTile.current
+                                           ? Qt.rgba(1, 1, 1, 0.20)
+                                           : (tileHover.containsMouse ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(1, 1, 1, 0.09))
+                                    border.width: 1
+                                    border.color: gridTile.current ? TitanTheme.accentEdge : Qt.rgba(1, 1, 1, 0.15)
 
                                     TitanIcon {
                                         anchors.centerIn: parent

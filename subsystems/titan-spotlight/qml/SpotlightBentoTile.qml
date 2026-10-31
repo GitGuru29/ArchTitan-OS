@@ -23,21 +23,6 @@ Item {
         NumberAnimation { duration: 130; easing.type: Easing.OutBack }
     }
 
-    // Layered 3D Ambient Drop Shadow under the bento tile
-    Rectangle {
-        id: bentoDropShadow
-        anchors.fill: bentoBody
-        anchors.topMargin: bentoRoot.isSelected ? 5 : (bentoMouse.containsMouse ? 4 : 2)
-        anchors.bottomMargin: bentoRoot.isSelected ? -5 : (bentoMouse.containsMouse ? -4 : -2)
-        anchors.leftMargin: -2
-        anchors.rightMargin: -2
-        radius: bentoBody.radius + 2
-        z: -2
-        color: Qt.rgba(0, 0, 0, bentoRoot.isSelected ? 0.60 : (bentoMouse.containsMouse ? 0.48 : 0.35))
-        Behavior on anchors.topMargin { NumberAnimation { duration: 120 } }
-        Behavior on anchors.bottomMargin { NumberAnimation { duration: 120 } }
-    }
-
     // Outer luminous ambient glow halo when selected/hovered
     Rectangle {
         anchors.fill: bentoBody
@@ -59,18 +44,18 @@ Item {
             GradientStop {
                 position: 0.0
                 color: bentoRoot.isSelected
-                       ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.32)
+                       ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.38)
                        : (bentoMouse.containsMouse
-                          ? (TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(1, 1, 1, 0.85))
-                          : (TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(1, 1, 1, 0.70)))
+                          ? Qt.rgba(1, 1, 1, 0.22)
+                          : Qt.rgba(1, 1, 1, 0.12))
             }
             GradientStop {
                 position: 1.0
                 color: bentoRoot.isSelected
-                       ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.12)
+                       ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.16)
                        : (bentoMouse.containsMouse
-                          ? (TitanTheme.isDark ? Qt.rgba(0, 0, 0, 0.25) : Qt.rgba(0, 0, 0, 0.04))
-                          : (TitanTheme.isDark ? Qt.rgba(0, 0, 0, 0.28) : Qt.rgba(0, 0, 0, 0.06)))
+                          ? Qt.rgba(1, 1, 1, 0.07)
+                          : Qt.rgba(1, 1, 1, 0.04))
             }
         }
 
@@ -78,8 +63,8 @@ Item {
         border.color: bentoRoot.isSelected
                       ? TitanTheme.accent
                       : (bentoMouse.containsMouse
-                         ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.40)
-                         : Qt.rgba(1, 1, 1, 0.08))
+                         ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.45)
+                         : Qt.rgba(1, 1, 1, 0.12))
 
         Behavior on border.color { ColorAnimation { duration: 110 } }
 
@@ -95,9 +80,26 @@ Item {
                 GradientStop {
                     position: 0.0
                     color: bentoRoot.isSelected
-                           ? Qt.rgba(1, 1, 1, 0.20)
-                           : (bentoMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(1, 1, 1, 0.08))
+                           ? Qt.rgba(1, 1, 1, 0.25)
+                           : (bentoMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.18) : Qt.rgba(1, 1, 1, 0.10))
                 }
+                GradientStop { position: 1.0; color: "transparent" }
+            }
+        }
+
+        // Top Specular Horizon Glint (3D beveled edge light)
+        Rectangle {
+            anchors.top: parent.top
+            anchors.topMargin: 1
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: parent.width - 24
+            height: 1
+            radius: 1
+            z: 1
+            gradient: Gradient {
+                orientation: Gradient.Horizontal
+                GradientStop { position: 0.0; color: "transparent" }
+                GradientStop { position: 0.5; color: bentoRoot.isSelected ? Qt.rgba(1, 1, 1, 0.55) : Qt.rgba(1, 1, 1, 0.25) }
                 GradientStop { position: 1.0; color: "transparent" }
             }
         }
@@ -127,20 +129,25 @@ Item {
                 radius: 13
                 anchors.left: parent.left
                 anchors.verticalCenter: parent.verticalCenter
-                color: TitanTheme.isDark ? Qt.rgba(0, 0, 0, 0.40) : Qt.rgba(1, 1, 1, 0.82)
+                color: bentoRoot.isSelected
+                       ? Qt.rgba(1, 1, 1, 0.18)
+                       : (bentoMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(1, 1, 1, 0.09))
                 border.width: 1
                 border.color: bentoRoot.isSelected
-                              ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.5)
-                              : Qt.rgba(1, 1, 1, 0.08)
+                              ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.55)
+                              : Qt.rgba(1, 1, 1, 0.15)
 
-                // Subtle pedestal drop shadow
+                // Top specular sheen inside icon squircle
                 Rectangle {
-                    anchors.fill: parent
-                    anchors.topMargin: 2
-                    anchors.bottomMargin: -2
+                    anchors.top: parent.top
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    height: 14
                     radius: parent.radius
-                    z: -1
-                    color: Qt.rgba(0, 0, 0, 0.32)
+                    gradient: Gradient {
+                        GradientStop { position: 0.0; color: Qt.rgba(1, 1, 1, 0.18) }
+                        GradientStop { position: 1.0; color: "transparent" }
+                    }
                 }
 
                 Image {
@@ -206,10 +213,10 @@ Item {
                 width: rightText.implicitWidth + 12
                 radius: 6
                 color: bentoRoot.isSelected
-                       ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.28)
-                       : (TitanTheme.isDark ? Qt.rgba(0, 0, 0, 0.35) : Qt.rgba(0, 0, 0, 0.05))
-                border.width: bentoRoot.isSelected ? 1 : 0
-                border.color: bentoRoot.isSelected ? TitanTheme.accent : "transparent"
+                       ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.30)
+                       : Qt.rgba(1, 1, 1, 0.08)
+                border.width: 1
+                border.color: bentoRoot.isSelected ? TitanTheme.accent : Qt.rgba(1, 1, 1, 0.12)
 
                 Text {
                     id: rightText

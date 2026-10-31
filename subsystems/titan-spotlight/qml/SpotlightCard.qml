@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Effects
 import ArchTitan.TitanUI
 
 Rectangle {
@@ -10,53 +11,39 @@ Rectangle {
         GradientStop {
             position: 0.0
             color: TitanTheme.isDark
-                   ? Qt.rgba(TitanTheme.mantle.r, TitanTheme.mantle.g, TitanTheme.mantle.b, 0.62)
-                   : Qt.rgba(1, 1, 1, 0.80)
+                   ? Qt.rgba(TitanTheme.surface1.r, TitanTheme.surface1.g, TitanTheme.surface1.b, 0.32)
+                   : Qt.rgba(1, 1, 1, 0.88)
         }
         GradientStop {
             position: 1.0
             color: TitanTheme.isDark
-                   ? Qt.rgba(TitanTheme.crust.r, TitanTheme.crust.g, TitanTheme.crust.b, 0.50)
-                   : Qt.rgba(1, 1, 1, 0.68)
+                   ? Qt.rgba(TitanTheme.surface0.r, TitanTheme.surface0.g, TitanTheme.surface0.b, 0.18)
+                   : Qt.rgba(1, 1, 1, 0.74)
         }
     }
 
-    border.width: 1
-    border.color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.35)
+    border.width: 1.5
+    border.color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.45)
 
-    // Deep 3D Ambient Drop Shadow (Layer 1 - diffuse ground shadow)
-    Rectangle {
-        anchors.fill: parent
-        anchors.topMargin: 12
-        anchors.bottomMargin: -12
-        anchors.leftMargin: -8
-        anchors.rightMargin: -8
-        radius: cardRoot.radius + 6
-        z: -3
-        color: Qt.rgba(0, 0, 0, 0.50)
+    // True GPU drop shadow outside perimeter (never paints black inside the glass)
+    layer.enabled: true
+    layer.effect: MultiEffect {
+        shadowEnabled: true
+        shadowColor: Qt.rgba(0, 0, 0, 0.65)
+        shadowBlur: 1.0
+        shadowVerticalOffset: 16
+        autoPaddingEnabled: true
     }
 
-    // Mid 3D Drop Shadow (Layer 2 - closer occluding shadow)
-    Rectangle {
-        anchors.fill: parent
-        anchors.topMargin: 4
-        anchors.bottomMargin: -4
-        anchors.leftMargin: -2
-        anchors.rightMargin: -2
-        radius: cardRoot.radius + 2
-        z: -2
-        color: Qt.rgba(0, 0, 0, 0.38)
-    }
-
-    // Outer luminous accent halo
+    // Outer soft accent halo
     Rectangle {
         anchors.fill: parent
         anchors.margins: -2
         radius: cardRoot.radius + 2
         z: -1
         color: "transparent"
-        border.width: 1.5
-        border.color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.16)
+        border.width: 1
+        border.color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.20)
     }
 
     // 3D Glass Specular Sheen (Curved top-light wash)
@@ -151,16 +138,16 @@ Rectangle {
                         width: catRow.implicitWidth + 16
                         radius: 8
                         color: isActive
-                               ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.28)
+                               ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.32)
                                : (catMouse.containsMouse
-                                  ? (TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08))
-                                  : (TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.05) : Qt.rgba(0, 0, 0, 0.04)))
+                                  ? (TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.16) : Qt.rgba(0, 0, 0, 0.08))
+                                  : (TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.04)))
                         border.width: 1
                         border.color: isActive
                                       ? TitanTheme.accent
                                       : (catMouse.containsMouse
-                                         ? Qt.rgba(1, 1, 1, 0.14)
-                                         : Qt.rgba(1, 1, 1, 0.06))
+                                         ? Qt.rgba(1, 1, 1, 0.22)
+                                         : Qt.rgba(1, 1, 1, 0.10))
 
                         Behavior on color { ColorAnimation { duration: 100 } }
 
@@ -211,8 +198,9 @@ Rectangle {
                 height: 22
                 width: countText.implicitWidth + 14
                 radius: 7
-                color: TitanTheme.isDark ? Qt.rgba(0, 0, 0, 0.28) : Qt.rgba(0, 0, 0, 0.05)
-                border.width: 0
+                color: TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.04)
+                border.width: 1
+                border.color: Qt.rgba(1, 1, 1, 0.10)
 
                 Text {
                     id: countText

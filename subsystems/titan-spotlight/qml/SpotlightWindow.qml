@@ -48,7 +48,7 @@ Window {
     Rectangle {
         id: scrim
         anchors.fill: parent
-        color: Qt.rgba(0, 0, 0, 0.22)
+        color: Qt.rgba(0, 0, 0, 0.14)
         opacity: root.spotlightOpen ? 1.0 : 0.0
 
         Behavior on opacity {

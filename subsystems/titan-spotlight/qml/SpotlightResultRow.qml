@@ -20,32 +20,33 @@ Rectangle {
     }
     Behavior on scale { NumberAnimation { duration: 110 } }
 
-    // 3D Drop Shadow behind selected/hovered row
+    // Outer luminous ambient glow halo when selected/hovered
     Rectangle {
         anchors.fill: parent
-        anchors.topMargin: rowRoot.isSelected ? 3 : 2
-        anchors.bottomMargin: rowRoot.isSelected ? -3 : -2
+        anchors.margins: -1
         radius: rowRoot.radius + 1
         z: -1
-        color: Qt.rgba(0, 0, 0, rowRoot.isSelected ? 0.45 : (rowHover.containsMouse ? 0.35 : 0.0))
+        color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.22)
         visible: rowRoot.isSelected || rowHover.containsMouse
+        opacity: rowRoot.isSelected ? 1.0 : (rowHover.containsMouse ? 0.40 : 0.0)
+        Behavior on opacity { NumberAnimation { duration: 110 } }
     }
 
     gradient: Gradient {
         GradientStop {
             position: 0.0
             color: rowRoot.isSelected
-                   ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, TitanTheme.isDark ? 0.30 : 0.20)
+                   ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.35)
                    : (rowHover.containsMouse
-                      ? (TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.09) : Qt.rgba(0, 0, 0, 0.05))
+                      ? Qt.rgba(1, 1, 1, 0.14)
                       : "transparent")
         }
         GradientStop {
             position: 1.0
             color: rowRoot.isSelected
-                   ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, TitanTheme.isDark ? 0.12 : 0.08)
+                   ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.14)
                    : (rowHover.containsMouse
-                      ? (TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.03) : Qt.rgba(0, 0, 0, 0.02))
+                      ? Qt.rgba(1, 1, 1, 0.05)
                       : "transparent")
         }
     }
@@ -54,7 +55,7 @@ Rectangle {
     border.color: rowRoot.isSelected
                   ? TitanTheme.accent
                   : (rowHover.containsMouse
-                     ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.35)
+                     ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.40)
                      : "transparent")
 
     // Left active glow bar
@@ -82,20 +83,25 @@ Rectangle {
             radius: 11
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
-            color: TitanTheme.isDark ? Qt.rgba(0, 0, 0, 0.38) : Qt.rgba(1, 1, 1, 0.80)
+            color: rowRoot.isSelected
+                   ? Qt.rgba(1, 1, 1, 0.18)
+                   : (rowHover.containsMouse ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(1, 1, 1, 0.09))
             border.width: 1
             border.color: rowRoot.isSelected
-                          ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.45)
-                          : Qt.rgba(1, 1, 1, 0.08)
+                          ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.55)
+                          : Qt.rgba(1, 1, 1, 0.14)
 
-            // 3D subtle icon pedestal shadow
+            // Top specular sheen inside icon squircle
             Rectangle {
-                anchors.fill: parent
-                anchors.topMargin: 2
-                anchors.bottomMargin: -2
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.right: parent.right
+                height: 12
                 radius: parent.radius
-                z: -1
-                color: Qt.rgba(0, 0, 0, 0.25)
+                gradient: Gradient {
+                    GradientStop { position: 0.0; color: Qt.rgba(1, 1, 1, 0.18) }
+                    GradientStop { position: 1.0; color: "transparent" }
+                }
             }
 
             Image {
@@ -163,8 +169,11 @@ Rectangle {
                 width: catLabel.implicitWidth + 12
                 radius: 6
                 visible: modelItem && modelItem.badge !== undefined && modelItem.badge !== ""
-                color: TitanTheme.isDark ? Qt.rgba(0, 0, 0, 0.35) : Qt.rgba(0, 0, 0, 0.05)
-                border.width: 0
+                color: rowRoot.isSelected
+                       ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.28)
+                       : Qt.rgba(1, 1, 1, 0.08)
+                border.width: 1
+                border.color: rowRoot.isSelected ? TitanTheme.accent : Qt.rgba(1, 1, 1, 0.12)
 
                 Text {
                     id: catLabel
@@ -184,10 +193,10 @@ Rectangle {
                 height: 24
                 radius: 7
                 color: rowRoot.isSelected
-                       ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.28)
-                       : (TitanTheme.isDark ? Qt.rgba(0, 0, 0, 0.30) : Qt.rgba(0, 0, 0, 0.05))
-                border.width: rowRoot.isSelected ? 1 : 0
-                border.color: rowRoot.isSelected ? TitanTheme.accent : "transparent"
+                       ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.30)
+                       : Qt.rgba(1, 1, 1, 0.10)
+                border.width: 1
+                border.color: rowRoot.isSelected ? TitanTheme.accent : Qt.rgba(1, 1, 1, 0.16)
                 visible: rowRoot.isSelected || rowHover.containsMouse
 
                 Text {
