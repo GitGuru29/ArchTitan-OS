@@ -6,10 +6,17 @@
 #include <QClipboard>
 #include <QRegularExpression>
 #include <QUrl>
+#include <QDir>
+#include <QFile>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QStandardPaths>
 
 SpotlightController::SpotlightController(QObject *parent)
     : QObject(parent)
 {
+    loadPreferences();
+
     // Define standard ArchTitan system quick actions
     auto addSysAction = [this](const QString &title, const QString &subtitle, const QString &icon, const QString &command, const QString &keywords) {
         QVariantMap item;
@@ -20,20 +27,150 @@ SpotlightController::SpotlightController(QObject *parent)
         item[QStringLiteral("command")] = command;
         item[QStringLiteral("keywords")] = keywords;
         item[QStringLiteral("category")] = QStringLiteral("SYSTEM");
+        item[QStringLiteral("badge")] = QStringLiteral("SYS");
         m_systemActions.append(item);
     };
 
+    addSysAction(QStringLiteral("ArchTitan Settings"), QStringLiteral("System preferences, display, themes & hardware"), QStringLiteral("preferences-system"), QStringLiteral("archtitan-settings"), QStringLiteral("settings control panel display theme hardware"));
+    addSysAction(QStringLiteral("Task Manager"), QStringLiteral("Monitor processes, CPU, memory and GPU (btop)"), QStringLiteral("utilities-system-monitor"), QStringLiteral("kitty -e btop"), QStringLiteral("btop htop task manager monitor processes cpu"));
+    addSysAction(QStringLiteral("File Manager"), QStringLiteral("Browse filesystem with Ranger"), QStringLiteral("system-file-manager"), QStringLiteral("kitty -e ranger"), QStringLiteral("files ranger explore directories home"));
+    addSysAction(QStringLiteral("Volume Mixer"), QStringLiteral("Audio levels and PipeWire devices"), QStringLiteral("audio-volume-high"), QStringLiteral("pavucontrol"), QStringLiteral("volume audio sound mixer pavucontrol"));
+    addSysAction(QStringLiteral("Take Screenshot"), QStringLiteral("Interactive area snip with annotation"), QStringLiteral("applets-screenshooter"), QStringLiteral("titan-screenshot --area"), QStringLiteral("screenshot snip capture screen grim"));
     addSysAction(QStringLiteral("Lock Screen"), QStringLiteral("Lock current Wayland session"), QStringLiteral("system-lock-screen"), QStringLiteral("hyprlock || swaylock -f -c 0b0e14"), QStringLiteral("lock session security"));
     addSysAction(QStringLiteral("Sleep / Suspend"), QStringLiteral("Suspend machine into low-power sleep"), QStringLiteral("system-suspend"), QStringLiteral("systemctl suspend -i"), QStringLiteral("sleep suspend standby"));
     addSysAction(QStringLiteral("Restart System"), QStringLiteral("Safely reboot ArchTitan OS"), QStringLiteral("system-reboot"), QStringLiteral("systemctl reboot -i"), QStringLiteral("reboot restart reset"));
     addSysAction(QStringLiteral("Shut Down"), QStringLiteral("Power off system completely"), QStringLiteral("system-shutdown"), QStringLiteral("systemctl poweroff -i"), QStringLiteral("shutdown poweroff turn off"));
-    addSysAction(QStringLiteral("ArchTitan Settings"), QStringLiteral("System preferences, display, themes & hardware"), QStringLiteral("preferences-system"), QStringLiteral("archtitan-settings"), QStringLiteral("settings control panel display theme display"));
-    addSysAction(QStringLiteral("Take Screenshot"), QStringLiteral("Interactive area snip with annotation"), QStringLiteral("applets-screenshooter"), QStringLiteral("titan-screenshot --area"), QStringLiteral("screenshot snip capture screen grim"));
-    addSysAction(QStringLiteral("Task Manager"), QStringLiteral("Monitor processes, CPU, memory and GPU (btop)"), QStringLiteral("utilities-system-monitor"), QStringLiteral("kitty -e btop"), QStringLiteral("btop htop task manager monitor processes cpu"));
-    addSysAction(QStringLiteral("File Manager"), QStringLiteral("Browse filesystem with Ranger"), QStringLiteral("system-file-manager"), QStringLiteral("kitty -e ranger"), QStringLiteral("files ranger explore directories home"));
-    addSysAction(QStringLiteral("Volume Mixer"), QStringLiteral("Audio levels and PipeWire devices"), QStringLiteral("audio-volume-high"), QStringLiteral("pavucontrol"), QStringLiteral("volume audio sound mixer pavucontrol"));
 
     updateResults();
+}
+
+void SpotlightController::loadPreferences()
+{
+    const QString cfgDir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation) + QStringLiteral("/archtitan");
+    QFile file(cfgDir + QStringLiteral("/spotlight.json"));
+    if (!file.open(QIODevice::ReadOnly)) return;
+
+    const QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
+    if (!doc.isObject()) return;
+
+    const QString mode = doc.object().value(QStringLiteral("viewMode")).toString().trimmed().toLower();
+    if (mode == QStringLiteral("grid") || mode == QStringLiteral("bento") || mode == QStringLiteral("list")) {
+        m_viewMode = mode;
+    }
+}
+
+void SpotlightController::savePreferences() const
+{
+    const QString cfgDir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation) + QStringLiteral("/archtitan");
+    QDir().mkpath(cfgDir);
+    QFile file(cfgDir + QStringLiteral("/spotlight.json"));
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) return;
+
+    QJsonObject obj;
+    obj[QStringLiteral("viewMode")] = m_viewMode;
+    file.write(QJsonDocument(obj).toJson(QJsonDocument::Indented));
+}
+
+QString SpotlightController::classifyAppGroup(const AppEntry &entry)
+{
+    const QString joinedCats = entry.categories.join(QLatin1Char(' ')).toLower();
+    const QString nameLower = entry.name.toLower();
+    const QString execLower = entry.exec.toLower();
+
+    if (joinedCats.contains(QStringLiteral("development")) ||
+        joinedCats.contains(QStringLiteral("ide")) ||
+        nameLower.contains(QStringLiteral("code")) ||
+        nameLower.contains(QStringLiteral("antigravity")) ||
+        nameLower.contains(QStringLiteral("kitty")) ||
+        nameLower.contains(QStringLiteral("terminal")) ||
+        execLower.contains(QStringLiteral("nvim")) ||
+        execLower.contains(QStringLiteral("git"))) {
+        return QStringLiteral("DEV");
+    }
+    if (joinedCats.contains(QStringLiteral("network")) ||
+        joinedCats.contains(QStringLiteral("webbrowser")) ||
+        nameLower.contains(QStringLiteral("browser")) ||
+        nameLower.contains(QStringLiteral("chrome")) ||
+        nameLower.contains(QStringLiteral("firefox")) ||
+        nameLower.contains(QStringLiteral("brave"))) {
+        return QStringLiteral("WEB");
+    }
+    if (joinedCats.contains(QStringLiteral("audiovideo")) ||
+        joinedCats.contains(QStringLiteral("audio")) ||
+        joinedCats.contains(QStringLiteral("video")) ||
+        joinedCats.contains(QStringLiteral("graphics")) ||
+        nameLower.contains(QStringLiteral("vlc")) ||
+        nameLower.contains(QStringLiteral("mpv")) ||
+        nameLower.contains(QStringLiteral("pavucontrol"))) {
+        return QStringLiteral("MEDIA");
+    }
+    if (joinedCats.contains(QStringLiteral("system")) ||
+        joinedCats.contains(QStringLiteral("settings")) ||
+        nameLower.contains(QStringLiteral("settings")) ||
+        nameLower.contains(QStringLiteral("btop")) ||
+        nameLower.contains(QStringLiteral("htop")) ||
+        nameLower.contains(QStringLiteral("calamares"))) {
+        return QStringLiteral("SYSTEM");
+    }
+    return QStringLiteral("APPS");
+}
+
+int SpotlightController::gridColumns() const
+{
+    if (m_isClipboardMode) return 1;
+    if (m_viewMode == QStringLiteral("grid")) return 4;
+    if (m_viewMode == QStringLiteral("bento")) return 2;
+    return 1;
+}
+
+void SpotlightController::setViewMode(const QString &mode)
+{
+    const QString normalized = mode.trimmed().toLower();
+    if (normalized != QStringLiteral("grid") &&
+        normalized != QStringLiteral("bento") &&
+        normalized != QStringLiteral("list")) {
+        return;
+    }
+    if (m_viewMode == normalized) return;
+    m_viewMode = normalized;
+    savePreferences();
+    emit viewModeChanged();
+}
+
+void SpotlightController::cycleViewMode()
+{
+    if (m_viewMode == QStringLiteral("grid")) {
+        setViewMode(QStringLiteral("bento"));
+    } else if (m_viewMode == QStringLiteral("bento")) {
+        setViewMode(QStringLiteral("list"));
+    } else {
+        setViewMode(QStringLiteral("grid"));
+    }
+}
+
+void SpotlightController::setActiveCategory(const QString &category)
+{
+    const QString up = category.trimmed().toUpper();
+    if (m_activeCategory == up) return;
+    m_activeCategory = up;
+    emit activeCategoryChanged();
+    updateResults();
+}
+
+void SpotlightController::cycleCategory(int delta)
+{
+    static const QStringList cats = {
+        QStringLiteral("ALL"),
+        QStringLiteral("APPS"),
+        QStringLiteral("DEV"),
+        QStringLiteral("SYSTEM"),
+        QStringLiteral("WEB"),
+        QStringLiteral("MEDIA")
+    };
+    int idx = cats.indexOf(m_activeCategory);
+    if (idx < 0) idx = 0;
+    idx = (idx + delta + cats.size()) % cats.size();
+    setActiveCategory(cats.at(idx));
 }
 
 void SpotlightController::setQuery(const QString &q)
@@ -61,6 +198,7 @@ void SpotlightController::setClipboardMode(bool enabled)
     if (m_isClipboardMode != enabled) {
         m_isClipboardMode = enabled;
         emit clipboardModeChanged();
+        emit viewModeChanged();
         updateResults();
     }
 }
@@ -77,15 +215,66 @@ void SpotlightController::selectPrev()
     setSelectedIndex((m_selectedIndex - 1 + m_results.size()) % m_results.size());
 }
 
+void SpotlightController::selectRight()
+{
+    selectNext();
+}
+
+void SpotlightController::selectLeft()
+{
+    selectPrev();
+}
+
+void SpotlightController::selectDown()
+{
+    if (m_results.isEmpty()) return;
+    const int cols = gridColumns();
+    if (cols <= 1) {
+        selectNext();
+        return;
+    }
+    int next = m_selectedIndex + cols;
+    if (next >= m_results.size()) {
+        // Wrap to same column in top row
+        next = m_selectedIndex % cols;
+    }
+    setSelectedIndex(next);
+}
+
+void SpotlightController::selectUp()
+{
+    if (m_results.isEmpty()) return;
+    const int cols = gridColumns();
+    if (cols <= 1) {
+        selectPrev();
+        return;
+    }
+    int prev = m_selectedIndex - cols;
+    if (prev < 0) {
+        // Wrap to bottom-most row in same column
+        int col = m_selectedIndex % cols;
+        int lastRowStart = ((m_results.size() - 1) / cols) * cols;
+        prev = lastRowStart + col;
+        if (prev >= m_results.size()) {
+            prev -= cols;
+        }
+        if (prev < 0) prev = 0;
+    }
+    setSelectedIndex(prev);
+}
+
 void SpotlightController::reset()
 {
     m_query.clear();
     m_isClipboardMode = false;
+    m_activeCategory = QStringLiteral("ALL");
     m_selectedIndex = 0;
     m_calcResult = CalcResult();
     emit queryChanged();
     emit calcResultChanged();
     emit clipboardModeChanged();
+    emit activeCategoryChanged();
+    emit viewModeChanged();
     updateResults();
 }
 
@@ -126,6 +315,7 @@ void SpotlightController::updateResults()
             item[QStringLiteral("icon")] = QStringLiteral("edit-paste");
             item[QStringLiteral("rawLine")] = c.rawLine;
             item[QStringLiteral("category")] = QStringLiteral("CLIPBOARD");
+            item[QStringLiteral("badge")] = QStringLiteral("CLIP");
             m_results.append(item);
         }
         setSelectedIndex(0);
@@ -144,41 +334,57 @@ void SpotlightController::updateResults()
             item[QStringLiteral("icon")] = QStringLiteral("utilities-terminal");
             item[QStringLiteral("command")] = cmd;
             item[QStringLiteral("category")] = QStringLiteral("COMMAND");
+            item[QStringLiteral("badge")] = QStringLiteral("CMD");
             m_results.append(item);
         }
     }
 
     // 4. Search Applications
-    QList<SearchResult> appResults = m_indexer.search(trimmed, 15);
-    for (const auto &res : appResults) {
-        QVariantMap item;
-        item[QStringLiteral("type")] = QStringLiteral("app");
-        item[QStringLiteral("title")] = res.entry.name;
-        QString sub = res.entry.genericName;
-        if (sub.isEmpty()) sub = res.entry.comment;
-        if (sub.isEmpty() && !res.entry.categories.isEmpty()) sub = res.entry.categories.first();
-        if (sub.isEmpty()) sub = QStringLiteral("Application");
-        item[QStringLiteral("subtitle")] = sub;
-        item[QStringLiteral("icon")] = res.entry.icon;
-        item[QStringLiteral("exec")] = res.entry.exec;
-        item[QStringLiteral("terminal")] = res.entry.terminal;
-        item[QStringLiteral("category")] = QStringLiteral("APPLICATIONS");
-        m_results.append(item);
+    if (m_activeCategory != QStringLiteral("SYSTEM") || !trimmed.isEmpty()) {
+        QList<SearchResult> appResults = m_indexer.search(trimmed, 80);
+        for (const auto &res : appResults) {
+            const QString group = classifyAppGroup(res.entry);
+            if (m_activeCategory != QStringLiteral("ALL") &&
+                m_activeCategory != QStringLiteral("APPS") &&
+                m_activeCategory != group) {
+                continue;
+            }
+
+            QVariantMap item;
+            item[QStringLiteral("type")] = QStringLiteral("app");
+            item[QStringLiteral("title")] = res.entry.name;
+            QString sub = res.entry.genericName;
+            if (sub.isEmpty()) sub = res.entry.comment;
+            if (sub.isEmpty() && !res.entry.categories.isEmpty()) sub = res.entry.categories.first();
+            if (sub.isEmpty()) sub = QStringLiteral("Application");
+            item[QStringLiteral("subtitle")] = sub;
+            item[QStringLiteral("icon")] = res.entry.icon;
+            item[QStringLiteral("exec")] = res.entry.exec;
+            item[QStringLiteral("terminal")] = res.entry.terminal;
+            item[QStringLiteral("category")] = group;
+            item[QStringLiteral("badge")] = (group == QStringLiteral("APPS")) ? QStringLiteral("APP") : group;
+            m_results.append(item);
+        }
     }
 
     // 5. System Quick Actions
-    if (!trimmed.isEmpty()) {
-        for (const auto &sys : m_systemActions) {
-            QString title = sys.value(QStringLiteral("title")).toString();
-            QString kw = sys.value(QStringLiteral("keywords")).toString();
-            if (title.contains(trimmed, Qt::CaseInsensitive) || kw.contains(trimmed, Qt::CaseInsensitive)) {
+    if (m_activeCategory == QStringLiteral("ALL") || m_activeCategory == QStringLiteral("SYSTEM")) {
+        if (!trimmed.isEmpty()) {
+            for (const auto &sys : m_systemActions) {
+                QString title = sys.value(QStringLiteral("title")).toString();
+                QString kw = sys.value(QStringLiteral("keywords")).toString();
+                if (title.contains(trimmed, Qt::CaseInsensitive) || kw.contains(trimmed, Qt::CaseInsensitive)) {
+                    m_results.append(sys);
+                }
+            }
+        } else if (m_activeCategory == QStringLiteral("SYSTEM")) {
+            for (const auto &sys : m_systemActions) {
                 m_results.append(sys);
             }
-        }
-    } else {
-        // When query is empty, append a few essential actions at the end
-        for (int i = 0; i < qMin(4, m_systemActions.size()); ++i) {
-            m_results.append(m_systemActions[i]);
+        } else {
+            for (int i = 0; i < qMin(6, m_systemActions.size()); ++i) {
+                m_results.append(m_systemActions[i]);
+            }
         }
     }
 
@@ -191,6 +397,7 @@ void SpotlightController::updateResults()
         webItem[QStringLiteral("icon")] = QStringLiteral("applications-internet");
         webItem[QStringLiteral("query")] = trimmed;
         webItem[QStringLiteral("category")] = QStringLiteral("WEB");
+        webItem[QStringLiteral("badge")] = QStringLiteral("WEB");
         m_results.append(webItem);
     }
 

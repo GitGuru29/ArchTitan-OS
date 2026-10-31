@@ -4,6 +4,8 @@
         <file>qml/SpotlightCard.qml</file>
         <file>qml/SpotlightInput.qml</file>
         <file>qml/SpotlightResultRow.qml</file>
+        <file>qml/SpotlightGridTile.qml</file>
+        <file>qml/SpotlightBentoTile.qml</file>
         <file>qml/SpotlightCalcPreview.qml</file>
         <file>qml/SpotlightFooter.qml</file>
     </qresource>

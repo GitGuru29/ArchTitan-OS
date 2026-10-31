@@ -36,7 +36,7 @@ Window {
 
     Timer {
         id: closeTimer
-        interval: 140
+        interval: 150
         onTriggered: {
             if (!root.spotlightOpen) {
                 root.visible = false;
@@ -48,11 +48,11 @@ Window {
     Rectangle {
         id: scrim
         anchors.fill: parent
-        color: Qt.rgba(0, 0, 0, 0.45)
+        color: Qt.rgba(0, 0, 0, 0.48)
         opacity: root.spotlightOpen ? 1.0 : 0.0
 
         Behavior on opacity {
-            NumberAnimation { duration: 120; easing.type: Easing.OutCubic }
+            NumberAnimation { duration: 130; easing.type: Easing.OutCubic }
         }
 
         MouseArea {
@@ -61,29 +61,29 @@ Window {
         }
     }
 
-    // Spotlight Floating Card
+    // Spotlight Floating Liquid Glass Card
     SpotlightCard {
         id: card
-        width: 700
+        width: 760
         x: (parent.width - width) / 2
-        y: parent.height * 0.18
+        y: parent.height * 0.14
 
         opacity: root.spotlightOpen ? 1.0 : 0.0
-        scale: root.spotlightOpen ? 1.0 : 0.965
+        scale: root.spotlightOpen ? 1.0 : 0.96
         transformOrigin: Item.Top
 
         Behavior on opacity {
-            NumberAnimation { duration: 140; easing.type: Easing.OutCubic }
+            NumberAnimation { duration: 150; easing.type: Easing.OutCubic }
         }
         Behavior on scale {
-            NumberAnimation { duration: 140; easing.type: Easing.OutBack }
+            NumberAnimation { duration: 160; easing.type: Easing.OutBack }
         }
 
         // Prevent click events from reaching scrim
         MouseArea {
             anchors.fill: parent
+            z: -1
             preventStealing: true
-            propagateComposedEvents: true
         }
     }
 

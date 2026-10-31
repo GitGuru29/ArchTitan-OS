@@ -28,7 +28,7 @@ public:
 
     void scan();
     QList<AppEntry> applications() const { return m_apps; }
-    QList<SearchResult> search(const QString &query, int limit = 15) const;
+    QList<SearchResult> search(const QString &query, int limit = 80) const;
 
 private:
     void parseDesktopFile(const QString &path);

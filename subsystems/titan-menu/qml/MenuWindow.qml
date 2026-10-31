@@ -5,12 +5,9 @@ import ArchTitan.TitanUI
 import "components"
 
 /**
- * titan-menu — ArchTitan system menu.
+ * titan-menu — ArchTitan system menu & command palette.
  *
- * A keyboard-first command palette: type to search everything, or arrow
- * through categories. Full-screen layer surface; the scrim catches click-away
- * and the frosted card sits in the upper third of the screen. Blur comes from
- * the compositor (see the `titan-menu` layer rule).
+ * Supports both Grid View and List View with a Liquid Glass aesthetic.
  */
 Window {
     id: root
@@ -24,13 +21,17 @@ Window {
     title: "titan-menu"
 
     property bool menuOpen: false
+    property string viewMode: "grid" // "grid" | "list"
+    property int selectedIndex: 0
+    readonly property int gridCols: viewMode === "grid" ? 3 : 1
 
-    readonly property int rowHeight: 52
-    readonly property int rowGap: 2
+    readonly property int rowHeight: 54
+    readonly property int rowGap: 3
     readonly property int maxRows: 8
 
     function openMenu() {
         menu.reset();
+        selectedIndex = 0;
         menuOpen = true;
         visible = true;
         requestActivate();
@@ -46,14 +47,22 @@ Window {
     }
 
     function moveSelection(delta) {
-        const n = list.count;
+        const n = menu.entries.length;
         if (n === 0) return;
-        list.currentIndex = (list.currentIndex + delta + n) % n;
-        list.positionViewAtIndex(list.currentIndex, ListView.Contain);
+        selectedIndex = (selectedIndex + delta + n) % n;
+        syncScroll();
     }
 
-    // Keep in step with MenuController::kExecBaseDelayMs (230 ms): the layer
-    // surface must be gone before a launched command asks for keyboard focus.
+    function syncScroll() {
+        if (viewMode === "grid") {
+            grid.currentIndex = selectedIndex;
+            grid.positionViewAtIndex(selectedIndex, GridView.Contain);
+        } else {
+            list.currentIndex = selectedIndex;
+            list.positionViewAtIndex(selectedIndex, ListView.Contain);
+        }
+    }
+
     Timer {
         id: closeTimer
         interval: 180
@@ -63,7 +72,10 @@ Window {
     Connections {
         target: menu
         function onCloseRequested() { root.closeMenu(); }
-        function onEntriesChanged() { list.currentIndex = menu.entries.length > 0 ? 0 : -1; }
+        function onEntriesChanged() {
+            root.selectedIndex = menu.entries.length > 0 ? 0 : -1;
+            root.syncScroll();
+        }
         function onQueryChanged() {
             if (searchInput.text !== menu.query) searchInput.text = menu.query;
         }
@@ -72,7 +84,7 @@ Window {
     // ── Scrim ────────────────────────────────────────────────────────────────
     Rectangle {
         anchors.fill: parent
-        color: Qt.rgba(0, 0, 0, 0.55)
+        color: Qt.rgba(0, 0, 0, 0.50)
         opacity: root.menuOpen ? 1.0 : 0.0
         Behavior on opacity { NumberAnimation { duration: TitanTheme.durBase; easing.type: TitanTheme.easingStandard } }
 
@@ -82,16 +94,16 @@ Window {
         }
     }
 
-    // ── Card ─────────────────────────────────────────────────────────────────
+    // ── Liquid Glass Card ────────────────────────────────────────────────────
     Item {
         id: card
-        width: 660
+        width: 720
         height: cardBody.height
         x: (parent.width - width) / 2
-        y: parent.height * 0.18
+        y: parent.height * 0.15
 
         opacity: root.menuOpen ? 1.0 : 0.0
-        scale: root.menuOpen ? 1.0 : 0.965
+        scale: root.menuOpen ? 1.0 : 0.96
         transformOrigin: Item.Top
         Behavior on opacity { NumberAnimation { duration: TitanTheme.durBase; easing.type: TitanTheme.easingStandard } }
         Behavior on scale { NumberAnimation { duration: TitanTheme.durBase; easing.type: TitanTheme.easingEmphasis } }
@@ -102,14 +114,34 @@ Window {
         Rectangle {
             id: cardBody
             width: parent.width
-            height: header.height + divider.height + listArea.height + footer.height + 2 * TitanTheme.space2
-            radius: TitanTheme.radiusBento
-            border.width: 1
-            border.color: TitanTheme.borderSubtle
+            height: header.height + divider.height + contentArea.height + footer.height + 2 * TitanTheme.space2
+            radius: 26
+            border.width: 1.5
+            border.color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.42)
 
             gradient: Gradient {
-                GradientStop { position: 0.0; color: Qt.rgba(TitanTheme.mantle.r, TitanTheme.mantle.g, TitanTheme.mantle.b, 0.96) }
-                GradientStop { position: 1.0; color: Qt.rgba(TitanTheme.base.r, TitanTheme.base.g, TitanTheme.base.b, 0.92) }
+                GradientStop { position: 0.0; color: Qt.rgba(TitanTheme.mantle.r, TitanTheme.mantle.g, TitanTheme.mantle.b, 0.88) }
+                GradientStop { position: 1.0; color: Qt.rgba(TitanTheme.crust.r, TitanTheme.crust.g, TitanTheme.crust.b, 0.84) }
+            }
+
+            // Inner 1px specular glass refraction rim
+            Rectangle {
+                anchors.fill: parent
+                anchors.margins: 1.5
+                radius: 24.5
+                color: "transparent"
+                border.width: 1
+                border.color: TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(1, 1, 1, 0.85)
+            }
+
+            // Top specular highlight line
+            Rectangle {
+                anchors.top: parent.top
+                anchors.topMargin: 1.5
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: parent.width - 64
+                height: 1
+                color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.55)
             }
 
             layer.enabled: true
@@ -123,7 +155,7 @@ Window {
 
             Behavior on height { NumberAnimation { duration: TitanTheme.durBase; easing.type: TitanTheme.easingStandard } }
 
-            // ── Search header ────────────────────────────────────────────────
+            // ── Search header + Layout Switcher ──────────────────────────────
             Item {
                 id: header
                 anchors.top: parent.top
@@ -131,21 +163,31 @@ Window {
                 anchors.right: parent.right
                 height: 64
 
-                TitanIcon {
-                    id: searchGlyph
+                Rectangle {
+                    id: searchBadge
+                    width: 38
+                    height: 38
+                    radius: 12
                     anchors.left: parent.left
-                    anchors.leftMargin: TitanTheme.space6
+                    anchors.leftMargin: 18
                     anchors.verticalCenter: parent.verticalCenter
-                    glyph: "\uf002"
-                    size: 16
-                    color: TitanTheme.textLow
+                    color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.16)
+                    border.width: 1
+                    border.color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.42)
+
+                    TitanIcon {
+                        anchors.centerIn: parent
+                        glyph: "\uf002"
+                        size: 16
+                        color: TitanTheme.accent
+                    }
                 }
 
                 // Breadcrumb chip: where we are when drilled into a group.
                 Rectangle {
                     id: crumb
                     visible: menu.breadcrumb !== ""
-                    anchors.left: searchGlyph.right
+                    anchors.left: searchBadge.right
                     anchors.leftMargin: TitanTheme.space3
                     anchors.verticalCenter: parent.verticalCenter
                     height: 26
@@ -164,14 +206,98 @@ Window {
                         font.pixelSize: TitanTheme.sizeLabel
                         font.weight: TitanTheme.weightSemiBold
                     }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: menu.back()
+                    }
+                }
+
+                // Segmented Grid / List View Switcher
+                Rectangle {
+                    id: viewSwitcher
+                    anchors.right: parent.right
+                    anchors.rightMargin: 18
+                    anchors.verticalCenter: parent.verticalCenter
+                    height: 34
+                    width: switcherRow.implicitWidth + 8
+                    radius: 11
+                    color: TitanTheme.isDark ? Qt.rgba(0, 0, 0, 0.36) : Qt.rgba(0, 0, 0, 0.06)
+                    border.width: 1
+                    border.color: TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.08)
+
+                    Row {
+                        id: switcherRow
+                        anchors.centerIn: parent
+                        spacing: 3
+
+                        Repeater {
+                            model: [
+                                { mode: "grid", icon: "󰕰", label: "Grid" },
+                                { mode: "list", icon: "󰉹", label: "List" }
+                            ]
+
+                            delegate: Rectangle {
+                                id: modePill
+                                required property var modelData
+                                readonly property bool active: root.viewMode === modelData.mode
+
+                                height: 26
+                                width: pillRow.implicitWidth + 16
+                                radius: 8
+                                color: active
+                                       ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.24)
+                                       : (pillMouse.containsMouse
+                                          ? (TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.07) : Qt.rgba(0, 0, 0, 0.05))
+                                          : "transparent")
+                                border.width: active ? 1 : 0
+                                border.color: active ? TitanTheme.accent : "transparent"
+
+                                Row {
+                                    id: pillRow
+                                    anchors.centerIn: parent
+                                    spacing: 5
+
+                                    Text {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: modePill.modelData.icon
+                                        font.family: TitanTheme.monoFamily
+                                        font.pixelSize: 13
+                                        color: modePill.active ? TitanTheme.accent : TitanTheme.textMid
+                                    }
+
+                                    Text {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: modePill.modelData.label
+                                        font.family: TitanTheme.fontFamily
+                                        font.pixelSize: 11
+                                        font.weight: modePill.active ? Font.Bold : Font.Medium
+                                        color: modePill.active ? TitanTheme.textHigh : TitanTheme.textMid
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: pillMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        root.viewMode = modePill.modelData.mode;
+                                        searchInput.forceActiveFocus();
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
 
                 TextInput {
                     id: searchInput
-                    anchors.left: crumb.visible ? crumb.right : searchGlyph.right
+                    anchors.left: crumb.visible ? crumb.right : searchBadge.right
                     anchors.leftMargin: TitanTheme.space3
-                    anchors.right: parent.right
-                    anchors.rightMargin: TitanTheme.space6
+                    anchors.right: viewSwitcher.left
+                    anchors.rightMargin: TitanTheme.space3
                     anchors.verticalCenter: parent.verticalCenter
                     color: TitanTheme.textHigh
                     selectionColor: TitanTheme.accentEdge
@@ -181,8 +307,6 @@ Window {
                     clip: true
                     focus: true
 
-                    // textEdited fires only for user typing, so syncing the
-                    // field from the controller cannot loop back.
                     onTextEdited: menu.query = text
 
                     Text {
@@ -197,20 +321,26 @@ Window {
 
                     Keys.onPressed: function (e) {
                         const ctrl = (e.modifiers & Qt.ControlModifier) !== 0;
-                        if (e.key === Qt.Key_Down || e.key === Qt.Key_Tab || (ctrl && e.key === Qt.Key_N) || (ctrl && e.key === Qt.Key_J)) {
-                            root.moveSelection(1); e.accepted = true;
-                        } else if (e.key === Qt.Key_Up || e.key === Qt.Key_Backtab || (ctrl && e.key === Qt.Key_P) || (ctrl && e.key === Qt.Key_K)) {
-                            root.moveSelection(-1); e.accepted = true;
+                        if (e.key === Qt.Key_Down || (ctrl && e.key === Qt.Key_N) || (ctrl && e.key === Qt.Key_J)) {
+                            root.moveSelection(root.gridCols); e.accepted = true;
+                        } else if (e.key === Qt.Key_Up || (ctrl && e.key === Qt.Key_P) || (ctrl && e.key === Qt.Key_K)) {
+                            root.moveSelection(-root.gridCols); e.accepted = true;
+                        } else if (e.key === Qt.Key_Tab) {
+                            root.viewMode = (root.viewMode === "grid" ? "list" : "grid"); e.accepted = true;
                         } else if (e.key === Qt.Key_Return || e.key === Qt.Key_Enter) {
-                            menu.activate(list.currentIndex); e.accepted = true;
+                            menu.activate(root.selectedIndex); e.accepted = true;
                         } else if (e.key === Qt.Key_Escape) {
                             menu.back(); e.accepted = true;
                         } else if (e.key === Qt.Key_Backspace && searchInput.text === "" && !menu.atRoot) {
                             menu.back(); e.accepted = true;
-                        } else if (e.key === Qt.Key_Left && searchInput.text === "" && !menu.atRoot) {
-                            menu.back(); e.accepted = true;
+                        } else if (e.key === Qt.Key_Left && searchInput.text === "") {
+                            if (root.viewMode === "grid") root.moveSelection(-1);
+                            else if (!menu.atRoot) menu.back();
+                            e.accepted = true;
                         } else if (e.key === Qt.Key_Right && searchInput.cursorPosition === searchInput.text.length) {
-                            menu.enter(list.currentIndex); e.accepted = true;
+                            if (root.viewMode === "grid" && searchInput.text === "") root.moveSelection(1);
+                            else menu.enter(root.selectedIndex);
+                            e.accepted = true;
                         }
                     }
                 }
@@ -227,27 +357,138 @@ Window {
                 color: TitanTheme.borderSubtle
             }
 
-            // ── Rows ─────────────────────────────────────────────────────────
+            // ── Content Area (Grid View or List View) ────────────────────────
             Item {
-                id: listArea
+                id: contentArea
                 anchors.top: divider.bottom
                 anchors.topMargin: TitanTheme.space2
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.leftMargin: TitanTheme.space2
                 anchors.rightMargin: TitanTheme.space2
-                height: list.count === 0
-                        ? 84
-                        : Math.min(list.count, root.maxRows) * (root.rowHeight + root.rowGap) - root.rowGap
+                height: menu.entries.length === 0
+                        ? 88
+                        : (root.viewMode === "grid"
+                           ? Math.min(Math.ceil(menu.entries.length / 3) * 114, 342)
+                           : Math.min(menu.entries.length, root.maxRows) * (root.rowHeight + root.rowGap) - root.rowGap)
                 Behavior on height { NumberAnimation { duration: TitanTheme.durBase; easing.type: TitanTheme.easingStandard } }
 
+                // GRID VIEW
+                GridView {
+                    id: grid
+                    visible: root.viewMode === "grid" && menu.entries.length > 0
+                    anchors.fill: parent
+                    anchors.leftMargin: 6
+                    anchors.rightMargin: 6
+                    cellWidth: 230
+                    cellHeight: 112
+                    model: menu.entries
+                    clip: true
+                    currentIndex: root.selectedIndex
+                    boundsBehavior: Flickable.StopAtBounds
+
+                    delegate: Item {
+                        required property int index
+                        required property var modelData
+                        width: grid.cellWidth
+                        height: grid.cellHeight
+
+                        Rectangle {
+                            id: gridTile
+                            anchors.centerIn: parent
+                            width: parent.width - 10
+                            height: parent.height - 8
+                            radius: 18
+
+                            readonly property bool current: index === root.selectedIndex
+
+                            gradient: Gradient {
+                                GradientStop {
+                                    position: 0.0
+                                    color: gridTile.current
+                                           ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.24)
+                                           : (tileHover.containsMouse
+                                              ? Qt.rgba(1, 1, 1, 0.08)
+                                              : Qt.rgba(1, 1, 1, 0.04))
+                                }
+                                GradientStop {
+                                    position: 1.0
+                                    color: gridTile.current
+                                           ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.11)
+                                           : Qt.rgba(0, 0, 0, 0.20)
+                                }
+                            }
+
+                            border.width: gridTile.current ? 1.5 : 1
+                            border.color: gridTile.current
+                                          ? TitanTheme.accent
+                                          : Qt.rgba(1, 1, 1, 0.10)
+
+                            Column {
+                                anchors.centerIn: parent
+                                width: parent.width - 20
+                                spacing: 6
+
+                                Rectangle {
+                                    width: 40
+                                    height: 40
+                                    radius: 12
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    color: gridTile.current ? TitanTheme.accentSoft : Qt.rgba(0, 0, 0, 0.32)
+                                    border.width: 1
+                                    border.color: gridTile.current ? TitanTheme.accentEdge : Qt.rgba(1, 1, 1, 0.10)
+
+                                    TitanIcon {
+                                        anchors.centerIn: parent
+                                        glyph: modelData.icon
+                                        size: 18
+                                        color: gridTile.current ? TitanTheme.accent : TitanTheme.textMid
+                                    }
+                                }
+
+                                Text {
+                                    width: parent.width
+                                    horizontalAlignment: Text.AlignHCenter
+                                    text: modelData.title
+                                    elide: Text.ElideRight
+                                    color: TitanTheme.textHigh
+                                    font.family: TitanTheme.fontFamily
+                                    font.pixelSize: 13
+                                    font.weight: gridTile.current ? Font.Bold : Font.DemiBold
+                                }
+
+                                Text {
+                                    width: parent.width
+                                    horizontalAlignment: Text.AlignHCenter
+                                    text: modelData.crumb !== "" ? modelData.crumb : modelData.hint
+                                    elide: Text.ElideRight
+                                    color: TitanTheme.textLow
+                                    font.family: TitanTheme.fontFamily
+                                    font.pixelSize: 10
+                                }
+                            }
+
+                            MouseArea {
+                                id: tileHover
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onEntered: root.selectedIndex = index
+                                onClicked: menu.activate(index)
+                            }
+                        }
+                    }
+                }
+
+                // LIST VIEW
                 ListView {
                     id: list
+                    visible: root.viewMode === "list" && menu.entries.length > 0
                     anchors.fill: parent
                     model: menu.entries
                     spacing: root.rowGap
                     clip: true
-                    currentIndex: 0
+                    currentIndex: root.selectedIndex
                     interactive: count > root.maxRows
                     boundsBehavior: Flickable.StopAtBounds
                     highlightMoveDuration: 0
@@ -257,15 +498,15 @@ Window {
                         required property var modelData
                         width: list.width
                         entry: modelData
-                        current: ListView.isCurrentItem
-                        onHovered: list.currentIndex = index
+                        current: index === root.selectedIndex
+                        onHovered: root.selectedIndex = index
                         onClicked: menu.activate(index)
                     }
                 }
 
                 Text {
                     anchors.centerIn: parent
-                    visible: list.count === 0
+                    visible: menu.entries.length === 0
                     text: "No matches for \u201C" + menu.query + "\u201D"
                     color: TitanTheme.textLow
                     font.family: TitanTheme.fontFamily
@@ -276,7 +517,7 @@ Window {
             // ── Footer hints ─────────────────────────────────────────────────
             Item {
                 id: footer
-                anchors.top: listArea.bottom
+                anchors.top: contentArea.bottom
                 anchors.left: parent.left
                 anchors.right: parent.right
                 height: 40
@@ -285,7 +526,8 @@ Window {
                     anchors.left: parent.left
                     anchors.leftMargin: TitanTheme.space6
                     anchors.verticalCenter: parent.verticalCenter
-                    text: "\u2191\u2193 navigate     \u23CE select     \u2190 back     esc " + (menu.atRoot ? "close" : "back")
+                    text: (root.viewMode === "grid" ? "\u2191\u2193\u2190\u2192 navigate" : "\u2191\u2193 navigate")
+                          + "     \u23CE select     tab layout     esc " + (menu.atRoot ? "close" : "back")
                     color: TitanTheme.textLow
                     font.family: TitanTheme.fontFamily
                     font.pixelSize: TitanTheme.sizeCaption + 1

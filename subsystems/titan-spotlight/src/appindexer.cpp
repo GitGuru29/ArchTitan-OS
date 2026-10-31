@@ -121,6 +121,25 @@ void AppIndexer::scan()
             parseDesktopFile(dir.absoluteFilePath(entry));
         }
     }
+
+    auto appPriority = [](const AppEntry &a) -> int {
+        const QString n = a.name.toLower();
+        const QString ex = a.exec.toLower();
+        if (n.contains(QStringLiteral("titan")) || ex.contains(QStringLiteral("titan")) || ex.contains(QStringLiteral("archtitan"))) return 0;
+        if (n.contains(QStringLiteral("kitty")) || n.contains(QStringLiteral("terminal"))) return 1;
+        if (n.contains(QStringLiteral("antigravity")) || n.contains(QStringLiteral("code")) || n.contains(QStringLiteral("studio"))) return 2;
+        if (n.contains(QStringLiteral("browser")) || n.contains(QStringLiteral("chrome")) || n.contains(QStringLiteral("firefox")) || n.contains(QStringLiteral("brave"))) return 3;
+        if (n.contains(QStringLiteral("files")) || n.contains(QStringLiteral("ranger")) || n.contains(QStringLiteral("thunar")) || n.contains(QStringLiteral("dolphin"))) return 4;
+        if (n.contains(QStringLiteral("settings")) || n.contains(QStringLiteral("monitor")) || n.contains(QStringLiteral("btop"))) return 5;
+        return 10;
+    };
+
+    std::sort(m_apps.begin(), m_apps.end(), [&appPriority](const AppEntry &a, const AppEntry &b) {
+        int pa = appPriority(a);
+        int pb = appPriority(b);
+        if (pa != pb) return pa < pb;
+        return a.name.compare(b.name, Qt::CaseInsensitive) < 0;
+    });
 }
 
 QList<SearchResult> AppIndexer::search(const QString &query, int limit) const
