@@ -44,11 +44,11 @@ Window {
         }
     }
 
-    // Scrim (click-away background)
+    // Scrim (click-away background with ambient wallpaper light passthrough)
     Rectangle {
         id: scrim
         anchors.fill: parent
-        color: Qt.rgba(0, 0, 0, 0.48)
+        color: Qt.rgba(0, 0, 0, 0.22)
         opacity: root.spotlightOpen ? 1.0 : 0.0
 
         Behavior on opacity {

@@ -66,7 +66,8 @@ Item {
                 height: 28
                 radius: 8
                 color: TitanTheme.isDark ? Qt.rgba(0, 0, 0, 0.35) : Qt.rgba(0, 0, 0, 0.06)
-                border.width: 0
+                border.width: 1
+                border.color: Qt.rgba(1, 1, 1, 0.08)
                 visible: textInput.text.length > 0 || spotlight.isClipboardMode
                 width: badgeText.implicitWidth + 18
 
@@ -101,8 +102,9 @@ Item {
                 height: 34
                 width: switcherRow.implicitWidth + 8
                 radius: 11
-                color: TitanTheme.isDark ? Qt.rgba(0, 0, 0, 0.42) : Qt.rgba(0, 0, 0, 0.06)
-                border.width: 0
+                color: TitanTheme.isDark ? Qt.rgba(0, 0, 0, 0.40) : Qt.rgba(0, 0, 0, 0.06)
+                border.width: 1
+                border.color: Qt.rgba(1, 1, 1, 0.08)
 
                 Row {
                     id: switcherRow

@@ -27,13 +27,13 @@ Item {
     Rectangle {
         id: tileDropShadow
         anchors.fill: tileBody
-        anchors.topMargin: tileRoot.isSelected ? 5 : (tileMouse.containsMouse ? 4 : 2)
-        anchors.bottomMargin: tileRoot.isSelected ? -5 : (tileMouse.containsMouse ? -4 : -2)
-        anchors.leftMargin: -1
-        anchors.rightMargin: -1
-        radius: tileBody.radius + 1
+        anchors.topMargin: tileRoot.isSelected ? 6 : (tileMouse.containsMouse ? 5 : 3)
+        anchors.bottomMargin: tileRoot.isSelected ? -6 : (tileMouse.containsMouse ? -5 : -3)
+        anchors.leftMargin: -2
+        anchors.rightMargin: -2
+        radius: tileBody.radius + 2
         z: -2
-        color: Qt.rgba(0, 0, 0, tileRoot.isSelected ? 0.60 : (tileMouse.containsMouse ? 0.48 : 0.35))
+        color: Qt.rgba(0, 0, 0, tileRoot.isSelected ? 0.65 : (tileMouse.containsMouse ? 0.52 : 0.38))
         Behavior on anchors.topMargin { NumberAnimation { duration: 120 } }
         Behavior on anchors.bottomMargin { NumberAnimation { duration: 120 } }
     }
@@ -44,9 +44,9 @@ Item {
         anchors.margins: -3
         radius: tileBody.radius + 3
         z: -1
-        color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.25)
+        color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.28)
         visible: tileRoot.isSelected || tileMouse.containsMouse
-        opacity: tileRoot.isSelected ? 1.0 : (tileMouse.containsMouse ? 0.50 : 0.0)
+        opacity: tileRoot.isSelected ? 1.0 : (tileMouse.containsMouse ? 0.55 : 0.0)
         Behavior on opacity { NumberAnimation { duration: 120 } }
     }
 
@@ -59,29 +59,48 @@ Item {
             GradientStop {
                 position: 0.0
                 color: tileRoot.isSelected
-                       ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, TitanTheme.isDark ? 0.28 : 0.20)
+                       ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.35)
                        : (tileMouse.containsMouse
-                          ? (TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.06))
-                          : (TitanTheme.isDark ? Qt.rgba(0, 0, 0, 0.35) : Qt.rgba(1, 1, 1, 0.72)))
+                          ? (TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.16) : Qt.rgba(1, 1, 1, 0.90))
+                          : (TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(1, 1, 1, 0.75)))
             }
             GradientStop {
                 position: 1.0
                 color: tileRoot.isSelected
-                       ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, TitanTheme.isDark ? 0.12 : 0.08)
+                       ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.14)
                        : (tileMouse.containsMouse
-                          ? (TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.03) : Qt.rgba(0, 0, 0, 0.03))
-                          : (TitanTheme.isDark ? Qt.rgba(0, 0, 0, 0.55) : Qt.rgba(1, 1, 1, 0.52)))
+                          ? (TitanTheme.isDark ? Qt.rgba(0, 0, 0, 0.28) : Qt.rgba(0, 0, 0, 0.04))
+                          : (TitanTheme.isDark ? Qt.rgba(0, 0, 0, 0.30) : Qt.rgba(0, 0, 0, 0.06)))
             }
         }
 
-        border.width: tileRoot.isSelected ? 1.5 : (tileMouse.containsMouse ? 1 : 0)
+        border.width: tileRoot.isSelected ? 1.5 : 1
         border.color: tileRoot.isSelected
                       ? TitanTheme.accent
                       : (tileMouse.containsMouse
-                         ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.40)
-                         : "transparent")
+                         ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.45)
+                         : Qt.rgba(1, 1, 1, 0.09))
 
         Behavior on border.color { ColorAnimation { duration: 110 } }
+
+        // Curved top specular sheen (authentic 3D glass gloss)
+        Rectangle {
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.right: parent.right
+            height: 44
+            radius: tileBody.radius
+            z: 0
+            gradient: Gradient {
+                GradientStop {
+                    position: 0.0
+                    color: tileRoot.isSelected
+                           ? Qt.rgba(1, 1, 1, 0.22)
+                           : (tileMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.16) : Qt.rgba(1, 1, 1, 0.09))
+                }
+                GradientStop { position: 1.0; color: "transparent" }
+            }
+        }
 
         // Top-right category badge pill
         Rectangle {
@@ -95,11 +114,11 @@ Item {
             visible: modelItem && modelItem.badge !== undefined && modelItem.badge !== ""
             color: tileRoot.isSelected
                    ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.30)
-                   : (TitanTheme.isDark ? Qt.rgba(0, 0, 0, 0.40) : Qt.rgba(0, 0, 0, 0.06))
-            border.width: tileRoot.isSelected ? 1 : 0
+                   : (TitanTheme.isDark ? Qt.rgba(0, 0, 0, 0.35) : Qt.rgba(0, 0, 0, 0.06))
+            border.width: 1
             border.color: tileRoot.isSelected
                           ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.6)
-                          : "transparent"
+                          : Qt.rgba(1, 1, 1, 0.07)
 
             Text {
                 id: badgeLabel
@@ -127,10 +146,10 @@ Item {
                 color: TitanTheme.isDark
                        ? (tileRoot.isSelected ? Qt.rgba(0, 0, 0, 0.45) : Qt.rgba(0, 0, 0, 0.35))
                        : Qt.rgba(1, 1, 1, 0.85)
-                border.width: tileRoot.isSelected ? 1 : 0
+                border.width: 1
                 border.color: tileRoot.isSelected
                               ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.55)
-                              : "transparent"
+                              : Qt.rgba(1, 1, 1, 0.08)
 
                 // Subtle pedestal drop shadow
                 Rectangle {
@@ -139,7 +158,7 @@ Item {
                     anchors.bottomMargin: -2
                     radius: parent.radius
                     z: -1
-                    color: Qt.rgba(0, 0, 0, 0.30)
+                    color: Qt.rgba(0, 0, 0, 0.35)
                 }
 
                 Image {

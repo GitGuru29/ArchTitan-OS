@@ -10,14 +10,14 @@ Rectangle {
         GradientStop {
             position: 0.0
             color: TitanTheme.isDark
-                   ? Qt.rgba(TitanTheme.mantle.r, TitanTheme.mantle.g, TitanTheme.mantle.b, 0.88)
-                   : Qt.rgba(1, 1, 1, 0.92)
+                   ? Qt.rgba(TitanTheme.mantle.r, TitanTheme.mantle.g, TitanTheme.mantle.b, 0.62)
+                   : Qt.rgba(1, 1, 1, 0.80)
         }
         GradientStop {
             position: 1.0
             color: TitanTheme.isDark
-                   ? Qt.rgba(TitanTheme.crust.r, TitanTheme.crust.g, TitanTheme.crust.b, 0.84)
-                   : Qt.rgba(1, 1, 1, 0.86)
+                   ? Qt.rgba(TitanTheme.crust.r, TitanTheme.crust.g, TitanTheme.crust.b, 0.50)
+                   : Qt.rgba(1, 1, 1, 0.68)
         }
     }
 
@@ -57,6 +57,40 @@ Rectangle {
         color: "transparent"
         border.width: 1.5
         border.color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.16)
+    }
+
+    // 3D Glass Specular Sheen (Curved top-light wash)
+    Rectangle {
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: Math.min(parent.height * 0.45, 190)
+        radius: cardRoot.radius
+        z: 0
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: Qt.rgba(1, 1, 1, 0.12) }
+            GradientStop { position: 0.40; color: Qt.rgba(1, 1, 1, 0.03) }
+            GradientStop { position: 1.0; color: "transparent" }
+        }
+    }
+
+    // Top Specular Horizon Glint (Faded at edges, authentic glass refraction)
+    Rectangle {
+        anchors.top: parent.top
+        anchors.topMargin: 1
+        anchors.horizontalCenter: parent.horizontalCenter
+        width: parent.width - 48
+        height: 1.5
+        radius: 1
+        z: 1
+        gradient: Gradient {
+            orientation: Gradient.Horizontal
+            GradientStop { position: 0.0; color: "transparent" }
+            GradientStop { position: 0.2; color: Qt.rgba(1, 1, 1, 0.20) }
+            GradientStop { position: 0.5; color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.55) }
+            GradientStop { position: 0.8; color: Qt.rgba(1, 1, 1, 0.20) }
+            GradientStop { position: 1.0; color: "transparent" }
+        }
     }
 
     // Dynamic height calculation
@@ -117,12 +151,16 @@ Rectangle {
                         width: catRow.implicitWidth + 16
                         radius: 8
                         color: isActive
-                               ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.24)
+                               ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.28)
                                : (catMouse.containsMouse
-                                  ? (TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.05))
-                                  : (TitanTheme.isDark ? Qt.rgba(0, 0, 0, 0.25) : Qt.rgba(0, 0, 0, 0.04)))
-                        border.width: isActive ? 1 : 0
-                        border.color: isActive ? TitanTheme.accent : "transparent"
+                                  ? (TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08))
+                                  : (TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.05) : Qt.rgba(0, 0, 0, 0.04)))
+                        border.width: 1
+                        border.color: isActive
+                                      ? TitanTheme.accent
+                                      : (catMouse.containsMouse
+                                         ? Qt.rgba(1, 1, 1, 0.14)
+                                         : Qt.rgba(1, 1, 1, 0.06))
 
                         Behavior on color { ColorAnimation { duration: 100 } }
 

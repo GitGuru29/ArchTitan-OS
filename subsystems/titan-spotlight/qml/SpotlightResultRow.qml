@@ -35,15 +35,15 @@ Rectangle {
         GradientStop {
             position: 0.0
             color: rowRoot.isSelected
-                   ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, TitanTheme.isDark ? 0.24 : 0.16)
+                   ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, TitanTheme.isDark ? 0.30 : 0.20)
                    : (rowHover.containsMouse
-                      ? (TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.065) : Qt.rgba(0, 0, 0, 0.045))
+                      ? (TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.09) : Qt.rgba(0, 0, 0, 0.05))
                       : "transparent")
         }
         GradientStop {
             position: 1.0
             color: rowRoot.isSelected
-                   ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, TitanTheme.isDark ? 0.11 : 0.08)
+                   ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, TitanTheme.isDark ? 0.12 : 0.08)
                    : (rowHover.containsMouse
                       ? (TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.03) : Qt.rgba(0, 0, 0, 0.02))
                       : "transparent")
@@ -83,10 +83,10 @@ Rectangle {
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
             color: TitanTheme.isDark ? Qt.rgba(0, 0, 0, 0.38) : Qt.rgba(1, 1, 1, 0.80)
-            border.width: rowRoot.isSelected ? 1 : 0
+            border.width: 1
             border.color: rowRoot.isSelected
                           ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.45)
-                          : "transparent"
+                          : Qt.rgba(1, 1, 1, 0.08)
 
             // 3D subtle icon pedestal shadow
             Rectangle {
