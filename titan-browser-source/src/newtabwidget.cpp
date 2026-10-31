@@ -47,10 +47,10 @@ NewTabWidget::NewTabWidget(QWidget *parent) : QWidget(parent)
 
 void NewTabWidget::setupUi()
 {
-    setStyleSheet(QStringLiteral(R"(
+    setStyleSheet(TitanPalette::qss(QStringLiteral(R"(
         QWidget#NewTabWidget {
-            background-color: #11111b;
-            color: #cdd6f4;
+            background-color: @crust;
+            color: @textHigh;
             font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
         QScrollArea {
@@ -65,7 +65,7 @@ void NewTabWidget::setupUi()
             background: rgba(255, 255, 255, 0.1);
             border-radius: 3px;
         }
-    )"));
+    )")));
 
     auto *rootLayout = new QVBoxLayout(this);
     rootLayout->setContentsMargins(0, 0, 0, 0);
@@ -102,24 +102,24 @@ void NewTabWidget::setupHeader(QVBoxLayout *layout)
     auto *logoBtn = new QPushButton(headerBox);
     logoBtn->setIcon(QIcon(QStringLiteral(":/icons/logo.svg")));
     logoBtn->setIconSize(QSize(42, 42));
-    logoBtn->setStyleSheet(QStringLiteral("background: transparent; border: none; padding: 4px;"));
+    logoBtn->setStyleSheet(TitanPalette::qss(QStringLiteral("background: transparent; border: none; padding: 4px;")));
     logoBtn->setCursor(Qt::PointingHandCursor);
     hLayout->addWidget(logoBtn, 0, Qt::AlignCenter);
 
     // Digital Clock
     m_clockLabel = new QLabel(QStringLiteral("12:00"), headerBox);
-    m_clockLabel->setStyleSheet(QStringLiteral("font-size: 36px; font-weight: 800; color: #cdd6f4; letter-spacing: -0.5px;"));
+    m_clockLabel->setStyleSheet(TitanPalette::qss(QStringLiteral("font-size: 36px; font-weight: 800; color: @textHigh; letter-spacing: -0.5px;")));
     m_clockLabel->setAlignment(Qt::AlignCenter);
     hLayout->addWidget(m_clockLabel, 0, Qt::AlignCenter);
 
     // Greeting
     m_greetingLabel = new QLabel(QStringLiteral("Good evening, Titan."), headerBox);
-    m_greetingLabel->setStyleSheet(QStringLiteral("font-size: 19px; font-weight: 600; color: #cdd6f4;"));
+    m_greetingLabel->setStyleSheet(TitanPalette::qss(QStringLiteral("font-size: 19px; font-weight: 600; color: @textHigh;")));
     m_greetingLabel->setAlignment(Qt::AlignCenter);
     hLayout->addWidget(m_greetingLabel, 0, Qt::AlignCenter);
 
     auto *subLabel = new QLabel(QStringLiteral("Unified operating environment for developer workflows"), headerBox);
-    subLabel->setStyleSheet(QStringLiteral("font-size: 12.5px; color: #7f849c; font-weight: 400;"));
+    subLabel->setStyleSheet(TitanPalette::qss(QStringLiteral("font-size: 12.5px; color: @textLow; font-weight: 400;")));
     subLabel->setAlignment(Qt::AlignCenter);
     hLayout->addWidget(subLabel, 0, Qt::AlignCenter);
 
@@ -135,54 +135,54 @@ void NewTabWidget::setupSearchBar(QVBoxLayout *layout)
     bLayout->setContentsMargins(12, 6, 12, 6);
     bLayout->setSpacing(8);
 
-    barBox->setStyleSheet(QStringLiteral(R"(
+    barBox->setStyleSheet(TitanPalette::qss(QStringLiteral(R"(
         QWidget {
-            background: #11111b;
+            background: @crust;
             border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 12px;
         }
         QWidget:focus-within {
-            border: 1px solid #89b4fa;
-            background: #181825;
+            border: 1px solid @accent;
+            background: @mantle;
         }
-    )"));
+    )")));
 
     m_engineBtn = new QPushButton(QStringLiteral("DDG"), barBox);
-    m_engineBtn->setStyleSheet(QStringLiteral(R"(
+    m_engineBtn->setStyleSheet(TitanPalette::qss(QStringLiteral(R"(
         QPushButton {
-            background: rgba(137, 180, 250, 0.12);
-            border: 1px solid rgba(137, 180, 250, 0.3);
+            background: rgba(@accentRGB, 0.12);
+            border: 1px solid rgba(@accentRGB, 0.3);
             border-radius: 6px;
-            color: #89b4fa;
+            color: @accent;
             font-size: 11px;
             font-weight: 700;
             padding: 4px 8px;
             min-height: 20px;
         }
         QPushButton:hover {
-            background: rgba(137, 180, 250, 0.22);
+            background: rgba(@accentRGB, 0.22);
         }
-    )"));
+    )")));
     m_engineBtn->setCursor(Qt::PointingHandCursor);
     connect(m_engineBtn, &QPushButton::clicked, this, &NewTabWidget::onSearchEngineClicked);
     bLayout->addWidget(m_engineBtn);
 
     m_searchInput = new QLineEdit(barBox);
     m_searchInput->setPlaceholderText(QStringLiteral("Search the web, compute Math, or enter URL..."));
-    m_searchInput->setStyleSheet(QStringLiteral(R"(
+    m_searchInput->setStyleSheet(TitanPalette::qss(QStringLiteral(R"(
         QLineEdit {
             background: transparent;
             border: none;
-            color: #cdd6f4;
+            color: @textHigh;
             font-size: 14.5px;
             padding: 4px 6px;
         }
-    )"));
+    )")));
     connect(m_searchInput, &QLineEdit::returnPressed, this, &NewTabWidget::onSearchSubmitted);
     bLayout->addWidget(m_searchInput, 1);
 
     auto *badge = new QLabel(QStringLiteral("Enter ↵"), barBox);
-    badge->setStyleSheet(QStringLiteral("color: #7f849c; font-size: 10.5px; font-weight: 600; background: rgba(255,255,255,0.05); padding: 3px 6px; border-radius: 4px; border: none;"));
+    badge->setStyleSheet(TitanPalette::qss(QStringLiteral("color: @textLow; font-size: 10.5px; font-weight: 600; background: rgba(255,255,255,0.05); padding: 3px 6px; border-radius: 4px; border: none;")));
     bLayout->addWidget(badge);
 
     layout->addWidget(barBox, 0, Qt::AlignCenter);
@@ -197,7 +197,7 @@ void NewTabWidget::setupSpaces(QVBoxLayout *layout)
     vLayout->setSpacing(8);
 
     auto *title = new QLabel(QStringLiteral("SPACES"), box);
-    title->setStyleSheet(QStringLiteral("font-size: 11px; font-weight: 700; color: #7f849c; letter-spacing: 1px;"));
+    title->setStyleSheet(TitanPalette::qss(QStringLiteral("font-size: 11px; font-weight: 700; color: @textLow; letter-spacing: 1px;")));
     vLayout->addWidget(title);
 
     auto *spacesRow = new QHBoxLayout();
@@ -218,40 +218,40 @@ void NewTabWidget::setupSpaces(QVBoxLayout *layout)
                 min-width: 170px;
             }
             QPushButton:hover {
-                background: #181825;
-                border-color: rgba(137, 180, 250, 0.35);
+                background: @mantle;
+                border-color: rgba(@accentRGB, 0.35);
             }
-        )").arg(active ? QStringLiteral("#181825") : QStringLiteral("#11111b"))
-          .arg(active ? QStringLiteral("rgba(137, 180, 250, 0.45)") : QStringLiteral("rgba(255, 255, 255, 0.07)"));
+        )").arg(active ? QStringLiteral("@mantle") : QStringLiteral("@crust"))
+          .arg(active ? QStringLiteral("rgba(@accentRGB, 0.45)") : QStringLiteral("rgba(255, 255, 255, 0.07)"));
 
-        btn->setStyleSheet(qss);
+        btn->setStyleSheet(TitanPalette::qss(qss));
         btn->setText(QStringLiteral("● %1\n%2").arg(name, sub));
         connect(btn, &QPushButton::clicked, this, [this, name]{ onSpaceSelected(name); });
         spacesRow->addWidget(btn);
         m_spaceButtons.append(btn);
     };
 
-    addSpaceCard(QStringLiteral("Development"), QStringLiteral("C++, Rust, Vite"), QStringLiteral("#89b4fa"), true);
-    addSpaceCard(QStringLiteral("Research"), QStringLiteral("Docs, Papers, AI"), QStringLiteral("#cba6f7"), false);
-    addSpaceCard(QStringLiteral("Personal"), QStringLiteral("Feeds, Media"), QStringLiteral("#a6e3a1"), false);
+    addSpaceCard(QStringLiteral("Development"), QStringLiteral("C++, Rust, Vite"), TitanPalette::hex(TitanPalette::accent()), true);
+    addSpaceCard(QStringLiteral("Research"), QStringLiteral("Docs, Papers, AI"), TitanPalette::hex(TitanPalette::mauve()), false);
+    addSpaceCard(QStringLiteral("Personal"), QStringLiteral("Feeds, Media"), TitanPalette::hex(TitanPalette::success()), false);
 
     auto *newSpaceBtn = new QPushButton(QStringLiteral("+ New Space"), box);
-    newSpaceBtn->setStyleSheet(QStringLiteral(R"(
+    newSpaceBtn->setStyleSheet(TitanPalette::qss(QStringLiteral(R"(
         QPushButton {
-            background: #11111b;
+            background: @crust;
             border: 1px dashed rgba(255, 255, 255, 0.15);
             border-radius: 10px;
-            color: #a6adc8;
+            color: @textMid;
             font-size: 12px;
             font-weight: 500;
             padding: 12px 14px;
             min-width: 140px;
         }
         QPushButton:hover {
-            border-color: #89b4fa;
-            color: #89b4fa;
+            border-color: @accent;
+            color: @accent;
         }
-    )"));
+    )")));
     newSpaceBtn->setCursor(Qt::PointingHandCursor);
     connect(newSpaceBtn, &QPushButton::clicked, this, [this]{
         QMessageBox::information(this, QStringLiteral("Create Space"), QStringLiteral("Titan Spaces allow custom tab sets and isolated environments."));
@@ -271,7 +271,7 @@ void NewTabWidget::setupSpeedDials(QVBoxLayout *layout)
     vLayout->setSpacing(8);
 
     auto *title = new QLabel(QStringLiteral("QUICK ACCESS"), box);
-    title->setStyleSheet(QStringLiteral("font-size: 11px; font-weight: 700; color: #7f849c; letter-spacing: 1px;"));
+    title->setStyleSheet(TitanPalette::qss(QStringLiteral("font-size: 11px; font-weight: 700; color: @textLow; letter-spacing: 1px;")));
     vLayout->addWidget(title);
 
     m_dialsContainer = new QWidget(box);
@@ -294,7 +294,7 @@ void NewTabWidget::setupDevTools(QVBoxLayout *layout)
     vLayout->setSpacing(8);
 
     auto *title = new QLabel(QStringLiteral("DEVELOPER TOOLBOX"), box);
-    title->setStyleSheet(QStringLiteral("font-size: 11px; font-weight: 700; color: #7f849c; letter-spacing: 1px;"));
+    title->setStyleSheet(TitanPalette::qss(QStringLiteral("font-size: 11px; font-weight: 700; color: @textLow; letter-spacing: 1px;")));
     vLayout->addWidget(title);
 
     auto *grid = new QGridLayout();
@@ -303,20 +303,20 @@ void NewTabWidget::setupDevTools(QVBoxLayout *layout)
     auto addToolBtn = [this, grid, box](int row, int col, const QString &icon, const QString &name, const QString &sub, const QString &id) {
         auto *btn = new QPushButton(box);
         btn->setCursor(Qt::PointingHandCursor);
-        btn->setStyleSheet(QStringLiteral(R"(
+        btn->setStyleSheet(TitanPalette::qss(QStringLiteral(R"(
             QPushButton {
-                background: #11111b;
+                background: @crust;
                 border: 1px solid rgba(255, 255, 255, 0.07);
                 border-radius: 10px;
                 padding: 10px 12px;
                 text-align: left;
-                color: #cdd6f4;
+                color: @textHigh;
             }
             QPushButton:hover {
-                background: #181825;
-                border-color: rgba(137, 180, 250, 0.35);
+                background: @mantle;
+                border-color: rgba(@accentRGB, 0.35);
             }
-        )"));
+        )")));
         btn->setText(QStringLiteral("%1  %2\n    %3").arg(icon, name, sub));
         connect(btn, &QPushButton::clicked, this, [this, id]{ onOpenToolClicked(id); });
         grid->addWidget(btn, row, col);
@@ -350,22 +350,22 @@ void NewTabWidget::renderShortcuts()
         const auto &sc = m_shortcuts[i];
         auto *btn = new QPushButton(m_dialsContainer);
         btn->setCursor(Qt::PointingHandCursor);
-        btn->setStyleSheet(QStringLiteral(R"(
+        btn->setStyleSheet(TitanPalette::qss(QStringLiteral(R"(
             QPushButton {
-                background: #11111b;
+                background: @crust;
                 border: 1px solid rgba(255, 255, 255, 0.07);
                 border-radius: 10px;
                 padding: 12px 10px;
-                color: #cdd6f4;
+                color: @textHigh;
                 font-weight: 600;
                 font-size: 12px;
                 min-width: 120px;
             }
             QPushButton:hover {
-                background: #181825;
-                border-color: rgba(137, 180, 250, 0.35);
+                background: @mantle;
+                border-color: rgba(@accentRGB, 0.35);
             }
-        )"));
+        )")));
 
         QString domain = QUrl(sc.url).host();
         btn->setText(QStringLiteral("%1\n%2").arg(sc.name, domain.isEmpty() ? sc.url : domain));
@@ -386,21 +386,21 @@ void NewTabWidget::renderShortcuts()
     // Add Shortcut Button
     auto *addBtn = new QPushButton(QStringLiteral("+ Add\nShortcut"), m_dialsContainer);
     addBtn->setCursor(Qt::PointingHandCursor);
-    addBtn->setStyleSheet(QStringLiteral(R"(
+    addBtn->setStyleSheet(TitanPalette::qss(QStringLiteral(R"(
         QPushButton {
-            background: #11111b;
+            background: @crust;
             border: 1px dashed rgba(255, 255, 255, 0.15);
             border-radius: 10px;
             padding: 12px 10px;
-            color: #a6adc8;
+            color: @textMid;
             font-size: 12px;
             min-width: 120px;
         }
         QPushButton:hover {
-            border-color: #89b4fa;
-            color: #89b4fa;
+            border-color: @accent;
+            color: @accent;
         }
-    )"));
+    )")));
     connect(addBtn, &QPushButton::clicked, this, &NewTabWidget::onAddShortcutClicked);
     m_dialsLayout->addWidget(addBtn, row, col);
 }
@@ -424,12 +424,12 @@ void NewTabWidget::loadShortcuts()
     }
 
     if (m_shortcuts.isEmpty()) {
-        m_shortcuts.append({QStringLiteral("ArchTitan"), QStringLiteral("https://archtitan.io"), QStringLiteral("#89b4fa")});
-        m_shortcuts.append({QStringLiteral("GitHub"), QStringLiteral("https://github.com"), QStringLiteral("#cdd6f4")});
-        m_shortcuts.append({QStringLiteral("YouTube"), QStringLiteral("https://youtube.com"), QStringLiteral("#f38ba8")});
-        m_shortcuts.append({QStringLiteral("Google"), QStringLiteral("https://google.com"), QStringLiteral("#4285F4")});
-        m_shortcuts.append({QStringLiteral("Reddit"), QStringLiteral("https://reddit.com"), QStringLiteral("#ff4500")});
-        m_shortcuts.append({QStringLiteral("Notion"), QStringLiteral("https://notion.so"), QStringLiteral("#cdd6f4")});
+        m_shortcuts.append({QStringLiteral("ArchTitan"), QStringLiteral("https://archtitan.io"), TitanPalette::hex(TitanPalette::accent())});
+        m_shortcuts.append({QStringLiteral("GitHub"), QStringLiteral("https://github.com"), TitanPalette::hex(TitanPalette::textHigh())});
+        m_shortcuts.append({QStringLiteral("YouTube"), QStringLiteral("https://youtube.com"), TitanPalette::hex(TitanPalette::danger())});
+        m_shortcuts.append({QStringLiteral("Google"), QStringLiteral("https://google.com"), QStringLiteral("#4285F4")});  // tdl-allow: Google brand
+        m_shortcuts.append({QStringLiteral("Reddit"), QStringLiteral("https://reddit.com"), QStringLiteral("#ff4500")});  // tdl-allow: Reddit brand
+        m_shortcuts.append({QStringLiteral("Notion"), QStringLiteral("https://notion.so"), TitanPalette::hex(TitanPalette::textHigh())});
     }
 }
 
@@ -514,7 +514,7 @@ void NewTabWidget::onSpaceSelected(const QString &spaceName)
     m_activeSpace = spaceName;
     for (auto *btn : m_spaceButtons) {
         bool isAct = (btn->property("spaceName").toString() == spaceName);
-        btn->setStyleSheet(QStringLiteral(R"(
+        btn->setStyleSheet(TitanPalette::qss(QStringLiteral(R"(
             QPushButton {
                 background: %1;
                 border: 1px solid %2;
@@ -524,11 +524,11 @@ void NewTabWidget::onSpaceSelected(const QString &spaceName)
                 min-width: 170px;
             }
             QPushButton:hover {
-                background: #181825;
-                border-color: rgba(137, 180, 250, 0.35);
+                background: @mantle;
+                border-color: rgba(@accentRGB, 0.35);
             }
-        )").arg(isAct ? QStringLiteral("#181825") : QStringLiteral("#11111b"))
-          .arg(isAct ? QStringLiteral("rgba(137, 180, 250, 0.45)") : QStringLiteral("rgba(255, 255, 255, 0.07)")));
+        )").arg(isAct ? QStringLiteral("@mantle") : QStringLiteral("@crust"))
+          .arg(isAct ? QStringLiteral("rgba(@accentRGB, 0.45)") : QStringLiteral("rgba(255, 255, 255, 0.07)"))));
     }
 }
 
@@ -537,27 +537,27 @@ void NewTabWidget::onAddShortcutClicked()
     QDialog dlg(this);
     dlg.setWindowTitle(QStringLiteral("Add Quick Access Shortcut"));
     dlg.resize(360, 180);
-    dlg.setStyleSheet(QStringLiteral(R"(
-        QDialog { background: #11111b; color: #cdd6f4; }
-        QLabel { color: #a6adc8; font-size: 12px; }
+    dlg.setStyleSheet(TitanPalette::qss(QStringLiteral(R"(
+        QDialog { background: @crust; color: @textHigh; }
+        QLabel { color: @textMid; font-size: 12px; }
         QLineEdit {
-            background: #181825;
+            background: @mantle;
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 6px;
             padding: 6px 10px;
-            color: #cdd6f4;
+            color: @textHigh;
             font-size: 13px;
         }
         QPushButton {
-            background: #89b4fa;
-            color: #cdd6f4;
+            background: @accent;
+            color: @textHigh;
             border: none;
             border-radius: 6px;
             padding: 6px 14px;
             font-weight: 600;
         }
-        QPushButton:hover { background: #89b4fa; }
-    )"));
+        QPushButton:hover { background: @accent; }
+    )")));
 
     auto *layout = new QVBoxLayout(&dlg);
     layout->addWidget(new QLabel(QStringLiteral("Shortcut Name:"), &dlg));
@@ -578,7 +578,7 @@ void NewTabWidget::onAddShortcutClicked()
             if (!url.startsWith(QStringLiteral("http://")) && !url.startsWith(QStringLiteral("https://"))) {
                 url = QStringLiteral("https://") + url;
             }
-            m_shortcuts.append({name, url, QStringLiteral("#89b4fa")});
+            m_shortcuts.append({name, url, TitanPalette::hex(TitanPalette::accent())});
             saveShortcuts();
             renderShortcuts();
             dlg.accept();
@@ -593,28 +593,28 @@ void NewTabWidget::onOpenToolClicked(const QString &toolName)
 {
     QDialog dlg(this);
     dlg.resize(480, 320);
-    dlg.setStyleSheet(QStringLiteral(R"(
-        QDialog { background: #11111b; color: #cdd6f4; }
-        QLabel { color: #a6adc8; font-size: 12px; }
+    dlg.setStyleSheet(TitanPalette::qss(QStringLiteral(R"(
+        QDialog { background: @crust; color: @textHigh; }
+        QLabel { color: @textMid; font-size: 12px; }
         QTextEdit, QLineEdit {
-            background: #11111b;
+            background: @crust;
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 6px;
             padding: 8px;
-            color: #89b4fa;
+            color: @accent;
             font-family: monospace;
             font-size: 12.5px;
         }
         QPushButton {
-            background: #89b4fa;
-            color: #cdd6f4;
+            background: @accent;
+            color: @textHigh;
             border: none;
             border-radius: 6px;
             padding: 6px 14px;
             font-weight: 600;
         }
-        QPushButton:hover { background: #89b4fa; }
-    )"));
+        QPushButton:hover { background: @accent; }
+    )")));
 
     auto *layout = new QVBoxLayout(&dlg);
 
@@ -727,7 +727,7 @@ void NewTabWidget::onOpenToolClicked(const QString &toolName)
         layout->addWidget(edit);
 
         auto *resLabel = new QLabel(QDateTime::currentDateTime().toUTC().toString(Qt::ISODate), &dlg);
-        resLabel->setStyleSheet(QStringLiteral("color: #89b4fa; font-weight: 600; font-size: 13px;"));
+        resLabel->setStyleSheet(TitanPalette::qss(QStringLiteral("color: @accent; font-weight: 600; font-size: 13px;")));
         layout->addWidget(resLabel);
 
         auto *btn = new QPushButton(QStringLiteral("Convert Timestamp"), &dlg);
