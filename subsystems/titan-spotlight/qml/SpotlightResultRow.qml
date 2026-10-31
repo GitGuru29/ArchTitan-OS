@@ -14,9 +14,11 @@ Rectangle {
     signal hovered()
 
     scale: rowHover.pressed ? 0.98 : ((isSelected || rowHover.containsMouse) ? 1.01 : 1.0)
-    y: (isSelected || rowHover.containsMouse) ? -1 : 0
+    transform: Translate {
+        y: (rowRoot.isSelected || rowHover.containsMouse) ? -1 : 0
+        Behavior on y { NumberAnimation { duration: 110 } }
+    }
     Behavior on scale { NumberAnimation { duration: 110 } }
-    Behavior on y { NumberAnimation { duration: 110 } }
 
     // 3D Drop Shadow behind selected/hovered row
     Rectangle {

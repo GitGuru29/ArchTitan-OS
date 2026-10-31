@@ -13,12 +13,14 @@ Item {
     signal hovered()
 
     scale: tileMouse.pressed ? 0.96 : ((isSelected || tileMouse.containsMouse) ? 1.03 : 1.0)
-    y: (isSelected || tileMouse.containsMouse) ? -2 : 0
+    transform: Translate {
+        y: (tileRoot.isSelected || tileMouse.containsMouse) ? -2 : 0
+        Behavior on y {
+            NumberAnimation { duration: 130; easing.type: Easing.OutCubic }
+        }
+    }
     Behavior on scale {
         NumberAnimation { duration: 140; easing.type: Easing.OutBack }
-    }
-    Behavior on y {
-        NumberAnimation { duration: 130; easing.type: Easing.OutCubic }
     }
 
     // Layered 3D Ambient Drop Shadow under the tile

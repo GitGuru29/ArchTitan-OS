@@ -13,12 +13,14 @@ Item {
     signal hovered()
 
     scale: bentoMouse.pressed ? 0.97 : ((isSelected || bentoMouse.containsMouse) ? 1.02 : 1.0)
-    y: (isSelected || bentoMouse.containsMouse) ? -2 : 0
+    transform: Translate {
+        y: (bentoRoot.isSelected || bentoMouse.containsMouse) ? -2 : 0
+        Behavior on y {
+            NumberAnimation { duration: 120; easing.type: Easing.OutCubic }
+        }
+    }
     Behavior on scale {
         NumberAnimation { duration: 130; easing.type: Easing.OutBack }
-    }
-    Behavior on y {
-        NumberAnimation { duration: 120; easing.type: Easing.OutCubic }
     }
 
     // Layered 3D Ambient Drop Shadow under the bento tile

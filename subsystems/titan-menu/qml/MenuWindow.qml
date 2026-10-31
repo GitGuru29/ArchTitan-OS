@@ -366,9 +366,11 @@ Window {
                         readonly property bool current: index === root.selectedIndex
 
                         scale: tileHover.pressed ? 0.96 : ((current || tileHover.containsMouse) ? 1.03 : 1.0)
-                        y: (current || tileHover.containsMouse) ? -2 : 0
+                        transform: Translate {
+                            y: (tileDelegate.current || tileHover.containsMouse) ? -2 : 0
+                            Behavior on y { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
+                        }
                         Behavior on scale { NumberAnimation { duration: 130; easing.type: Easing.OutBack } }
-                        Behavior on y { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
 
                         // 3D Drop Shadow behind tile
                         Rectangle {

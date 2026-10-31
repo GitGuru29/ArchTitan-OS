@@ -335,12 +335,17 @@ Rectangle {
             leftMargin: 12
             rightMargin: 12
 
-            delegate: SpotlightResultRow {
+            delegate: Item {
                 width: resultsList.width - 24
-                modelItem: modelData
-                isSelected: index === spotlight.selectedIndex
-                onHovered: spotlight.selectedIndex = index
-                onActivated: spotlight.activate(index)
+                height: 54
+
+                SpotlightResultRow {
+                    anchors.fill: parent
+                    modelItem: modelData
+                    isSelected: index === spotlight.selectedIndex
+                    onHovered: spotlight.selectedIndex = index
+                    onActivated: spotlight.activate(index)
+                }
             }
         }
 
