@@ -21,38 +21,42 @@ Rectangle {
         }
     }
 
-    border.width: 1.5
-    border.color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.42)
+    border.width: 1
+    border.color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.35)
 
-    // Outer ambient glow halo around the entire Spotlight card
+    // Deep 3D Ambient Drop Shadow (Layer 1 - diffuse ground shadow)
     Rectangle {
         anchors.fill: parent
-        anchors.margins: -3
-        radius: 29
+        anchors.topMargin: 12
+        anchors.bottomMargin: -12
+        anchors.leftMargin: -8
+        anchors.rightMargin: -8
+        radius: cardRoot.radius + 6
+        z: -3
+        color: Qt.rgba(0, 0, 0, 0.50)
+    }
+
+    // Mid 3D Drop Shadow (Layer 2 - closer occluding shadow)
+    Rectangle {
+        anchors.fill: parent
+        anchors.topMargin: 4
+        anchors.bottomMargin: -4
+        anchors.leftMargin: -2
+        anchors.rightMargin: -2
+        radius: cardRoot.radius + 2
+        z: -2
+        color: Qt.rgba(0, 0, 0, 0.38)
+    }
+
+    // Outer luminous accent halo
+    Rectangle {
+        anchors.fill: parent
+        anchors.margins: -2
+        radius: cardRoot.radius + 2
         z: -1
         color: "transparent"
-        border.width: 2
-        border.color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.14)
-    }
-
-    // Inner 1px specular glass refraction border
-    Rectangle {
-        anchors.fill: parent
-        anchors.margins: 1.5
-        radius: 24.5
-        color: "transparent"
-        border.width: 1
-        border.color: TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(1, 1, 1, 0.90)
-    }
-
-    // Top specular glass highlight strip
-    Rectangle {
-        anchors.top: parent.top
-        anchors.topMargin: 1.5
-        anchors.horizontalCenter: parent.horizontalCenter
-        width: parent.width - 64
-        height: 1
-        color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.55)
+        border.width: 1.5
+        border.color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.16)
     }
 
     // Dynamic height calculation
@@ -78,14 +82,6 @@ Rectangle {
             onDownPressed: spotlight.selectDown()
             onLeftPressed: spotlight.selectLeft()
             onRightPressed: spotlight.selectRight()
-        }
-
-        // Divider
-        Rectangle {
-            width: parent.width - 28
-            anchors.horizontalCenter: parent.horizontalCenter
-            height: 1
-            color: TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.06)
         }
 
         // 2. Category Filter Bar (Glass Filter Strip)
@@ -121,14 +117,12 @@ Rectangle {
                         width: catRow.implicitWidth + 16
                         radius: 8
                         color: isActive
-                               ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.22)
+                               ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.24)
                                : (catMouse.containsMouse
-                                  ? (TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.07) : Qt.rgba(0, 0, 0, 0.05))
-                                  : (TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.03) : Qt.rgba(0, 0, 0, 0.03)))
-                        border.width: 1
-                        border.color: isActive
-                                      ? TitanTheme.accent
-                                      : (TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.06))
+                                  ? (TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.05))
+                                  : (TitanTheme.isDark ? Qt.rgba(0, 0, 0, 0.25) : Qt.rgba(0, 0, 0, 0.04)))
+                        border.width: isActive ? 1 : 0
+                        border.color: isActive ? TitanTheme.accent : "transparent"
 
                         Behavior on color { ColorAnimation { duration: 100 } }
 
@@ -179,9 +173,8 @@ Rectangle {
                 height: 22
                 width: countText.implicitWidth + 14
                 radius: 7
-                color: TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.05) : Qt.rgba(0, 0, 0, 0.05)
-                border.width: 1
-                border.color: TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.06)
+                color: TitanTheme.isDark ? Qt.rgba(0, 0, 0, 0.28) : Qt.rgba(0, 0, 0, 0.05)
+                border.width: 0
 
                 Text {
                     id: countText
@@ -192,14 +185,6 @@ Rectangle {
                     font.weight: Font.Medium
                     color: TitanTheme.textLow
                 }
-            }
-
-            Rectangle {
-                anchors.bottom: parent.bottom
-                width: parent.width - 28
-                anchors.horizontalCenter: parent.horizontalCenter
-                height: 1
-                color: TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.06) : Qt.rgba(0, 0, 0, 0.05)
             }
         }
 

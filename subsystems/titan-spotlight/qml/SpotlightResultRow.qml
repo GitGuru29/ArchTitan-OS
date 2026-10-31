@@ -13,6 +13,22 @@ Rectangle {
     signal activated()
     signal hovered()
 
+    scale: rowHover.pressed ? 0.98 : ((isSelected || rowHover.containsMouse) ? 1.01 : 1.0)
+    y: (isSelected || rowHover.containsMouse) ? -1 : 0
+    Behavior on scale { NumberAnimation { duration: 110 } }
+    Behavior on y { NumberAnimation { duration: 110 } }
+
+    // 3D Drop Shadow behind selected/hovered row
+    Rectangle {
+        anchors.fill: parent
+        anchors.topMargin: rowRoot.isSelected ? 3 : 2
+        anchors.bottomMargin: rowRoot.isSelected ? -3 : -2
+        radius: rowRoot.radius + 1
+        z: -1
+        color: Qt.rgba(0, 0, 0, rowRoot.isSelected ? 0.45 : (rowHover.containsMouse ? 0.35 : 0.0))
+        visible: rowRoot.isSelected || rowHover.containsMouse
+    }
+
     gradient: Gradient {
         GradientStop {
             position: 0.0
@@ -32,10 +48,12 @@ Rectangle {
         }
     }
 
-    border.width: rowRoot.isSelected ? 1 : (rowHover.containsMouse ? 1 : 0)
+    border.width: rowRoot.isSelected ? 1.5 : (rowHover.containsMouse ? 1 : 0)
     border.color: rowRoot.isSelected
-                  ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.55)
-                  : (TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.08))
+                  ? TitanTheme.accent
+                  : (rowHover.containsMouse
+                     ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.35)
+                     : "transparent")
 
     // Left active glow bar
     Rectangle {
@@ -62,11 +80,21 @@ Rectangle {
             radius: 11
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
-            color: TitanTheme.isDark ? Qt.rgba(0, 0, 0, 0.34) : Qt.rgba(1, 1, 1, 0.80)
-            border.width: 1
+            color: TitanTheme.isDark ? Qt.rgba(0, 0, 0, 0.38) : Qt.rgba(1, 1, 1, 0.80)
+            border.width: rowRoot.isSelected ? 1 : 0
             border.color: rowRoot.isSelected
                           ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.45)
-                          : (TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.08))
+                          : "transparent"
+
+            // 3D subtle icon pedestal shadow
+            Rectangle {
+                anchors.fill: parent
+                anchors.topMargin: 2
+                anchors.bottomMargin: -2
+                radius: parent.radius
+                z: -1
+                color: Qt.rgba(0, 0, 0, 0.25)
+            }
 
             Image {
                 id: appIcon
@@ -133,9 +161,8 @@ Rectangle {
                 width: catLabel.implicitWidth + 12
                 radius: 6
                 visible: modelItem && modelItem.badge !== undefined && modelItem.badge !== ""
-                color: TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.06) : Qt.rgba(0, 0, 0, 0.05)
-                border.width: 1
-                border.color: TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.09) : Qt.rgba(0, 0, 0, 0.07)
+                color: TitanTheme.isDark ? Qt.rgba(0, 0, 0, 0.35) : Qt.rgba(0, 0, 0, 0.05)
+                border.width: 0
 
                 Text {
                     id: catLabel
@@ -156,11 +183,9 @@ Rectangle {
                 radius: 7
                 color: rowRoot.isSelected
                        ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.28)
-                       : (TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.06) : Qt.rgba(0, 0, 0, 0.05))
-                border.width: 1
-                border.color: rowRoot.isSelected
-                              ? TitanTheme.accent
-                              : (TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.08))
+                       : (TitanTheme.isDark ? Qt.rgba(0, 0, 0, 0.30) : Qt.rgba(0, 0, 0, 0.05))
+                border.width: rowRoot.isSelected ? 1 : 0
+                border.color: rowRoot.isSelected ? TitanTheme.accent : "transparent"
                 visible: rowRoot.isSelected || rowHover.containsMouse
 
                 Text {

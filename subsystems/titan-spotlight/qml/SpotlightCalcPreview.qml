@@ -6,9 +6,19 @@ Rectangle {
     width: parent.width
     height: 64
     radius: 14
-    color: TitanTheme.isDark ? Qt.rgba(TitanTheme.surface0.r, TitanTheme.surface0.g, TitanTheme.surface0.b, 0.4) : Qt.rgba(0, 0, 0, 0.04)
-    border.width: 1
-    border.color: isSelected ? TitanTheme.accent : Qt.rgba(255, 255, 255, 0.08)
+    color: TitanTheme.isDark ? Qt.rgba(0, 0, 0, 0.38) : Qt.rgba(0, 0, 0, 0.04)
+    border.width: isSelected ? 1.5 : 0
+    border.color: isSelected ? TitanTheme.accent : "transparent"
+
+    // 3D Drop Shadow
+    Rectangle {
+        anchors.fill: parent
+        anchors.topMargin: 2
+        anchors.bottomMargin: -2
+        radius: calcCard.radius
+        z: -1
+        color: Qt.rgba(0, 0, 0, 0.30)
+    }
 
     property bool isSelected: false
 

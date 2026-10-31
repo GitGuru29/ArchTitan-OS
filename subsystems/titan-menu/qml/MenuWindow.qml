@@ -124,26 +124,6 @@ Window {
                 GradientStop { position: 1.0; color: Qt.rgba(TitanTheme.crust.r, TitanTheme.crust.g, TitanTheme.crust.b, 0.84) }
             }
 
-            // Inner 1px specular glass refraction rim
-            Rectangle {
-                anchors.fill: parent
-                anchors.margins: 1.5
-                radius: 24.5
-                color: "transparent"
-                border.width: 1
-                border.color: TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(1, 1, 1, 0.85)
-            }
-
-            // Top specular highlight line
-            Rectangle {
-                anchors.top: parent.top
-                anchors.topMargin: 1.5
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: parent.width - 64
-                height: 1
-                color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.55)
-            }
-
             layer.enabled: true
             layer.effect: MultiEffect {
                 shadowEnabled: true
@@ -346,21 +326,10 @@ Window {
                 }
             }
 
-            Rectangle {
-                id: divider
-                anchors.top: header.bottom
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.leftMargin: TitanTheme.space4
-                anchors.rightMargin: TitanTheme.space4
-                height: 1
-                color: TitanTheme.borderSubtle
-            }
-
             // ── Content Area (Grid View or List View) ────────────────────────
             Item {
                 id: contentArea
-                anchors.top: divider.bottom
+                anchors.top: header.bottom
                 anchors.topMargin: TitanTheme.space2
                 anchors.left: parent.left
                 anchors.right: parent.right
@@ -388,10 +357,39 @@ Window {
                     boundsBehavior: Flickable.StopAtBounds
 
                     delegate: Item {
+                        id: tileDelegate
                         required property int index
                         required property var modelData
                         width: grid.cellWidth
                         height: grid.cellHeight
+
+                        readonly property bool current: index === root.selectedIndex
+
+                        scale: tileHover.pressed ? 0.96 : ((current || tileHover.containsMouse) ? 1.03 : 1.0)
+                        y: (current || tileHover.containsMouse) ? -2 : 0
+                        Behavior on scale { NumberAnimation { duration: 130; easing.type: Easing.OutBack } }
+                        Behavior on y { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
+
+                        // 3D Drop Shadow behind tile
+                        Rectangle {
+                            anchors.fill: gridTile
+                            anchors.topMargin: tileDelegate.current ? 4 : (tileHover.containsMouse ? 3 : 2)
+                            anchors.bottomMargin: tileDelegate.current ? -4 : (tileHover.containsMouse ? -3 : -2)
+                            radius: gridTile.radius + 1
+                            z: -2
+                            color: Qt.rgba(0, 0, 0, tileDelegate.current ? 0.55 : (tileHover.containsMouse ? 0.45 : 0.30))
+                        }
+
+                        // Outer glowing halo
+                        Rectangle {
+                            anchors.fill: gridTile
+                            anchors.margins: -2
+                            radius: gridTile.radius + 2
+                            z: -1
+                            color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.22)
+                            visible: tileDelegate.current || tileHover.containsMouse
+                            opacity: tileDelegate.current ? 1.0 : (tileHover.containsMouse ? 0.50 : 0.0)
+                        }
 
                         Rectangle {
                             id: gridTile
@@ -400,29 +398,33 @@ Window {
                             height: parent.height - 8
                             radius: 18
 
-                            readonly property bool current: index === root.selectedIndex
+                            readonly property bool current: tileDelegate.current
 
                             gradient: Gradient {
                                 GradientStop {
                                     position: 0.0
                                     color: gridTile.current
-                                           ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.24)
+                                           ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.26)
                                            : (tileHover.containsMouse
-                                              ? Qt.rgba(1, 1, 1, 0.08)
-                                              : Qt.rgba(1, 1, 1, 0.04))
+                                              ? (TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.05))
+                                              : (TitanTheme.isDark ? Qt.rgba(0, 0, 0, 0.35) : Qt.rgba(1, 1, 1, 0.70)))
                                 }
                                 GradientStop {
                                     position: 1.0
                                     color: gridTile.current
                                            ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.11)
-                                           : Qt.rgba(0, 0, 0, 0.20)
+                                           : (tileHover.containsMouse
+                                              ? (TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.03) : Qt.rgba(0, 0, 0, 0.03))
+                                              : (TitanTheme.isDark ? Qt.rgba(0, 0, 0, 0.50) : Qt.rgba(1, 1, 1, 0.50)))
                                 }
                             }
 
-                            border.width: gridTile.current ? 1.5 : 1
+                            border.width: gridTile.current ? 1.5 : (tileHover.containsMouse ? 1 : 0)
                             border.color: gridTile.current
                                           ? TitanTheme.accent
-                                          : Qt.rgba(1, 1, 1, 0.10)
+                                          : (tileHover.containsMouse
+                                             ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.40)
+                                             : "transparent")
 
                             Column {
                                 anchors.centerIn: parent
@@ -434,9 +436,19 @@ Window {
                                     height: 40
                                     radius: 12
                                     anchors.horizontalCenter: parent.horizontalCenter
-                                    color: gridTile.current ? TitanTheme.accentSoft : Qt.rgba(0, 0, 0, 0.32)
-                                    border.width: 1
-                                    border.color: gridTile.current ? TitanTheme.accentEdge : Qt.rgba(1, 1, 1, 0.10)
+                                    color: gridTile.current ? TitanTheme.accentSoft : Qt.rgba(0, 0, 0, 0.35)
+                                    border.width: gridTile.current ? 1 : 0
+                                    border.color: gridTile.current ? TitanTheme.accentEdge : "transparent"
+
+                                    // Subtle pedestal shadow
+                                    Rectangle {
+                                        anchors.fill: parent
+                                        anchors.topMargin: 2
+                                        anchors.bottomMargin: -2
+                                        radius: parent.radius
+                                        z: -1
+                                        color: Qt.rgba(0, 0, 0, 0.25)
+                                    }
 
                                     TitanIcon {
                                         anchors.centerIn: parent

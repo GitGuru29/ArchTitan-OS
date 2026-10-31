@@ -21,7 +21,7 @@ Item {
         anchors.leftMargin: 18
         anchors.rightMargin: 18
 
-        // Frosted Glowing Search Icon Pedestal
+        // Frosted Glowing 3D Search Icon Pedestal
         Rectangle {
             id: searchBadge
             width: 38
@@ -29,9 +29,19 @@ Item {
             radius: 12
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
-            color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.16)
+            color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.18)
             border.width: 1
-            border.color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.42)
+            border.color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.40)
+
+            // 3D subtle pedestal shadow
+            Rectangle {
+                anchors.fill: parent
+                anchors.topMargin: 2
+                anchors.bottomMargin: -2
+                radius: parent.radius
+                z: -1
+                color: Qt.rgba(0, 0, 0, 0.25)
+            }
 
             Text {
                 anchors.centerIn: parent
@@ -55,9 +65,8 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 height: 28
                 radius: 8
-                color: TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.06)
-                border.width: 1
-                border.color: TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.10)
+                color: TitanTheme.isDark ? Qt.rgba(0, 0, 0, 0.35) : Qt.rgba(0, 0, 0, 0.06)
+                border.width: 0
                 visible: textInput.text.length > 0 || spotlight.isClipboardMode
                 width: badgeText.implicitWidth + 18
 
@@ -92,9 +101,8 @@ Item {
                 height: 34
                 width: switcherRow.implicitWidth + 8
                 radius: 11
-                color: TitanTheme.isDark ? Qt.rgba(0, 0, 0, 0.36) : Qt.rgba(0, 0, 0, 0.06)
-                border.width: 1
-                border.color: TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.08)
+                color: TitanTheme.isDark ? Qt.rgba(0, 0, 0, 0.42) : Qt.rgba(0, 0, 0, 0.06)
+                border.width: 0
 
                 Row {
                     id: switcherRow
@@ -117,12 +125,23 @@ Item {
                             width: pillRow.implicitWidth + 16
                             radius: 8
                             color: active
-                                   ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.24)
+                                   ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.28)
                                    : (pillMouse.containsMouse
                                       ? (TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.07) : Qt.rgba(0, 0, 0, 0.05))
                                       : "transparent")
                             border.width: active ? 1 : 0
                             border.color: active ? TitanTheme.accent : "transparent"
+
+                            // Drop shadow behind active pill
+                            Rectangle {
+                                anchors.fill: parent
+                                anchors.topMargin: 1
+                                anchors.bottomMargin: -1
+                                radius: parent.radius
+                                z: -1
+                                visible: modePill.active
+                                color: Qt.rgba(0, 0, 0, 0.35)
+                            }
 
                             Behavior on color { ColorAnimation { duration: 110 } }
 
