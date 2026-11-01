@@ -82,14 +82,22 @@ window#waybar {
 window#waybar>box {
     background: rgba(17, 17, 27, 0.58);
     /* @titan-adapt:bar-bg */
+    background-image: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.12) 0%,
+        rgba(255, 255, 255, 0.02) 40%,
+        rgba(0, 0, 0, 0.14) 100%
+    );
     border: 1px solid rgba(255, 255, 255, 0.12);
     /* @titan-adapt:bar-border */
+    border-top: 1px solid rgba(255, 255, 255, 0.28);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.38);
     border-radius: 18px;
     padding: 0 6px;
-    /* No outer drop shadow: the layer surface is a plain rectangle, so a
-     * shadow can only render clipped to it and paints square corners
-     * behind the rounded island (which Hyprland then blurs as well). */
-    box-shadow: none;
+    box-shadow:
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.32),
+        inset 0 -1px 0 0 rgba(0, 0, 0, 0.26),
+        inset 0 0 16px 0 rgba(255, 255, 255, 0.02);
 }
 
 window#waybar.hidden {
@@ -106,20 +114,78 @@ window#waybar.hidden {
     margin: 0;
 }
 
-/* ── Unified Bento Module Pill Geometry ──────────────────────── */
+/* ── Unified Bento Module 3D Liquid Glass Micro-Prism Geometry ── */
 #custom-install-badge,
 #workspaces,
+#custom-git-hud.active,
 #custom-titan-center,
+#custom-titan-hwm,
+#custom-cava.playing,
+#capture,
 #clock,
 #quicksettings,
 #tray,
 #quick-controls {
-    background: @module-bg;
+    background-color: @module-bg;
+    background-image: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.09) 0%,
+        rgba(255, 255, 255, 0.02) 45%,
+        rgba(0, 0, 0, 0.10) 100%
+    );
     border: 1px solid @module-border;
+    border-top: 1px solid rgba(255, 255, 255, 0.24);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.30);
     border-radius: 12px;
     min-height: 26px;
     margin: 3px;
+    box-shadow:
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.22),
+        inset 0 -1px 0 0 rgba(0, 0, 0, 0.20),
+        0 1px 3px rgba(0, 0, 0, 0.18);
     transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#custom-install-badge:hover,
+#workspaces:hover,
+#custom-git-hud.active:hover,
+#custom-titan-center:hover,
+#custom-titan-hwm:hover,
+#custom-cava.playing:hover,
+#capture:hover,
+#clock:hover,
+#quicksettings:hover,
+#tray:hover,
+#quick-controls:hover {
+    background-color: @module-hover;
+    background-image: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.16) 0%,
+        rgba(255, 255, 255, 0.04) 45%,
+        rgba(0, 0, 0, 0.12) 100%
+    );
+    border-top: 1px solid rgba(255, 255, 255, 0.36);
+    border-bottom: 1px solid alpha(@accent, 0.45);
+    border-color: @accent-border;
+    box-shadow:
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.38),
+        0 0 12px @accent-glow;
+}
+
+#custom-install-badge:active,
+#workspaces:active,
+#custom-git-hud.active:active,
+#custom-titan-center:active,
+#custom-titan-hwm:active,
+#custom-cava.playing:active,
+#capture:active,
+#clock:active,
+#quicksettings:active,
+#tray:active,
+#quick-controls:active {
+    box-shadow:
+        inset 0 2px 4px rgba(0, 0, 0, 0.35),
+        inset 0 -1px 0 0 rgba(255, 255, 255, 0.10);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -144,19 +210,15 @@ window#waybar.hidden {
 }
 
 #workspaces {
-    background: @module-bg;
-    border: 1px solid @module-border;
-    border-radius: 14px;
     padding: 1px 6px;
     margin: 3px 4px 3px 2px;
-    box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.14) inset, 0 1px 3px rgba(0, 0, 0, 0.18);
-    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 #workspaces:hover {
-    background: @module-hover;
     border-color: @accent-border;
-    box-shadow: 0 0 10px @accent-glow;
+    box-shadow:
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.38),
+        0 0 12px @accent-glow;
 }
 
 #workspaces button {
@@ -218,20 +280,29 @@ window#waybar.hidden {
     margin: 2px;
 }
 
-/* 3. Active workspace — circular cyan accent ring (matches host ii indicator) */
+/* 3. Active workspace — 3D illuminated crystal gem pill */
 #workspaces button.active,
 #workspaces button.empty.active,
 #workspaces button.active:not(.empty) {
     min-width: 22px;
     min-height: 22px;
     color: @accent;
-    background: rgba(0, 210, 255, 0.18);
+    background-color: rgba(0, 210, 255, 0.18);
+    background-image: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.32) 0%,
+        rgba(255, 255, 255, 0.05) 50%,
+        rgba(0, 0, 0, 0.15) 100%
+    );
     border: 2px solid #00D2FF;
     /* @titan-adapt:accent-line */
+    border-top: 2px solid rgba(255, 255, 255, 0.55);
     border-radius: 999px;
     padding: 0 2px;
     margin: 2px;
-    box-shadow: 0 0 8px @accent-glow;
+    box-shadow:
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.45),
+        0 0 10px @accent-glow;
 }
 
 #workspaces button.empty.active label.workspace-label {
@@ -302,14 +373,13 @@ window#waybar.hidden {
     font-weight: 500;
     padding: 0 16px;
     min-width: 360px;
-    box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.14) inset, 0 1px 3px rgba(0, 0, 0, 0.18);
-    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 #custom-titan-center:hover {
-    background: @module-hover;
     border-color: @accent-border;
-    box-shadow: 0 0 12px @accent-glow;
+    box-shadow:
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.38),
+        0 0 12px @accent-glow;
 }
 
 /* Vertical Roll Keyframe Animations */
@@ -451,19 +521,16 @@ window#waybar.hidden {
 }
 
 #custom-git-hud.active {
-    background: @module-bg;
-    border: 1px solid @module-border;
-    border-radius: 12px;
     padding: 2px 10px;
     margin: 3px 4px;
-    box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.14) inset, 0 1px 3px rgba(0, 0, 0, 0.18);
     color: @text-high;
 }
 
 #custom-git-hud.active:hover {
-    background: @module-hover;
     border-color: @accent-border;
-    box-shadow: 0 0 12px @accent-glow;
+    box-shadow:
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.38),
+        0 0 12px @accent-glow;
 }
 
 #custom-git-hud.clean {
@@ -515,22 +582,18 @@ window#waybar.hidden {
 /* Titan Hardware Manager (THM) Telemetry Capsule */
 #custom-titan-hwm {
     color: @text-mid;
-    background: @module-bg;
-    border: 1px solid @module-border;
-    border-radius: 12px;
     font-size: 11px;
     font-weight: 600;
     padding: 2px 10px;
     margin: 3px 4px;
-    box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.14) inset, 0 1px 3px rgba(0, 0, 0, 0.18);
-    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 #custom-titan-hwm:hover {
-    background: @module-hover;
     border-color: @accent-border;
     color: @accent;
-    box-shadow: 0 0 10px @accent-glow;
+    box-shadow:
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.38),
+        0 0 10px @accent-glow;
 }
 
 #custom-titan-hwm.inactive {
@@ -547,12 +610,8 @@ window#waybar.hidden {
 }
 
 #custom-cava.playing {
-    background: @module-bg;
-    border: 1px solid @module-border;
-    border-radius: 12px;
     padding: 2px 10px;
     margin: 3px 4px;
-    box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.14) inset, 0 1px 3px rgba(0, 0, 0, 0.18);
     animation: cava-glow 3s ease-in-out infinite alternate;
 }
 
@@ -587,19 +646,15 @@ window#waybar.hidden {
 
 /* Screen Capture & Recording Bento Island */
 #capture {
-    background: @module-bg;
-    border: 1px solid @module-border;
-    border-radius: 12px;
     padding: 2px 6px;
     margin: 3px 4px;
-    box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.14) inset, 0 1px 3px rgba(0, 0, 0, 0.18);
-    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 #capture:hover {
-    background: @module-hover;
     border-color: @accent-border;
-    box-shadow: 0 0 10px @accent-glow;
+    box-shadow:
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.38),
+        0 0 10px @accent-glow;
 }
 
 #custom-snip,
@@ -653,41 +708,37 @@ window#waybar.hidden {
     color: @text-high;
     font-weight: 600;
     font-size: 11.5px;
-    padding: 0 11px;
-    background: @module-bg;
-    border: 1px solid @module-border;
-    border-radius: 12px;
-    font-weight: 600;
-    font-size: 11.5px;
     padding: 2px 11px;
     margin: 3px 4px;
-    box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.14) inset, 0 1px 3px rgba(0, 0, 0, 0.18);
-    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 #clock:hover {
-    background: @accent-soft;
+    background-color: @accent-soft;
+    background-image: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.20) 0%,
+        rgba(255, 255, 255, 0.05) 45%,
+        rgba(0, 0, 0, 0.10) 100%
+    );
+    border-top: 1px solid rgba(255, 255, 255, 0.38);
     border-color: @accent-border;
     color: @accent;
-    box-shadow: 0 0 12px @accent-glow;
+    box-shadow:
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.40),
+        0 0 12px @accent-glow;
 }
 
 /* Unified Telemetry Capsule (Temperature, Audio, Battery) */
 #quicksettings {
-    padding: 0 4px;
-    background: @module-bg;
-    border: 1px solid @module-border;
-    border-radius: 12px;
     padding: 2px 6px;
     margin: 3px 4px;
-    box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.14) inset, 0 1px 3px rgba(0, 0, 0, 0.18);
-    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 #quicksettings:hover {
-    background: @module-hover;
     border-color: @accent-border;
-    box-shadow: 0 0 10px @accent-glow;
+    box-shadow:
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.38),
+        0 0 10px @accent-glow;
 }
 
 #temperature,
@@ -765,13 +816,8 @@ window#waybar.hidden {
 
 /* System Tray */
 #tray {
-    padding: 0 8px;
-    background: @module-bg;
-    border: 1px solid @module-border;
-    border-radius: 12px;
     padding: 2px 8px;
     margin: 3px 4px;
-    box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.14) inset, 0 1px 3px rgba(0, 0, 0, 0.18);
 }
 
 #tray>.passive {
@@ -785,20 +831,15 @@ window#waybar.hidden {
 
 /* 3-Button Control Pack (Notification, Wi-Fi, Bluetooth) */
 #quick-controls {
-    padding: 0 4px;
-    background: @module-bg;
-    border: 1px solid @module-border;
-    border-radius: 12px;
     padding: 2px 6px;
     margin: 3px 2px 3px 4px;
-    box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.14) inset, 0 1px 3px rgba(0, 0, 0, 0.18);
-    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 #quick-controls:hover {
-    background: @module-hover;
     border-color: @accent-border;
-    box-shadow: 0 0 10px @accent-glow;
+    box-shadow:
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.38),
+        0 0 10px @accent-glow;
 }
 
 #quick-controls #custom-notification,
@@ -861,15 +902,26 @@ window#waybar.hidden {
     opacity: 0.6;
 }
 
-/* Tooltips */
+/* Tooltips — 3D Liquid Frosted Glass Card */
 tooltip {
     background: rgba(17, 17, 27, 0.92);
     /* @titan-adapt:tip-bg */
+    background-image: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.12) 0%,
+        rgba(255, 255, 255, 0.02) 40%,
+        rgba(0, 0, 0, 0.14) 100%
+    );
     border: 1px solid rgba(255, 255, 255, 0.14);
     /* @titan-adapt:tip-border */
+    border-top: 1px solid rgba(255, 255, 255, 0.30);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.40);
     border-radius: 14px;
     color: @text-high;
-    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+    box-shadow:
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.30),
+        inset 0 -1px 0 0 rgba(0, 0, 0, 0.25),
+        0 12px 36px rgba(0, 0, 0, 0.55);
     padding: 4px;
 }
 
