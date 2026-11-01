@@ -80,13 +80,24 @@ window#waybar {
 }
 
 window#waybar>box {
-    background: transparent;
+    background: rgba(17, 17, 27, 0.58);
     /* @titan-adapt:bar-bg */
-    border: none;
+    background-image: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.12) 0%,
+        rgba(255, 255, 255, 0.02) 40%,
+        rgba(0, 0, 0, 0.14) 100%
+    );
+    border: 1px solid rgba(255, 255, 255, 0.12);
     /* @titan-adapt:bar-border */
-    border-radius: 0;
-    padding: 0;
-    box-shadow: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.28);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.38);
+    border-radius: 18px;
+    padding: 0 8px;
+    box-shadow:
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.32),
+        inset 0 -1px 0 0 rgba(0, 0, 0, 0.26),
+        inset 0 0 16px 0 rgba(255, 255, 255, 0.02);
 }
 
 window#waybar.hidden {
@@ -103,7 +114,7 @@ window#waybar.hidden {
     margin: 0;
 }
 
-/* ── Unified Floating Bento Glass Modules ──────────────────────── */
+/* ── Unified Seamless Modules Inside Glass Bar ────────────────── */
 #custom-install-badge,
 #workspaces,
 #hardware,
@@ -116,26 +127,18 @@ window#waybar.hidden {
 #quicksettings,
 #tray,
 #quick-controls {
-    background-color: @module-bg;
-    background-image: linear-gradient(
-        to bottom,
-        rgba(255, 255, 255, 0.08) 0%,
-        rgba(255, 255, 255, 0.01) 50%,
-        rgba(0, 0, 0, 0.08) 100%
-    );
-    border: 1px solid @module-border;
-    border-top: 1px solid rgba(255, 255, 255, 0.16);
-    border-radius: 14px;
-    min-height: 28px;
-    margin: 3px 4px;
-    box-shadow:
-        0 4px 16px rgba(0, 0, 0, 0.25),
-        inset 0 1px 0 0 rgba(255, 255, 255, 0.14);
-    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    background: transparent;
+    border: none;
+    border-radius: 10px;
+    min-height: 26px;
+    margin: 2px 2px;
+    box-shadow: none;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 #custom-install-badge:hover,
 #workspaces:hover,
+#hardware:hover,
 #custom-git-hud.active:hover,
 #custom-titan-center:hover,
 #custom-titan-hwm:hover,
@@ -145,23 +148,14 @@ window#waybar.hidden {
 #quicksettings:hover,
 #tray:hover,
 #quick-controls:hover {
-    background-color: @module-hover;
-    background-image: linear-gradient(
-        to bottom,
-        rgba(255, 255, 255, 0.14) 0%,
-        rgba(255, 255, 255, 0.03) 50%,
-        rgba(0, 0, 0, 0.10) 100%
-    );
-    border-top: 1px solid rgba(255, 255, 255, 0.28);
-    border-color: @accent-border;
-    box-shadow:
-        0 0 12px @accent-glow,
-        0 4px 16px rgba(0, 0, 0, 0.30),
-        inset 0 1px 0 0 rgba(255, 255, 255, 0.22);
+    background: rgba(255, 255, 255, 0.08);
+    border: none;
+    box-shadow: none;
 }
 
 #custom-install-badge:active,
 #workspaces:active,
+#hardware:active,
 #custom-git-hud.active:active,
 #custom-titan-center:active,
 #custom-titan-hwm:active,
@@ -171,9 +165,8 @@ window#waybar.hidden {
 #quicksettings:active,
 #tray:active,
 #quick-controls:active {
-    box-shadow:
-        0 2px 8px rgba(0, 0, 0, 0.25),
-        inset 0 1px 2px rgba(0, 0, 0, 0.20);
+    background: rgba(255, 255, 255, 0.12);
+    box-shadow: none;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -441,7 +434,7 @@ window#waybar.hidden {
 #cpu:hover,
 #memory.swap:hover,
 #memory:hover {
-    background: @module-hover;
+    background: rgba(255, 255, 255, 0.08);
     color: @text-high;
 }
 
@@ -612,13 +605,13 @@ window#waybar.hidden {
 }
 
 #custom-snip:hover {
-    background: @module-hover;
+    background: rgba(255, 255, 255, 0.08);
     color: @accent;
     box-shadow: 0 0 8px @accent-glow;
 }
 
 #custom-recorder:hover {
-    background: @module-hover;
+    background: rgba(255, 255, 255, 0.08);
     color: @danger;
 }
 
@@ -655,19 +648,8 @@ window#waybar.hidden {
 }
 
 #clock:hover {
-    background-color: @accent-soft;
-    background-image: linear-gradient(
-        to bottom,
-        rgba(255, 255, 255, 0.20) 0%,
-        rgba(255, 255, 255, 0.05) 45%,
-        rgba(0, 0, 0, 0.10) 100%
-    );
-    border-top: 1px solid rgba(255, 255, 255, 0.38);
-    border-color: @accent-border;
+    background: rgba(255, 255, 255, 0.08);
     color: @accent;
-    box-shadow:
-        inset 0 1px 0 0 rgba(255, 255, 255, 0.40),
-        0 0 12px @accent-glow;
 }
 
 /* Unified Telemetry Capsule (Temperature, Audio, Battery) */
@@ -694,7 +676,7 @@ window#waybar.hidden {
 #temperature:hover,
 #pulseaudio:hover,
 #battery:hover {
-    background: @module-hover;
+    background: rgba(255, 255, 255, 0.08);
     color: @text-high;
 }
 
@@ -789,7 +771,7 @@ window#waybar.hidden {
 #quick-controls #custom-notification:hover,
 #quick-controls #network:hover,
 #quick-controls #bluetooth:hover {
-    background: @module-hover;
+    background: rgba(255, 255, 255, 0.08);
     color: @text-high;
 }
 
