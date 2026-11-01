@@ -84,20 +84,20 @@ window#waybar>box {
     /* @titan-adapt:bar-bg */
     background-image: linear-gradient(
         to bottom,
-        rgba(255, 255, 255, 0.12) 0%,
-        rgba(255, 255, 255, 0.02) 40%,
-        rgba(0, 0, 0, 0.14) 100%
+        rgba(255, 255, 255, 0.08) 0%,
+        rgba(255, 255, 255, 0.01) 40%,
+        rgba(0, 0, 0, 0.12) 100%
     );
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.10);
     /* @titan-adapt:bar-border */
-    border-top: 1px solid rgba(255, 255, 255, 0.28);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.38);
+    border-top: 1px solid rgba(255, 255, 255, 0.22);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.35);
     border-radius: 18px;
-    padding: 0 8px;
+    padding: 0 4px;
     box-shadow:
-        inset 0 1px 0 0 rgba(255, 255, 255, 0.32),
-        inset 0 -1px 0 0 rgba(0, 0, 0, 0.26),
-        inset 0 0 16px 0 rgba(255, 255, 255, 0.02);
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.25),
+        inset 0 -1px 0 0 rgba(0, 0, 0, 0.20),
+        0 4px 16px rgba(0, 0, 0, 0.35);
 }
 
 window#waybar.hidden {
@@ -114,7 +114,7 @@ window#waybar.hidden {
     margin: 0;
 }
 
-/* ── Unified Seamless Modules Inside Glass Bar ────────────────── */
+/* ── Beautiful Inner Glass Capsules ────────────────────────────── */
 #custom-install-badge,
 #workspaces,
 #hardware,
@@ -127,13 +127,14 @@ window#waybar.hidden {
 #quicksettings,
 #tray,
 #quick-controls {
-    background: transparent;
-    border: none;
-    border-radius: 10px;
-    min-height: 26px;
-    margin: 2px 2px;
-    box-shadow: none;
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    min-height: 28px;
+    margin: 3px 3px;
+    padding: 1px 8px;
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 #custom-install-badge:hover,
@@ -148,9 +149,11 @@ window#waybar.hidden {
 #quicksettings:hover,
 #tray:hover,
 #quick-controls:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border: none;
-    box-shadow: none;
+    background: rgba(255, 255, 255, 0.10);
+    border-color: rgba(255, 255, 255, 0.18);
+    box-shadow:
+        0 0 10px @accent-glow,
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.16);
 }
 
 #custom-install-badge:active,
@@ -165,8 +168,8 @@ window#waybar.hidden {
 #quicksettings:active,
 #tray:active,
 #quick-controls:active {
-    background: rgba(255, 255, 255, 0.12);
-    box-shadow: none;
+    background: rgba(255, 255, 255, 0.14);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -192,7 +195,7 @@ window#waybar.hidden {
 
 #workspaces {
     padding: 1px 6px;
-    margin: 3px 4px 3px 2px;
+    margin: 3px 3px;
 }
 
 
@@ -413,7 +416,7 @@ window#waybar.hidden {
 /* Hardware Performance Capsule (CPU, Swap, RAM) */
 #hardware {
     padding: 2px 8px;
-    margin: 3px 4px;
+    margin: 3px 3px;
 }
 
 
@@ -472,7 +475,7 @@ window#waybar.hidden {
 
 #custom-git-hud.active {
     padding: 2px 10px;
-    margin: 3px 4px;
+    margin: 3px 3px;
     color: @text-high;
 }
 
@@ -529,7 +532,7 @@ window#waybar.hidden {
     font-size: 11px;
     font-weight: 600;
     padding: 2px 10px;
-    margin: 3px 4px;
+    margin: 3px 3px;
 }
 
 #custom-titan-hwm:hover {
@@ -588,7 +591,7 @@ window#waybar.hidden {
 /* Screen Capture & Recording Bento Island */
 #capture {
     padding: 2px 6px;
-    margin: 3px 4px;
+    margin: 3px 3px;
 }
 
 
@@ -643,19 +646,18 @@ window#waybar.hidden {
     color: @text-high;
     font-weight: 600;
     font-size: 11.5px;
-    padding: 2px 11px;
-    margin: 3px 4px;
+    padding: 2px 12px;
+    margin: 3px 3px;
 }
 
 #clock:hover {
-    background: rgba(255, 255, 255, 0.08);
     color: @accent;
 }
 
 /* Unified Telemetry Capsule (Temperature, Audio, Battery) */
 #quicksettings {
-    padding: 2px 6px;
-    margin: 3px 4px;
+    padding: 2px 8px;
+    margin: 3px 3px;
 }
 
 
@@ -735,7 +737,7 @@ window#waybar.hidden {
 /* System Tray */
 #tray {
     padding: 2px 8px;
-    margin: 3px 4px;
+    margin: 3px 3px;
 }
 
 #tray>.passive {
@@ -750,7 +752,7 @@ window#waybar.hidden {
 /* 3-Button Control Pack (Notification, Wi-Fi, Bluetooth) */
 #quick-controls {
     padding: 2px 6px;
-    margin: 3px 2px 3px 4px;
+    margin: 3px 3px;
 }
 
 
