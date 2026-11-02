@@ -172,10 +172,17 @@ int main(int argc, char *argv[])
             }
         });
 
+        // Only `--daemon` (or no argument) starts hidden. If `--toggle`/`--show`
+        // reached this point, the IPC fast path above found no running daemon
+        // (e.g. Super+Tab pressed before autostart finished, or the daemon
+        // crashed). Starting hidden then would swallow the keypress, so this
+        // instance becomes the daemon AND shows the HUD immediately.
         bool startHidden = true;
         if (argc > 1) {
-            QString first = QString::fromUtf8(argv[1]);
-            if (first == "--show" || first == "show") {
+            QString first = QString::fromUtf8(argv[1]).trimmed();
+            if (first == "--show" || first == "show" ||
+                first == "--toggle" || first == "toggle" ||
+                first == "--hold" || first == "hold") {
                 startHidden = false;
             }
         }
