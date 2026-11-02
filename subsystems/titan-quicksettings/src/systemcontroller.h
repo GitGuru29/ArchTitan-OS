@@ -51,7 +51,6 @@ public:
   void setGameModeActive(bool active);
   void setVpnActive(bool active);
   void setAirplaneMode(bool active);
-  void setGlassOpacity(int value);
 
   Q_INVOKABLE bool getTileVisible(const QString &tileKey, bool defaultVal = true) const;
   Q_INVOKABLE void setTileVisible(const QString &tileKey, bool visible);
@@ -71,6 +70,7 @@ public slots:
   void toggleVirtualKeyboard();
   void openMediaWidget();
   void setBrightness(int value);
+  void setGlassOpacity(int value);
   void toggleScreenRecording();
   void toggleAirplaneMode();
   void openClipboard();

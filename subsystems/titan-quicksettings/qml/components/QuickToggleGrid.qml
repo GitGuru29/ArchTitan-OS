@@ -207,7 +207,13 @@ ColumnLayout {
                 fillAccent: TitanTheme.cyan
                 suffix: "%"
                 onChanged: (v) => {
-                    if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.setGlassOpacity(v)
+                    if (typeof systemCtrl !== "undefined" && systemCtrl) {
+                        if (typeof systemCtrl.setGlassOpacity === "function") {
+                            systemCtrl.setGlassOpacity(v)
+                        } else {
+                            systemCtrl.glassOpacity = v
+                        }
+                    }
                 }
             }
         }
