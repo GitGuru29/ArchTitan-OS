@@ -84,20 +84,17 @@ window#waybar>box {
     /* @titan-adapt:bar-bg */
     background-image: linear-gradient(
         to bottom,
-        rgba(255, 255, 255, 0.12) 0%,
+        rgba(255, 255, 255, 0.14) 0%,
         rgba(255, 255, 255, 0.02) 40%,
         rgba(0, 0, 0, 0.18) 100%
     );
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.14);
     /* @titan-adapt:bar-border */
-    border-top: 1.5px solid rgba(255, 255, 255, 0.30);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.40);
-    border-radius: 18px;
+    border-radius: 999px;
     padding: 0 4px;
     box-shadow:
-        inset 0 1px 0 0 rgba(255, 255, 255, 0.28),
-        inset 0 -1px 0 0 rgba(0, 0, 0, 0.22),
-        0 8px 24px rgba(0, 0, 0, 0.40);
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.30),
+        inset 0 -1px 0 0 rgba(0, 0, 0, 0.25);
 }
 
 window#waybar.hidden {
@@ -129,7 +126,7 @@ window#waybar.hidden {
 #quick-controls {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 12px;
+    border-radius: 999px;
     min-height: 28px;
     margin: 3px 3px;
     padding: 1px 8px;
@@ -180,7 +177,7 @@ window#waybar.hidden {
     color: @success;
     background: alpha(@success, 0.12);
     border: 1px solid alpha(@success, 0.40);
-    border-radius: 12px;
+    border-radius: 999px;
     padding: 2px 10px;
     margin: 3px 6px 3px 2px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);

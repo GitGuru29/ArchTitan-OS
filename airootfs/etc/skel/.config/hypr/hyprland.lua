@@ -408,7 +408,7 @@ hl.window_rule({
 
 -- Frosted-glass surfaces. (On Hyprland >= 0.55 these live here, not in
 -- hyprland.conf -- the .lua file supersedes .conf entirely.)
-hl.layer_rule({ match = { namespace = "^waybar$" }, blur = true, ignore_alpha = 0 })
+hl.layer_rule({ match = { namespace = "^waybar$" }, blur = true, ignore_alpha = 0.1 })
 hl.layer_rule({ match = { namespace = "^titan-spotlight$" }, blur = true, ignore_alpha = 0 })
 hl.layer_rule({ match = { namespace = "^titan-powermenu$" }, blur = true, ignore_alpha = 0 })
 hl.layer_rule({ match = { namespace = "^swaync-control-center$" }, blur = true, ignore_alpha = 0 })
