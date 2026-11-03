@@ -459,12 +459,10 @@ def patch_css(css_path: str, palette: dict[str, str]) -> bool:
 
 
 def reload_waybar() -> None:
-    """Ask Waybar to re-read its stylesheet. Its default SIGUSR2 action is
-    `reload`, which re-applies style.css without restarting the bar.
+    """Waybar uses 'reload_style_on_change: true' to hot-reload CSS in-place.
+    Sending SIGUSR2 triggers bar.reset() which destroys and respawns the bar window.
     """
-    if not shutil.which("pkill"):
-        return
-    subprocess.run(["pkill", "-SIGUSR2", "-x", "waybar"], check=False)
+    pass
 
 
 def main(argv: list[str]) -> int:
