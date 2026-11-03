@@ -39,7 +39,7 @@
 @define-color bar-border-top  transparent;
 @define-color bar-shadow      transparent;
 @define-color module-bg       rgba(17, 17, 27, 0.95);
-@define-color module-border   rgba(255, 255, 255, 0.28);
+@define-color module-border   rgba(255, 255, 255, 0.24);
 @define-color module-hover    rgba(17, 17, 27, 0.98);
 @define-color text-high       #cdd6f4;
 @define-color text-mid        #a6adc8;
@@ -54,7 +54,7 @@
 @define-color warning         #f9e2af;
 @define-color danger          #f38ba8;
 @define-color teal            #94e2d5;
-@define-color mauve           #cba6f7;
+@define-color mauve           #0284c7;
 @define-color on-bar          #FFFFFF;
 /* titan-theme:end */
 

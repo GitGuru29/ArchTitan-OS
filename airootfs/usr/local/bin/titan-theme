@@ -673,16 +673,21 @@ def cmd_glass(val_str: str, quiet: bool = False) -> None:
 
     # 1. Update Waybar style with the new module-bg/border/hover alpha values
     replace_block(WAYBAR_CSS, CSS_BEGIN, CSS_END, waybar_body(theme))
-    # If running on dev/source tree, also keep repo waybar css in sync
-    dev_css = "/home/msfvenom/custom-os-build/airootfs/etc/skel/.config/waybar/style.css"
-    if os.path.isfile(dev_css) and os.path.abspath(dev_css) != os.path.abspath(WAYBAR_CSS):
-        replace_block(dev_css, CSS_BEGIN, CSS_END, waybar_body(theme))
+    # If running on dev/source tree, also keep repo waybar css in sync across all profile trees
+    dev_css_paths = [
+        "/home/msfvenom/custom-os-build/airootfs/etc/skel/.config/waybar/style.css",
+        "/home/msfvenom/custom-os-build/airootfs/home/archtitan/.config/waybar/style.css",
+        "/home/msfvenom/custom-os-build/airootfs/root/.config/waybar/style.css",
+    ]
+    for dcss in dev_css_paths:
+        if os.path.isfile(dcss) and os.path.abspath(dcss) != os.path.abspath(WAYBAR_CSS):
+            replace_block(dcss, CSS_BEGIN, CSS_END, waybar_body(theme))
 
     # 2. Update SwayNC if present
     replace_block(SWAYNC_CSS, CSS_BEGIN, CSS_END, swaync_body(theme))
 
-    # 3. Seamless single signal to Waybar (no duplicate inotify writes, no shell sleeps, no swayosd restart)
-    run_quiet(["pkill", "-SIGUSR2", "-x", "waybar"], timeout=1.0)
+    # Note: Waybar uses 'reload_style_on_change: true' to hot-reload CSS in-place
+    # without destroying the window or triggering a disruptive bar reset.
 
     if not quiet and os.environ.get("TITAN_QUIET") != "1":
         notify("Glass Transparency", f"{int(v * 100)}% Opacity")
