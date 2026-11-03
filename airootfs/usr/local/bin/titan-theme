@@ -199,35 +199,48 @@ def waybar_body(t: dict) -> str:
     text_mid = "#4C4F69" if not dark else p["textMid"]
     text_low = "#6C6F85" if not dark else p["textLow"]
 
-    glass_opacity = float(t.get("glassOpacity", 0.35))
-    glass_factor = glass_opacity / 0.35
-
-    # Floating Bento Modules (zero outer bar background)
-    bar_bg = "transparent"
-    bar_border = "transparent"
-    bar_border_top = "transparent"
-    bar_shadow = "transparent"
+    glass_opacity = float(t.get("glassOpacity", 0.50))
 
     if dark:
-        mod_alpha = max(0.12, min(0.95, 0.65 * glass_factor))
-        hov_alpha = max(0.20, min(0.98, 0.85 * glass_factor))
-        border_alpha = max(0.04, min(0.35, 0.12 * glass_factor))
-        module_bg = rgba(crust, mod_alpha)
-        module_border = f"rgba(255, 255, 255, {border_alpha:.2f})"
-        module_hover = rgba(crust, hov_alpha)
+        # Outer bar capsule (window#waybar>box) dynamically scales with glass opacity slider:
+        # 0.10 (crystal clear) -> alpha 0.12
+        # 0.50 (balanced glass) -> alpha 0.40
+        # 0.95 (frosted solid) -> alpha 0.82
+        bar_alpha = max(0.10, min(0.90, round(0.12 + 0.70 * (glass_opacity - 0.10) / 0.85, 2)))
+        bar_border_alpha = max(0.06, min(0.35, round(0.06 + 0.22 * (glass_opacity - 0.10) / 0.85, 2)))
+        bar_bg = rgba(crust, bar_alpha)
+        bar_border = f"rgba(255, 255, 255, {bar_border_alpha:.2f})"
+        bar_border_top = f"rgba(255, 255, 255, {min(0.40, bar_border_alpha + 0.10):.2f})"
+        bar_shadow = f"rgba(0, 0, 0, {min(0.30, bar_alpha * 0.35):.2f})"
+
+        # Inner bento capsules (#workspaces, #hardware, #custom-titan-center, #clock, etc.)
+        mod_alpha = max(0.02, min(0.18, round(0.02 + 0.10 * (glass_opacity - 0.10) / 0.85, 2)))
+        mod_border_alpha = max(0.04, min(0.20, round(0.04 + 0.10 * (glass_opacity - 0.10) / 0.85, 2)))
+        hov_alpha = max(0.06, min(0.25, round(mod_alpha + 0.05, 2)))
+
+        module_bg = f"rgba(255, 255, 255, {mod_alpha:.2f})"
+        module_border = f"rgba(255, 255, 255, {mod_border_alpha:.2f})"
+        module_hover = f"rgba(255, 255, 255, {hov_alpha:.2f})"
         accent_soft = rgba(acc, 0.16)
         accent_glow = rgba(acc, 0.35)
         accent_border = rgba(acc, 0.55)
     else:
         # Soothing, glare-free light frosted glass using theme's mantle & surface tones
         mantle = p.get("mantle", "#E6E9EF")
-        surface0 = p.get("surface0", "#CCD0DA")
-        mod_alpha = max(0.15, min(0.95, 0.78 * glass_factor))
-        hov_alpha = max(0.25, min(0.98, 0.88 * glass_factor))
-        border_alpha = max(0.06, min(0.40, 0.18 * glass_factor))
-        module_bg = rgba(mantle, mod_alpha)
-        module_border = f"rgba(108, 112, 134, {border_alpha:.2f})"
-        module_hover = rgba(surface0, hov_alpha)
+        bar_alpha = max(0.15, min(0.92, round(0.16 + 0.72 * (glass_opacity - 0.10) / 0.85, 2)))
+        bar_border_alpha = max(0.08, min(0.38, round(0.08 + 0.24 * (glass_opacity - 0.10) / 0.85, 2)))
+        bar_bg = rgba(mantle, bar_alpha)
+        bar_border = f"rgba(108, 112, 134, {bar_border_alpha:.2f})"
+        bar_border_top = f"rgba(255, 255, 255, {min(0.55, bar_border_alpha + 0.15):.2f})"
+        bar_shadow = f"rgba(0, 0, 0, {min(0.15, bar_alpha * 0.2):.2f})"
+
+        mod_alpha = max(0.03, min(0.20, round(0.03 + 0.11 * (glass_opacity - 0.10) / 0.85, 2)))
+        mod_border_alpha = max(0.06, min(0.22, round(0.06 + 0.11 * (glass_opacity - 0.10) / 0.85, 2)))
+        hov_alpha = max(0.08, min(0.26, round(mod_alpha + 0.05, 2)))
+
+        module_bg = f"rgba(0, 0, 0, {mod_alpha:.2f})"
+        module_border = f"rgba(108, 112, 134, {mod_border_alpha:.2f})"
+        module_hover = f"rgba(0, 0, 0, {hov_alpha:.2f})"
         accent_soft = rgba(acc, 0.14)
         accent_glow = rgba(acc, 0.22)
         accent_border = rgba(acc, 0.45)
@@ -673,16 +686,21 @@ def cmd_glass(val_str: str, quiet: bool = False) -> None:
 
     # 1. Update Waybar style with the new module-bg/border/hover alpha values
     replace_block(WAYBAR_CSS, CSS_BEGIN, CSS_END, waybar_body(theme))
-    # If running on dev/source tree, also keep repo waybar css in sync
-    dev_css = "/home/msfvenom/custom-os-build/airootfs/etc/skel/.config/waybar/style.css"
-    if os.path.isfile(dev_css) and os.path.abspath(dev_css) != os.path.abspath(WAYBAR_CSS):
-        replace_block(dev_css, CSS_BEGIN, CSS_END, waybar_body(theme))
+    # If running on dev/source tree, also keep repo waybar css in sync across all profile trees
+    dev_css_paths = [
+        "/home/msfvenom/custom-os-build/airootfs/etc/skel/.config/waybar/style.css",
+        "/home/msfvenom/custom-os-build/airootfs/home/archtitan/.config/waybar/style.css",
+        "/home/msfvenom/custom-os-build/airootfs/root/.config/waybar/style.css",
+    ]
+    for dcss in dev_css_paths:
+        if os.path.isfile(dcss) and os.path.abspath(dcss) != os.path.abspath(WAYBAR_CSS):
+            replace_block(dcss, CSS_BEGIN, CSS_END, waybar_body(theme))
 
     # 2. Update SwayNC if present
     replace_block(SWAYNC_CSS, CSS_BEGIN, CSS_END, swaync_body(theme))
 
-    # 3. Seamless single signal to Waybar (no duplicate inotify writes, no shell sleeps, no swayosd restart)
-    run_quiet(["pkill", "-SIGUSR2", "-x", "waybar"], timeout=1.0)
+    # Note: Waybar uses 'reload_style_on_change: true' to hot-reload CSS in-place
+    # without destroying the window or triggering a disruptive bar reset.
 
     if not quiet and os.environ.get("TITAN_QUIET") != "1":
         notify("Glass Transparency", f"{int(v * 100)}% Opacity")
