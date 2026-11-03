@@ -578,8 +578,8 @@ def reload_shell() -> None:
             pass
 
     run_quiet(["pkill", "-SIGUSR1", "-x", "kitty"], timeout=1.0)
-    time.sleep(0.35)
-    run_quiet(["pkill", "-SIGUSR2", "-x", "waybar"], timeout=1.0)
+    # Note: Waybar uses 'reload_style_on_change: true' to hot-reload CSS in-place.
+    # Do NOT send SIGUSR2, which triggers bar.reset() and destroys/flickers the bar window.
     if shutil.which("swayosd-server") and shutil.which("pgrep"):
         try:
             res = subprocess.run(["pgrep", "-x", "swayosd-server"], capture_output=True, text=True, timeout=0.5)
@@ -611,6 +611,16 @@ def cmd_apply() -> None:
 
     # Marker blocks — regenerated verbatim from the palette.
     replace_block(WAYBAR_CSS, CSS_BEGIN, CSS_END, waybar_body(theme))
+    # If running on dev/source tree, also keep repo waybar css in sync across all profile trees
+    dev_css_paths = [
+        "/home/msfvenom/custom-os-build/airootfs/etc/skel/.config/waybar/style.css",
+        "/home/msfvenom/custom-os-build/airootfs/home/archtitan/.config/waybar/style.css",
+        "/home/msfvenom/custom-os-build/airootfs/root/.config/waybar/style.css",
+    ]
+    for dcss in dev_css_paths:
+        if os.path.isfile(dcss) and os.path.abspath(dcss) != os.path.abspath(WAYBAR_CSS):
+            replace_block(dcss, CSS_BEGIN, CSS_END, waybar_body(theme))
+
     replace_block(SWAYNC_CSS, CSS_BEGIN, CSS_END, swaync_body(theme))
     replace_block(SWAYOSD_CSS, CSS_BEGIN, CSS_END, swayosd_body(theme))
     replace_block(ROFI_RASI, CSS_BEGIN, CSS_END, rofi_body(theme))
