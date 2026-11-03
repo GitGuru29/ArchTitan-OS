@@ -106,6 +106,7 @@ end
 superBind(mainMod .. " + space", hl.dsp.exec_cmd("titan-menu --toggle"))   -- Super+Space: ArchTitan Central Palette
 superBind(mainMod .. " + Space", hl.dsp.exec_cmd("titan-menu --toggle"))
 superBind(mainMod .. " + Tab", hl.dsp.exec_cmd("titan-workspace-hud --toggle"))          -- Super+Tab: 10-Workspace HUD Shower
+superBind(mainMod .. " + tab", hl.dsp.exec_cmd("titan-workspace-hud --toggle"))
 superBind(mainMod .. " + D", hl.dsp.exec_cmd("titan-spotlight --toggle"))       -- Super+D: App Launcher (Spotlight)
 superBind(mainMod .. " + R", hl.dsp.exec_cmd("titan-spotlight --toggle"))  -- Super+R: Secondary App runner (Spotlight)
 superBind(mainMod .. " + slash", hl.dsp.exec_cmd("titan-menu --toggle"))        -- Help & Shortcuts Cheat Sheet (Super+/)
@@ -417,6 +418,7 @@ hl.layer_rule({ match = { namespace = "^titan-quicksettings$" }, blur = true, ig
 hl.layer_rule({ match = { namespace = "^titan-quicksettings-blur$" }, blur = true, ignore_alpha = 0 })
 hl.layer_rule({ match = { namespace = "^titan-sysmon$" }, blur = true, ignore_alpha = 0 })
 hl.layer_rule({ match = { namespace = "^titan-menu$" }, blur = true, ignore_alpha = 0 })
+hl.layer_rule({ match = { namespace = "^titan-workspace-hud$" }, blur = true, ignore_alpha = 0 })
 hl.layer_rule({ match = { namespace = "^swayosd$" }, blur = true, ignore_alpha = 0 })
 
 -- Hot-zone / gesture OSD overlay. Full-screen and input-transparent; opacity is
