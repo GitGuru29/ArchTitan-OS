@@ -114,7 +114,7 @@ Window {
         Rectangle {
             id: cardBody
             width: parent.width
-            height: header.height + divider.height + contentArea.height + footer.height + 2 * TitanTheme.space2
+            height: header.height + contentArea.height + footer.height + 2 * TitanTheme.space2
             radius: 26
             border.width: 1.5
             border.color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.42)
