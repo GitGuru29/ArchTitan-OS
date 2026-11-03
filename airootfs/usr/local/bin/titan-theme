@@ -206,12 +206,14 @@ def waybar_body(t: dict) -> str:
         # 0.10 (crystal clear) -> alpha 0.12
         # 0.50 (balanced glass) -> alpha 0.40
         # 0.95 (frosted solid) -> alpha 0.82
-        bar_alpha = max(0.10, min(0.90, round(0.12 + 0.70 * (glass_opacity - 0.10) / 0.85, 2)))
+        bar_alpha = max(0.12, min(0.90, round(0.12 + 0.70 * (glass_opacity - 0.10) / 0.85, 2)))
         bar_border_alpha = max(0.06, min(0.35, round(0.06 + 0.22 * (glass_opacity - 0.10) / 0.85, 2)))
         bar_bg = rgba(crust, bar_alpha)
         bar_border = f"rgba(255, 255, 255, {bar_border_alpha:.2f})"
-        bar_border_top = f"rgba(255, 255, 255, {min(0.40, bar_border_alpha + 0.10):.2f})"
-        bar_shadow = f"rgba(0, 0, 0, {min(0.30, bar_alpha * 0.35):.2f})"
+        bar_border_top = f"rgba(255, 255, 255, {min(0.40, bar_border_alpha + 0.12):.2f})"
+        bar_shadow = f"rgba(0, 0, 0, {min(0.35, bar_alpha * 0.40):.2f})"
+        bar_grad_start = "rgba(255, 255, 255, 0.14)"
+        bar_grad_end = "rgba(0, 0, 0, 0.18)"
 
         # Inner bento capsules (#workspaces, #hardware, #custom-titan-center, #clock, etc.)
         mod_alpha = max(0.02, min(0.18, round(0.02 + 0.10 * (glass_opacity - 0.10) / 0.85, 2)))
@@ -220,30 +222,46 @@ def waybar_body(t: dict) -> str:
 
         module_bg = f"rgba(255, 255, 255, {mod_alpha:.2f})"
         module_border = f"rgba(255, 255, 255, {mod_border_alpha:.2f})"
+        module_highlight = "rgba(255, 255, 255, 0.08)"
         module_hover = f"rgba(255, 255, 255, {hov_alpha:.2f})"
         accent_soft = rgba(acc, 0.16)
         accent_glow = rgba(acc, 0.35)
         accent_border = rgba(acc, 0.55)
+
+        tooltip_bg = rgba(crust, 0.94)
+        tooltip_border = "rgba(255, 255, 255, 0.14)"
+        tooltip_border_top = "rgba(255, 255, 255, 0.30)"
+        tooltip_shadow = "rgba(0, 0, 0, 0.55)"
     else:
-        # Soothing, glare-free light frosted glass using theme's mantle & surface tones
-        mantle = p.get("mantle", "#E6E9EF")
-        bar_alpha = max(0.15, min(0.92, round(0.16 + 0.72 * (glass_opacity - 0.10) / 0.85, 2)))
-        bar_border_alpha = max(0.08, min(0.38, round(0.08 + 0.24 * (glass_opacity - 0.10) / 0.85, 2)))
-        bar_bg = rgba(mantle, bar_alpha)
-        bar_border = f"rgba(108, 112, 134, {bar_border_alpha:.2f})"
-        bar_border_top = f"rgba(255, 255, 255, {min(0.55, bar_border_alpha + 0.15):.2f})"
-        bar_shadow = f"rgba(0, 0, 0, {min(0.15, bar_alpha * 0.2):.2f})"
+        # Luxury Frosted Light Glass (One UI 9.0 / iOS Fluent style):
+        # Crisp white acrylic foundation that guarantees high-contrast text over any wallpaper.
+        # Scales cleanly from 0.70 (frosted translucent) to 0.94 (solid executive white).
+        bar_alpha = max(0.70, min(0.96, round(0.72 + 0.22 * (glass_opacity - 0.10) / 0.85, 2)))
+        bar_border_alpha = max(0.06, min(0.18, round(0.06 + 0.10 * (glass_opacity - 0.10) / 0.85, 2)))
+        bar_bg = f"rgba(255, 255, 255, {bar_alpha:.2f})"
+        bar_border = f"rgba(0, 0, 0, {bar_border_alpha:.2f})"
+        bar_border_top = "rgba(255, 255, 255, 0.95)"
+        bar_shadow = "rgba(0, 0, 0, 0.04)"
+        bar_grad_start = "rgba(255, 255, 255, 0.80)"
+        bar_grad_end = "rgba(255, 255, 255, 0.20)"
 
-        mod_alpha = max(0.03, min(0.20, round(0.03 + 0.11 * (glass_opacity - 0.10) / 0.85, 2)))
-        mod_border_alpha = max(0.06, min(0.22, round(0.06 + 0.11 * (glass_opacity - 0.10) / 0.85, 2)))
-        hov_alpha = max(0.08, min(0.26, round(mod_alpha + 0.05, 2)))
+        # Crisp, elevated white bento pill capsules
+        mod_alpha = max(0.65, min(0.94, round(0.68 + 0.24 * (glass_opacity - 0.10) / 0.85, 2)))
+        mod_border_alpha = max(0.04, min(0.12, round(0.04 + 0.06 * (glass_opacity - 0.10) / 0.85, 2)))
+        hov_alpha = min(0.98, round(mod_alpha + 0.08, 2))
 
-        module_bg = f"rgba(0, 0, 0, {mod_alpha:.2f})"
-        module_border = f"rgba(108, 112, 134, {mod_border_alpha:.2f})"
-        module_hover = f"rgba(0, 0, 0, {hov_alpha:.2f})"
-        accent_soft = rgba(acc, 0.14)
-        accent_glow = rgba(acc, 0.22)
-        accent_border = rgba(acc, 0.45)
+        module_bg = f"rgba(255, 255, 255, {mod_alpha:.2f})"
+        module_border = f"rgba(0, 0, 0, {mod_border_alpha:.2f})"
+        module_highlight = "rgba(255, 255, 255, 0.90)"
+        module_hover = f"rgba(255, 255, 255, {hov_alpha:.2f})"
+        accent_soft = rgba(acc, 0.12)
+        accent_glow = rgba(acc, 0.20)
+        accent_border = rgba(acc, 0.40)
+
+        tooltip_bg = "rgba(255, 255, 255, 0.96)"
+        tooltip_border = "rgba(0, 0, 0, 0.08)"
+        tooltip_border_top = "rgba(255, 255, 255, 1.0)"
+        tooltip_shadow = "rgba(0, 0, 0, 0.12)"
 
     on_bar = "#FFFFFF" if dark else "#1E1E2E"
     on_accent = fg.lower()
@@ -253,9 +271,16 @@ def waybar_body(t: dict) -> str:
         ("bar-border", bar_border),
         ("bar-border-top", bar_border_top),
         ("bar-shadow", bar_shadow),
+        ("bar-grad-start", bar_grad_start),
+        ("bar-grad-end", bar_grad_end),
         ("module-bg", module_bg),
         ("module-border", module_border),
+        ("module-highlight", module_highlight),
         ("module-hover", module_hover),
+        ("tooltip-bg", tooltip_bg),
+        ("tooltip-border", tooltip_border),
+        ("tooltip-border-top", tooltip_border_top),
+        ("tooltip-shadow", tooltip_shadow),
         ("text-high", text_high.lower()),
         ("text-mid", text_mid.lower()),
         ("text-low", text_low.lower()),

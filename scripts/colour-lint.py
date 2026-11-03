@@ -29,6 +29,8 @@ BASELINE_THEME = (REPO / "airootfs" / "usr" / "share" / "archtitan"
                   / "themes" / "mocha.json")
 SIGNATURE_THEME = (REPO / "airootfs" / "usr" / "share" / "archtitan"
                    / "themes" / "archtitan.json")
+LATTE_THEME = (REPO / "airootfs" / "usr" / "share" / "archtitan"
+               / "themes" / "latte.json")
 
 # The adaptive accent's default (Catppuccin Mocha blue) and ArchTitan signature cyan;
 # runtime accent may be any colour, so any alpha of it is accepted in addition to the static palette.
@@ -67,7 +69,7 @@ def load_palette() -> set[str]:
         TOKEN_FILE.read_text(encoding="utf-8")
     )}
 
-    for theme_path in (BASELINE_THEME, SIGNATURE_THEME):
+    for theme_path in (BASELINE_THEME, SIGNATURE_THEME, LATTE_THEME):
         if theme_path.exists():
             import json
 
