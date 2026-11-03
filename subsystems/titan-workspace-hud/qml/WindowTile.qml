@@ -90,7 +90,7 @@ Item {
                 Text {
                     text: windowTitle !== "" ? windowTitle : appClass
                     font.family: "Inter, sans-serif"
-                    font.pixelSize: 8.5
+                    font.pixelSize: 9
                     font.weight: Font.Medium
                     color: "#CDD6F4"
                     elide: Text.ElideRight
