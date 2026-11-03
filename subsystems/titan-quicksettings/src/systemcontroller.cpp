@@ -60,8 +60,8 @@ SystemController::SystemController(QObject *parent)
     , m_themeWatcher(new QFileSystemWatcher(this))
 {
     m_glassApplyTimer->setSingleShot(true);
-    connect(m_glassApplyTimer, &QTimer::timeout, this, []() {
-        QProcess::startDetached("titan-theme", {"apply"});
+    connect(m_glassApplyTimer, &QTimer::timeout, this, [this]() {
+        QProcess::startDetached("titan-theme", {"glass", QString::number(m_glassOpacity), "--quiet"});
     });
     updateUptime();
     updateDate();
@@ -209,7 +209,7 @@ void SystemController::setGlassOpacity(int value)
     }
 
     if (m_glassApplyTimer) {
-        m_glassApplyTimer->start(150);
+        m_glassApplyTimer->start(350);
     }
 }
 

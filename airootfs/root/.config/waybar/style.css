@@ -80,6 +80,8 @@ window#waybar {
 }
 
 window#waybar>box {
+    min-height: 42px;
+    max-height: 42px;
     background: rgba(17, 17, 27, 0.38);
     /* @titan-adapt:bar-bg */
     background-image: linear-gradient(
@@ -128,6 +130,7 @@ window#waybar.hidden {
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 999px;
     min-height: 28px;
+    max-height: 28px;
     margin: 3px 3px;
     padding: 1px 8px;
     box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
@@ -339,55 +342,49 @@ window#waybar.hidden {
     font-weight: 500;
     padding: 0 16px;
     min-width: 360px;
+    margin-top: 0;
+    margin-bottom: 0;
 }
 
 
-/* Vertical Roll Keyframe Animations */
+/* Smooth Keyframe Animations for Viewport Rotations (Zero layout-height shift) */
 @keyframes roll-a-fwd {
     from {
-        opacity: 0;
-        margin-top: 10px;
+        opacity: 0.15;
     }
 
     to {
         opacity: 1;
-        margin-top: 0;
     }
 }
 
 @keyframes roll-b-fwd {
     from {
-        opacity: 0;
-        margin-top: 10px;
+        opacity: 0.15;
     }
 
     to {
         opacity: 1;
-        margin-top: 0;
     }
 }
 
 @keyframes roll-a-rev {
     from {
-        opacity: 0;
-        margin-top: -10px;
+        opacity: 0.15;
     }
 
     to {
         opacity: 1;
-        margin-top: 0;
     }
 }
 
 @keyframes roll-b-rev {
     from {
-        opacity: 0;
-        margin-top: -10px;
+        opacity: 0.15;
     }
 
     to {
         opacity: 1;
-        margin-top: 0;
     }
 }
 

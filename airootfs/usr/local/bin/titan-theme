@@ -658,7 +658,7 @@ def cmd_mode(mode: str) -> None:
     notify("Theme Mode", f"{'Dark' if want_dark else 'Light'} Mode")
 
 
-def cmd_glass(val_str: str) -> None:
+def cmd_glass(val_str: str, quiet: bool = False) -> None:
     try:
         raw = val_str.strip().rstrip("%")
         v = float(raw)
@@ -670,8 +670,22 @@ def cmd_glass(val_str: str) -> None:
     theme = read_state()
     theme["glassOpacity"] = v
     write_state(theme)
-    cmd_apply()
-    notify("Glass Transparency", f"{int(v * 100)}% Opacity")
+
+    # 1. Update Waybar style with the new module-bg/border/hover alpha values
+    replace_block(WAYBAR_CSS, CSS_BEGIN, CSS_END, waybar_body(theme))
+    # If running on dev/source tree, also keep repo waybar css in sync
+    dev_css = "/home/msfvenom/custom-os-build/airootfs/etc/skel/.config/waybar/style.css"
+    if os.path.isfile(dev_css) and os.path.abspath(dev_css) != os.path.abspath(WAYBAR_CSS):
+        replace_block(dev_css, CSS_BEGIN, CSS_END, waybar_body(theme))
+
+    # 2. Update SwayNC if present
+    replace_block(SWAYNC_CSS, CSS_BEGIN, CSS_END, swaync_body(theme))
+
+    # 3. Seamless single signal to Waybar (no duplicate inotify writes, no shell sleeps, no swayosd restart)
+    run_quiet(["pkill", "-SIGUSR2", "-x", "waybar"], timeout=1.0)
+
+    if not quiet and os.environ.get("TITAN_QUIET") != "1":
+        notify("Glass Transparency", f"{int(v * 100)}% Opacity")
 
 
 def cmd_cycle(step: int) -> None:
@@ -729,7 +743,11 @@ def main(argv: list[str]) -> int:
     elif cmd == "glass":
         if not rest:
             die("glass: missing value (e.g. 35 or 0.35)")
-        cmd_glass(rest[0])
+        quiet = "--quiet" in rest or "-q" in rest
+        val_args = [r for r in rest if r not in ("--quiet", "-q")]
+        if not val_args:
+            die("glass: missing value (e.g. 35 or 0.35)")
+        cmd_glass(val_args[0], quiet=quiet)
     elif cmd == "mode":
         if not rest:
             die("mode: missing dark|light")
