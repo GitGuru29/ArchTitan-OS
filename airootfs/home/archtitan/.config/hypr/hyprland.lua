@@ -103,10 +103,11 @@ for _, superKey in ipairs({ "SUPER_L", "SUPER_R" }) do
 end
 
 -- Shell & Utilities (ArchTitan Central Command Palette & Spotlight)
-superBind(mainMod .. " + space", hl.dsp.exec_cmd("titan-menu --toggle"))   -- Super+Space: ArchTitan Central Palette
-superBind(mainMod .. " + Space", hl.dsp.exec_cmd("titan-menu --toggle"))
-superBind(mainMod .. " + Tab", hl.dsp.exec_cmd("titan-workspace-hud --toggle"))          -- Super+Tab: 10-Workspace HUD Shower
+superBind(mainMod .. " + space", hl.dsp.exec_cmd("titan-spotlight --toggle"))  -- Super+Space: Titan Spotlight
+superBind(mainMod .. " + Space", hl.dsp.exec_cmd("titan-spotlight --toggle"))
+superBind(mainMod .. " + Tab", hl.dsp.exec_cmd("titan-workspace-hud --toggle"))   -- Super+Tab: 10-Workspace HUD Switcher
 superBind(mainMod .. " + tab", hl.dsp.exec_cmd("titan-workspace-hud --toggle"))
+superBind(mainMod .. " + ISO_Left_Tab", hl.dsp.exec_cmd("titan-workspace-hud --toggle"))  -- Super+Tab fallback (some layouts report ISO_Left_Tab)
 superBind(mainMod .. " + D", hl.dsp.exec_cmd("titan-spotlight --toggle"))       -- Super+D: App Launcher (Spotlight)
 superBind(mainMod .. " + R", hl.dsp.exec_cmd("titan-spotlight --toggle"))  -- Super+R: Secondary App runner (Spotlight)
 superBind(mainMod .. " + slash", hl.dsp.exec_cmd("titan-menu --toggle"))        -- Help & Shortcuts Cheat Sheet (Super+/)
