@@ -702,7 +702,37 @@ def cmd_mode(mode: str) -> None:
         print(theme["id"])
         return
 
+    # Snapshot the user's current wallpaper BEFORE switching themes so the
+    # dark/light toggle only changes colours — the wallpaper the user chose
+    # (via titan-wallpaper-picker or titan-set-wallpaper) must not change.
+    _saved_wallpaper: str = ""
+    _saved_wp_mode: str = ""
+    if os.path.isfile(WALLPAPER_FILE):
+        try:
+            with open(WALLPAPER_FILE, "r", encoding="utf-8") as _wf:
+                _lines = _wf.read().splitlines()
+            _saved_wallpaper = _lines[0].strip() if len(_lines) > 0 else ""
+            _saved_wp_mode   = _lines[1].strip() if len(_lines) > 1 else "fill"
+        except OSError:
+            pass
+
     cmd_set(target)
+
+    # Restore the user's wallpaper if it was overridden by cmd_set.
+    if _saved_wallpaper and os.path.isfile(_saved_wallpaper):
+        set_wp = shutil.which("titan-set-wallpaper") or "/usr/local/bin/titan-set-wallpaper"
+        if os.path.isfile(set_wp) and os.access(set_wp, os.X_OK):
+            env = dict(os.environ, TITAN_QUIET="1")
+            try:
+                subprocess.run(
+                    [set_wp, _saved_wallpaper, _saved_wp_mode or "fill"],
+                    check=False, env=env, timeout=3.0,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
+            except (OSError, subprocess.TimeoutExpired):
+                pass
+
     notify("Theme Mode", f"{'Dark' if want_dark else 'Light'} Mode")
 
 
