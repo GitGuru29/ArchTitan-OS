@@ -62,3 +62,4 @@ private:
     qreal m_sweepAngle = 270.0;
     bool m_showTrack = true;
 };
+

@@ -34,3 +34,4 @@ Rectangle {
         anchors.margins: TitanTheme.space3
     }
 }
+

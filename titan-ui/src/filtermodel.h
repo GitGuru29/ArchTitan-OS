@@ -59,3 +59,4 @@ private:
     QString m_filterRoleName;
     bool m_fuzzy = true;
 };
+

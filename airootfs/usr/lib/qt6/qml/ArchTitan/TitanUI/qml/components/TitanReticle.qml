@@ -58,3 +58,4 @@ Item {
         x: parent.width - root.bracketThickness; y: parent.height - root.bracketLength; width: root.bracketThickness; height: root.bracketLength; color: root.color
     }
 }
+

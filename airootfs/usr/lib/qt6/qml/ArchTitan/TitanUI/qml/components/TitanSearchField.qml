@@ -100,3 +100,4 @@ Rectangle {
 
     HoverHandler { id: hover }
 }
+
