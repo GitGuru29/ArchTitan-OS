@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Window
+import ArchTitan.TitanUI
 
 Window {
     id: root
@@ -9,24 +10,40 @@ Window {
     width: Screen.width > 0 ? Screen.width : 1920
     height: Screen.height > 0 ? Screen.height : 1080
     visible: true
+    visibility: Window.FullScreen
     color: "transparent"
-    flags: Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint
+    flags: Qt.FramelessWindowHint
     title: "titan-wallpaper-picker"
 
-    // ── Design System Constants ──────────────────────────────────────────────
-    readonly property color accentColor: (typeof Theme !== "undefined" && Theme.accent) ? Theme.accent : "#00D2FF"
-    readonly property color cardSurface: Qt.rgba(0.06, 0.08, 0.13, 0.94)
-    readonly property color cardBorder: Qt.rgba(1.0, 1.0, 1.0, 0.12)
-    readonly property color glassItemBg: Qt.rgba(1.0, 1.0, 1.0, 0.05)
-    readonly property color glassItemBorder: Qt.rgba(1.0, 1.0, 1.0, 0.08)
-    readonly property color textHigh: "#F3F4F6"
-    readonly property color textMid: "#9CA3AF"
-    readonly property color textLow: "#6B7280"
+    // ── State ────────────────────────────────────────────────────────────────
+    property var filteredPaths: []
+    property string selectedPath: ""
+    property string activeFilter: "all"
+    property string query: ""
+    property string scaleMode: "fill"
+    property string currentPath: (typeof WallpaperBackend !== "undefined" && WallpaperBackend.currentPath)
+                                ? WallpaperBackend.currentPath : ""
 
-    // Shipped ArchTitan system wallpapers (Guaranteed fallback so picker is never empty)
-    readonly property var fallbackWallpapers: [
+    readonly property var filters: [
+        { key: "all",    label: "All" },
+        { key: "system", label: "System" },
+        { key: "yours",  label: "Yours" }
+    ]
+
+    readonly property var scaleModes: [
+        { key: "fill",    label: "Fill" },
+        { key: "fit",     label: "Fit" },
+        { key: "stretch", label: "Stretch" },
+        { key: "center",  label: "Center" },
+        { key: "tile",    label: "Tile" }
+    ]
+
+    // Last-resort list for installs where the backend scan returns nothing.
+    // These are the wallpapers shipped under /usr/share/backgrounds/archtitan.
+    readonly property var systemFallbacks: [
         "/usr/share/backgrounds/archtitan/wallpaper.png",
         "/usr/share/backgrounds/archtitan/1-matte-black.jpg",
+        "/usr/share/backgrounds/archtitan/1-nord.png",
         "/usr/share/backgrounds/archtitan/watchtower-mountains-and-forests.jpg",
         "/usr/share/backgrounds/archtitan/titan-tokyonight.jpg",
         "/usr/share/backgrounds/archtitan/titan-mocha.jpg",
@@ -35,7 +52,6 @@ Window {
         "/usr/share/backgrounds/archtitan/titan-everforest.jpg",
         "/usr/share/backgrounds/archtitan/titan-kanagawa.jpg",
         "/usr/share/backgrounds/archtitan/titan-rosepine.jpg",
-        "/usr/share/backgrounds/archtitan/1-nord.png",
         "/usr/share/backgrounds/archtitan/titan-latte.jpg",
         "/usr/share/backgrounds/archtitan/titan-custom.jpg",
         "/usr/share/backgrounds/archtitan/titan-blue.jpg",
@@ -47,665 +63,764 @@ Window {
         "/usr/share/backgrounds/archtitan/titan-teal.jpg"
     ]
 
-    property string searchQuery: ""
-    property string activeCategory: "All"
+    // ── Helpers ──────────────────────────────────────────────────────────────
+    function baseName(path) {
+        var name = String(path || "").split("/").pop() || String(path || "")
+        name = name.replace(/\.[^/.]+$/, "")
+        return name.replace(/[-_]+/g, " ").trim()
+    }
 
-    // Combines backend discovered paths with fallback shipped wallpapers
-    function getAllWallpapers() {
-        var rawList = [];
-        if (typeof WallpaperLibrary !== "undefined" && WallpaperLibrary.paths && WallpaperLibrary.paths.length > 0) {
-            for (var i = 0; i < WallpaperLibrary.paths.length; i++) {
-                rawList.push(WallpaperLibrary.paths[i]);
+    function isSystem(path) {
+        return String(path || "").indexOf("/usr/share/") === 0
+    }
+
+    function rebuildModel() {
+        var source = (typeof WallpaperLibrary !== "undefined" && WallpaperLibrary.paths)
+                   ? WallpaperLibrary.paths : []
+        if (!source || source.length === 0) source = root.systemFallbacks
+        var out = []
+        var q = root.query.toLowerCase()
+
+        for (var i = 0; i < source.length; i++) {
+            var path = String(source[i])
+            var name = root.baseName(path)
+
+            if (root.activeFilter === "system" && !root.isSystem(path)) continue
+            if (root.activeFilter === "yours" && root.isSystem(path)) continue
+            if (q.length > 0 && name.toLowerCase().indexOf(q) < 0) continue
+
+            out.push({
+                path: path,
+                name: name,
+                system: root.isSystem(path)
+            })
+        }
+
+        out.sort(function (a, b) {
+            return a.name.localeCompare(b.name)
+        })
+
+        root.filteredPaths = out
+
+        var stillVisible = false
+        for (var j = 0; j < out.length; j++) {
+            if (out[j].path === root.selectedPath) {
+                stillVisible = true
+                break
             }
         }
-        for (var j = 0; j < fallbackWallpapers.length; j++) {
-            if (rawList.indexOf(fallbackWallpapers[j]) === -1) {
-                rawList.push(fallbackWallpapers[j]);
+        if (!stillVisible) {
+            root.selectedPath = out.length > 0 ? out[0].path : ""
+        }
+        root.updateCurrentIndex()
+    }
+
+    function updateCurrentIndex() {
+        for (var i = 0; i < root.filteredPaths.length; i++) {
+            if (root.filteredPaths[i].path === root.selectedPath) {
+                if (grid.currentIndex !== i) grid.currentIndex = i
+                return
             }
         }
-        return rawList;
-    }
-
-    function getFriendlyTitle(path) {
-        if (!path) return "";
-        var parts = path.split("/");
-        var filename = parts[parts.length - 1] || "";
-        var name = filename.replace(/\.[^/.]+$/, "");
-        
-        var titles = {
-            "wallpaper": "ArchTitan Signature",
-            "1-matte-black": "Matte Obsidian Black",
-            "watchtower-mountains-and-forests": "Watchtower Horizon",
-            "titan-tokyonight": "Tokyo Night",
-            "titan-mocha": "Catppuccin Mocha",
-            "titan-dracula": "Dracula Gothic",
-            "titan-gruvbox": "Retro Gruvbox",
-            "titan-everforest": "Everforest Mystic",
-            "titan-kanagawa": "Kanagawa Wave",
-            "titan-rosepine": "Rosé Pine",
-            "1-nord": "Nordic Frost",
-            "titan-latte": "Catppuccin Latte",
-            "titan-custom": "Cyber Cyan",
-            "titan-blue": "Deep Ocean Blue",
-            "titan-green": "Emerald Forest",
-            "titan-lavender": "Twilight Lavender",
-            "titan-mauve": "Royal Mauve",
-            "titan-peach": "Sunset Peach",
-            "titan-pink": "Sakura Pink",
-            "titan-teal": "Bioluminescent Teal"
-        };
-        return titles[name] || name.replace(/^[0-9]+-/, "").replace(/^titan-/, "").replace(/[-_]/g, " ").replace(/\b\w/g, function(l){ return l.toUpperCase(); });
-    }
-
-    function getTag(path) {
-        var title = getFriendlyTitle(path).toLowerCase();
-        if (title.indexOf("signature") !== -1 || title.indexOf("obsidian") !== -1 || title.indexOf("watchtower") !== -1)
-            return "Signature";
-        if (title.indexOf("tokyo") !== -1 || title.indexOf("mocha") !== -1 || title.indexOf("dracula") !== -1 ||
-            title.indexOf("gruvbox") !== -1 || title.indexOf("everforest") !== -1 || title.indexOf("kanagawa") !== -1 ||
-            title.indexOf("rose") !== -1 || title.indexOf("nord") !== -1)
-            return "Theme";
-        return "Color";
-    }
-
-    function applyWallpaper(path) {
-        if (!path) return;
-        if (typeof WallpaperLibrary !== "undefined" && WallpaperLibrary.setCurrent) {
-            WallpaperLibrary.setCurrent(path);
+        if (root.filteredPaths.length > 0) {
+            if (grid.currentIndex !== 0) grid.currentIndex = 0
+        } else {
+            grid.currentIndex = -1
         }
+    }
+
+    function selectPath(path) {
+        root.selectedPath = path || ""
+    }
+
+    function applySelected() {
+        if (root.selectedPath.length === 0) return
+
+        // WallpaperBackend.apply() persists the selection and starts the
+        // wallpaper service. Do not call WallpaperLibrary.setCurrent() here:
+        // that call blocks the GUI thread in the current backend.
         if (typeof WallpaperBackend !== "undefined" && WallpaperBackend.apply) {
-            WallpaperBackend.apply(path, "fill", false);
+            WallpaperBackend.apply(root.selectedPath, root.scaleMode, false)
         }
-        Qt.quit();
+        Qt.quit()
+    }
+
+    function cancel() {
+        if (typeof WallpaperBackend !== "undefined" && WallpaperBackend.revertPreview) {
+            WallpaperBackend.revertPreview()
+        }
+        Qt.quit()
+    }
+
+    function setFilter(key) {
+        root.activeFilter = key
+        root.rebuildModel()
+    }
+
+    function setScaleMode(mode) {
+        root.scaleMode = mode
+    }
+
+    Component.onCompleted: {
+        if (typeof WallpaperBackend !== "undefined" && WallpaperBackend.currentMode) {
+            root.scaleMode = WallpaperBackend.currentMode
+        }
+        if (typeof WallpaperLibrary !== "undefined" && WallpaperLibrary.current) {
+            root.selectedPath = WallpaperLibrary.current
+        }
+        root.rebuildModel()
+        Qt.callLater(function () {
+            grid.forceActiveFocus()
+        })
+    }
+
+    // ── Live data ────────────────────────────────────────────────────────────
+    Connections {
+        target: (typeof WallpaperLibrary !== "undefined") ? WallpaperLibrary : null
+        function onPathsChanged() { root.rebuildModel() }
+        function onCurrentChanged() {
+            if (typeof WallpaperLibrary !== "undefined") {
+                root.currentPath = WallpaperLibrary.current
+            }
+        }
+    }
+
+    Connections {
+        target: (typeof WallpaperBackend !== "undefined") ? WallpaperBackend : null
+        function onCurrentModeChanged() {
+            if (typeof WallpaperBackend !== "undefined" && WallpaperBackend.currentMode) {
+                root.scaleMode = WallpaperBackend.currentMode
+            }
+        }
     }
 
     Shortcut {
         sequence: "Escape"
-        onActivated: {
-            if (typeof WallpaperBackend !== "undefined" && WallpaperBackend.revertPreview) {
-                WallpaperBackend.revertPreview();
-            }
-            Qt.quit();
+        enabled: !searchInput.activeFocus
+        onActivated: root.cancel()
+    }
+
+    Shortcut {
+        sequence: "Ctrl+F"
+        onActivated: searchInput.forceActiveFocus()
+    }
+
+    Shortcut {
+        sequence: "Return"
+        enabled: grid.activeFocus
+        onActivated: root.applySelected()
+    }
+
+    // ── Backdrop ─────────────────────────────────────────────────────────────
+    Image {
+        anchors.fill: parent
+        source: root.currentPath.length > 0 ? "file://" + root.currentPath : ""
+        fillMode: Image.PreserveAspectCrop
+        asynchronous: true
+        cache: true
+        opacity: 0.32
+        visible: status === Image.Ready
+    }
+
+    Rectangle {
+        anchors.fill: parent
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: Qt.rgba(0.02, 0.03, 0.05, 0.82) }
+            GradientStop { position: 0.55; color: Qt.rgba(0.03, 0.04, 0.07, 0.62) }
+            GradientStop { position: 1.0; color: Qt.rgba(0.01, 0.02, 0.04, 0.88) }
         }
     }
 
-    // ── Fullscreen Darkened Blur Scrim ───────────────────────────────────────
     Rectangle {
         id: scrim
         anchors.fill: parent
-        color: Qt.rgba(0, 0, 0, 0.65)
+        color: TitanTheme.scrim
 
         MouseArea {
             anchors.fill: parent
-            onClicked: {
-                if (typeof WallpaperBackend !== "undefined" && WallpaperBackend.revertPreview) {
-                    WallpaperBackend.revertPreview();
-                }
-                Qt.quit();
-            }
+            onClicked: root.cancel()
         }
     }
 
-    // ── Centered Modern Liquid Glass Card ────────────────────────────────────
+    // ── Gallery sheet ────────────────────────────────────────────────────────
     Rectangle {
         id: card
-        width: Math.min(1080, parent.width - 64)
-        height: Math.min(740, parent.height - 64)
+        width: Math.min(1320, parent.width - 64)
+        height: Math.min(860, parent.height - 64)
         anchors.centerIn: parent
+        radius: TitanTheme.radiusWindow
 
-        color: root.cardSurface
-        radius: 24
+        color: TitanTheme.bg1
         border.width: 1
-        border.color: root.cardBorder
+        border.color: TitanTheme.borderSubtle
 
-        // Smooth Entrance Pop Animation
-        scale: 0.97
-        opacity: 0.0
-        Component.onCompleted: {
-            entranceAnim.start();
-        }
-        ParallelAnimation {
-            id: entranceAnim
-            NumberAnimation { target: card; property: "scale"; to: 1.0; duration: 240; easing.type: Easing.OutCubic }
-            NumberAnimation { target: card; property: "opacity"; to: 1.0; duration: 200; easing.type: Easing.OutCubic }
-        }
-
-        // Inner 3D specular highlight ring
         Rectangle {
             anchors.fill: parent
             anchors.margins: 1
-            radius: 23
+            radius: TitanTheme.radiusWindow - 1
             color: "transparent"
             border.width: 1
-            border.color: Qt.rgba(1.0, 1.0, 1.0, 0.07)
+            border.color: Qt.rgba(1, 1, 1, 0.06)
         }
 
         MouseArea {
-            // Prevent clicks inside card from propagating to scrim
             anchors.fill: parent
         }
 
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 26
-            spacing: 16
+            anchors.margins: TitanTheme.space6
+            spacing: TitanTheme.space4
 
-            // ── Top Header Row ───────────────────────────────────────────────
+            // ── Header ───────────────────────────────────────────────────────
             RowLayout {
                 Layout.fillWidth: true
-                spacing: 14
+                spacing: TitanTheme.space3
 
-                // Gradient Icon Badge
-                Rectangle {
-                    width: 44
-                    height: 44
-                    radius: 12
-                    color: Qt.rgba(0, 0.82, 1.0, 0.12)
-                    border.width: 1
-                    border.color: Qt.rgba(0, 0.82, 1.0, 0.35)
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: "🖼️"
-                        font.pixelSize: 22
-                    }
+                Text {
+                    text: "󰸉"
+                    color: TitanTheme.accent
+                    font.family: TitanTheme.monoFamily
+                    font.pixelSize: 26
+                    Layout.alignment: Qt.AlignVCenter
                 }
 
-                // Title & Subtitle
                 ColumnLayout {
-                    Layout.fillWidth: true
-                    spacing: 3
+                    spacing: 1
+                    Layout.alignment: Qt.AlignVCenter
 
                     Text {
-                        text: "ArchTitan Wallpapers"
-                        font { pixelSize: 20; bold: true; family: "Inter, sans-serif" }
-                        color: root.textHigh
+                        text: "Wallpapers"
+                        color: TitanTheme.textHigh
+                        font.family: TitanTheme.fontFamily
+                        font.pixelSize: TitanTheme.sizeHeadline
+                        font.weight: TitanTheme.weightSemiBold
                     }
 
                     Text {
-                        text: "Choose from signature backgrounds or search by theme & palette"
-                        font { pixelSize: 12; family: "Inter, sans-serif" }
-                        color: root.textMid
+                        text: "Choose a background for every workspace"
+                        color: TitanTheme.textLow
+                        font.family: TitanTheme.fontFamily
+                        font.pixelSize: TitanTheme.sizeLabel
                     }
                 }
 
-                // Close Button
+                Item { Layout.fillWidth: true }
+
                 Rectangle {
-                    width: 34
-                    height: 34
-                    radius: 17
-                    color: closeMa.containsMouse ? Qt.rgba(1, 0.2, 0.3, 0.25) : Qt.rgba(1, 1, 1, 0.07)
+                    Layout.preferredWidth: 250
+                    Layout.preferredHeight: 34
+                    radius: TitanTheme.radiusControl
+                    color: TitanTheme.bgInset
                     border.width: 1
-                    border.color: closeMa.containsMouse ? Qt.rgba(1, 0.2, 0.3, 0.45) : Qt.rgba(1, 1, 1, 0.12)
-                    Behavior on color { ColorAnimation { duration: 120 } }
+                    border.color: searchInput.activeFocus ? TitanTheme.accent : TitanTheme.border
+
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: 10
+                        anchors.rightMargin: 10
+                        spacing: 6
+
+                        Text {
+                            text: "⌕"
+                            color: TitanTheme.textLow
+                            font.family: TitanTheme.fontFamily
+                            font.pixelSize: 15
+                        }
+
+                        TextField {
+                            id: searchInput
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            activeFocusOnTab: true
+                            placeholderText: "Search wallpapers…"
+                            placeholderTextColor: TitanTheme.textLow
+                            color: TitanTheme.textHigh
+                            selectionColor: TitanTheme.accent
+                            selectedTextColor: TitanTheme.accentFg
+                            font.family: TitanTheme.fontFamily
+                            font.pixelSize: TitanTheme.sizeBody
+                            background: null
+                            padding: 0
+                            leftPadding: 0
+                            rightPadding: 0
+                            topPadding: 0
+                            bottomPadding: 0
+                            verticalAlignment: TextInput.AlignVCenter
+                            selectByMouse: true
+                            clip: true
+
+                            onTextChanged: {
+                                root.query = text
+                                root.rebuildModel()
+                            }
+
+                            Keys.onEscapePressed: {
+                                text = ""
+                                root.query = ""
+                                root.rebuildModel()
+                                grid.forceActiveFocus()
+                                event.accepted = true
+                            }
+
+                            Keys.onReturnPressed: grid.forceActiveFocus()
+                            Keys.onEnterPressed: grid.forceActiveFocus()
+                        }
+                    }
+                }
+
+                Rectangle {
+                    width: 32
+                    height: 32
+                    radius: TitanTheme.radiusControl
+                    color: closeArea.containsMouse ? TitanTheme.stateHover : TitanTheme.bgInset
+                    border.width: 1
+                    border.color: TitanTheme.border
 
                     Text {
                         anchors.centerIn: parent
                         text: "✕"
-                        font { pixelSize: 13; bold: true }
-                        color: closeMa.containsMouse ? "#FF6B6B" : root.textHigh
+                        color: TitanTheme.textMid
+                        font.family: TitanTheme.fontFamily
+                        font.pixelSize: 15
                     }
 
                     MouseArea {
-                        id: closeMa
+                        id: closeArea
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            if (typeof WallpaperBackend !== "undefined" && WallpaperBackend.revertPreview) {
-                                WallpaperBackend.revertPreview();
-                            }
-                            Qt.quit();
-                        }
+                        onClicked: root.cancel()
                     }
                 }
             }
 
-            // ── Search & Filter Controls ─────────────────────────────────────
+            Rectangle {
+                Layout.fillWidth: true
+                height: 1
+                color: TitanTheme.borderSubtle
+            }
+
+            // ── Filters ──────────────────────────────────────────────────────
             RowLayout {
                 Layout.fillWidth: true
-                spacing: 12
+                spacing: TitanTheme.space2
 
-                // Search Input Box
-                Rectangle {
-                    Layout.fillWidth: true
-                    height: 38
-                    radius: 10
-                    color: Qt.rgba(0.0, 0.0, 0.0, 0.35)
-                    border.width: searchInput.activeFocus ? 1.5 : 1
-                    border.color: searchInput.activeFocus ? root.accentColor : Qt.rgba(1, 1, 1, 0.10)
-                    Behavior on border.color { ColorAnimation { duration: 120 } }
-
-                    RowLayout {
-                        anchors.fill: parent
-                        anchors.leftMargin: 12
-                        anchors.rightMargin: 10
-                        spacing: 8
-
-                        Text {
-                            text: "🔍"
-                            font.pixelSize: 13
-                            opacity: 0.7
-                        }
-
-                        TextInput {
-                            id: searchInput
-                            Layout.fillWidth: true
-                            color: root.textHigh
-                            font { pixelSize: 13; family: "Inter, sans-serif" }
-                            clip: true
-                            onTextChanged: root.searchQuery = text.trim().toLowerCase()
-
-                            Text {
-                                text: "Search wallpapers by name or theme..."
-                                font: searchInput.font
-                                color: root.textLow
-                                visible: !searchInput.text && !searchInput.activeFocus
-                            }
-                        }
-
-                        // Clear search button
-                        Text {
-                            text: "✕"
-                            font.pixelSize: 11
-                            color: root.textMid
-                            visible: searchInput.text.length > 0
-                            MouseArea {
-                                anchors.fill: parent
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: searchInput.text = ""
-                            }
-                        }
-                    }
-                }
-
-                // Category Filter Pills
-                RowLayout {
-                    spacing: 6
+                Row {
+                    spacing: TitanTheme.space2
 
                     Repeater {
-                        model: ["All", "Signature", "Theme", "Color"]
-
-                        delegate: Rectangle {
-                            height: 36
-                            width: catText.implicitWidth + 24
-                            radius: 18
-                            color: root.activeCategory === modelData
-                                   ? Qt.rgba(0, 0.82, 1.0, 0.20)
-                                   : (catMa.containsMouse ? Qt.rgba(1, 1, 1, 0.09) : Qt.rgba(1, 1, 1, 0.04))
-                            border.width: 1
-                            border.color: root.activeCategory === modelData
-                                          ? root.accentColor
-                                          : Qt.rgba(1, 1, 1, 0.08)
-                            Behavior on color { ColorAnimation { duration: 120 } }
-
-                            Text {
-                                id: catText
-                                anchors.centerIn: parent
-                                text: modelData
-                                font { pixelSize: 12; family: "Inter, sans-serif"; bold: root.activeCategory === modelData }
-                                color: root.activeCategory === modelData ? root.accentColor : root.textHigh
-                            }
-
-                            MouseArea {
-                                id: catMa
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: root.activeCategory = modelData
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Divider Line
-            Rectangle {
-                Layout.fillWidth: true
-                height: 1
-                color: Qt.rgba(1, 1, 1, 0.07)
-            }
-
-            // ── Wallpaper Grid View ──────────────────────────────────────────
-            ScrollView {
-                id: scrollArea
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                clip: true
-                ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
-                ScrollBar.vertical.policy: ScrollBar.AsNeeded
-
-                GridView {
-                    id: grid
-                    cellWidth: 334
-                    cellHeight: 215
-                    boundsBehavior: Flickable.StopAtBounds
-
-                    model: {
-                        var all = root.getAllWallpapers();
-                        var filtered = [];
-                        for (var i = 0; i < all.length; i++) {
-                            var p = all[i];
-                            var title = root.getFriendlyTitle(p).toLowerCase();
-                            var tag = root.getTag(p);
-
-                            var matchesSearch = (root.searchQuery === "") || (title.indexOf(root.searchQuery) !== -1);
-                            var matchesCategory = (root.activeCategory === "All") || (tag === root.activeCategory);
-
-                            if (matchesSearch && matchesCategory) {
-                                filtered.push(p);
-                            }
-                        }
-                        return filtered;
-                    }
-
-                    delegate: Item {
-                        width: grid.cellWidth
-                        height: grid.cellHeight
-
-                        property string wpPath: modelData
-                        property string friendlyName: root.getFriendlyTitle(modelData)
-                        property string categoryTag: root.getTag(modelData)
-                        property bool isCurrent: {
-                            var cur = (typeof WallpaperBackend !== "undefined" && WallpaperBackend.currentPath)
-                                      ? WallpaperBackend.currentPath
-                                      : ((typeof WallpaperLibrary !== "undefined" && WallpaperLibrary.current) ? WallpaperLibrary.current : "");
-                            return cur === modelData || cur.indexOf(modelData.split("/").pop()) !== -1;
-                        }
-                        property bool isHovered: tileMa.containsMouse
+                        model: root.filters
 
                         Rectangle {
-                            anchors.fill: parent
-                            anchors.margins: 7
+                            width: chipLabel.implicitWidth + 22
+                            height: 28
                             radius: 14
-                            color: Qt.rgba(0.09, 0.11, 0.16, 0.90)
-                            clip: true
-                            border.width: isCurrent ? 2.5 : (isHovered ? 1.5 : 1)
-                            border.color: isCurrent
-                                          ? root.accentColor
-                                          : (isHovered ? Qt.rgba(0, 0.82, 1.0, 0.5) : Qt.rgba(1, 1, 1, 0.09))
+                            activeFocusOnTab: true
+                            color: root.activeFilter === modelData.key
+                                   ? TitanTheme.accentSoft
+                                   : (chipArea.containsMouse ? TitanTheme.stateHover : TitanTheme.bgInset)
+                            border.width: activeFocus ? TitanTheme.focusRingWidth : 1
+                            border.color: activeFocus
+                                          ? TitanTheme.focusRing
+                                          : (root.activeFilter === modelData.key
+                                             ? TitanTheme.accentEdge
+                                             : TitanTheme.border)
 
-                            scale: isHovered ? 1.025 : 1.0
-                            Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
-                            Behavior on border.color { ColorAnimation { duration: 150 } }
+                            Keys.onReturnPressed: root.setFilter(modelData.key)
+                            Keys.onEnterPressed: root.setFilter(modelData.key)
+                            Keys.onSpacePressed: root.setFilter(modelData.key)
 
-                            // Wallpaper Image Preview (with fallback to file:// if thumbs provider fails)
-                            Image {
-                                id: thumbImg
-                                anchors.fill: parent
-                                anchors.margins: isCurrent ? 2 : 1
-                                source: "image://thumbs/" + wpPath
-                                fillMode: Image.PreserveAspectCrop
-                                asynchronous: true
-                                cache: true
-                                mipmap: true
-
-                                onStatusChanged: {
-                                    if (status === Image.Error && source.toString().indexOf("image://") === 0) {
-                                        // Fallback directly to file:// scheme
-                                        source = "file://" + wpPath;
-                                    }
-                                }
-
-                                // Dark gradient scrim for legibility of text
-                                Rectangle {
-                                    anchors.fill: parent
-                                    gradient: Gradient {
-                                        GradientStop { position: 0.0; color: Qt.rgba(0, 0, 0, 0.15) }
-                                        GradientStop { position: 0.5; color: "transparent" }
-                                        GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.80) }
-                                    }
-                                }
-                            }
-
-                            // Active Check Badge
-                            Rectangle {
-                                visible: isCurrent
-                                width: 78
-                                height: 26
-                                radius: 13
-                                anchors.top: parent.top
-                                anchors.right: parent.right
-                                anchors.margins: 9
-                                color: root.accentColor
-
-                                RowLayout {
-                                    anchors.centerIn: parent
-                                    spacing: 4
-                                    Text {
-                                        text: "✓"
-                                        font { bold: true; pixelSize: 11 }
-                                        color: "#0F172A"
-                                    }
-                                    Text {
-                                        text: "Active"
-                                        font { bold: true; pixelSize: 11; family: "Inter, sans-serif" }
-                                        color: "#0F172A"
-                                    }
-                                }
-                            }
-
-                            // Tag Badge on top-left (e.g. Signature, Theme, Color)
-                            Rectangle {
-                                anchors.top: parent.top
-                                anchors.left: parent.left
-                                anchors.margins: 9
-                                width: tagText.implicitWidth + 14
-                                height: 22
-                                radius: 11
-                                color: Qt.rgba(0, 0, 0, 0.65)
-                                border.width: 1
-                                border.color: Qt.rgba(1, 1, 1, 0.12)
-
-                                Text {
-                                    id: tagText
-                                    anchors.centerIn: parent
-                                    text: categoryTag
-                                    font { pixelSize: 10; family: "Inter, sans-serif"; weight: Font.Medium }
-                                    color: root.textMid
-                                }
-                            }
-
-                            // Bottom Info Strip with Title
-                            Rectangle {
-                                anchors.bottom: parent.bottom
-                                anchors.left: parent.left
-                                anchors.right: parent.right
-                                height: 42
-                                color: Qt.rgba(0.06, 0.08, 0.12, 0.85)
-
-                                RowLayout {
-                                    anchors.fill: parent
-                                    anchors.leftMargin: 12
-                                    anchors.rightMargin: 12
-                                    spacing: 8
-
-                                    Text {
-                                        Layout.fillWidth: true
-                                        text: friendlyName
-                                        font { family: "Inter, sans-serif"; pixelSize: 13; bold: isCurrent }
-                                        color: isCurrent ? root.accentColor : root.textHigh
-                                        elide: Text.ElideRight
-                                    }
-
-                                    // Resolution / Format Pill
-                                    Rectangle {
-                                        width: 32; height: 18; radius: 4
-                                        color: Qt.rgba(1, 1, 1, 0.08)
-                                        Text {
-                                            anchors.centerIn: parent
-                                            text: wpPath.indexOf(".png") !== -1 ? "PNG" : "JPG"
-                                            font { pixelSize: 9; family: "Inter"; bold: true }
-                                            color: root.textLow
-                                        }
-                                    }
-                                }
-                            }
-
-                            // Hover Overlay: Click to Apply Pill
-                            Rectangle {
+                            Text {
+                                id: chipLabel
                                 anchors.centerIn: parent
-                                width: 140
-                                height: 38
-                                radius: 19
-                                color: Qt.rgba(0, 0.82, 1.0, 0.90)
-                                opacity: isHovered && !isCurrent ? 1.0 : 0.0
-                                Behavior on opacity { NumberAnimation { duration: 120 } }
-
-                                RowLayout {
-                                    anchors.centerIn: parent
-                                    spacing: 6
-                                    Text { text: "✓"; font.bold: true; color: "#0B101B" }
-                                    Text {
-                                        text: "Apply Wallpaper"
-                                        font { family: "Inter, sans-serif"; pixelSize: 12; bold: true }
-                                        color: "#0B101B"
-                                    }
-                                }
+                                text: modelData.label
+                                color: root.activeFilter === modelData.key
+                                       ? TitanTheme.accent
+                                       : TitanTheme.textMid
+                                font.family: TitanTheme.fontFamily
+                                font.pixelSize: TitanTheme.sizeLabel
+                                font.weight: root.activeFilter === modelData.key
+                                             ? TitanTheme.weightSemiBold
+                                             : TitanTheme.weightMedium
                             }
 
                             MouseArea {
-                                id: tileMa
+                                id: chipArea
                                 anchors.fill: parent
                                 hoverEnabled: true
                                 cursorShape: Qt.PointingHandCursor
-                                onClicked: root.applyWallpaper(wpPath)
+                                onClicked: root.setFilter(modelData.key)
                             }
-                        }
-                    }
-                }
-            }
-
-            // ── Footer Bar ───────────────────────────────────────────────────
-            Rectangle {
-                Layout.fillWidth: true
-                height: 1
-                color: Qt.rgba(1, 1, 1, 0.07)
-            }
-
-            RowLayout {
-                Layout.fillWidth: true
-                spacing: 12
-
-                // Wallpapers count badge
-                Rectangle {
-                    height: 28
-                    width: countText.implicitWidth + 18
-                    radius: 14
-                    color: Qt.rgba(1, 1, 1, 0.05)
-                    border.width: 1
-                    border.color: Qt.rgba(1, 1, 1, 0.08)
-
-                    RowLayout {
-                        anchors.centerIn: parent
-                        spacing: 6
-                        Rectangle { width: 6; height: 6; radius: 3; color: "#22C55E" }
-                        Text {
-                            id: countText
-                            text: (grid.count || 0) + " Wallpapers Available"
-                            font { family: "Inter, sans-serif"; pixelSize: 11; weight: Font.Medium }
-                            color: root.textMid
                         }
                     }
                 }
 
                 Item { Layout.fillWidth: true }
 
-                // Quick Random Button
-                Rectangle {
-                    height: 32
-                    width: randText.implicitWidth + 24
-                    radius: 16
-                    color: randMa.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(1, 1, 1, 0.05)
-                    border.width: 1
-                    border.color: Qt.rgba(1, 1, 1, 0.10)
-                    Behavior on color { ColorAnimation { duration: 120 } }
+                Text {
+                    text: root.filteredPaths.length + (root.filteredPaths.length === 1 ? " wallpaper" : " wallpapers")
+                    color: TitanTheme.textLow
+                    font.family: TitanTheme.fontFamily
+                    font.pixelSize: TitanTheme.sizeLabel
+                }
+            }
 
-                    RowLayout {
-                        anchors.centerIn: parent
-                        spacing: 6
-                        Text { text: "🎲"; font.pixelSize: 11 }
-                        Text {
-                            id: randText
-                            text: "Random"
-                            font { family: "Inter, sans-serif"; pixelSize: 12; weight: Font.Medium }
-                            color: root.textHigh
+            // ── Content ──────────────────────────────────────────────────────
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                spacing: TitanTheme.space4
+
+                Item {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+
+                    GridView {
+                        id: grid
+                        anchors.fill: parent
+                        clip: true
+                        focus: true
+                        boundsBehavior: Flickable.StopAtBounds
+                        cellWidth: Math.floor(width / Math.max(2, Math.floor(width / 250)))
+                        cellHeight: Math.floor(cellWidth * 0.62)
+                        model: root.filteredPaths
+
+                        currentIndex: -1
+
+                        onCurrentIndexChanged: {
+                            if (currentIndex >= 0 && currentIndex < root.filteredPaths.length) {
+                                root.selectPath(root.filteredPaths[currentIndex].path)
+                            }
+                        }
+
+                        delegate: Item {
+                            id: cell
+                            width: grid.cellWidth
+                            height: grid.cellHeight
+
+                            readonly property var entry: modelData
+                            readonly property bool isCurrent: entry
+                                && typeof WallpaperLibrary !== "undefined"
+                                && WallpaperLibrary.current === entry.path
+                            readonly property bool isSelected: entry && root.selectedPath === entry.path
+
+                            Rectangle {
+                                id: thumb
+                                anchors.fill: parent
+                                anchors.margins: 6
+                                radius: TitanTheme.radiusCard
+                                color: TitanTheme.surface0
+                                clip: true
+                                border.width: cell.isSelected ? 2 : 1
+                                border.color: cell.isSelected
+                                              ? TitanTheme.accent
+                                              : (thumbArea.containsMouse ? TitanTheme.borderHover : TitanTheme.borderSubtle)
+
+                                Image {
+                                    anchors.fill: parent
+                                    source: cell.entry ? "image://thumbs/" + cell.entry.path : ""
+                                    fillMode: Image.PreserveAspectCrop
+                                    asynchronous: true
+                                    cache: true
+                                    mipmap: true
+                                    sourceSize.width: 640
+                                    sourceSize.height: 400
+                                }
+
+                                Rectangle {
+                                    anchors.fill: parent
+                                    gradient: Gradient {
+                                        GradientStop { position: 0.48; color: "transparent" }
+                                        GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.78) }
+                                    }
+                                }
+
+                                Text {
+                                    anchors.left: parent.left
+                                    anchors.right: parent.right
+                                    anchors.bottom: parent.bottom
+                                    anchors.leftMargin: 11
+                                    anchors.rightMargin: 11
+                                    anchors.bottomMargin: 9
+                                    text: cell.entry ? cell.entry.name : ""
+                                    color: TitanTheme.textHigh
+                                    font.family: TitanTheme.fontFamily
+                                    font.pixelSize: TitanTheme.sizeLabel
+                                    font.weight: TitanTheme.weightSemiBold
+                                    elide: Text.ElideRight
+                                }
+
+                                Rectangle {
+                                    visible: cell.isCurrent
+                                    width: 22
+                                    height: 22
+                                    radius: 11
+                                    anchors.top: parent.top
+                                    anchors.right: parent.right
+                                    anchors.margins: 9
+                                    color: TitanTheme.accent
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: "✓"
+                                        color: TitanTheme.accentFg
+                                        font.family: TitanTheme.fontFamily
+                                        font.pixelSize: 12
+                                        font.weight: TitanTheme.weightBold
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: thumbArea
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+
+                                    onClicked: {
+                                        grid.currentIndex = index
+                                        root.selectPath(cell.entry.path)
+                                    }
+                                    onDoubleClicked: {
+                                        grid.currentIndex = index
+                                        root.selectPath(cell.entry.path)
+                                        root.applySelected()
+                                    }
+                                }
+                            }
                         }
                     }
 
-                    MouseArea {
-                        id: randMa
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            var all = root.getAllWallpapers();
-                            if (all.length > 0) {
-                                var randIndex = Math.floor(Math.random() * all.length);
-                                root.applyWallpaper(all[randIndex]);
-                            }
+                    Column {
+                        anchors.centerIn: parent
+                        spacing: TitanTheme.space2
+                        visible: grid.count === 0
+
+                        Text {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            text: "󰋩"
+                            color: TitanTheme.textLow
+                            font.family: TitanTheme.monoFamily
+                            font.pixelSize: 34
+                        }
+
+                        Text {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            text: root.query.length > 0 ? "No matching wallpapers" : "No wallpapers found"
+                            color: TitanTheme.textMid
+                            font.family: TitanTheme.fontFamily
+                            font.pixelSize: TitanTheme.sizeTitle
+                            font.weight: TitanTheme.weightSemiBold
+                        }
+
+                        Text {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            text: "Try a different search or filter"
+                            color: TitanTheme.textLow
+                            font.family: TitanTheme.fontFamily
+                            font.pixelSize: TitanTheme.sizeLabel
                         }
                     }
                 }
 
-                // Rescan Button
+                // ── Preview pane ─────────────────────────────────────────────
                 Rectangle {
-                    height: 32
-                    width: rescanText.implicitWidth + 24
-                    radius: 16
-                    color: rescanMa.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(1, 1, 1, 0.05)
+                    id: previewPane
+                    visible: card.width > 1080
+                    Layout.preferredWidth: 352
+                    Layout.fillHeight: true
+                    radius: TitanTheme.radiusLg
+                    color: TitanTheme.bgInset
                     border.width: 1
-                    border.color: Qt.rgba(1, 1, 1, 0.10)
-                    Behavior on color { ColorAnimation { duration: 120 } }
+                    border.color: TitanTheme.borderSubtle
 
-                    RowLayout {
-                        anchors.centerIn: parent
-                        spacing: 6
-                        Text { text: "🔄"; font.pixelSize: 11 }
-                        Text {
-                            id: rescanText
-                            text: "Rescan"
-                            font { family: "Inter, sans-serif"; pixelSize: 12; weight: Font.Medium }
-                            color: root.textHigh
-                        }
-                    }
-
-                    MouseArea {
-                        id: rescanMa
+                    ColumnLayout {
                         anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            if (typeof WallpaperLibrary !== "undefined" && WallpaperLibrary.rescan) {
-                                WallpaperLibrary.rescan();
+                        anchors.margins: TitanTheme.space4
+                        spacing: TitanTheme.space3
+
+                        Rectangle {
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 186
+                            radius: TitanTheme.radiusCard
+                            color: TitanTheme.surface0
+                            clip: true
+
+                            Image {
+                                anchors.fill: parent
+                                source: root.selectedPath.length > 0
+                                        ? "file://" + root.selectedPath : ""
+                                fillMode: Image.PreserveAspectCrop
+                                asynchronous: true
+                                cache: true
+                                sourceSize.width: 720
+                                sourceSize.height: 420
+                            }
+
+                            Text {
+                                anchors.centerIn: parent
+                                visible: root.selectedPath.length === 0
+                                text: "Select a wallpaper"
+                                color: TitanTheme.textLow
+                                font.family: TitanTheme.fontFamily
+                                font.pixelSize: TitanTheme.sizeLabel
+                            }
+                        }
+
+                        Text {
+                            Layout.fillWidth: true
+                            text: root.selectedPath.length > 0
+                                  ? root.baseName(root.selectedPath) : "—"
+                            color: TitanTheme.textHigh
+                            font.family: TitanTheme.fontFamily
+                            font.pixelSize: TitanTheme.sizeTitle
+                            font.weight: TitanTheme.weightSemiBold
+                            elide: Text.ElideRight
+                        }
+
+                        RowLayout {
+                            spacing: TitanTheme.space2
+
+                            Rectangle {
+                                width: typeLabel.implicitWidth + 16
+                                height: 22
+                                radius: 11
+                                color: TitanTheme.bg4
+                                border.width: 1
+                                border.color: TitanTheme.borderSubtle
+
+                                Text {
+                                    id: typeLabel
+                                    anchors.centerIn: parent
+                                    text: root.isSystem(root.selectedPath) ? "System" : "Personal"
+                                    color: TitanTheme.textMid
+                                    font.family: TitanTheme.fontFamily
+                                    font.pixelSize: TitanTheme.sizeCaption
+                                    font.weight: TitanTheme.weightMedium
+                                }
+                            }
+
+                            Text {
+                                Layout.fillWidth: true
+                                text: root.selectedPath.length > 0
+                                      ? root.selectedPath.replace(/^.*\//, "") : ""
+                                color: TitanTheme.textLow
+                                font.family: TitanTheme.fontFamily
+                                font.pixelSize: TitanTheme.sizeCaption
+                                elide: Text.ElideMiddle
+                            }
+                        }
+
+                        Rectangle {
+                            Layout.fillWidth: true
+                            height: 1
+                            color: TitanTheme.borderSubtle
+                        }
+
+                        Text {
+                            text: "Scale mode"
+                            color: TitanTheme.textLow
+                            font.family: TitanTheme.fontFamily
+                            font.pixelSize: TitanTheme.sizeLabel
+                            font.weight: TitanTheme.weightMedium
+                        }
+
+                        Row {
+                            spacing: 6
+
+                            Repeater {
+                                model: root.scaleModes
+
+                                Rectangle {
+                                    width: 60
+                                    height: 28
+                                    radius: TitanTheme.radiusControl
+                                    activeFocusOnTab: true
+                                    color: root.scaleMode === modelData.key
+                                           ? TitanTheme.accentSoft
+                                           : (modeArea.containsMouse ? TitanTheme.stateHover : TitanTheme.bgInset)
+                                    border.width: activeFocus ? TitanTheme.focusRingWidth : 1
+                                    border.color: activeFocus
+                                                  ? TitanTheme.focusRing
+                                                  : (root.scaleMode === modelData.key
+                                                     ? TitanTheme.accentEdge
+                                                     : TitanTheme.border)
+
+                                    Keys.onReturnPressed: root.setScaleMode(modelData.key)
+                                    Keys.onEnterPressed: root.setScaleMode(modelData.key)
+                                    Keys.onSpacePressed: root.setScaleMode(modelData.key)
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: modelData.label
+                                        color: root.scaleMode === modelData.key
+                                               ? TitanTheme.accent
+                                               : TitanTheme.textMid
+                                        font.family: TitanTheme.fontFamily
+                                        font.pixelSize: TitanTheme.sizeCaption
+                                        font.weight: root.scaleMode === modelData.key
+                                                     ? TitanTheme.weightSemiBold
+                                                     : TitanTheme.weightMedium
+                                    }
+
+                                    MouseArea {
+                                        id: modeArea
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: root.setScaleMode(modelData.key)
+                                    }
+                                }
+                            }
+                        }
+
+                        Item { Layout.fillHeight: true }
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: TitanTheme.space2
+
+                            TitanButton {
+                                Layout.fillWidth: true
+                                text: "Apply"
+                                variant: "primary"
+                                onClicked: root.applySelected()
+                            }
+
+                            TitanButton {
+                                Layout.fillWidth: true
+                                text: "Cancel"
+                                variant: "ghost"
+                                onClicked: root.cancel()
                             }
                         }
                     }
                 }
+            }
 
-                // Done / Close Pill
-                Rectangle {
-                    height: 32
-                    width: 76
-                    radius: 16
-                    color: doneMa.containsMouse ? Qt.rgba(0, 0.82, 1.0, 0.35) : Qt.rgba(0, 0.82, 1.0, 0.20)
-                    border.width: 1
-                    border.color: root.accentColor
-                    Behavior on color { ColorAnimation { duration: 120 } }
+            // ── Footer ───────────────────────────────────────────────────────
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: TitanTheme.space3
 
-                    Text {
-                        anchors.centerIn: parent
-                        text: "Done"
-                        font { family: "Inter, sans-serif"; pixelSize: 12; bold: true }
-                        color: root.accentColor
-                    }
+                Text {
+                    text: "↑↓←→ navigate  ·  Enter apply  ·  Esc close"
+                    color: TitanTheme.textLow
+                    font.family: TitanTheme.fontFamily
+                    font.pixelSize: TitanTheme.sizeCaption
+                }
 
-                    MouseArea {
-                        id: doneMa
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: Qt.quit()
+                Item { Layout.fillWidth: true }
+
+                TitanButton {
+                    text: "Rescan"
+                    variant: "ghost"
+                    implicitHeight: 30
+                    onClicked: {
+                        if (typeof WallpaperLibrary !== "undefined") {
+                            WallpaperLibrary.rescan()
+                        }
+                        root.rebuildModel()
                     }
                 }
             }

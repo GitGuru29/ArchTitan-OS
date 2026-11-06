@@ -27,6 +27,13 @@ if [[ ${#CANDIDATES[@]} -eq 0 ]]; then
     exit 0
 fi
 
+# Development installs can keep ArchTitan.TitanUI in ~/.local/lib/qt6/qml.
+# On a real ArchTitan install the module is in the system Qt import path, so
+# this block is a no-op.
+if [[ -d "$HOME/.local/lib/qt6/qml/ArchTitan/TitanUI" ]]; then
+    export QML_IMPORT_PATH="${QML_IMPORT_PATH:+$QML_IMPORT_PATH:}$HOME/.local/lib/qt6/qml"
+fi
+
 if command -v titan-wallpaper-picker-ui >/dev/null 2>&1; then
     exec titan-wallpaper-picker-ui
 fi

@@ -23,7 +23,7 @@ Item {
         Row {
             spacing: TitanTheme.space2
             TitanBadge { text: "Design system"; tone: "info" }
-            TitanBadge { text: "One UI 9.0"; tone: "success" }
+            TitanBadge { text: "TDL 2.0"; tone: "success" }
             TitanBadge { text: "Catppuccin Mocha"; tone: "neutral" }
         }
 

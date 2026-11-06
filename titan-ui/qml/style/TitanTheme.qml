@@ -9,7 +9,7 @@ import ArchTitan.TitanUI
  * bindings onto ThemeBackend, which loads the active theme from
  * ~/.config/archtitan/theme.json (written by `titan-theme`) and falls back to
  * Catppuccin Mocha — so QML recolours live on every theme or accent switch
- * with no restarts. Geometry and glass depth follow Samsung One UI 9.0.
+ * with no restarts. Geometry and glass depth follow TDL 2.0 desktop rules.
  *
  * Import: `import ArchTitan.TitanUI`
  */
@@ -77,27 +77,32 @@ QtObject {
     // ── Typography ──────────────────────────────────────────────────────────
     readonly property string fontFamily:  "Inter"
     readonly property string monoFamily:  "JetBrainsMono Nerd Font"
-    readonly property int sizeDisplay: 22
-    readonly property int sizeTitle:   15
-    readonly property int sizeBody:    13
-    readonly property int sizeLabel:   11
-    readonly property int sizeCaption: 9
+    readonly property int sizeDisplay:  32
+    readonly property int sizeHeadline: 24
+    readonly property int sizeTitle:    18
+    readonly property int sizeSubtitle: 16
+    readonly property int sizeBody:     14
+    readonly property int sizeLabel:    12
+    readonly property int sizeCaption:  11
+    readonly property real lineHeightTight: 1.2
+    readonly property real lineHeightBody:  1.45
     readonly property int weightRegular:  400
     readonly property int weightMedium:    500
     readonly property int weightSemiBold:  600
     readonly property int weightBold:      700
 
-    // ── Radii (One UI 9.0 squircles) ────────────────────────────────────────
-    readonly property int radiusSm:      8
-    readonly property int radiusMd:     12
-    readonly property int radiusLg:     16
-    readonly property int radiusXl:     20
-    readonly property int radiusBento:  24
-    readonly property int radiusWindow:  28
-    readonly property int radiusCard:    20
-    readonly property int radiusControl: 16
-    readonly property int radiusSlider:  26
-    readonly property int radiusPill:    999
+    // ── Radii (desktop-first, not phone squircles) ──────────────────────────
+    readonly property int radiusSm:      6
+    readonly property int radiusMd:      8
+    readonly property int radiusLg:     12
+    readonly property int radiusXl:     14
+    readonly property int radiusBento:  16
+    readonly property int radiusWindow: 18
+    readonly property int radiusCard:   12
+    readonly property int radiusControl: 8
+    readonly property int radiusSlider:  26   // circles in compact controls
+    readonly property int radiusRound:  999
+    readonly property int radiusPill:   999
 
     // ── Spacing (4-point grid) ──────────────────────────────────────────────
     readonly property int space1: 4
@@ -107,10 +112,19 @@ QtObject {
     readonly property int space6: 24
     readonly property int space8: 32
 
+    // ── Interaction states ──────────────────────────────────────────────────
+    readonly property color stateHover:    isDark ? "#14FFFFFF" : "#0A000000"
+    readonly property color statePressed:  isDark ? "#1FFFFFFF" : "#14000000"
+    readonly property color stateSelected: accentSoft
+    readonly property color focusRing:     accent
+    readonly property int focusRingWidth:  2
+    readonly property int focusRingOffset: 2
+    readonly property color scrim:         Qt.rgba(0, 0, 0, 0.55)
+
     // ── Motion ──────────────────────────────────────────────────────────────
-    readonly property int durFast: 120
-    readonly property int durBase: 200
-    readonly property int durSlow: 320
+    readonly property int durFast: 90
+    readonly property int durBase: 160
+    readonly property int durSlow: 240
     readonly property int durShimmer: 1400
     // Easing curves — use for entering (decelerate) vs leaving (accelerate).
     readonly property int easingStandard: Easing.OutCubic
@@ -118,5 +132,5 @@ QtObject {
     readonly property int easingExit:     Easing.InCubic
     readonly property int easingEmphasis: Easing.OutQuart
     // Feedback
-    readonly property real pressScale: 0.97
+    readonly property real pressScale: 0.98
 }
