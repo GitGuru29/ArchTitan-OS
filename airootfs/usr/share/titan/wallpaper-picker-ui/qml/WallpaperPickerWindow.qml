@@ -409,9 +409,9 @@ Window {
                                     anchors.verticalCenter: parent.verticalCenter
                                     spacing: 4
 
-                                    Rectangle { width: 4.5; height: 4.5; radius: 2.5; color: "#ff5f56" }
-                                    Rectangle { width: 4.5; height: 4.5; radius: 2.5; color: "#ffbd2e" }
-                                    Rectangle { width: 4.5; height: 4.5; radius: 2.5; color: "#27c93f" }
+                                    Rectangle { width: 4.5; height: 4.5; radius: 2.5; color: TitanTheme.danger }
+                                    Rectangle { width: 4.5; height: 4.5; radius: 2.5; color: TitanTheme.warning }
+                                    Rectangle { width: 4.5; height: 4.5; radius: 2.5; color: TitanTheme.success }
                                 }
                             }
 
