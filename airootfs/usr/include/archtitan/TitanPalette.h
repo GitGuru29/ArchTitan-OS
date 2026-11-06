@@ -10,6 +10,7 @@
 #include <QStandardPaths>
 #include <QString>
 
+#include <algorithm>
 #include <cmath>
 
 /**
@@ -177,6 +178,8 @@ inline QColor textLow()  { return detail::raw("textLow"); }
 inline QColor success() { return detail::raw("success"); }
 inline QColor warning() { return detail::raw("warning"); }
 inline QColor danger()  { return detail::raw("danger"); }
+inline QColor dangerHover()   { return danger().lighter(108); }
+inline QColor dangerPressed() { return danger().darker(110); }
 inline QColor teal()    { return detail::raw("teal"); }
 inline QColor peach()   { return detail::raw("peach"); }
 inline QColor mauve()   { return detail::raw("mauve"); }
@@ -198,8 +201,7 @@ inline QColor accentFg()
 {
     // WCAG relative luminance of the accent, then the crossover where Mocha
     // crust ink and pure white are equally legible (L = 0.1925 — derivation in
-    // ThemeBackend::accentFg). The old gamma-space `l > 0.6` rule put white
-    // text on #89B4FA: 2.1:1 where ink gives 8.9:1.
+    // ThemeBackend::accentFg).
     const QColor a = accent();
     const auto lin = [](double v) {
         return v <= 0.04045 ? v / 12.92 : std::pow((v + 0.055) / 1.055, 2.4);
@@ -210,9 +212,11 @@ inline QColor accentFg()
     return l > 0.1925 ? crust() : QColor(0xFF, 0xFF, 0xFF);
 }
 
-inline QColor accentSoft()   { const QColor a = accent(); return QColor(a.red(), a.green(), a.blue(), 46); }  // 0.18
-inline QColor accentSofter() { const QColor a = accent(); return QColor(a.red(), a.green(), a.blue(), 26); }  // 0.10
-inline QColor accentEdge()   { const QColor a = accent(); return QColor(a.red(), a.green(), a.blue(), 140); } // 0.55
+inline QColor accentSoft()    { const QColor a = accent(); return QColor(a.red(), a.green(), a.blue(), 46); }  // 0.18
+inline QColor accentSofter()  { const QColor a = accent(); return QColor(a.red(), a.green(), a.blue(), 26); }  // 0.10
+inline QColor accentEdge()    { const QColor a = accent(); return QColor(a.red(), a.green(), a.blue(), 140); } // 0.55
+inline QColor accentHover()   { return accent().lighter(108); }
+inline QColor accentPressed() { return accent().darker(110); }
 
 inline QColor borderStrong()  { return accentEdge(); }
 inline QColor textOnAccent()  { return accentFg(); }
@@ -283,11 +287,23 @@ inline QString hex(const QColor &c)  { return c.name(QColor::HexRgb); }
 inline QString hexa(const QColor &c) { return c.name(QColor::HexArgb); }
 inline QColor alpha(const QColor &c, double a) { return QColor(c.red(), c.green(), c.blue(), int(std::lround(a * 255.0))); }
 
+inline double contrastRatio(const QColor &fg, const QColor &bg)
+{
+    const auto lin = [](double v) {
+        return v <= 0.04045 ? v / 12.92 : std::pow((v + 0.055) / 1.055, 2.4);
+    };
+    const double a = fg.alphaF();
+    const double r = fg.redF() * a + bg.redF() * (1.0 - a);
+    const double g = fg.greenF() * a + bg.greenF() * (1.0 - a);
+    const double b = fg.blueF() * a + bg.blueF() * (1.0 - a);
+    const double l1 = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+    const double l2 = 0.2126 * lin(bg.redF()) + 0.7152 * lin(bg.greenF()) + 0.0722 * lin(bg.blueF());
+    const double lighter = std::max(l1, l2);
+    const double darker = std::min(l1, l2);
+    return (lighter + 0.05) / (darker + 0.05);
+}
+
 // ── Stylesheet token substitution ──────────────────────────────────────────
-// Widgets apps can write QSS against `@token` placeholders instead of literal
-// colours; qss() swaps them for the resolved TDL values. `@tokenRGB` expands
-// to "r, g, b" for use inside rgba(). Unknown placeholders are left untouched,
-// so `@media`-style text (or literal @handles) passes through unharmed.
 inline QColor token(const QString &name)
 {
     static const QHash<QString, QColor> map = {
@@ -297,6 +313,8 @@ inline QColor token(const QString &name)
         {QStringLiteral("accentSoft"), accentSoft()},
         {QStringLiteral("accentSofter"), accentSofter()},
         {QStringLiteral("accentEdge"), accentEdge()},
+        {QStringLiteral("accentHover"), accentHover()},
+        {QStringLiteral("accentPressed"), accentPressed()},
         {QStringLiteral("crust"), crust()},
         {QStringLiteral("mantle"), mantle()},
         {QStringLiteral("base"), base()},
@@ -329,6 +347,8 @@ inline QColor token(const QString &name)
         {QStringLiteral("success"), success()},
         {QStringLiteral("warning"), warning()},
         {QStringLiteral("danger"), danger()},
+        {QStringLiteral("dangerHover"), dangerHover()},
+        {QStringLiteral("dangerPressed"), dangerPressed()},
         {QStringLiteral("info"), info()},
         {QStringLiteral("teal"), teal()},
         {QStringLiteral("peach"), peach()},

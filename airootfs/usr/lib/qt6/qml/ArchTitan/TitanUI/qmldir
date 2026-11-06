@@ -23,5 +23,10 @@ TitanSpinner 1.0 qml/components/TitanSpinner.qml
 TitanSkeleton 1.0 qml/components/TitanSkeleton.qml
 TitanEmptyState 1.0 qml/components/TitanEmptyState.qml
 TitanErrorState 1.0 qml/components/TitanErrorState.qml
+TitanReticle 1.0 qml/components/TitanReticle.qml
+TitanSearchField 1.0 qml/components/TitanSearchField.qml
+TitanSegmentedControl 1.0 qml/components/TitanSegmentedControl.qml
+TitanToast 1.0 qml/components/TitanToast.qml
+TitanFlyout 1.0 qml/components/TitanFlyout.qml
 depends QtQuick
 

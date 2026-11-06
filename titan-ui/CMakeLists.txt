@@ -47,9 +47,18 @@ qt_add_qml_module(TitanUI
         qml/components/TitanSkeleton.qml
         qml/components/TitanEmptyState.qml
         qml/components/TitanErrorState.qml
+        qml/components/TitanReticle.qml
+        qml/components/TitanSearchField.qml
+        qml/components/TitanSegmentedControl.qml
+        qml/components/TitanToast.qml
+        qml/components/TitanFlyout.qml
     SOURCES
         src/themebackend.h
         src/themebackend.cpp
+        src/arcitem.h
+        src/arcitem.cpp
+        src/filtermodel.h
+        src/filtermodel.cpp
 )
 
 target_link_libraries(TitanUI PRIVATE Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick)

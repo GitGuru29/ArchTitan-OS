@@ -38,6 +38,17 @@ DERIVED = {
     "bg1", "bg2", "bgInset", "glass", "glassAlt", "glassCard",
     "accentSoft", "accentSofter", "accentEdge",
 }
+DERIVED_ALPHAS = {
+    "bg1": 0.702,
+    "bg2": 0.60,
+    "bgInset": 0.502,
+    "glass": 0.722,
+    "glassAlt": 0.439,
+    "glassCard": 0.40,
+    "accentSoft": 0.18,
+    "accentSofter": 0.10,
+    "accentEdge": 0.55,
+}
 
 COLOUR_RE = re.compile(r"\bproperty\s+(?:readonly\s+)?color\s+(\w+)")
 SCALAR_RE = re.compile(
@@ -71,6 +82,9 @@ def parse_qml() -> tuple[set[str], set[str], dict[str, float]]:
     colours = set(COLOUR_RE.findall(text))
     scalars = {name for _, name, _ in SCALAR_RE.findall(text)}
     alphas = {name: float(a) for name, a in RGBA_RE.findall(text)}
+    for k, v in DERIVED_ALPHAS.items():
+        if k not in alphas:
+            alphas[k] = v
     return colours, scalars, alphas
 
 
