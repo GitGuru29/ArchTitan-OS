@@ -24,11 +24,11 @@ Rectangle {
     activeFocusOnTab: true
 
     color: {
-        if (_primary)   return tap.pressed ? Qt.darker(TitanTheme.accent, 1.10)
-                            : hover.hovered ? Qt.lighter(TitanTheme.accent, 1.08)
+        if (_primary)   return tap.pressed ? TitanTheme.accentPressed
+                            : hover.hovered ? TitanTheme.accentHover
                             : TitanTheme.accent
-        if (_danger)    return tap.pressed ? Qt.darker(TitanTheme.danger, 1.10)
-                            : hover.hovered ? Qt.lighter(TitanTheme.danger, 1.08)
+        if (_danger)    return tap.pressed ? TitanTheme.dangerPressed
+                            : hover.hovered ? TitanTheme.dangerHover
                             : TitanTheme.danger
         if (_secondary) return tap.pressed ? TitanTheme.surface1
                             : hover.hovered ? TitanTheme.surface0

@@ -5,11 +5,10 @@ import ArchTitan.TitanUI
 /**
  * TitanTheme — ArchTitan "Titan Design Language" (TDL) tokens.
  *
- * Single source of truth for every user-facing surface. Colour tokens are
- * bindings onto ThemeBackend, which loads the active theme from
- * ~/.config/archtitan/theme.json (written by `titan-theme`) and falls back to
- * Catppuccin Mocha — so QML recolours live on every theme or accent switch
- * with no restarts. Geometry and glass depth follow TDL 2.0 desktop rules.
+ * Single source of truth for every user-facing surface.
+ * Performance-first architecture: All dynamic colors, derived alphas,
+ * hover/press states, and semantic background roles are computed in native C++
+ * by ThemeBackend and bound directly as QColor properties.
  *
  * Import: `import ArchTitan.TitanUI`
  */
@@ -22,9 +21,11 @@ QtObject {
     // ── Accent (theme / wallpaper-adaptive) ─────────────────────────────────
     property color accent: ThemeBackend.accent
     readonly property color accentFg:              ThemeBackend.accentFg
-    readonly property color accentSoft:            Qt.rgba(accent.r, accent.g, accent.b, 0.18)
-    readonly property color accentSofter:          Qt.rgba(accent.r, accent.g, accent.b, 0.10)
-    readonly property color accentEdge:            Qt.rgba(accent.r, accent.g, accent.b, 0.55)
+    readonly property color accentSoft:            ThemeBackend.accentSoft
+    readonly property color accentSofter:          ThemeBackend.accentSofter
+    readonly property color accentEdge:            ThemeBackend.accentEdge
+    readonly property color accentHover:           ThemeBackend.accentHover
+    readonly property color accentPressed:         ThemeBackend.accentPressed
 
     // ── Glass & Transparency ────────────────────────────────────────────────
     readonly property real glassOpacity: ThemeBackend.glassOpacity
@@ -39,24 +40,24 @@ QtObject {
     readonly property color surface2: ThemeBackend.surface2
     readonly property color surface3: ThemeBackend.surface3
 
-    // Semantic background roles
-    readonly property color bg0:      crust                             // deepest
-    readonly property color bg1:      isDark ? Qt.rgba(base.r, base.g, base.b, 0.702) : Qt.rgba(1, 1, 1, 0.84)   // window shell (translucent)
-    readonly property color bg2:      isDark ? Qt.rgba(base.r, base.g, base.b, 0.6) : Qt.rgba(1, 1, 1, 0.90)     // card
-    readonly property color bg3:      isDark ? base : Qt.rgba(1, 1, 1, 0.96)                              // elevated
-    readonly property color bg4:      isDark ? surface0 : Qt.rgba(0, 0, 0, 0.05)                          // hover / pill
-    readonly property color bgInset:  isDark ? Qt.rgba(crust.r, crust.g, crust.b, 0.502) : Qt.rgba(0, 0, 0, 0.06) // recessed
+    // Semantic background roles (precomputed in C++)
+    readonly property color bg0:      ThemeBackend.bg0
+    readonly property color bg1:      ThemeBackend.bg1
+    readonly property color bg2:      ThemeBackend.bg2
+    readonly property color bg3:      ThemeBackend.bg3
+    readonly property color bg4:      ThemeBackend.bg4
+    readonly property color bgInset:  ThemeBackend.bgInset
 
-    // Frosted glass / overlay
-    readonly property color glass:     isDark ? Qt.rgba(crust.r, crust.g, crust.b, 0.722) : Qt.rgba(1, 1, 1, 0.84)
-    readonly property color glassAlt:  isDark ? Qt.rgba(mantle.r, mantle.g, mantle.b, 0.439) : Qt.rgba(1, 1, 1, 0.75)
-    readonly property color glassCard: isDark ? Qt.rgba(mantle.r, mantle.g, mantle.b, 0.4) : Qt.rgba(1, 1, 1, 0.80)
+    // Frosted glass / overlay (precomputed in C++)
+    readonly property color glass:     ThemeBackend.glass
+    readonly property color glassAlt:  ThemeBackend.glassAlt
+    readonly property color glassCard: ThemeBackend.glassCard
 
     // ── Borders ─────────────────────────────────────────────────────────────
-    readonly property color border:       isDark ? ThemeBackend.border : Qt.rgba(0, 0, 0, 0.08)
-    readonly property color borderSubtle: isDark ? "#18FFFFFF" : Qt.rgba(0, 0, 0, 0.06)
-    readonly property color borderHover:  isDark ? "#40FFFFFF" : Qt.rgba(0, 0, 0, 0.14)
-    readonly property color borderStrong: accentEdge
+    readonly property color border:       ThemeBackend.border
+    readonly property color borderSubtle: ThemeBackend.borderSubtle
+    readonly property color borderHover:  ThemeBackend.borderHover
+    readonly property color borderStrong: ThemeBackend.borderStrong
 
     // ── Text ────────────────────────────────────────────────────────────────
     readonly property color textHigh:     ThemeBackend.textHigh
@@ -65,14 +66,16 @@ QtObject {
     readonly property color textOnAccent: accentFg
 
     // ── Semantic status ─────────────────────────────────────────────────────
-    readonly property color success: ThemeBackend.success
-    readonly property color warning: ThemeBackend.warning
-    readonly property color danger:  ThemeBackend.danger
-    readonly property color info:    ThemeBackend.info
-    readonly property color teal:    ThemeBackend.teal
-    readonly property color peach:   ThemeBackend.peach
-    readonly property color mauve:   ThemeBackend.mauve
-    readonly property color pink:    ThemeBackend.pink
+    readonly property color success:       ThemeBackend.success
+    readonly property color warning:       ThemeBackend.warning
+    readonly property color danger:        ThemeBackend.danger
+    readonly property color dangerHover:   ThemeBackend.dangerHover
+    readonly property color dangerPressed: ThemeBackend.dangerPressed
+    readonly property color info:          ThemeBackend.info
+    readonly property color teal:          ThemeBackend.teal
+    readonly property color peach:         ThemeBackend.peach
+    readonly property color mauve:         ThemeBackend.mauve
+    readonly property color pink:          ThemeBackend.pink
 
     // ── Typography ──────────────────────────────────────────────────────────
     readonly property string fontFamily:  "Inter"
@@ -113,24 +116,29 @@ QtObject {
     readonly property int space8: 32
 
     // ── Interaction states ──────────────────────────────────────────────────
-    readonly property color stateHover:    isDark ? "#14FFFFFF" : "#0A000000"
-    readonly property color statePressed:  isDark ? "#1FFFFFFF" : "#14000000"
-    readonly property color stateSelected: accentSoft
-    readonly property color focusRing:     accent
+    readonly property color stateHover:    ThemeBackend.stateHover
+    readonly property color statePressed:  ThemeBackend.statePressed
+    readonly property color stateSelected: ThemeBackend.stateSelected
+    readonly property color focusRing:     ThemeBackend.focusRing
     readonly property int focusRingWidth:  2
     readonly property int focusRingOffset: 2
-    readonly property color scrim:         Qt.rgba(0, 0, 0, 0.55)
+    readonly property color scrim:         ThemeBackend.scrim
 
     // ── Motion ──────────────────────────────────────────────────────────────
     readonly property int durFast: 90
     readonly property int durBase: 160
     readonly property int durSlow: 240
     readonly property int durShimmer: 1400
-    // Easing curves — use for entering (decelerate) vs leaving (accelerate).
     readonly property int easingStandard: Easing.OutCubic
     readonly property int easingEnter:    Easing.OutCubic
     readonly property int easingExit:     Easing.InCubic
     readonly property int easingEmphasis: Easing.OutQuart
-    // Feedback
     readonly property real pressScale: 0.98
+
+    // ── C++ Fast Math & Contrast Helpers ────────────────────────────────────
+    function contrastRatio(fg, bg) { return ThemeBackend.contrastRatio(fg, bg) }
+    function alphaColor(baseColor, alpha) { return ThemeBackend.alphaColor(baseColor, alpha) }
+    function lighter(baseColor, factor) { return ThemeBackend.lighterColor(baseColor, factor !== undefined ? factor : 1.08) }
+    function darker(baseColor, factor) { return ThemeBackend.darkerColor(baseColor, factor !== undefined ? factor : 1.10) }
+    function isAccessible(fg, bg, minRatio) { return ThemeBackend.isAccessible(fg, bg, minRatio !== undefined ? minRatio : 4.5) }
 }
