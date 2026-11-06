@@ -9,7 +9,7 @@ import ArchTitan.TitanUI
  * bindings onto ThemeBackend, which loads the active theme from
  * ~/.config/archtitan/theme.json (written by `titan-theme`) and falls back to
  * Catppuccin Mocha — so QML recolours live on every theme or accent switch
- * with no restarts. Geometry and glass depth follow Samsung One UI 9.0.
+ * with no restarts. Geometry and glass depth follow TDL 2.0 desktop rules.
  *
  * Import: `import ArchTitan.TitanUI`
  */

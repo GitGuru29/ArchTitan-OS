@@ -83,7 +83,7 @@ scripts branch on file type accordingly.
 | `TitanCard` | Opaque card container by default; opt into glass with `glass: true` |
 | `TitanGlassPanel` | Frosted overlay surface |
 | `TitanSwitch` / `TitanSlider` / `TitanProgress` | Form & value controls |
-| `TitanToggleTile` | One UI quick-toggle squircle tile |
+| `TitanToggleTile` | Compact toggle tile with a restrained active tint |
 | `TitanPill` / `TitanBadge` | Clickable, focusable chips / static labels |
 | `TitanSidebarItem` | Settings navigation row |
 | `TitanIcon` | Nerd Font glyph **or** image at a fixed size |
