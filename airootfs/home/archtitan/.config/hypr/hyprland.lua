@@ -389,6 +389,14 @@ hl.window_rule({
 })
 
 hl.window_rule({
+    name    = "titan-wallpaper-picker",
+    match   = { class = "^titan-wallpaper-picker(-ui)?$" },
+    float   = true,
+    center  = true,
+    opacity = "1.0 1.0",
+})
+
+hl.window_rule({
     name    = "btop-float",
     match   = { class = "^kitty$", title = "^btop$" },
     float   = true,
