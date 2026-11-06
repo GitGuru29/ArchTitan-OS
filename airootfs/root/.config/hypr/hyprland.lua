@@ -103,11 +103,12 @@ for _, superKey in ipairs({ "SUPER_L", "SUPER_R" }) do
 end
 
 -- Shell & Utilities (ArchTitan Central Command Palette & Spotlight)
-superBind(mainMod .. " + space", hl.dsp.exec_cmd("titan-spotlight --toggle"))  -- Super+Space: Titan Spotlight
-superBind(mainMod .. " + Space", hl.dsp.exec_cmd("titan-spotlight --toggle"))
-superBind(mainMod .. " + Tab", hl.dsp.exec_cmd("titan-workspace-hud --toggle"))   -- Super+Tab: 10-Workspace HUD Switcher
-superBind(mainMod .. " + tab", hl.dsp.exec_cmd("titan-workspace-hud --toggle"))
-superBind(mainMod .. " + ISO_Left_Tab", hl.dsp.exec_cmd("titan-workspace-hud --toggle"))  -- Super+Tab fallback (some layouts report ISO_Left_Tab)
+-- Bind each chord exactly ONCE. Hyprland resolves key names case-insensitively
+-- and by keycode, so "space"/"Space" and "Tab"/"tab"/"ISO_Left_Tab" all match
+-- the same physical key. Binding more than one variant runs the command twice
+-- and `--toggle` closes the window it just opened.
+superBind(mainMod .. " + Space", hl.dsp.exec_cmd("titan-spotlight --toggle"))  -- Super+Space: Titan Spotlight
+superBind(mainMod .. " + Tab", hl.dsp.exec_cmd("titan-workspace-hud --toggle"))  -- Super+Tab: 10-Workspace HUD Switcher
 superBind(mainMod .. " + D", hl.dsp.exec_cmd("titan-spotlight --toggle"))       -- Super+D: App Launcher (Spotlight)
 superBind(mainMod .. " + R", hl.dsp.exec_cmd("titan-spotlight --toggle"))  -- Super+R: Secondary App runner (Spotlight)
 superBind(mainMod .. " + slash", hl.dsp.exec_cmd("titan-menu --toggle"))        -- Help & Shortcuts Cheat Sheet (Super+/)
