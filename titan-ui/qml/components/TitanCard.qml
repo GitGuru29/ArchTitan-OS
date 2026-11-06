@@ -7,13 +7,13 @@ Rectangle {
 
     property string title: ""
     property string subtitle: ""
-    property bool glass: true
+    property bool glass: false
     default property alias content: body.data
 
     implicitWidth: 260
     implicitHeight: body.implicitHeight + (header.visible ? header.implicitHeight + TitanTheme.space3 : 0) + TitanTheme.space4 * 2
     radius: TitanTheme.radiusCard
-    color: glass ? TitanTheme.glassCard : TitanTheme.bg2
+    color: glass ? TitanTheme.glassCard : TitanTheme.bg3
     border.width: 1
     border.color: TitanTheme.borderSubtle
 

@@ -27,7 +27,7 @@ Rectangle {
         text: root.text
         color: root._c
         font.family: TitanTheme.fontFamily
-        font.pixelSize: TitanTheme.sizeCaption + 1
+        font.pixelSize: TitanTheme.sizeCaption
         font.weight: TitanTheme.weightSemiBold
     }
 }

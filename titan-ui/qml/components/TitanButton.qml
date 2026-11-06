@@ -18,15 +18,22 @@ Rectangle {
     readonly property bool _danger:    variant === "danger"
 
     implicitWidth: row.implicitWidth + TitanTheme.space4 * 2
-    implicitHeight: 38
-    radius: TitanTheme.radiusMd
-    opacity: enabled ? 1.0 : 0.45
+    implicitHeight: 36
+    radius: TitanTheme.radiusControl
+    opacity: enabled ? 1.0 : 0.42
+    activeFocusOnTab: true
 
     color: {
-        if (_primary)   return hover.hovered ? Qt.lighter(TitanTheme.accent, 1.12) : TitanTheme.accent
-        if (_danger)    return hover.hovered ? Qt.lighter(TitanTheme.danger, 1.12) : TitanTheme.danger
-        if (_secondary) return hover.hovered ? TitanTheme.surface1 : TitanTheme.surface0
-        return hover.hovered ? TitanTheme.bg4 : "transparent"
+        if (_primary)   return tap.pressed ? Qt.darker(TitanTheme.accent, 1.10)
+                            : hover.hovered ? Qt.lighter(TitanTheme.accent, 1.08)
+                            : TitanTheme.accent
+        if (_danger)    return tap.pressed ? Qt.darker(TitanTheme.danger, 1.10)
+                            : hover.hovered ? Qt.lighter(TitanTheme.danger, 1.08)
+                            : TitanTheme.danger
+        if (_secondary) return tap.pressed ? TitanTheme.surface1
+                            : hover.hovered ? TitanTheme.surface0
+                            : TitanTheme.bgInset
+        return tap.pressed ? TitanTheme.statePressed : hover.hovered ? TitanTheme.stateHover : "transparent"
     }
     border.width: _ghost ? 1 : 0
     border.color: hover.hovered ? TitanTheme.borderHover : TitanTheme.border
@@ -35,6 +42,23 @@ Rectangle {
 
     scale: tap.pressed ? TitanTheme.pressScale : 1.0
     Behavior on scale { NumberAnimation { duration: TitanTheme.durFast; easing.type: TitanTheme.easingStandard } }
+
+    // Focus ring is drawn outside the button so it never collapses the layout.
+    Rectangle {
+        anchors.fill: parent
+        anchors.margins: -TitanTheme.focusRingOffset
+        radius: root.radius + TitanTheme.focusRingOffset
+        color: "transparent"
+        border.width: TitanTheme.focusRingWidth
+        border.color: TitanTheme.focusRing
+        visible: root.activeFocus
+    }
+
+    Keys.onReturnPressed: root.clicked()
+    Keys.onEnterPressed: root.clicked()
+    Keys.onSpacePressed: root.clicked()
+    Accessible.role: Accessible.Button
+    Accessible.name: root.text
 
     Row {
         id: row
@@ -61,5 +85,12 @@ Rectangle {
     }
 
     HoverHandler { id: hover; cursorShape: Qt.PointingHandCursor }
-    TapHandler { id: tap; enabled: root.enabled; onTapped: root.clicked() }
+    TapHandler {
+        id: tap
+        enabled: root.enabled
+        onTapped: {
+            root.forceActiveFocus()
+            root.clicked()
+        }
+    }
 }

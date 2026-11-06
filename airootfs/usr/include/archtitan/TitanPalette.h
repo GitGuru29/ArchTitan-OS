@@ -217,29 +217,43 @@ inline QColor accentEdge()   { const QColor a = accent(); return QColor(a.red(),
 inline QColor borderStrong()  { return accentEdge(); }
 inline QColor textOnAccent()  { return accentFg(); }
 
+// ── Interaction states ─────────────────────────────────────────────────────
+inline QColor stateHover()    { return isDark() ? QColor(0xFF, 0xFF, 0xFF, 20) : QColor(0x00, 0x00, 0x00, 10); }
+inline QColor statePressed()  { return isDark() ? QColor(0xFF, 0xFF, 0xFF, 31) : QColor(0x00, 0x00, 0x00, 20); }
+inline QColor stateSelected() { return accentSoft(); }
+inline QColor focusRing()     { return accent(); }
+inline int focusRingWidth()   { return 2; }
+inline int focusRingOffset()  { return 2; }
+inline QColor scrim()         { return QColor(0x00, 0x00, 0x00, 140); }
+
 // ── Typography ─────────────────────────────────────────────────────────────
 inline QString fontFamily() { return QStringLiteral("Inter"); }
 inline QString monoFamily() { return QStringLiteral("JetBrainsMono Nerd Font"); }
-inline int sizeDisplay() { return 22; }
-inline int sizeTitle()   { return 15; }
-inline int sizeBody()    { return 13; }
-inline int sizeLabel()   { return 11; }
-inline int sizeCaption() { return 9; }
+inline int sizeDisplay()   { return 32; }
+inline int sizeHeadline()  { return 24; }
+inline int sizeTitle()     { return 18; }
+inline int sizeSubtitle()  { return 16; }
+inline int sizeBody()      { return 14; }
+inline int sizeLabel()     { return 12; }
+inline int sizeCaption()   { return 11; }
+inline double lineHeightTight() { return 1.2; }
+inline double lineHeightBody()  { return 1.45; }
 inline int weightRegular()  { return 400; }
 inline int weightMedium()   { return 500; }
 inline int weightSemiBold() { return 600; }
 inline int weightBold()     { return 700; }
 
-// ── Radii (One UI 9.0 squircles) ───────────────────────────────────────────
-inline int radiusSm()      { return 8; }
-inline int radiusMd()      { return 12; }
-inline int radiusLg()      { return 16; }
-inline int radiusXl()      { return 20; }
-inline int radiusBento()   { return 24; }
-inline int radiusWindow()  { return 28; }
-inline int radiusCard()    { return 20; }
-inline int radiusControl() { return 16; }
+// ── Radii (desktop-first, not phone squircles) ─────────────────────────────
+inline int radiusSm()      { return 6; }
+inline int radiusMd()      { return 8; }
+inline int radiusLg()      { return 12; }
+inline int radiusXl()      { return 14; }
+inline int radiusBento()   { return 16; }
+inline int radiusWindow()  { return 18; }
+inline int radiusCard()    { return 12; }
+inline int radiusControl() { return 8; }
 inline int radiusSlider()  { return 26; }
+inline int radiusRound()   { return 999; }
 inline int radiusPill()    { return 999; }
 
 // ── Spacing (4-point grid) ─────────────────────────────────────────────────
@@ -251,16 +265,16 @@ inline int space6() { return 24; }
 inline int space8() { return 32; }
 
 // ── Motion ─────────────────────────────────────────────────────────────────
-inline int durFast()    { return 120; }
-inline int durBase()    { return 200; }
-inline int durSlow()    { return 320; }
+inline int durFast()    { return 90; }
+inline int durBase()    { return 160; }
+inline int durSlow()    { return 240; }
 inline int durShimmer() { return 1400; }
 // QML `Easing.*` shares QEasingCurve::Type's values.
 inline int easingStandard() { return QEasingCurve::OutCubic; }
 inline int easingEnter()    { return QEasingCurve::OutCubic; }
 inline int easingExit()     { return QEasingCurve::InCubic; }
 inline int easingEmphasis() { return QEasingCurve::OutQuart; }
-inline double pressScale() { return 0.97; }
+inline double pressScale() { return 0.98; }
 inline double glassOpacity() { return detail::snap().glassOpacity; }
 inline double glassFactor()  { return detail::snap().glassOpacity / 0.35; }
 
@@ -303,6 +317,11 @@ inline QColor token(const QString &name)
         {QStringLiteral("borderSubtle"), borderSubtle()},
         {QStringLiteral("borderHover"), borderHover()},
         {QStringLiteral("borderStrong"), borderStrong()},
+        {QStringLiteral("stateHover"), stateHover()},
+        {QStringLiteral("statePressed"), statePressed()},
+        {QStringLiteral("stateSelected"), stateSelected()},
+        {QStringLiteral("focusRing"), focusRing()},
+        {QStringLiteral("scrim"), scrim()},
         {QStringLiteral("textHigh"), textHigh()},
         {QStringLiteral("textMid"), textMid()},
         {QStringLiteral("textLow"), textLow()},
