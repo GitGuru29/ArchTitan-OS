@@ -3,8 +3,8 @@ import ArchTitan.TitanUI
 
 Item {
     id: tileRoot
-    width: 174
-    height: 130
+    width: 104
+    height: 92
 
     property bool isSelected: false
     property var modelItem: null
@@ -12,211 +12,107 @@ Item {
     signal activated()
     signal hovered()
 
-    scale: tileMouse.pressed ? 0.96 : ((isSelected || tileMouse.containsMouse) ? 1.03 : 1.0)
-    transform: Translate {
-        y: (tileRoot.isSelected || tileMouse.containsMouse) ? -2 : 0
-        Behavior on y {
-            NumberAnimation { duration: 130; easing.type: Easing.OutCubic }
-        }
-    }
+    scale: tileMouse.pressed ? 0.94 : ((isSelected || tileMouse.containsMouse) ? 1.08 : 1.0)
     Behavior on scale {
-        NumberAnimation { duration: 140; easing.type: Easing.OutBack }
+        NumberAnimation { duration: 130; easing.type: Easing.OutCubic }
     }
 
-    // Outer luminous ambient glow halo when selected/hovered
-    Rectangle {
-        anchors.fill: tileBody
-        anchors.margins: -3
-        radius: tileBody.radius + 3
-        z: -1
-        color: TitanTheme.alphaColor(TitanTheme.accent, 0.28)
-        visible: tileRoot.isSelected || tileMouse.containsMouse
-        opacity: tileRoot.isSelected ? 1.0 : (tileMouse.containsMouse ? 0.55 : 0.0)
-        Behavior on opacity { NumberAnimation { duration: TitanTheme.durFast } }
-    }
+    Column {
+        anchors.centerIn: parent
+        spacing: 6
+        width: parent.width
 
-    Rectangle {
-        id: tileBody
-        anchors.fill: parent
-        radius: 19
-
-        gradient: Gradient {
-            GradientStop {
-                position: 0.0
-                color: tileRoot.isSelected
-                       ? TitanTheme.accentSoft
-                       : (tileMouse.containsMouse
-                          ? TitanTheme.stateHover
-                          : TitanTheme.alphaColor(TitanTheme.surface0, 0.60))
-            }
-            GradientStop {
-                position: 1.0
-                color: tileRoot.isSelected
-                       ? TitanTheme.alphaColor(TitanTheme.accent, 0.16)
-                       : (tileMouse.containsMouse
-                          ? TitanTheme.alphaColor(TitanTheme.surface0, 0.40)
-                          : TitanTheme.alphaColor(TitanTheme.surface0, 0.25))
-            }
-        }
-
-        border.width: tileRoot.isSelected ? 1.5 : 1
-        border.color: tileRoot.isSelected
-                      ? TitanTheme.accent
-                      : (tileMouse.containsMouse
-                         ? TitanTheme.borderHover
-                         : TitanTheme.borderSubtle)
-
-        Behavior on border.color { ColorAnimation { duration: TitanTheme.durFast } }
-
-        // Curved top specular sheen (authentic 3D glass gloss)
-        Rectangle {
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.right: parent.right
-            height: 44
-            radius: tileBody.radius
-            z: 0
-            gradient: Gradient {
-                GradientStop {
-                    position: 0.0
-                    color: tileRoot.isSelected
-                           ? Qt.rgba(1, 1, 1, 0.28)
-                           : (tileMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.20) : Qt.rgba(1, 1, 1, 0.12))
-                }
-                GradientStop { position: 1.0; color: "transparent" }
-            }
-        }
-
-        // Top Specular Horizon Glint (3D beveled edge light)
-        Rectangle {
-            anchors.top: parent.top
-            anchors.topMargin: 1
+        // Squircle Icon Container
+        Item {
+            id: iconBox
+            width: 52
+            height: 52
             anchors.horizontalCenter: parent.horizontalCenter
-            width: parent.width - 24
-            height: 1
-            radius: 1
-            z: 1
-            gradient: Gradient {
-                orientation: Gradient.Horizontal
-                GradientStop { position: 0.0; color: "transparent" }
-                GradientStop { position: 0.5; color: tileRoot.isSelected ? Qt.rgba(1, 1, 1, 0.60) : Qt.rgba(1, 1, 1, 0.28) }
-                GradientStop { position: 1.0; color: "transparent" }
-            }
-        }
 
-        // Top-right category badge pill
-        Rectangle {
-            anchors.top: parent.top
-            anchors.right: parent.right
-            anchors.topMargin: 8
-            anchors.rightMargin: 8
-            height: 16
-            width: badgeLabel.implicitWidth + 10
-            radius: 5
-            visible: modelItem && modelItem.badge !== undefined && modelItem.badge !== ""
-            color: tileRoot.isSelected
-                   ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.32)
-                   : Qt.rgba(1, 1, 1, 0.10)
-            border.width: 1
-            border.color: tileRoot.isSelected
-                          ? TitanTheme.accent
-                          : Qt.rgba(1, 1, 1, 0.14)
-
-            Text {
-                id: badgeLabel
-                anchors.centerIn: parent
-                text: modelItem && modelItem.badge ? modelItem.badge : ""
-                font.family: TitanTheme.fontFamily
-                font.pixelSize: 8
-                font.bold: true
-                color: tileRoot.isSelected ? TitanTheme.accent : TitanTheme.textLow
-            }
-        }
-
-        Column {
-            anchors.centerIn: parent
-            width: parent.width - 18
-            spacing: 7
-
-            // Frosted 3D Icon Pedestal
+            // Outer Soft Ambient Aura when selected or hovered
             Rectangle {
-                id: iconPedestal
-                width: 52
-                height: 52
-                radius: 16
-                anchors.horizontalCenter: parent.horizontalCenter
-                color: tileRoot.isSelected
-                       ? Qt.rgba(1, 1, 1, 0.20)
-                       : (tileMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(1, 1, 1, 0.09))
-                border.width: 1
-                border.color: tileRoot.isSelected
-                              ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.60)
-                              : Qt.rgba(1, 1, 1, 0.16)
+                anchors.centerIn: parent
+                width: parent.width + 12
+                height: parent.height + 12
+                radius: 18
+                color: TitanTheme.alphaColor(TitanTheme.accent, 0.40)
+                visible: tileRoot.isSelected || tileMouse.containsMouse
+                opacity: tileRoot.isSelected ? 1.0 : 0.6
+                z: -1
 
-                // Top specular sheen inside icon squircle
+                Behavior on opacity {
+                    NumberAnimation { duration: TitanTheme.durFast }
+                }
+            }
+
+            // Squircle Surface (clips icon to smooth rounded squircle)
+            Rectangle {
+                id: squircleBg
+                anchors.fill: parent
+                radius: 14
+                clip: true
+                color: Qt.rgba(1, 1, 1, 0.08)
+                border.width: tileRoot.isSelected ? 1.5 : 1
+                border.color: tileRoot.isSelected
+                              ? TitanTheme.accent
+                              : (tileMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.24) : Qt.rgba(1, 1, 1, 0.12))
+
+                // App Icon Image
+                Image {
+                    id: appIcon
+                    anchors.fill: parent
+                    anchors.margins: 1
+                    source: modelItem && modelItem.icon ? "image://icon/" + modelItem.icon : ""
+                    fillMode: Image.PreserveAspectFit
+                    smooth: true
+                    asynchronous: true
+                    mipmap: true
+
+                    // Fallback Glyph if image isn't available
+                    Text {
+                        anchors.centerIn: parent
+                        visible: appIcon.status !== Image.Ready
+                        text: {
+                            if (!modelItem) return "󰀻";
+                            if (modelItem.type === "clipboard") return "󰅍";
+                            if (modelItem.type === "command") return "󰞷";
+                            if (modelItem.type === "system") return "󰒓";
+                            return "󰀻";
+                        }
+                        font.family: TitanTheme.monoFamily
+                        font.pixelSize: 24
+                        color: tileRoot.isSelected ? TitanTheme.accent : TitanTheme.textHigh
+                    }
+                }
+
+                // Top Specular Sheen (3D Glass Glint)
                 Rectangle {
                     anchors.top: parent.top
                     anchors.left: parent.left
                     anchors.right: parent.right
                     height: 18
                     radius: parent.radius
+                    z: 1
                     gradient: Gradient {
-                        GradientStop { position: 0.0; color: Qt.rgba(1, 1, 1, 0.18) }
+                        GradientStop { position: 0.0; color: Qt.rgba(1, 1, 1, 0.22) }
                         GradientStop { position: 1.0; color: "transparent" }
                     }
                 }
-
-                Image {
-                    id: appIcon
-                    anchors.centerIn: parent
-                    width: 34
-                    height: 34
-                    source: modelItem && modelItem.icon ? "image://icon/" + modelItem.icon : ""
-                    fillMode: Image.PreserveAspectFit
-                    smooth: true
-                    asynchronous: true
-                    scale: (tileRoot.isSelected || tileMouse.containsMouse) ? 1.08 : 1.0
-                    Behavior on scale { NumberAnimation { duration: 120 } }
-
-                    Text {
-                        anchors.centerIn: parent
-                        visible: appIcon.status !== Image.Ready
-                        text: modelItem && modelItem.type === "clipboard" ? "󰅍" : (modelItem && modelItem.type === "command" ? "󰞷" : (modelItem && modelItem.type === "system" ? "󰒓" : "󰘳"))
-                        font.family: TitanTheme.monoFamily
-                        font.pixelSize: 22
-                        color: TitanTheme.accent
-                    }
-                }
             }
+        }
 
-            // App Name & Subtitle
-            Column {
-                width: parent.width
-                spacing: 1
-
-                Text {
-                    width: parent.width
-                    horizontalAlignment: Text.AlignHCenter
-                    text: modelItem ? modelItem.title : ""
-                    font.family: TitanTheme.fontFamily
-                    font.pixelSize: 13
-                    font.weight: tileRoot.isSelected ? Font.Bold : Font.DemiBold
-                    color: tileRoot.isSelected
-                           ? (TitanTheme.isDark ? Qt.rgba(1, 1, 1, 1.0) : TitanTheme.textHigh)
-                           : TitanTheme.textHigh
-                    elide: Text.ElideRight
-                }
-
-                Text {
-                    width: parent.width
-                    horizontalAlignment: Text.AlignHCenter
-                    text: modelItem ? modelItem.subtitle : ""
-                    font.family: TitanTheme.fontFamily
-                    font.pixelSize: 10
-                    color: tileRoot.isSelected ? TitanTheme.textMid : TitanTheme.textLow
-                    elide: Text.ElideRight
-                }
-            }
+        // App Name Label Underneath
+        Text {
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: parent.width - 6
+            horizontalAlignment: Text.AlignHCenter
+            text: modelItem ? modelItem.title : ""
+            font.family: TitanTheme.fontFamily
+            font.pixelSize: 11
+            font.weight: tileRoot.isSelected ? Font.DemiBold : Font.Normal
+            color: tileRoot.isSelected ? "#FFFFFF" : TitanTheme.textHigh
+            elide: Text.ElideRight
+            maximumLineCount: 1
         }
     }
 
@@ -229,4 +125,3 @@ Item {
         onClicked: tileRoot.activated()
     }
 }
-

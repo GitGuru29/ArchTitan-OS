@@ -76,51 +76,126 @@ QString SpotlightController::classifyAppGroup(const AppEntry &entry)
     const QString joinedCats = entry.categories.join(QLatin1Char(' ')).toLower();
     const QString nameLower = entry.name.toLower();
     const QString execLower = entry.exec.toLower();
+    const QString commentLower = entry.comment.toLower();
+    const QString combined = joinedCats + QLatin1Char(' ') + nameLower + QLatin1Char(' ') + execLower + QLatin1Char(' ') + commentLower;
 
-    if (joinedCats.contains(QStringLiteral("development")) ||
-        joinedCats.contains(QStringLiteral("ide")) ||
-        nameLower.contains(QStringLiteral("code")) ||
-        nameLower.contains(QStringLiteral("antigravity")) ||
-        nameLower.contains(QStringLiteral("kitty")) ||
-        nameLower.contains(QStringLiteral("terminal")) ||
-        execLower.contains(QStringLiteral("nvim")) ||
-        execLower.contains(QStringLiteral("git"))) {
-        return QStringLiteral("DEV");
+    if (combined.contains(QStringLiteral("chat")) ||
+        combined.contains(QStringLiteral("social")) ||
+        combined.contains(QStringLiteral("whatsapp")) ||
+        combined.contains(QStringLiteral("telegram")) ||
+        combined.contains(QStringLiteral("discord")) ||
+        combined.contains(QStringLiteral("slack")) ||
+        combined.contains(QStringLiteral("signal")) ||
+        combined.contains(QStringLiteral("element")) ||
+        combined.contains(QStringLiteral("thunderbird")) ||
+        combined.contains(QStringLiteral("mail")) ||
+        combined.contains(QStringLiteral("messenger"))) {
+        return QStringLiteral("SOCIAL");
     }
-    if (joinedCats.contains(QStringLiteral("network")) ||
-        joinedCats.contains(QStringLiteral("webbrowser")) ||
-        nameLower.contains(QStringLiteral("browser")) ||
-        nameLower.contains(QStringLiteral("chrome")) ||
-        nameLower.contains(QStringLiteral("firefox")) ||
-        nameLower.contains(QStringLiteral("brave"))) {
-        return QStringLiteral("WEB");
+
+    if (combined.contains(QStringLiteral("office")) ||
+        combined.contains(QStringLiteral("finance")) ||
+        combined.contains(QStringLiteral("spreadsheet")) ||
+        combined.contains(QStringLiteral("calc")) ||
+        combined.contains(QStringLiteral("libreoffice")) ||
+        combined.contains(QStringLiteral("writer")) ||
+        combined.contains(QStringLiteral("impress")) ||
+        combined.contains(QStringLiteral("calendar")) ||
+        combined.contains(QStringLiteral("contact")) ||
+        combined.contains(QStringLiteral("notes")) ||
+        combined.contains(QStringLiteral("obsidian")) ||
+        combined.contains(QStringLiteral("notion")) ||
+        combined.contains(QStringLiteral("todo"))) {
+        return QStringLiteral("PRODUCTIVITY");
     }
-    if (joinedCats.contains(QStringLiteral("audiovideo")) ||
-        joinedCats.contains(QStringLiteral("audio")) ||
-        joinedCats.contains(QStringLiteral("video")) ||
-        joinedCats.contains(QStringLiteral("graphics")) ||
-        nameLower.contains(QStringLiteral("vlc")) ||
-        nameLower.contains(QStringLiteral("mpv")) ||
-        nameLower.contains(QStringLiteral("pavucontrol"))) {
-        return QStringLiteral("MEDIA");
+
+    if (combined.contains(QStringLiteral("audiovideo")) ||
+        combined.contains(QStringLiteral("audio")) ||
+        combined.contains(QStringLiteral("video")) ||
+        combined.contains(QStringLiteral("player")) ||
+        combined.contains(QStringLiteral("music")) ||
+        combined.contains(QStringLiteral("game")) ||
+        combined.contains(QStringLiteral("vlc")) ||
+        combined.contains(QStringLiteral("mpv")) ||
+        combined.contains(QStringLiteral("spotify")) ||
+        combined.contains(QStringLiteral("steam")) ||
+        combined.contains(QStringLiteral("retroarch"))) {
+        return QStringLiteral("ENTERTAINMENT");
     }
-    if (joinedCats.contains(QStringLiteral("system")) ||
-        joinedCats.contains(QStringLiteral("settings")) ||
-        nameLower.contains(QStringLiteral("settings")) ||
-        nameLower.contains(QStringLiteral("btop")) ||
-        nameLower.contains(QStringLiteral("htop")) ||
-        nameLower.contains(QStringLiteral("calamares"))) {
+
+    if (combined.contains(QStringLiteral("education")) ||
+        combined.contains(QStringLiteral("science")) ||
+        combined.contains(QStringLiteral("documentation")) ||
+        combined.contains(QStringLiteral("news")) ||
+        combined.contains(QStringLiteral("webbrowser")) ||
+        combined.contains(QStringLiteral("browser")) ||
+        combined.contains(QStringLiteral("chrome")) ||
+        combined.contains(QStringLiteral("firefox")) ||
+        combined.contains(QStringLiteral("brave")) ||
+        combined.contains(QStringLiteral("edge")) ||
+        combined.contains(QStringLiteral("reader")) ||
+        combined.contains(QStringLiteral("pdf")) ||
+        combined.contains(QStringLiteral("evince")) ||
+        combined.contains(QStringLiteral("zathura")) ||
+        combined.contains(QStringLiteral("book"))) {
+        return QStringLiteral("INFORMATION");
+    }
+
+    if (combined.contains(QStringLiteral("development")) ||
+        combined.contains(QStringLiteral("ide")) ||
+        combined.contains(QStringLiteral("texteditor")) ||
+        combined.contains(QStringLiteral("graphics")) ||
+        combined.contains(QStringLiteral("photography")) ||
+        combined.contains(QStringLiteral("code")) ||
+        combined.contains(QStringLiteral("vscode")) ||
+        combined.contains(QStringLiteral("antigravity")) ||
+        combined.contains(QStringLiteral("studio")) ||
+        combined.contains(QStringLiteral("gimp")) ||
+        combined.contains(QStringLiteral("inkscape")) ||
+        combined.contains(QStringLiteral("blender")) ||
+        combined.contains(QStringLiteral("kdenlive")) ||
+        combined.contains(QStringLiteral("krita")) ||
+        combined.contains(QStringLiteral("figma")) ||
+        combined.contains(QStringLiteral("nvim")) ||
+        combined.contains(QStringLiteral("vim"))) {
+        return QStringLiteral("CREATIVITY");
+    }
+
+    if (combined.contains(QStringLiteral("utility")) ||
+        combined.contains(QStringLiteral("terminal")) ||
+        combined.contains(QStringLiteral("kitty")) ||
+        combined.contains(QStringLiteral("alacritty")) ||
+        combined.contains(QStringLiteral("calculator")) ||
+        combined.contains(QStringLiteral("filemanager")) ||
+        combined.contains(QStringLiteral("files")) ||
+        combined.contains(QStringLiteral("thunar")) ||
+        combined.contains(QStringLiteral("dolphin")) ||
+        combined.contains(QStringLiteral("ranger")) ||
+        combined.contains(QStringLiteral("archive")) ||
+        combined.contains(QStringLiteral("zip")) ||
+        combined.contains(QStringLiteral("screenshot")) ||
+        combined.contains(QStringLiteral("snip"))) {
+        return QStringLiteral("UTILITIES");
+    }
+
+    if (combined.contains(QStringLiteral("system")) ||
+        combined.contains(QStringLiteral("settings")) ||
+        combined.contains(QStringLiteral("preferences")) ||
+        combined.contains(QStringLiteral("btop")) ||
+        combined.contains(QStringLiteral("htop")) ||
+        combined.contains(QStringLiteral("monitor")) ||
+        combined.contains(QStringLiteral("control")) ||
+        combined.contains(QStringLiteral("pavucontrol"))) {
         return QStringLiteral("SYSTEM");
     }
-    return QStringLiteral("APPS");
+
+    return QStringLiteral("OTHER");
 }
 
 int SpotlightController::gridColumns() const
 {
     if (m_isClipboardMode) return 1;
-    if (m_viewMode == QStringLiteral("grid")) return 4;
-    if (m_viewMode == QStringLiteral("bento")) return 2;
-    return 1;
+    return 7;
 }
 
 void SpotlightController::setViewMode(const QString &mode)
@@ -161,11 +236,13 @@ void SpotlightController::cycleCategory(int delta)
 {
     static const QStringList cats = {
         QStringLiteral("ALL"),
-        QStringLiteral("APPS"),
-        QStringLiteral("DEV"),
-        QStringLiteral("SYSTEM"),
-        QStringLiteral("WEB"),
-        QStringLiteral("MEDIA")
+        QStringLiteral("UTILITIES"),
+        QStringLiteral("SOCIAL"),
+        QStringLiteral("PRODUCTIVITY"),
+        QStringLiteral("ENTERTAINMENT"),
+        QStringLiteral("INFORMATION"),
+        QStringLiteral("CREATIVITY"),
+        QStringLiteral("OTHER")
     };
     int idx = cats.indexOf(m_activeCategory);
     if (idx < 0) idx = 0;
@@ -340,35 +417,37 @@ void SpotlightController::updateResults()
     }
 
     // 4. Search Applications
-    if (m_activeCategory != QStringLiteral("SYSTEM") || !trimmed.isEmpty()) {
-        QList<SearchResult> appResults = m_indexer.search(trimmed, 80);
-        for (const auto &res : appResults) {
-            const QString group = classifyAppGroup(res.entry);
-            if (m_activeCategory != QStringLiteral("ALL") &&
-                m_activeCategory != QStringLiteral("APPS") &&
-                m_activeCategory != group) {
+    QList<SearchResult> appResults = m_indexer.search(trimmed, 200);
+    for (const auto &res : appResults) {
+        const QString group = classifyAppGroup(res.entry);
+        if (m_activeCategory != QStringLiteral("ALL")) {
+            if (m_activeCategory == QStringLiteral("OTHER")) {
+                if (group != QStringLiteral("OTHER") && group != QStringLiteral("SYSTEM")) {
+                    continue;
+                }
+            } else if (m_activeCategory != group) {
                 continue;
             }
-
-            QVariantMap item;
-            item[QStringLiteral("type")] = QStringLiteral("app");
-            item[QStringLiteral("title")] = res.entry.name;
-            QString sub = res.entry.genericName;
-            if (sub.isEmpty()) sub = res.entry.comment;
-            if (sub.isEmpty() && !res.entry.categories.isEmpty()) sub = res.entry.categories.first();
-            if (sub.isEmpty()) sub = QStringLiteral("Application");
-            item[QStringLiteral("subtitle")] = sub;
-            item[QStringLiteral("icon")] = res.entry.icon;
-            item[QStringLiteral("exec")] = res.entry.exec;
-            item[QStringLiteral("terminal")] = res.entry.terminal;
-            item[QStringLiteral("category")] = group;
-            item[QStringLiteral("badge")] = (group == QStringLiteral("APPS")) ? QStringLiteral("APP") : group;
-            m_results.append(item);
         }
+
+        QVariantMap item;
+        item[QStringLiteral("type")] = QStringLiteral("app");
+        item[QStringLiteral("title")] = res.entry.name;
+        QString sub = res.entry.genericName;
+        if (sub.isEmpty()) sub = res.entry.comment;
+        if (sub.isEmpty() && !res.entry.categories.isEmpty()) sub = res.entry.categories.first();
+        if (sub.isEmpty()) sub = QStringLiteral("Application");
+        item[QStringLiteral("subtitle")] = sub;
+        item[QStringLiteral("icon")] = res.entry.icon;
+        item[QStringLiteral("exec")] = res.entry.exec;
+        item[QStringLiteral("terminal")] = res.entry.terminal;
+        item[QStringLiteral("category")] = group;
+        item[QStringLiteral("badge")] = group;
+        m_results.append(item);
     }
 
     // 5. System Quick Actions
-    if (m_activeCategory == QStringLiteral("ALL") || m_activeCategory == QStringLiteral("SYSTEM")) {
+    if (m_activeCategory == QStringLiteral("ALL") || m_activeCategory == QStringLiteral("OTHER") || m_activeCategory == QStringLiteral("UTILITIES")) {
         if (!trimmed.isEmpty()) {
             for (const auto &sys : m_systemActions) {
                 QString title = sys.value(QStringLiteral("title")).toString();
@@ -377,13 +456,9 @@ void SpotlightController::updateResults()
                     m_results.append(sys);
                 }
             }
-        } else if (m_activeCategory == QStringLiteral("SYSTEM")) {
+        } else if (m_activeCategory == QStringLiteral("OTHER")) {
             for (const auto &sys : m_systemActions) {
                 m_results.append(sys);
-            }
-        } else {
-            for (int i = 0; i < qMin(6, m_systemActions.size()); ++i) {
-                m_results.append(m_systemActions[i]);
             }
         }
     }
