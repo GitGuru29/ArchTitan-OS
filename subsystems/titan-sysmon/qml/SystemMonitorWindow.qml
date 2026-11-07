@@ -104,11 +104,13 @@ Window {
                 gradient: Gradient {
                     GradientStop {
                         position: 0.0
-                        color: TitanTheme.glass
+                        color: TitanTheme.isDark ? TitanTheme.alphaColor(TitanTheme.mantle, 0.97)
+                                                 : TitanTheme.alphaColor(TitanTheme.surface0, 0.97)
                     }
                     GradientStop {
                         position: 1.0
-                        color: TitanTheme.glassCard
+                        color: TitanTheme.isDark ? TitanTheme.alphaColor(TitanTheme.base, 0.95)
+                                                 : TitanTheme.alphaColor(TitanTheme.mantle, 0.95)
                     }
                 }
             }
@@ -273,7 +275,8 @@ Window {
                             Layout.fillWidth: true
                             implicitHeight: 118
                             radius: TitanTheme.radiusCard
-                            color: TitanTheme.glassCard
+                            color: TitanTheme.isDark ? TitanTheme.alphaColor(TitanTheme.surface0, 0.82)
+                                                     : TitanTheme.alphaColor(TitanTheme.base, 0.95)
                             border.width: 1
                             border.color: TitanTheme.borderSubtle
 

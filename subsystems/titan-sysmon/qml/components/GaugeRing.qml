@@ -13,7 +13,7 @@ Item {
 
     property real   value: 0.0                 // 0.0 .. 1.0
     property color  ringColor: TitanTheme.accent
-    property color  trackColor: TitanTheme.bgInset
+    property color  trackColor: TitanTheme.alphaColor(root.ringColor, 0.20)
     property int    thickness: 7
     property string display: ""
     property string caption: ""
@@ -21,6 +21,26 @@ Item {
 
     implicitWidth: 96
     implicitHeight: 96
+
+    // ── Instrument backing disc with tinted ambient core ─────────────────
+    Rectangle {
+        id: backingDisc
+        anchors.centerIn: parent
+        width: parent.width - 2
+        height: width
+        radius: width / 2
+        color: TitanTheme.alphaColor(TitanTheme.crust, 0.78)
+        border.width: 1
+        border.color: TitanTheme.alphaColor(root.ringColor, 0.22)
+
+        Rectangle {
+            anchors.centerIn: parent
+            width: parent.width * 0.72
+            height: width
+            radius: width / 2
+            color: TitanTheme.alphaColor(root.ringColor, 0.09)
+        }
+    }
 
     TitanArcItem {
         anchors.fill: parent
@@ -30,6 +50,7 @@ Item {
         startAngle: -90.0
         sweepAngle: 360.0 * Math.min(1.0, Math.max(0.0, root.value))
         showTrack: true
+        roundCaps: true
 
         Behavior on sweepAngle {
             NumberAnimation {
