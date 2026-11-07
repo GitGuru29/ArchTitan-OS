@@ -1,19 +1,19 @@
 import QtQuick
+import ArchTitan.TitanUI
 
 /**
  * Sparkline — filled trend line for a sequence of normalised (0..1) samples.
  *
- * `points` is replaced wholesale by SysmonController once per second, so the
- * change handler re-paints without any diffing. A soft gradient fills beneath
- * the stroke for a subtle "flow" effect against the glass.
+ * `points` is replaced wholesale by SysmonController once per second.
+ * A soft gradient fills beneath the stroke using TDL semantic tokens.
  */
 Canvas {
     id: root
 
     property var   points: []
-    property color lineColor: "#89B4FA"
-    property color fillTop: Qt.rgba(lineColor.r, lineColor.g, lineColor.b, 0.28)
-    property color fillBottom: Qt.rgba(lineColor.r, lineColor.g, lineColor.b, 0.0)
+    property color lineColor: TitanTheme.accent
+    property color fillTop: TitanTheme.accentSoft
+    property color fillBottom: "transparent"
     property real  strokeWidth: 1.6
     property real  minValue: 0.0
     property real  maxValue: 1.0
@@ -44,7 +44,8 @@ Canvas {
         var padX = 1;
         var step = (root.width - padX * 2) / (n - 1);
 
-        // Stroke path
+        // Fill underneath
+        ctx.save();
         ctx.beginPath();
         for (var i = 0; i < n; ++i) {
             var x = padX + i * step;
@@ -52,10 +53,6 @@ Canvas {
             if (i === 0) ctx.moveTo(x, y);
             else         ctx.lineTo(x, y);
         }
-        var strokePath = ctx;
-
-        // Fill underneath
-        ctx.save();
         ctx.lineTo(root.width - padX, root.height);
         ctx.lineTo(padX, root.height);
         ctx.closePath();
