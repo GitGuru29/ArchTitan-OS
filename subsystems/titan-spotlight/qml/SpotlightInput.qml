@@ -1,14 +1,53 @@
 import QtQuick
+import QtQuick.Effects
 import ArchTitan.TitanUI
 
 /**
- * SpotlightInput — Apple Spotlight-style search header.
- * Minimalist, crystal-clear, focused input with native typography and zero clutter.
+ * SpotlightInput — Floating Island Search Capsule.
+ * Apple macOS App Library style capsule with Applications icon, centered input, and options menu.
  */
-Item {
+Rectangle {
     id: inputRoot
-    width: parent.width
-    height: 56
+    width: 380
+    height: 44
+    radius: 22
+
+    color: TitanTheme.isDark ? TitanTheme.alphaColor(TitanTheme.mantle, 0.96)
+                             : TitanTheme.alphaColor(TitanTheme.surface0, 0.96)
+    border.width: 1
+    border.color: textInput.activeFocus
+                  ? TitanTheme.accent
+                  : TitanTheme.alphaColor(TitanTheme.border, 0.55)
+
+    Behavior on border.color {
+        ColorAnimation { duration: TitanTheme.durFast }
+    }
+
+    // Top Specular Sheen (Horizon Glint)
+    Rectangle {
+        anchors.top: parent.top
+        anchors.topMargin: 1
+        anchors.horizontalCenter: parent.horizontalCenter
+        width: parent.width - 36
+        height: 1
+        radius: 1
+        gradient: Gradient {
+            orientation: Gradient.Horizontal
+            GradientStop { position: 0.0; color: "transparent" }
+            GradientStop { position: 0.5; color: Qt.rgba(1, 1, 1, 0.35) }
+            GradientStop { position: 1.0; color: "transparent" }
+        }
+    }
+
+    // Drop shadow
+    layer.enabled: true
+    layer.effect: MultiEffect {
+        shadowEnabled: true
+        shadowColor: TitanTheme.scrim
+        shadowBlur: 0.8
+        shadowVerticalOffset: 8
+        autoPaddingEnabled: true
+    }
 
     property alias text: textInput.text
     property alias inputItem: textInput
@@ -17,28 +56,31 @@ Item {
     signal returnPressed()
     signal upPressed()
     signal downPressed()
+    signal leftPressed()
+    signal rightPressed()
 
     Row {
         anchors.fill: parent
-        anchors.leftMargin: 20
-        anchors.rightMargin: 18
-        spacing: 14
+        anchors.leftMargin: 16
+        anchors.rightMargin: 16
+        spacing: 10
 
-        // 1. Apple-style Magnifying Glass Icon
+        // 1. Applications Glyph (App Store A style)
         Text {
             anchors.verticalCenter: parent.verticalCenter
-            text: spotlight.isClipboardMode ? "󰅍" : "󰍉"
+            text: "󰀻"
             font.family: TitanTheme.monoFamily
-            font.pixelSize: 21
-            color: textInput.activeFocus ? TitanTheme.accent : TitanTheme.textMid
-
+            font.pixelSize: 18
+            color: textInput.activeFocus ? TitanTheme.accent : "#FFFFFF"
+            opacity: 0.90
             Behavior on color { ColorAnimation { duration: TitanTheme.durFast } }
         }
 
         // 2. Search Text Input
         Item {
+            anchors.verticalCenter: parent.verticalCenter
             height: parent.height
-            width: parent.width - 21 - 14 - (rightControls.visible ? rightControls.width + 12 : 0)
+            width: parent.width - 18 - 10 - rightRow.width - 10
 
             TextInput {
                 id: textInput
@@ -46,9 +88,9 @@ Item {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
                 font.family: TitanTheme.fontFamily
-                font.pixelSize: 19
-                font.weight: TitanTheme.weightRegular
-                color: TitanTheme.textHigh
+                font.pixelSize: 15
+                font.weight: TitanTheme.weightMedium
+                color: "#FFFFFF"
                 selectionColor: TitanTheme.accent
                 selectedTextColor: TitanTheme.textOnAccent
                 clip: true
@@ -56,7 +98,7 @@ Item {
 
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
-                    text: spotlight.isClipboardMode ? "Search clipboard history..." : "Spotlight Search"
+                    text: spotlight.isClipboardMode ? "Search clipboard history..." : "Applications"
                     font.family: textInput.font.family
                     font.pixelSize: textInput.font.pixelSize
                     font.weight: textInput.font.weight
@@ -76,11 +118,21 @@ Item {
                         inputRoot.returnPressed();
                         event.accepted = true;
                     } else if (event.key === Qt.Key_Up) {
-                        inputRoot.upPressed();
+                        spotlight.selectUp();
                         event.accepted = true;
                     } else if (event.key === Qt.Key_Down) {
-                        inputRoot.downPressed();
+                        spotlight.selectDown();
                         event.accepted = true;
+                    } else if (event.key === Qt.Key_Left) {
+                        if (textInput.text.length === 0 || textInput.cursorPosition === 0) {
+                            spotlight.selectPrev();
+                            event.accepted = true;
+                        }
+                    } else if (event.key === Qt.Key_Right) {
+                        if (textInput.text.length === 0 || textInput.cursorPosition === textInput.text.length) {
+                            spotlight.selectNext();
+                            event.accepted = true;
+                        }
                     } else if (event.key === Qt.Key_Tab) {
                         spotlight.selectNext();
                         event.accepted = true;
@@ -92,48 +144,25 @@ Item {
             }
         }
 
-        // 3. Right-side Quick Clear / Mode Pill
+        // 3. Right Controls: Clear button and '···' Options Pill
         Row {
-            id: rightControls
+            id: rightRow
             anchors.verticalCenter: parent.verticalCenter
             spacing: 8
-            visible: textInput.text.length > 0 || spotlight.isClipboardMode
 
-            // Clipboard Mode Tag
+            // Clear Button (✕)
             Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
-                height: 24
-                width: clipText.implicitWidth + 14
-                radius: 6
-                color: TitanTheme.accentSoft
-                border.width: 1
-                border.color: TitanTheme.accentEdge
-                visible: spotlight.isClipboardMode
-
-                Text {
-                    id: clipText
-                    anchors.centerIn: parent
-                    text: "Clipboard"
-                    font.family: TitanTheme.fontFamily
-                    font.pixelSize: 10
-                    font.weight: TitanTheme.weightSemiBold
-                    color: TitanTheme.accent
-                }
-            }
-
-            // Circular Clear Button (✕)
-            Rectangle {
-                anchors.verticalCenter: parent.verticalCenter
-                width: 20
-                height: 20
-                radius: 10
-                color: clearMouse.containsMouse ? TitanTheme.borderHover : TitanTheme.stateHover
+                width: 18
+                height: 18
+                radius: 9
+                color: clearMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.20) : Qt.rgba(1, 1, 1, 0.10)
                 visible: textInput.text.length > 0
 
                 Text {
                     anchors.centerIn: parent
                     text: "✕"
-                    font.pixelSize: 10
+                    font.pixelSize: 9
                     font.bold: true
                     color: TitanTheme.textMid
                 }
@@ -144,11 +173,36 @@ Item {
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
-                        if (spotlight.isClipboardMode) {
-                            spotlight.isClipboardMode = false;
-                        }
                         textInput.text = "";
                         textInput.forceActiveFocus();
+                    }
+                }
+            }
+
+            // More Options Glyph (···)
+            Rectangle {
+                anchors.verticalCenter: parent.verticalCenter
+                width: 26
+                height: 20
+                radius: 10
+                color: moreMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.16) : Qt.rgba(1, 1, 1, 0.06)
+
+                Text {
+                    anchors.centerIn: parent
+                    text: "···"
+                    font.family: TitanTheme.fontFamily
+                    font.pixelSize: 13
+                    font.bold: true
+                    color: TitanTheme.textLow
+                }
+
+                MouseArea {
+                    id: moreMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        spotlight.cycleCategory(1);
                     }
                 }
             }

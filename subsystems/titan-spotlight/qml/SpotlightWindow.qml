@@ -64,13 +64,13 @@ Window {
     // Spotlight Floating Liquid Glass Card
     SpotlightCard {
         id: card
-        width: 700
-        x: (parent.width - width) / 2
-        y: parent.height * 0.16
+        width: 780
+        x: (root.width - width) / 2
+        y: Math.max(30, (root.height - height) / 2 - 20)
 
         opacity: root.spotlightOpen ? 1.0 : 0.0
         scale: root.spotlightOpen ? 1.0 : 0.96
-        transformOrigin: Item.Top
+        transformOrigin: Item.Center
 
         Behavior on opacity {
             NumberAnimation { duration: TitanTheme.durBase; easing.type: TitanTheme.easingStandard }
