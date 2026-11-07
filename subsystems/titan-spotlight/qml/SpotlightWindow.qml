@@ -48,11 +48,11 @@ Window {
     Rectangle {
         id: scrim
         anchors.fill: parent
-        color: Qt.rgba(0, 0, 0, 0.14)
+        color: TitanTheme.scrim
         opacity: root.spotlightOpen ? 1.0 : 0.0
 
         Behavior on opacity {
-            NumberAnimation { duration: 130; easing.type: Easing.OutCubic }
+            NumberAnimation { duration: TitanTheme.durBase; easing.type: TitanTheme.easingStandard }
         }
 
         MouseArea {
@@ -73,10 +73,10 @@ Window {
         transformOrigin: Item.Top
 
         Behavior on opacity {
-            NumberAnimation { duration: 150; easing.type: Easing.OutCubic }
+            NumberAnimation { duration: TitanTheme.durBase; easing.type: TitanTheme.easingStandard }
         }
         Behavior on scale {
-            NumberAnimation { duration: 160; easing.type: Easing.OutBack }
+            NumberAnimation { duration: TitanTheme.durBase; easing.type: TitanTheme.easingStandard }
         }
 
         // Prevent click events from reaching scrim

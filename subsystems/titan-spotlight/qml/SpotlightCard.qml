@@ -11,25 +11,25 @@ Rectangle {
         GradientStop {
             position: 0.0
             color: TitanTheme.isDark
-                   ? Qt.rgba(TitanTheme.surface1.r, TitanTheme.surface1.g, TitanTheme.surface1.b, Math.min(0.95, 0.32 * TitanTheme.glassFactor))
-                   : Qt.rgba(1, 1, 1, Math.min(0.98, 0.88 * TitanTheme.glassFactor))
+                   ? TitanTheme.alphaColor(TitanTheme.mantle, 0.97)
+                   : TitanTheme.alphaColor(TitanTheme.surface0, 0.97)
         }
         GradientStop {
             position: 1.0
             color: TitanTheme.isDark
-                   ? Qt.rgba(TitanTheme.surface0.r, TitanTheme.surface0.g, TitanTheme.surface0.b, Math.min(0.90, 0.18 * TitanTheme.glassFactor))
-                   : Qt.rgba(1, 1, 1, Math.min(0.95, 0.74 * TitanTheme.glassFactor))
+                   ? TitanTheme.alphaColor(TitanTheme.base, 0.95)
+                   : TitanTheme.alphaColor(TitanTheme.mantle, 0.95)
         }
     }
 
-    border.width: 1.5
-    border.color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.45)
+    border.width: 1
+    border.color: TitanTheme.border
 
     // True GPU drop shadow outside perimeter (never paints black inside the glass)
     layer.enabled: true
     layer.effect: MultiEffect {
         shadowEnabled: true
-        shadowColor: Qt.rgba(0, 0, 0, 0.65)
+        shadowColor: TitanTheme.scrim
         shadowBlur: 1.0
         shadowVerticalOffset: 16
         autoPaddingEnabled: true
@@ -43,7 +43,7 @@ Rectangle {
         z: -1
         color: "transparent"
         border.width: 1
-        border.color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.20)
+        border.color: TitanTheme.alphaColor(TitanTheme.accent, 0.22)
     }
 
     // 3D Glass Specular Sheen (Curved top-light wash)
@@ -55,8 +55,8 @@ Rectangle {
         radius: cardRoot.radius
         z: 0
         gradient: Gradient {
-            GradientStop { position: 0.0; color: Qt.rgba(1, 1, 1, 0.12) }
-            GradientStop { position: 0.40; color: Qt.rgba(1, 1, 1, 0.03) }
+            GradientStop { position: 0.0; color: TitanTheme.stateHover }
+            GradientStop { position: 0.40; color: TitanTheme.alphaColor(TitanTheme.surface1, 0.06) }
             GradientStop { position: 1.0; color: "transparent" }
         }
     }
@@ -73,9 +73,9 @@ Rectangle {
         gradient: Gradient {
             orientation: Gradient.Horizontal
             GradientStop { position: 0.0; color: "transparent" }
-            GradientStop { position: 0.2; color: Qt.rgba(1, 1, 1, 0.20) }
-            GradientStop { position: 0.5; color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.55) }
-            GradientStop { position: 0.8; color: Qt.rgba(1, 1, 1, 0.20) }
+            GradientStop { position: 0.2; color: TitanTheme.stateHover }
+            GradientStop { position: 0.5; color: TitanTheme.accentEdge }
+            GradientStop { position: 0.8; color: TitanTheme.stateHover }
             GradientStop { position: 1.0; color: "transparent" }
         }
     }
@@ -84,7 +84,7 @@ Rectangle {
     height: cardColumn.implicitHeight
 
     Behavior on height {
-        NumberAnimation { duration: 140; easing.type: Easing.OutCubic }
+        NumberAnimation { duration: TitanTheme.durBase; easing.type: TitanTheme.easingStandard }
     }
 
     property alias input: searchInput
@@ -138,18 +138,18 @@ Rectangle {
                         width: catRow.implicitWidth + 16
                         radius: 8
                         color: isActive
-                               ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.32)
+                               ? TitanTheme.accentSoft
                                : (catMouse.containsMouse
-                                  ? (TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.16) : Qt.rgba(0, 0, 0, 0.08))
-                                  : (TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.04)))
+                                  ? TitanTheme.stateHover
+                                  : TitanTheme.alphaColor(TitanTheme.surface0, 0.45))
                         border.width: 1
                         border.color: isActive
                                       ? TitanTheme.accent
                                       : (catMouse.containsMouse
-                                         ? Qt.rgba(1, 1, 1, 0.22)
-                                         : Qt.rgba(1, 1, 1, 0.10))
+                                         ? TitanTheme.borderHover
+                                         : TitanTheme.borderSubtle)
 
-                        Behavior on color { ColorAnimation { duration: 100 } }
+                        Behavior on color { ColorAnimation { duration: TitanTheme.durFast } }
 
                         Row {
                             id: catRow
@@ -198,9 +198,9 @@ Rectangle {
                 height: 22
                 width: countText.implicitWidth + 14
                 radius: 7
-                color: TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.04)
+                color: TitanTheme.stateHover
                 border.width: 1
-                border.color: Qt.rgba(1, 1, 1, 0.10)
+                border.color: TitanTheme.borderSubtle
 
                 Text {
                     id: countText
@@ -222,7 +222,7 @@ Rectangle {
             clip: true
 
             Behavior on height {
-                NumberAnimation { duration: 120; easing.type: Easing.OutCubic }
+                NumberAnimation { duration: TitanTheme.durFast; easing.type: TitanTheme.easingStandard }
             }
 
             SpotlightCalcPreview {
@@ -263,7 +263,7 @@ Rectangle {
             }
 
             Behavior on height {
-                NumberAnimation { duration: 130; easing.type: Easing.OutCubic }
+                NumberAnimation { duration: TitanTheme.durFast; easing.type: TitanTheme.easingStandard }
             }
 
             delegate: Item {
@@ -310,7 +310,7 @@ Rectangle {
             }
 
             Behavior on height {
-                NumberAnimation { duration: 130; easing.type: Easing.OutCubic }
+                NumberAnimation { duration: TitanTheme.durFast; easing.type: TitanTheme.easingStandard }
             }
 
             delegate: Item {
@@ -352,7 +352,7 @@ Rectangle {
             }
 
             Behavior on height {
-                NumberAnimation { duration: 130; easing.type: Easing.OutCubic }
+                NumberAnimation { duration: TitanTheme.durFast; easing.type: TitanTheme.easingStandard }
             }
 
             spacing: 3

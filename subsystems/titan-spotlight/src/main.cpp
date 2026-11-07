@@ -9,6 +9,7 @@
 #include <QIcon>
 #include <QPixmap>
 #include <QFile>
+#include <QDir>
 #include <csignal>
 #include <iostream>
 
@@ -162,8 +163,14 @@ int main(int argc, char *argv[])
     }
 
     QQmlApplicationEngine engine;
-    engine.addImportPath(QStringLiteral("/home/msfvenom/custom-os-build/airootfs/usr/lib/qt6/qml"));
     engine.addImportPath(QStringLiteral("/usr/lib/qt6/qml"));
+    engine.addImportPath(QStringLiteral("/usr/local/lib/qt6/qml"));
+    const QString devQml = QDir::currentPath() + QStringLiteral("/titan-ui/build/qml");
+    if (QDir(devQml).exists())
+        engine.addImportPath(devQml);
+    const QString airootQml = QDir::currentPath() + QStringLiteral("/airootfs/usr/lib/qt6/qml");
+    if (QDir(airootQml).exists())
+        engine.addImportPath(airootQml);
     engine.addImageProvider(QStringLiteral("icon"), new AppIconProvider());
     engine.rootContext()->setContextProperty(QStringLiteral("spotlight"), &controller);
 
