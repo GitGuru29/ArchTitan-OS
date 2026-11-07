@@ -19,6 +19,7 @@ signals:
     void toggleRequested();
     void showRequested();
     void hideRequested();
+    void notificationsRequested();
 
 private slots:
     void handleNewConnection();

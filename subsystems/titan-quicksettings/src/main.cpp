@@ -106,6 +106,11 @@ int main(int argc, char *argv[])
                 return 0;
             }
             return 0;
+        } else if (arg == "--notifications" || arg == "-n") {
+            if (IpcServer::sendCommand("NOTIFICATIONS")) {
+                return 0;
+            }
+            break;
         } else if (arg == "--set-margin" && i + 1 < argc) {
             // Quick CLI override: titan-quicksettings --set-margin top=N
             // Writes to config.ini so it persists on next daemon restart.
@@ -273,6 +278,16 @@ int main(int argc, char *argv[])
         });
         QObject::connect(&ipc, &IpcServer::hideRequested, window, [window]() {
             QMetaObject::invokeMethod(window, "closeDrawer");
+        });
+        QObject::connect(&ipc, &IpcServer::notificationsRequested, window, [window]() {
+            bool isShown = window->property("showNotificationPanel").toBool();
+            bool isOpen = window->property("drawerOpen").toBool();
+            if (!isOpen) {
+                window->setProperty("showNotificationPanel", true);
+                QMetaObject::invokeMethod(window, "openDrawer");
+            } else {
+                window->setProperty("showNotificationPanel", !isShown);
+            }
         });
 
         // Dismiss on click-away: a layer-shell surface only receives keyboard
