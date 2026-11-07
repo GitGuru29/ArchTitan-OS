@@ -15,7 +15,8 @@ Rectangle {
 
     default property alias content: body.data
 
-    color: TitanTheme.glassCard
+    color: TitanTheme.isDark ? TitanTheme.alphaColor(TitanTheme.surface0, 0.75)
+                             : TitanTheme.alphaColor(TitanTheme.base, 0.90)
     radius: TitanTheme.radiusCard
     border.width: 1
     border.color: TitanTheme.borderSubtle

@@ -74,8 +74,8 @@ Window {
         anchors.fill: parent
         x: root.panelOpen ? 0 : -width
         opacity: root.panelOpen ? 1.0 : 0.0
-        Behavior on x { NumberAnimation { duration: TitanTheme.durSlow; easing.type: Easing.OutCubic } }
-        Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+        Behavior on x { NumberAnimation { duration: TitanTheme.durSlow; easing.type: TitanTheme.easingStandard } }
+        Behavior on opacity { NumberAnimation { duration: TitanTheme.durBase; easing.type: TitanTheme.easingStandard } }
 
         // ── Frosted glass background ─────────────────────────────────────────
         Rectangle {
@@ -90,7 +90,7 @@ Window {
             layer.enabled: true
             layer.effect: MultiEffect {
                 shadowEnabled: true
-                shadowColor: TitanTheme.isDark ? "#B0000000" : "#1A000000"
+                shadowColor: TitanTheme.scrim
                 shadowBlur: 0.8
                 shadowVerticalOffset: TitanTheme.isDark ? 12 : 6
                 shadowHorizontalOffset: 0
@@ -104,13 +104,13 @@ Window {
                 gradient: Gradient {
                     GradientStop {
                         position: 0.0
-                        color: TitanTheme.isDark ? Qt.rgba(TitanTheme.mantle.r, TitanTheme.mantle.g, TitanTheme.mantle.b, 0.74)
-                                                 : Qt.rgba(1, 1, 1, 0.88)
+                        color: TitanTheme.isDark ? TitanTheme.alphaColor(TitanTheme.mantle, 0.97)
+                                                 : TitanTheme.alphaColor(TitanTheme.surface0, 0.97)
                     }
                     GradientStop {
                         position: 1.0
-                        color: TitanTheme.isDark ? Qt.rgba(TitanTheme.base.r, TitanTheme.base.g, TitanTheme.base.b, 0.56)
-                                                 : Qt.rgba(1, 1, 1, 0.78)
+                        color: TitanTheme.isDark ? TitanTheme.alphaColor(TitanTheme.base, 0.95)
+                                                 : TitanTheme.alphaColor(TitanTheme.mantle, 0.95)
                     }
                 }
             }
@@ -131,7 +131,7 @@ Window {
                 y: 0
                 width: glassCard.width - glassCard.radius * 2
                 height: 1
-                color: TitanTheme.isDark ? "#14FFFFFF" : "#60FFFFFF"
+                color: TitanTheme.stateHover
             }
 
             // Faint accent edge glow along the left rim
@@ -275,7 +275,8 @@ Window {
                             Layout.fillWidth: true
                             implicitHeight: 118
                             radius: TitanTheme.radiusCard
-                            color: TitanTheme.glassCard
+                            color: TitanTheme.isDark ? TitanTheme.alphaColor(TitanTheme.surface0, 0.82)
+                                                     : TitanTheme.alphaColor(TitanTheme.base, 0.95)
                             border.width: 1
                             border.color: TitanTheme.borderSubtle
 
@@ -420,13 +421,9 @@ Window {
                             implicitWidth: presText.implicitWidth + 14
                             implicitHeight: 18
                             radius: 7
-                            color: Qt.rgba(root.pressureColor(sysmon.pressureLevel).r,
-                                           root.pressureColor(sysmon.pressureLevel).g,
-                                           root.pressureColor(sysmon.pressureLevel).b, 0.16)
+                            color: TitanTheme.alphaColor(root.pressureColor(sysmon.pressureLevel), 0.16)
                             border.width: 1
-                            border.color: Qt.rgba(root.pressureColor(sysmon.pressureLevel).r,
-                                                  root.pressureColor(sysmon.pressureLevel).g,
-                                                  root.pressureColor(sysmon.pressureLevel).b, 0.4)
+                            border.color: TitanTheme.alphaColor(root.pressureColor(sysmon.pressureLevel), 0.40)
                             Text {
                                 id: presText
                                 anchors.centerIn: parent

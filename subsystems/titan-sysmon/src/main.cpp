@@ -123,6 +123,12 @@ int main(int argc, char *argv[])
     SysmonController sysmon(&gpuModel);
 
     QQmlApplicationEngine engine;
+    engine.addImportPath(QStringLiteral("/usr/lib/qt6/qml"));
+    engine.addImportPath(QStringLiteral("/usr/local/lib/qt6/qml"));
+    const QString devQml = QDir::currentPath() + QStringLiteral("/titan-ui/build/qml");
+    if (QDir(devQml).exists())
+        engine.addImportPath(devQml);
+
     auto *context = engine.rootContext();
     context->setContextProperty("sysmon",   &sysmon);
     context->setContextProperty("gpuModel", &gpuModel);
