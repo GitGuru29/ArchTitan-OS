@@ -1423,12 +1423,22 @@ Module {
             index: 5
             lineNumber: 23
         }
-        Signal { name: "colorChanged"; lineNumber: 47 }
-        Signal { name: "trackColorChanged"; lineNumber: 48 }
-        Signal { name: "lineWidthChanged"; lineNumber: 49 }
-        Signal { name: "startAngleChanged"; lineNumber: 50 }
-        Signal { name: "sweepAngleChanged"; lineNumber: 51 }
-        Signal { name: "showTrackChanged"; lineNumber: 52 }
+        Property {
+            name: "roundCaps"
+            type: "bool"
+            read: "roundCaps"
+            write: "setRoundCaps"
+            notify: "roundCapsChanged"
+            index: 6
+            lineNumber: 24
+        }
+        Signal { name: "colorChanged"; lineNumber: 51 }
+        Signal { name: "trackColorChanged"; lineNumber: 52 }
+        Signal { name: "lineWidthChanged"; lineNumber: 53 }
+        Signal { name: "startAngleChanged"; lineNumber: 54 }
+        Signal { name: "sweepAngleChanged"; lineNumber: 55 }
+        Signal { name: "showTrackChanged"; lineNumber: 56 }
+        Signal { name: "roundCapsChanged"; lineNumber: 57 }
     }
     Component {
         file: "filtermodel.h"

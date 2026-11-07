@@ -21,6 +21,7 @@ class TitanArcItem : public QQuickItem
     Q_PROPERTY(qreal startAngle READ startAngle WRITE setStartAngle NOTIFY startAngleChanged)
     Q_PROPERTY(qreal sweepAngle READ sweepAngle WRITE setSweepAngle NOTIFY sweepAngleChanged)
     Q_PROPERTY(bool showTrack READ showTrack WRITE setShowTrack NOTIFY showTrackChanged)
+    Q_PROPERTY(bool roundCaps READ roundCaps WRITE setRoundCaps NOTIFY roundCapsChanged)
 
 public:
     explicit TitanArcItem(QQuickItem *parent = nullptr);
@@ -43,6 +44,9 @@ public:
     bool showTrack() const { return m_showTrack; }
     void setShowTrack(bool s);
 
+    bool roundCaps() const { return m_roundCaps; }
+    void setRoundCaps(bool r);
+
 signals:
     void colorChanged();
     void trackColorChanged();
@@ -50,6 +54,7 @@ signals:
     void startAngleChanged();
     void sweepAngleChanged();
     void showTrackChanged();
+    void roundCapsChanged();
 
 protected:
     QSGNode *updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *) override;
@@ -61,5 +66,6 @@ private:
     qreal m_startAngle = -90.0;
     qreal m_sweepAngle = 270.0;
     bool m_showTrack = true;
+    bool m_roundCaps = true;
 };
 
