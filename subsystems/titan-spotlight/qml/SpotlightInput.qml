@@ -29,9 +29,9 @@ Item {
             radius: 12
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
-            color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.22)
+            color: TitanTheme.accentSoft
             border.width: 1
-            border.color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.45)
+            border.color: TitanTheme.accentEdge
 
             Text {
                 anchors.centerIn: parent
@@ -55,9 +55,9 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 height: 28
                 radius: 8
-                color: TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.05)
+                color: TitanTheme.stateHover
                 border.width: 1
-                border.color: Qt.rgba(1, 1, 1, 0.12)
+                border.color: TitanTheme.borderSubtle
                 visible: textInput.text.length > 0 || spotlight.isClipboardMode
                 width: badgeText.implicitWidth + 18
 
@@ -84,85 +84,18 @@ Item {
                 }
             }
 
-            // Segmented Glass View Mode Switcher (Grid | Bento | List)
-            Rectangle {
+            // Segmented View Mode Switcher via native TitanSegmentedControl (Grid | Bento | List)
+            TitanSegmentedControl {
                 id: viewSwitcher
                 anchors.verticalCenter: parent.verticalCenter
                 visible: !spotlight.isClipboardMode
-                height: 34
-                width: switcherRow.implicitWidth + 8
-                radius: 11
-                color: TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.05)
-                border.width: 1
-                border.color: Qt.rgba(1, 1, 1, 0.12)
-
-                Row {
-                    id: switcherRow
-                    anchors.centerIn: parent
-                    spacing: 3
-
-                    Repeater {
-                        model: [
-                            { mode: "grid",  icon: "󰕰", label: "Grid"  },
-                            { mode: "bento", icon: "󰙀", label: "Bento" },
-                            { mode: "list",  icon: "󰉹", label: "List"  }
-                        ]
-
-                        delegate: Rectangle {
-                            id: modePill
-                            required property var modelData
-                            readonly property bool active: spotlight.viewMode === modelData.mode
-
-                            height: 26
-                            width: pillRow.implicitWidth + 16
-                            radius: 8
-                            color: active
-                                   ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.35)
-                                   : (pillMouse.containsMouse
-                                      ? (TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0, 0, 0, 0.06))
-                                      : "transparent")
-                            border.width: active ? 1 : 0
-                            border.color: active ? TitanTheme.accent : "transparent"
-
-                            Behavior on color { ColorAnimation { duration: 110 } }
-
-                            Row {
-                                id: pillRow
-                                anchors.centerIn: parent
-                                spacing: 5
-
-                                Text {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    text: modePill.modelData.icon
-                                    font.family: TitanTheme.monoFamily
-                                    font.pixelSize: 13
-                                    color: modePill.active ? TitanTheme.accent : TitanTheme.textMid
-                                }
-
-                                Text {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    text: modePill.modelData.label
-                                    font.family: TitanTheme.fontFamily
-                                    font.pixelSize: 11
-                                    font.weight: modePill.active ? Font.Bold : Font.Medium
-                                    color: modePill.active
-                                           ? (TitanTheme.isDark ? Qt.rgba(1, 1, 1, 1.0) : TitanTheme.textHigh)
-                                           : TitanTheme.textMid
-                                }
-                            }
-
-                            MouseArea {
-                                id: pillMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: {
-                                    spotlight.viewMode = modePill.modelData.mode;
-                                    textInput.forceActiveFocus();
-                                }
-                            }
-                        }
-                    }
+                model: ["Grid", "Bento", "List"]
+                currentIndex: spotlight.viewMode === "bento" ? 1 : (spotlight.viewMode === "list" ? 2 : 0)
+                onSelected: function(idx, label) {
+                    if (idx === 0) spotlight.viewMode = "grid";
+                    else if (idx === 1) spotlight.viewMode = "bento";
+                    else if (idx === 2) spotlight.viewMode = "list";
+                    textInput.forceActiveFocus();
                 }
             }
         }

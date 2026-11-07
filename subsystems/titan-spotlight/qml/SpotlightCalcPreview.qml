@@ -7,10 +7,10 @@ Rectangle {
     height: 64
     radius: 14
     color: calcCard.isSelected
-           ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.28)
-           : Qt.rgba(1, 1, 1, 0.08)
+           ? TitanTheme.accentSoft
+           : TitanTheme.alphaColor(TitanTheme.surface0, 0.65)
     border.width: calcCard.isSelected ? 1.5 : 1
-    border.color: calcCard.isSelected ? TitanTheme.accent : Qt.rgba(1, 1, 1, 0.12)
+    border.color: calcCard.isSelected ? TitanTheme.accent : TitanTheme.borderSubtle
 
     // Ambient glow halo
     Rectangle {
@@ -18,7 +18,7 @@ Rectangle {
         anchors.margins: -1
         radius: calcCard.radius + 1
         z: -1
-        color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.20)
+        color: TitanTheme.alphaColor(TitanTheme.accent, 0.20)
         visible: calcCard.isSelected
     }
 
@@ -39,9 +39,9 @@ Rectangle {
             radius: 10
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
-            color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.2)
+            color: TitanTheme.accentSoft
             border.width: 1
-            border.color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.4)
+            border.color: TitanTheme.accentEdge
 
             Text {
                 anchors.centerIn: parent

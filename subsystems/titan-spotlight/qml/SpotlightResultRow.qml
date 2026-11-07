@@ -26,27 +26,27 @@ Rectangle {
         anchors.margins: -1
         radius: rowRoot.radius + 1
         z: -1
-        color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.22)
+        color: TitanTheme.alphaColor(TitanTheme.accent, 0.22)
         visible: rowRoot.isSelected || rowHover.containsMouse
         opacity: rowRoot.isSelected ? 1.0 : (rowHover.containsMouse ? 0.40 : 0.0)
-        Behavior on opacity { NumberAnimation { duration: 110 } }
+        Behavior on opacity { NumberAnimation { duration: TitanTheme.durFast } }
     }
 
     gradient: Gradient {
         GradientStop {
             position: 0.0
             color: rowRoot.isSelected
-                   ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.35)
+                   ? TitanTheme.accentSoft
                    : (rowHover.containsMouse
-                      ? Qt.rgba(1, 1, 1, 0.14)
+                      ? TitanTheme.stateHover
                       : "transparent")
         }
         GradientStop {
             position: 1.0
             color: rowRoot.isSelected
-                   ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.14)
+                   ? TitanTheme.alphaColor(TitanTheme.accent, 0.12)
                    : (rowHover.containsMouse
-                      ? Qt.rgba(1, 1, 1, 0.05)
+                      ? TitanTheme.alphaColor(TitanTheme.surface0, 0.20)
                       : "transparent")
         }
     }
@@ -55,7 +55,7 @@ Rectangle {
     border.color: rowRoot.isSelected
                   ? TitanTheme.accent
                   : (rowHover.containsMouse
-                     ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.40)
+                     ? TitanTheme.accentEdge
                      : "transparent")
 
     // Left active glow bar
@@ -84,12 +84,12 @@ Rectangle {
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
             color: rowRoot.isSelected
-                   ? Qt.rgba(1, 1, 1, 0.18)
-                   : (rowHover.containsMouse ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(1, 1, 1, 0.09))
+                   ? TitanTheme.accentSoft
+                   : (rowHover.containsMouse ? TitanTheme.stateHover : TitanTheme.alphaColor(TitanTheme.surface0, 0.60))
             border.width: 1
             border.color: rowRoot.isSelected
-                          ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.55)
-                          : Qt.rgba(1, 1, 1, 0.14)
+                          ? TitanTheme.accentEdge
+                          : TitanTheme.borderSubtle
 
             // Top specular sheen inside icon squircle
             Rectangle {

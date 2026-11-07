@@ -29,10 +29,10 @@ Item {
         anchors.margins: -3
         radius: tileBody.radius + 3
         z: -1
-        color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.28)
+        color: TitanTheme.alphaColor(TitanTheme.accent, 0.28)
         visible: tileRoot.isSelected || tileMouse.containsMouse
         opacity: tileRoot.isSelected ? 1.0 : (tileMouse.containsMouse ? 0.55 : 0.0)
-        Behavior on opacity { NumberAnimation { duration: 120 } }
+        Behavior on opacity { NumberAnimation { duration: TitanTheme.durFast } }
     }
 
     Rectangle {
@@ -44,18 +44,18 @@ Item {
             GradientStop {
                 position: 0.0
                 color: tileRoot.isSelected
-                       ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.40)
+                       ? TitanTheme.accentSoft
                        : (tileMouse.containsMouse
-                          ? Qt.rgba(1, 1, 1, 0.24)
-                          : Qt.rgba(1, 1, 1, 0.12))
+                          ? TitanTheme.stateHover
+                          : TitanTheme.alphaColor(TitanTheme.surface0, 0.60))
             }
             GradientStop {
                 position: 1.0
                 color: tileRoot.isSelected
-                       ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.18)
+                       ? TitanTheme.alphaColor(TitanTheme.accent, 0.16)
                        : (tileMouse.containsMouse
-                          ? Qt.rgba(1, 1, 1, 0.08)
-                          : Qt.rgba(1, 1, 1, 0.04))
+                          ? TitanTheme.alphaColor(TitanTheme.surface0, 0.40)
+                          : TitanTheme.alphaColor(TitanTheme.surface0, 0.25))
             }
         }
 
@@ -63,10 +63,10 @@ Item {
         border.color: tileRoot.isSelected
                       ? TitanTheme.accent
                       : (tileMouse.containsMouse
-                         ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.50)
-                         : Qt.rgba(1, 1, 1, 0.12))
+                         ? TitanTheme.borderHover
+                         : TitanTheme.borderSubtle)
 
-        Behavior on border.color { ColorAnimation { duration: 110 } }
+        Behavior on border.color { ColorAnimation { duration: TitanTheme.durFast } }
 
         // Curved top specular sheen (authentic 3D glass gloss)
         Rectangle {
