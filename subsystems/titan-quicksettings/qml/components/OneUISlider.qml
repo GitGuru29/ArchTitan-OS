@@ -3,22 +3,26 @@ import QtQuick.Layouts
 import "../style"
 
 /**
- * OneUISlider — Samsung One UI 9.0 thick pill slider.
+ * OneUISlider — Apple macOS Control Center Pill Slider.
  *
- * Left: Round icon medallion.
- * Center: Thick pill slider with electric blue/violet gradient fill.
- * Right: Live percentage value.
+ * Full-width thick capsule pill with embedded glyph, smooth drag fill, and live value readout.
  */
-RowLayout {
+ColumnLayout {
     id: sliderRoot
     Layout.fillWidth: true
-    implicitHeight: 36
+    spacing: 5
 
-    /**
-     * Commit a value: clamp, store, and let consumers react exactly once.
-     * Keyboard and pointer paths both funnel through here so the two can
-     * never disagree about the current value.
-     */
+    property string title: ""
+    property string iconGlyph: "\uf028"
+    property int from: 0
+    property int to: 100
+    property int value: 50
+    property bool muted: false
+    property color fillAccent: "#FFFFFF"
+    property string suffix: "%"
+
+    signal changed(int val)
+
     function commit(newValue) {
         var clamped = Math.max(sliderRoot.from, Math.min(sliderRoot.to, newValue));
         if (clamped === sliderRoot.value) return;
@@ -26,64 +30,55 @@ RowLayout {
         sliderRoot.changed(clamped);
     }
 
-    /** Step the slider by `delta` clicks (5% of the range per click). */
     function nudge(delta) {
         var span = sliderRoot.to - sliderRoot.from;
         var step = span > 0 ? Math.max(1, Math.round(span / 20)) : 1;
         sliderRoot.commit(sliderRoot.value + delta * step);
     }
-    Layout.preferredHeight: 36
-    spacing: 12
-
-    property string iconGlyph: "\uf028"
-    property int from: 0
-    property int to: 100
-    property int value: 50
-    property bool muted: false
-    property color fillAccent: TitanTheme.accentBlue
-    property string suffix: "%"
-
-    signal changed(int val)
 
     function setValue(v) {
         sliderRoot.value = Math.max(sliderRoot.from, Math.min(sliderRoot.to, v));
     }
 
-    // ── Leading Round Icon Medallion ─────────────────────────────────────────
-    Rectangle {
-        Layout.preferredWidth: 36
-        Layout.preferredHeight: 36
-        Layout.alignment: Qt.AlignVCenter
-        radius: 18
-        color: TitanTheme.bgOneUIPill
-        border.color: TitanTheme.borderGlass
-        border.width: 1
+    // ── Optional Title Header (e.g. "Display", "Sound") ────────────────────
+    RowLayout {
+        Layout.fillWidth: true
+        visible: sliderRoot.title.length > 0
+        spacing: 4
 
         Text {
-            anchors.centerIn: parent
-            text: sliderRoot.iconGlyph
-            font.family: TitanTheme.monoFamily
-            font.pixelSize: 14
-            color: sliderRoot.muted ? TitanTheme.textSubtle : TitanTheme.textPrimary
+            text: sliderRoot.title
+            font.family: TitanTheme.fontFamily
+            font.pixelSize: 12
+            font.weight: Font.DemiBold
+            color: TitanTheme.textSecondary
+        }
+
+        Item { Layout.fillWidth: true }
+
+        Text {
+            text: sliderRoot.value + sliderRoot.suffix
+            font.family: TitanTheme.fontFamily
+            font.pixelSize: 11
+            font.weight: Font.DemiBold
+            color: TitanTheme.textMuted
         }
     }
 
-    // ── Pill Slider Track ───────────────────────────────────────────────────
+    // ── Apple macOS Capsule Slider Pill ─────────────────────────────────────
     Rectangle {
         id: track
         Layout.fillWidth: true
-        Layout.preferredHeight: 36
-        Layout.alignment: Qt.AlignVCenter
-        radius: 18
-        color: TitanTheme.bgOneUITrack
-        border.color: activeFocus ? TitanTheme.accent : TitanTheme.borderGlass
+        Layout.preferredHeight: 38
+        radius: 19
+        color: TitanTheme.isDark ? Qt.rgba(1, 1, 1, 0.09) : Qt.rgba(0, 0, 0, 0.08)
+        border.color: activeFocus ? TitanTheme.accent : (trackMa.containsMouse ? Qt.rgba(1, 1, 1, 0.22) : Qt.rgba(1, 1, 1, 0.10))
         border.width: activeFocus ? 2 : 1
         clip: true
-        scale: mouseArea.pressed ? 1.015 : 1.0
-        Behavior on scale { NumberAnimation { duration: 110; easing.type: Easing.OutQuad } }
+
         Behavior on border.color { ColorAnimation { duration: 120 } }
 
-        // Keyboard: focusable, stepped with the arrow keys, home/end to extremes.
+        // Keyboard navigation
         activeFocusOnTab: true
         Keys.onLeftPressed:  (event) => { sliderRoot.nudge(-1); event.accepted = true }
         Keys.onDownPressed:  (event) => { sliderRoot.nudge(-1); event.accepted = true }
@@ -99,65 +94,103 @@ RowLayout {
             }
         }
 
-        // Active fill with One UI 9 gradient
+        readonly property real norm: {
+            var range = sliderRoot.to - sliderRoot.from;
+            if (range <= 0) return 0;
+            return Math.max(0.0, Math.min(1.0, (sliderRoot.value - sliderRoot.from) / range));
+        }
+
+        // Filled Progress Capsule
         Rectangle {
-            id: fillRect
+            id: fillBar
             anchors.left: parent.left
             anchors.top: parent.top
             anchors.bottom: parent.bottom
-            width: {
-                if (sliderRoot.muted) return 0;
-                var span = sliderRoot.to - sliderRoot.from;
-                if (span <= 0) return 0;
-                var ratio = Math.max(0.0, Math.min(1.0, (sliderRoot.value - sliderRoot.from) / span));
-                return Math.max(ratio > 0.01 ? parent.height : 0, ratio * parent.width);
-            }
-            radius: parent.radius
-
-            color: sliderRoot.muted ? TitanTheme.textSubtle : sliderRoot.fillAccent
+            width: Math.max(38, parent.width * track.norm)
+            radius: 19
+            color: sliderRoot.muted
+                   ? Qt.rgba(1, 1, 1, 0.25)
+                   : (TitanTheme.isDark ? "#FFFFFF" : TitanTheme.accent)
 
             Behavior on width {
-                enabled: !mouseArea.pressed
+                enabled: !trackMa.pressed
                 NumberAnimation { duration: 90; easing.type: Easing.OutQuad }
+            }
+
+            // Top Specular Sheen (3D Horizon Sheen)
+            Rectangle {
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.right: parent.right
+                height: 14
+                radius: parent.radius
+                gradient: Gradient {
+                    GradientStop { position: 0.0; color: Qt.rgba(1, 1, 1, 0.24) }
+                    GradientStop { position: 1.0; color: "transparent" }
+                }
             }
         }
 
-        // Interactive Drag & Click Area
+        // Left Embedded Icon Glyph
+        Text {
+            anchors.left: parent.left
+            anchors.leftMargin: 12
+            anchors.verticalCenter: parent.verticalCenter
+            text: sliderRoot.iconGlyph
+            font.family: TitanTheme.monoFamily
+            font.pixelSize: 15
+            z: 2
+            color: {
+                if (sliderRoot.muted) return TitanTheme.textMuted;
+                // If fill reaches past the icon, use dark text on white fill
+                if (fillBar.width > 32) {
+                    return TitanTheme.isDark ? "#1E1E2E" : "#FFFFFF";
+                }
+                return TitanTheme.textPrimary;
+            }
+        }
+
+        // Right Percentage Indicator (visible when title row is not displayed)
+        Text {
+            anchors.right: parent.right
+            anchors.rightMargin: 12
+            anchors.verticalCenter: parent.verticalCenter
+            visible: sliderRoot.title.length === 0
+            text: sliderRoot.value + sliderRoot.suffix
+            font.family: TitanTheme.fontFamily
+            font.pixelSize: 11
+            font.weight: Font.DemiBold
+            z: 2
+            color: {
+                if (track.norm > 0.88) {
+                    return TitanTheme.isDark ? "#1E1E2E" : "#FFFFFF";
+                }
+                return TitanTheme.textMuted;
+            }
+        }
+
+        // MouseArea for instant click and smooth scrubbing
         MouseArea {
-            id: mouseArea
+            id: trackMa
             anchors.fill: parent
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
-            preventStealing: true
 
-            function updateValue(mouse) {
-                var ratio = Math.max(0.0, Math.min(1.0, mouse.x / parent.width));
+            function updateFromMouse(mouseX) {
+                var ratio = Math.max(0.0, Math.min(1.0, mouseX / track.width));
                 var newVal = Math.round(sliderRoot.from + ratio * (sliderRoot.to - sliderRoot.from));
-                sliderRoot.value = newVal;
-                sliderRoot.changed(newVal);
+                sliderRoot.commit(newVal);
             }
 
-            onPressed: (mouse) => updateValue(mouse)
+            onPressed: (mouse) => {
+                track.forceActiveFocus();
+                updateFromMouse(mouse.x);
+            }
             onPositionChanged: (mouse) => {
-                if (pressed) updateValue(mouse);
+                if (pressed) {
+                    updateFromMouse(mouse.x);
+                }
             }
         }
     }
-
-    // ── Trailing Percentage Value ───────────────────────────────────────────
-    Text {
-        Layout.preferredWidth: 36
-        Layout.alignment: Qt.AlignVCenter
-        horizontalAlignment: Text.AlignRight
-        text: sliderRoot.muted ? "0%" : (sliderRoot.value + sliderRoot.suffix)
-        font.family: TitanTheme.fontFamily
-        font.pixelSize: 11
-        font.weight: Font.DemiBold
-        color: TitanTheme.textMuted
-    }
-
-    Accessible.role: Accessible.Slider
-    Accessible.name: "One UI pill slider"
-    Accessible.onIncreaseAction: sliderRoot.nudge(1)
-    Accessible.onDecreaseAction: sliderRoot.nudge(-1)
 }

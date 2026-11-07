@@ -3,16 +3,16 @@ import QtQuick.Layouts
 import "../style"
 
 /**
- * OneUINotificationCard — Samsung One UI 9.0 grouped notification card.
+ * OneUINotificationCard — Apple macOS Sequoia style grouped notification card.
  *
- * Squircles with frosted glass depth, app medallion, expandable sub-items,
- * and quick dismiss button.
+ * Glassmorphic squircle card with app icon squircle, time ago, summary, body,
+ * expandable sub-items, and quick dismiss button.
  */
 Rectangle {
     id: cardRoot
     width: parent ? parent.width : 390
-    implicitHeight: mainLayout.implicitHeight + 20
-    radius: TitanTheme.radiusCard
+    implicitHeight: mainLayout.implicitHeight + 16
+    radius: 16
     color: cardMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgOneUICard
     border.color: cardMa.containsMouse ? TitanTheme.borderHover : TitanTheme.borderGlass
     border.width: 1
@@ -81,18 +81,19 @@ Rectangle {
             Layout.fillWidth: true
             spacing: 12
 
-            // App Icon Medallion
+            // App Icon Squircle
             Rectangle {
-                width: 36
-                height: 36
-                radius: 18
+                width: 26
+                height: 26
+                radius: 7
                 color: cardRoot.typeColor
+                clip: true
 
                 Text {
                     anchors.centerIn: parent
                     text: cardRoot.typeGlyph
                     font.family: TitanTheme.fontFamily
-                    font.pixelSize: 15
+                    font.pixelSize: 12
                     color: "#FFFFFF"
                 }
             }
