@@ -64,9 +64,9 @@ Window {
     // Spotlight Floating Liquid Glass Card
     SpotlightCard {
         id: card
-        width: 760
+        width: 700
         x: (parent.width - width) / 2
-        y: parent.height * 0.14
+        y: parent.height * 0.16
 
         opacity: root.spotlightOpen ? 1.0 : 0.0
         scale: root.spotlightOpen ? 1.0 : 0.96

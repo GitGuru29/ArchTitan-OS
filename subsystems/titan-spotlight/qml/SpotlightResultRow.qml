@@ -1,11 +1,15 @@
 import QtQuick
 import ArchTitan.TitanUI
 
+/**
+ * SpotlightResultRow — Apple Spotlight list row item.
+ * Clean, compact, with native icon, primary title, subtitle, and vibrant selection pill.
+ */
 Rectangle {
     id: rowRoot
     width: parent.width
-    height: 54
-    radius: 14
+    height: 44
+    radius: 9
 
     property bool isSelected: false
     property var modelItem: null
@@ -13,200 +17,96 @@ Rectangle {
     signal activated()
     signal hovered()
 
-    scale: rowHover.pressed ? 0.98 : ((isSelected || rowHover.containsMouse) ? 1.01 : 1.0)
-    transform: Translate {
-        y: (rowRoot.isSelected || rowHover.containsMouse) ? -1 : 0
-        Behavior on y { NumberAnimation { duration: 110 } }
-    }
-    Behavior on scale { NumberAnimation { duration: 110 } }
+    color: isSelected
+           ? TitanTheme.accent
+           : (rowHover.containsMouse ? TitanTheme.stateHover : "transparent")
 
-    // Outer luminous ambient glow halo when selected/hovered
-    Rectangle {
+    Behavior on color { ColorAnimation { duration: TitanTheme.durFast } }
+
+    Row {
         anchors.fill: parent
-        anchors.margins: -1
-        radius: rowRoot.radius + 1
-        z: -1
-        color: TitanTheme.alphaColor(TitanTheme.accent, 0.22)
-        visible: rowRoot.isSelected || rowHover.containsMouse
-        opacity: rowRoot.isSelected ? 1.0 : (rowHover.containsMouse ? 0.40 : 0.0)
-        Behavior on opacity { NumberAnimation { duration: TitanTheme.durFast } }
-    }
+        anchors.leftMargin: 10
+        anchors.rightMargin: 12
+        spacing: 10
 
-    gradient: Gradient {
-        GradientStop {
-            position: 0.0
-            color: rowRoot.isSelected
-                   ? TitanTheme.accentSoft
-                   : (rowHover.containsMouse
-                      ? TitanTheme.stateHover
-                      : "transparent")
-        }
-        GradientStop {
-            position: 1.0
-            color: rowRoot.isSelected
-                   ? TitanTheme.alphaColor(TitanTheme.accent, 0.12)
-                   : (rowHover.containsMouse
-                      ? TitanTheme.alphaColor(TitanTheme.surface0, 0.20)
-                      : "transparent")
-        }
-    }
-
-    border.width: rowRoot.isSelected ? 1.5 : (rowHover.containsMouse ? 1 : 0)
-    border.color: rowRoot.isSelected
-                  ? TitanTheme.accent
-                  : (rowHover.containsMouse
-                     ? TitanTheme.accentEdge
-                     : "transparent")
-
-    // Left active glow bar
-    Rectangle {
-        anchors.left: parent.left
-        anchors.leftMargin: 4
-        anchors.verticalCenter: parent.verticalCenter
-        width: 3
-        height: 24
-        radius: 2
-        color: TitanTheme.accent
-        visible: rowRoot.isSelected
-    }
-
-    Item {
-        anchors.fill: parent
-        anchors.leftMargin: 14
-        anchors.rightMargin: 14
-
-        // Icon Tile
+        // App Icon Tile
         Rectangle {
-            id: iconTile
-            width: 38
-            height: 38
-            radius: 11
-            anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
-            color: rowRoot.isSelected
-                   ? TitanTheme.accentSoft
-                   : (rowHover.containsMouse ? TitanTheme.stateHover : TitanTheme.alphaColor(TitanTheme.surface0, 0.60))
+            width: 28
+            height: 28
+            radius: 7
+            color: rowRoot.isSelected ? TitanTheme.alphaColor(TitanTheme.crust, 0.20) : TitanTheme.alphaColor(TitanTheme.surface0, 0.60)
             border.width: 1
-            border.color: rowRoot.isSelected
-                          ? TitanTheme.accentEdge
-                          : TitanTheme.borderSubtle
-
-            // Top specular sheen inside icon squircle
-            Rectangle {
-                anchors.top: parent.top
-                anchors.left: parent.left
-                anchors.right: parent.right
-                height: 12
-                radius: parent.radius
-                gradient: Gradient {
-                    GradientStop { position: 0.0; color: Qt.rgba(1, 1, 1, 0.18) }
-                    GradientStop { position: 1.0; color: "transparent" }
-                }
-            }
+            border.color: rowRoot.isSelected ? TitanTheme.alphaColor(TitanTheme.textOnAccent, 0.25) : TitanTheme.borderSubtle
 
             Image {
-                id: appIcon
                 anchors.centerIn: parent
-                width: 26
-                height: 26
-                source: modelItem && modelItem.icon ? "image://icon/" + modelItem.icon : ""
+                width: 22
+                height: 22
+                source: rowRoot.modelItem && rowRoot.modelItem.icon ? ("image://icon/" + rowRoot.modelItem.icon) : ""
                 fillMode: Image.PreserveAspectFit
                 smooth: true
                 asynchronous: true
+                visible: status === Image.Ready
+            }
 
-                Text {
-                    anchors.centerIn: parent
-                    visible: appIcon.status !== Image.Ready
-                    text: modelItem && modelItem.type === "clipboard" ? "󰅍" : (modelItem && modelItem.type === "command" ? "󰞷" : (modelItem && modelItem.type === "system" ? "󰒓" : "󰘳"))
-                    font.family: TitanTheme.monoFamily
-                    font.pixelSize: 18
-                    color: TitanTheme.accent
-                }
+            Text {
+                anchors.centerIn: parent
+                text: rowRoot.modelItem && rowRoot.modelItem.type === "command" ? "󰞷" :
+                      rowRoot.modelItem && rowRoot.modelItem.type === "clipboard" ? "󰅍" :
+                      rowRoot.modelItem && rowRoot.modelItem.type === "system" ? "󰒓" : "󰀻"
+                font.family: TitanTheme.monoFamily
+                font.pixelSize: 15
+                color: rowRoot.isSelected ? TitanTheme.textOnAccent : TitanTheme.accent
+                visible: !parent.children[0].visible
             }
         }
 
-        // Labels
+        // Title and Subtitle Text Column
         Column {
-            anchors.left: iconTile.right
-            anchors.leftMargin: 12
-            anchors.right: rightPack.left
-            anchors.rightMargin: 12
             anchors.verticalCenter: parent.verticalCenter
-            spacing: 2
+            width: parent.width - 28 - 10 - (badgeRect.visible ? badgeRect.width + 10 : 0)
+            spacing: 1
 
             Text {
-                text: modelItem ? modelItem.title : ""
-                font.family: TitanTheme.fontFamily
-                font.pixelSize: 14
-                font.weight: rowRoot.isSelected ? Font.Bold : Font.DemiBold
-                color: rowRoot.isSelected
-                       ? (TitanTheme.isDark ? Qt.rgba(1, 1, 1, 1.0) : TitanTheme.textHigh)
-                       : TitanTheme.textHigh
-                elide: Text.ElideRight
                 width: parent.width
+                text: rowRoot.modelItem ? (rowRoot.modelItem.title || "") : ""
+                font.family: TitanTheme.fontFamily
+                font.pixelSize: 13
+                font.weight: rowRoot.isSelected ? TitanTheme.weightSemiBold : TitanTheme.weightMedium
+                color: rowRoot.isSelected ? TitanTheme.textOnAccent : TitanTheme.textHigh
+                elide: Text.ElideRight
             }
 
             Text {
-                text: modelItem ? modelItem.subtitle : ""
-                font.family: TitanTheme.fontFamily
-                font.pixelSize: 11
-                color: rowRoot.isSelected ? TitanTheme.textMid : TitanTheme.textLow
-                elide: Text.ElideRight
                 width: parent.width
+                text: rowRoot.modelItem ? (rowRoot.modelItem.subtitle || "") : ""
+                font.family: TitanTheme.fontFamily
+                font.pixelSize: 10
+                color: rowRoot.isSelected ? TitanTheme.alphaColor(TitanTheme.textOnAccent, 0.75) : TitanTheme.textLow
+                elide: Text.ElideRight
+                visible: text.length > 0
             }
         }
 
-        // Right side Category Badge + Action Pill
-        Row {
-            id: rightPack
+        // Right Category Badge
+        Rectangle {
+            id: badgeRect
             anchors.verticalCenter: parent.verticalCenter
-            anchors.right: parent.right
-            spacing: 8
+            height: 18
+            width: badgeText.implicitWidth + 10
+            radius: 5
+            color: rowRoot.isSelected ? TitanTheme.alphaColor(TitanTheme.crust, 0.25) : TitanTheme.stateHover
+            visible: rowRoot.modelItem && rowRoot.modelItem.badge !== undefined
 
-            Rectangle {
-                anchors.verticalCenter: parent.verticalCenter
-                height: 20
-                width: catLabel.implicitWidth + 12
-                radius: 6
-                visible: modelItem && modelItem.badge !== undefined && modelItem.badge !== ""
-                color: rowRoot.isSelected
-                       ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.28)
-                       : Qt.rgba(1, 1, 1, 0.08)
-                border.width: 1
-                border.color: rowRoot.isSelected ? TitanTheme.accent : Qt.rgba(1, 1, 1, 0.12)
-
-                Text {
-                    id: catLabel
-                    anchors.centerIn: parent
-                    text: modelItem && modelItem.badge ? modelItem.badge : ""
-                    font.family: TitanTheme.fontFamily
-                    font.pixelSize: 9
-                    font.bold: true
-                    color: rowRoot.isSelected ? TitanTheme.textHigh : TitanTheme.textLow
-                }
-            }
-
-            Rectangle {
-                id: actionPill
-                anchors.verticalCenter: parent.verticalCenter
-                width: 68
-                height: 24
-                radius: 7
-                color: rowRoot.isSelected
-                       ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.30)
-                       : Qt.rgba(1, 1, 1, 0.10)
-                border.width: 1
-                border.color: rowRoot.isSelected ? TitanTheme.accent : Qt.rgba(1, 1, 1, 0.16)
-                visible: rowRoot.isSelected || rowHover.containsMouse
-
-                Text {
-                    anchors.centerIn: parent
-                    text: modelItem && modelItem.type === "clipboard" ? "⏎ Paste" : (modelItem && modelItem.type === "command" ? "⏎ Run" : "⏎ Open")
-                    font.family: TitanTheme.fontFamily
-                    font.pixelSize: 10
-                    font.bold: true
-                    color: rowRoot.isSelected ? TitanTheme.accent : TitanTheme.textMid
-                }
+            Text {
+                id: badgeText
+                anchors.centerIn: parent
+                text: rowRoot.modelItem ? (rowRoot.modelItem.badge || "") : ""
+                font.family: TitanTheme.fontFamily
+                font.pixelSize: 9
+                font.weight: TitanTheme.weightSemiBold
+                color: rowRoot.isSelected ? TitanTheme.textOnAccent : TitanTheme.textMid
             }
         }
     }
