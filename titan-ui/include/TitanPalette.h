@@ -10,6 +10,7 @@
 #include <QStandardPaths>
 #include <QString>
 
+#include <algorithm>
 #include <cmath>
 
 /**
@@ -177,6 +178,8 @@ inline QColor textLow()  { return detail::raw("textLow"); }
 inline QColor success() { return detail::raw("success"); }
 inline QColor warning() { return detail::raw("warning"); }
 inline QColor danger()  { return detail::raw("danger"); }
+inline QColor dangerHover()   { return danger().lighter(108); }
+inline QColor dangerPressed() { return danger().darker(110); }
 inline QColor teal()    { return detail::raw("teal"); }
 inline QColor peach()   { return detail::raw("peach"); }
 inline QColor mauve()   { return detail::raw("mauve"); }
@@ -198,8 +201,7 @@ inline QColor accentFg()
 {
     // WCAG relative luminance of the accent, then the crossover where Mocha
     // crust ink and pure white are equally legible (L = 0.1925 — derivation in
-    // ThemeBackend::accentFg). The old gamma-space `l > 0.6` rule put white
-    // text on #89B4FA: 2.1:1 where ink gives 8.9:1.
+    // ThemeBackend::accentFg).
     const QColor a = accent();
     const auto lin = [](double v) {
         return v <= 0.04045 ? v / 12.92 : std::pow((v + 0.055) / 1.055, 2.4);
@@ -210,36 +212,52 @@ inline QColor accentFg()
     return l > 0.1925 ? crust() : QColor(0xFF, 0xFF, 0xFF);
 }
 
-inline QColor accentSoft()   { const QColor a = accent(); return QColor(a.red(), a.green(), a.blue(), 46); }  // 0.18
-inline QColor accentSofter() { const QColor a = accent(); return QColor(a.red(), a.green(), a.blue(), 26); }  // 0.10
-inline QColor accentEdge()   { const QColor a = accent(); return QColor(a.red(), a.green(), a.blue(), 140); } // 0.55
+inline QColor accentSoft()    { const QColor a = accent(); return QColor(a.red(), a.green(), a.blue(), 46); }  // 0.18
+inline QColor accentSofter()  { const QColor a = accent(); return QColor(a.red(), a.green(), a.blue(), 26); }  // 0.10
+inline QColor accentEdge()    { const QColor a = accent(); return QColor(a.red(), a.green(), a.blue(), 140); } // 0.55
+inline QColor accentHover()   { return accent().lighter(108); }
+inline QColor accentPressed() { return accent().darker(110); }
 
 inline QColor borderStrong()  { return accentEdge(); }
 inline QColor textOnAccent()  { return accentFg(); }
 
+// ── Interaction states ─────────────────────────────────────────────────────
+inline QColor stateHover()    { return isDark() ? QColor(0xFF, 0xFF, 0xFF, 20) : QColor(0x00, 0x00, 0x00, 10); }
+inline QColor statePressed()  { return isDark() ? QColor(0xFF, 0xFF, 0xFF, 31) : QColor(0x00, 0x00, 0x00, 20); }
+inline QColor stateSelected() { return accentSoft(); }
+inline QColor focusRing()     { return accent(); }
+inline int focusRingWidth()   { return 2; }
+inline int focusRingOffset()  { return 2; }
+inline QColor scrim()         { return QColor(0x00, 0x00, 0x00, 140); }
+
 // ── Typography ─────────────────────────────────────────────────────────────
 inline QString fontFamily() { return QStringLiteral("Inter"); }
 inline QString monoFamily() { return QStringLiteral("JetBrainsMono Nerd Font"); }
-inline int sizeDisplay() { return 22; }
-inline int sizeTitle()   { return 15; }
-inline int sizeBody()    { return 13; }
-inline int sizeLabel()   { return 11; }
-inline int sizeCaption() { return 9; }
+inline int sizeDisplay()   { return 32; }
+inline int sizeHeadline()  { return 24; }
+inline int sizeTitle()     { return 18; }
+inline int sizeSubtitle()  { return 16; }
+inline int sizeBody()      { return 14; }
+inline int sizeLabel()     { return 12; }
+inline int sizeCaption()   { return 11; }
+inline double lineHeightTight() { return 1.2; }
+inline double lineHeightBody()  { return 1.45; }
 inline int weightRegular()  { return 400; }
 inline int weightMedium()   { return 500; }
 inline int weightSemiBold() { return 600; }
 inline int weightBold()     { return 700; }
 
-// ── Radii (One UI 9.0 squircles) ───────────────────────────────────────────
-inline int radiusSm()      { return 8; }
-inline int radiusMd()      { return 12; }
-inline int radiusLg()      { return 16; }
-inline int radiusXl()      { return 20; }
-inline int radiusBento()   { return 24; }
-inline int radiusWindow()  { return 28; }
-inline int radiusCard()    { return 20; }
-inline int radiusControl() { return 16; }
+// ── Radii (desktop-first, not phone squircles) ─────────────────────────────
+inline int radiusSm()      { return 6; }
+inline int radiusMd()      { return 8; }
+inline int radiusLg()      { return 12; }
+inline int radiusXl()      { return 14; }
+inline int radiusBento()   { return 16; }
+inline int radiusWindow()  { return 18; }
+inline int radiusCard()    { return 12; }
+inline int radiusControl() { return 8; }
 inline int radiusSlider()  { return 26; }
+inline int radiusRound()   { return 999; }
 inline int radiusPill()    { return 999; }
 
 // ── Spacing (4-point grid) ─────────────────────────────────────────────────
@@ -251,16 +269,16 @@ inline int space6() { return 24; }
 inline int space8() { return 32; }
 
 // ── Motion ─────────────────────────────────────────────────────────────────
-inline int durFast()    { return 120; }
-inline int durBase()    { return 200; }
-inline int durSlow()    { return 320; }
+inline int durFast()    { return 90; }
+inline int durBase()    { return 160; }
+inline int durSlow()    { return 240; }
 inline int durShimmer() { return 1400; }
 // QML `Easing.*` shares QEasingCurve::Type's values.
 inline int easingStandard() { return QEasingCurve::OutCubic; }
 inline int easingEnter()    { return QEasingCurve::OutCubic; }
 inline int easingExit()     { return QEasingCurve::InCubic; }
 inline int easingEmphasis() { return QEasingCurve::OutQuart; }
-inline double pressScale() { return 0.97; }
+inline double pressScale() { return 0.98; }
 inline double glassOpacity() { return detail::snap().glassOpacity; }
 inline double glassFactor()  { return detail::snap().glassOpacity / 0.35; }
 
@@ -269,11 +287,23 @@ inline QString hex(const QColor &c)  { return c.name(QColor::HexRgb); }
 inline QString hexa(const QColor &c) { return c.name(QColor::HexArgb); }
 inline QColor alpha(const QColor &c, double a) { return QColor(c.red(), c.green(), c.blue(), int(std::lround(a * 255.0))); }
 
+inline double contrastRatio(const QColor &fg, const QColor &bg)
+{
+    const auto lin = [](double v) {
+        return v <= 0.04045 ? v / 12.92 : std::pow((v + 0.055) / 1.055, 2.4);
+    };
+    const double a = fg.alphaF();
+    const double r = fg.redF() * a + bg.redF() * (1.0 - a);
+    const double g = fg.greenF() * a + bg.greenF() * (1.0 - a);
+    const double b = fg.blueF() * a + bg.blueF() * (1.0 - a);
+    const double l1 = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+    const double l2 = 0.2126 * lin(bg.redF()) + 0.7152 * lin(bg.greenF()) + 0.0722 * lin(bg.blueF());
+    const double lighter = std::max(l1, l2);
+    const double darker = std::min(l1, l2);
+    return (lighter + 0.05) / (darker + 0.05);
+}
+
 // ── Stylesheet token substitution ──────────────────────────────────────────
-// Widgets apps can write QSS against `@token` placeholders instead of literal
-// colours; qss() swaps them for the resolved TDL values. `@tokenRGB` expands
-// to "r, g, b" for use inside rgba(). Unknown placeholders are left untouched,
-// so `@media`-style text (or literal @handles) passes through unharmed.
 inline QColor token(const QString &name)
 {
     static const QHash<QString, QColor> map = {
@@ -283,6 +313,8 @@ inline QColor token(const QString &name)
         {QStringLiteral("accentSoft"), accentSoft()},
         {QStringLiteral("accentSofter"), accentSofter()},
         {QStringLiteral("accentEdge"), accentEdge()},
+        {QStringLiteral("accentHover"), accentHover()},
+        {QStringLiteral("accentPressed"), accentPressed()},
         {QStringLiteral("crust"), crust()},
         {QStringLiteral("mantle"), mantle()},
         {QStringLiteral("base"), base()},
@@ -303,6 +335,11 @@ inline QColor token(const QString &name)
         {QStringLiteral("borderSubtle"), borderSubtle()},
         {QStringLiteral("borderHover"), borderHover()},
         {QStringLiteral("borderStrong"), borderStrong()},
+        {QStringLiteral("stateHover"), stateHover()},
+        {QStringLiteral("statePressed"), statePressed()},
+        {QStringLiteral("stateSelected"), stateSelected()},
+        {QStringLiteral("focusRing"), focusRing()},
+        {QStringLiteral("scrim"), scrim()},
         {QStringLiteral("textHigh"), textHigh()},
         {QStringLiteral("textMid"), textMid()},
         {QStringLiteral("textLow"), textLow()},
@@ -310,6 +347,8 @@ inline QColor token(const QString &name)
         {QStringLiteral("success"), success()},
         {QStringLiteral("warning"), warning()},
         {QStringLiteral("danger"), danger()},
+        {QStringLiteral("dangerHover"), dangerHover()},
+        {QStringLiteral("dangerPressed"), dangerPressed()},
         {QStringLiteral("info"), info()},
         {QStringLiteral("teal"), teal()},
         {QStringLiteral("peach"), peach()},

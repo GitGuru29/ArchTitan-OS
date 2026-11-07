@@ -71,98 +71,135 @@ end)
 
 local mainMod = "SUPER"
 
+-- Super-key TAP -> Spotlight, without hijacking Super+<key> chords.
+-- A bare `release = true` bind on SUPER_L fires on every Super release,
+-- including the one that ends Super+Tab / Super+Space / Super+\. Spotlight
+-- then opens with exclusive keyboard focus on top of whatever the chord just
+-- opened, so those shortcuts look dead. Instead: arm on press, disarm in every
+-- Super chord (see superBind), and only open Spotlight if still armed on
+-- release, i.e. Super was tapped on its own.
+local superTapArmed = false
+
+local function superBind(combo, action, opts)
+    hl.bind(combo, function()
+        superTapArmed = false
+        if type(action) == "function" then
+            action()
+        else
+            hl.dispatch(action)
+        end
+    end, opts)
+end
+
+for _, superKey in ipairs({ "SUPER_L", "SUPER_R" }) do
+    hl.bind(superKey, function() superTapArmed = true end,
+        { ignore_mods = true, transparent = true })
+    hl.bind(superKey, function()
+        if superTapArmed then
+            superTapArmed = false
+            hl.dispatch(hl.dsp.exec_cmd("titan-spotlight --toggle"))  -- Windows/Super logo tap opens Spotlight
+        end
+    end, { ignore_mods = true, transparent = true, release = true })
+end
+
 -- Shell & Utilities (ArchTitan Central Command Palette & Spotlight)
-hl.bind("SUPER_L", hl.dsp.exec_cmd("titan-spotlight --toggle"), { release = true })  -- Windows/Super logo tap opens Spotlight
-hl.bind("SUPER_R", hl.dsp.exec_cmd("titan-spotlight --toggle"), { release = true })
-hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd("titan-menu --toggle"))   -- Super+Space: ArchTitan Central Palette
-hl.bind(mainMod .. " + Tab", hl.dsp.exec_cmd("titan-workspace-hud --toggle"))          -- Super+Tab: 10-Workspace HUD Shower
-hl.bind(mainMod .. " + D", hl.dsp.exec_cmd("titan-spotlight --toggle"))       -- Super+D: App Launcher (Spotlight)
-hl.bind(mainMod .. " + R", hl.dsp.exec_cmd("titan-spotlight --toggle"))  -- Super+R: Secondary App runner (Spotlight)
-hl.bind(mainMod .. " + slash", hl.dsp.exec_cmd("titan-menu --toggle"))        -- Help & Shortcuts Cheat Sheet (Super+/)
-hl.bind(mainMod .. " + question", hl.dsp.exec_cmd("titan-menu --toggle"))     -- Super+?
-hl.bind(mainMod .. " + F1", hl.dsp.exec_cmd("titan-menu --toggle"))           -- Help & Shortcuts Cheat Sheet (Super+F1)
-hl.bind(mainMod .. " + V", hl.dsp.exec_cmd("titan-spotlight --clipboard"))  -- Clipboard History Manager
-hl.bind(mainMod .. " + Period", hl.dsp.exec_cmd("titan-spotlight --toggle"))  -- Quick symbols/emoji
-hl.bind(mainMod .. " + backslash", hl.dsp.exec_cmd("titan-wallpaper-picker"))  -- Wallpaper Picker (Super+\)
-hl.bind(mainMod .. " + SHIFT + backslash", hl.dsp.exec_cmd("titan-wallpaper-picker"))  -- Wallpaper Picker (Super+|)
-hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd("titan-screenshot --area"))  -- Screen snip
+-- Bind each chord exactly ONCE. Hyprland resolves key names case-insensitively
+-- and by keycode, so "space"/"Space" and "Tab"/"tab"/"ISO_Left_Tab" all match
+-- the same physical key. Binding more than one variant runs the command twice
+-- and `--toggle` closes the window it just opened.
+superBind(mainMod .. " + Space", hl.dsp.exec_cmd("titan-spotlight --toggle"))  -- Super+Space: Titan Spotlight
+superBind(mainMod .. " + Tab", hl.dsp.exec_cmd("titan-workspace-hud --toggle"))  -- Super+Tab: 10-Workspace HUD Switcher
+superBind(mainMod .. " + D", hl.dsp.exec_cmd("titan-spotlight --toggle"))       -- Super+D: App Launcher (Spotlight)
+superBind(mainMod .. " + R", hl.dsp.exec_cmd("titan-spotlight --toggle"))  -- Super+R: Secondary App runner (Spotlight)
+superBind(mainMod .. " + slash", hl.dsp.exec_cmd("titan-menu --toggle"))        -- Help & Shortcuts Cheat Sheet (Super+/)
+superBind(mainMod .. " + question", hl.dsp.exec_cmd("titan-menu --toggle"))     -- Super+?
+superBind(mainMod .. " + F1", hl.dsp.exec_cmd("titan-menu --toggle"))           -- Help & Shortcuts Cheat Sheet (Super+F1)
+superBind(mainMod .. " + V", hl.dsp.exec_cmd("titan-spotlight --clipboard"))  -- Clipboard History Manager
+superBind(mainMod .. " + Period", hl.dsp.exec_cmd("titan-spotlight --toggle"))  -- Quick symbols/emoji
+superBind(mainMod .. " + backslash", hl.dsp.exec_cmd("titan-wallpaper-picker"))  -- Wallpaper Picker (Super+\)
+superBind(mainMod .. " + bar", hl.dsp.exec_cmd("titan-wallpaper-picker"))
+superBind(mainMod .. " + SHIFT + backslash", hl.dsp.exec_cmd("titan-wallpaper-picker"))  -- Wallpaper Picker (Super+|)
+superBind(mainMod .. " + SHIFT + bar", hl.dsp.exec_cmd("titan-wallpaper-picker"))  -- Shift+\ produces the `bar` keysym on US layouts
+superBind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd("titan-screenshot --area"))  -- Screen snip
 hl.bind("Print", hl.dsp.exec_cmd("titan-screenshot --area"))
-hl.bind(mainMod .. " + Print", hl.dsp.exec_cmd("titan-screenshot --full"))
-hl.bind(mainMod .. " + ALT + Print", hl.dsp.exec_cmd("titan-screenshot --window"))
-hl.bind(mainMod .. " + N", hl.dsp.exec_cmd("titan-quicksettings --toggle"))  -- Quick Settings & Notification Center
+superBind(mainMod .. " + Print", hl.dsp.exec_cmd("titan-screenshot --full"))
+superBind(mainMod .. " + ALT + Print", hl.dsp.exec_cmd("titan-screenshot --window"))
+superBind(mainMod .. " + N", hl.dsp.exec_cmd("titan-quicksettings --toggle"))  -- Quick Settings & Notification Center
 
 -- Session & Power
-hl.bind(mainMod .. " + Escape", hl.dsp.exec_cmd("titan-powermenu"))            -- Super+Escape: Power menu
+superBind(mainMod .. " + Escape", hl.dsp.exec_cmd("titan-powermenu"))            -- Super+Escape: Power menu
 hl.bind("CTRL + ALT + Delete", hl.dsp.exec_cmd("titan-powermenu"))             -- Ctrl+Alt+Del: Power menu fallback
-hl.bind(mainMod .. " + ALT + L", hl.dsp.exec_cmd("pidof hyprlock || hyprlock || swaylock -f -c 0b0e14 || loginctl lock-session"))  -- Lock Screen
+superBind(mainMod .. " + ALT + L", hl.dsp.exec_cmd("pidof hyprlock || hyprlock || swaylock -f -c 0b0e14 || loginctl lock-session"))  -- Lock Screen
 hl.bind("CTRL + ALT + L", hl.dsp.exec_cmd("pidof hyprlock || hyprlock || swaylock -f -c 0b0e14 || loginctl lock-session"))        -- Lock Screen fallback
-hl.bind(mainMod .. " + SHIFT + L", hl.dsp.exec_cmd("systemctl suspend -i || loginctl suspend"))  -- Sleep
+superBind(mainMod .. " + SHIFT + L", hl.dsp.exec_cmd("systemctl suspend -i || loginctl suspend"))  -- Sleep
 hl.bind("XF86Sleep", hl.dsp.exec_cmd(":"))  -- swallow sleep key on live ISO
 
 -- Apps
-hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd(sandboxed .. " " .. terminal))        -- Terminal
-hl.bind(mainMod .. " + KP_Enter", hl.dsp.exec_cmd(sandboxed .. " " .. terminal))      -- Terminal (Keypad Enter)
-hl.bind(mainMod .. " + T", hl.dsp.exec_cmd(sandboxed .. " " .. terminal))             -- Super+T: Terminal
-hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(sandboxed .. " " .. fileManager))          -- File manager
-hl.bind(mainMod .. " + W", hl.dsp.exec_cmd(sandboxed .. " " .. browser))              -- Browser
-hl.bind(mainMod .. " + B", hl.dsp.exec_cmd(sandboxed .. " " .. browser))              -- Super+B: Browser
-hl.bind(mainMod .. " + C", hl.dsp.exec_cmd(sandboxed .. " code"))                     -- Code editor
-hl.bind(mainMod .. " + X", hl.dsp.exec_cmd(sandboxed .. " " .. terminal .. " -e nano"))  -- Text editor
+superBind(mainMod .. " + Return", hl.dsp.exec_cmd(sandboxed .. " " .. terminal))        -- Terminal
+superBind(mainMod .. " + KP_Enter", hl.dsp.exec_cmd(sandboxed .. " " .. terminal))      -- Terminal (Keypad Enter)
+superBind(mainMod .. " + T", hl.dsp.exec_cmd(sandboxed .. " " .. terminal))             -- Super+T: Terminal
+superBind(mainMod .. " + E", hl.dsp.exec_cmd(sandboxed .. " " .. fileManager))          -- File manager
+superBind(mainMod .. " + W", hl.dsp.exec_cmd(sandboxed .. " " .. browser))              -- Browser
+superBind(mainMod .. " + B", hl.dsp.exec_cmd(sandboxed .. " " .. browser))              -- Super+B: Browser
+superBind(mainMod .. " + C", hl.dsp.exec_cmd(sandboxed .. " code"))                     -- Code editor
+superBind(mainMod .. " + X", hl.dsp.exec_cmd(sandboxed .. " " .. terminal .. " -e nano"))  -- Text editor
 hl.bind("CTRL + " .. mainMod .. " + V", hl.dsp.exec_cmd(sandboxed .. " pavucontrol"))  -- Volume mixer
 hl.bind("CTRL + SHIFT + Escape", hl.dsp.exec_cmd(sandboxed .. " " .. terminal .. " -e btop"))  -- Task manager
-hl.bind(mainMod .. " + comma", hl.dsp.exec_cmd(sandboxed .. " archtitan-settings"))     -- Settings panel shortcut
-hl.bind(mainMod .. " + I", hl.dsp.exec_cmd("bash -c 'if [ -d /run/archiso ]; then launch-installer; else titan-exec-hook archtitan-settings; fi'"))  -- Installer on Live ISO / Settings on Installed OS
+superBind(mainMod .. " + comma", hl.dsp.exec_cmd(sandboxed .. " archtitan-settings"))     -- Settings panel shortcut
+superBind(mainMod .. " + I", hl.dsp.exec_cmd("bash -c 'if [ -d /run/archiso ]; then launch-installer; else titan-exec-hook archtitan-settings; fi'"))  -- Installer on Live ISO / Settings on Installed OS
 
 -- Window Management
-hl.bind(mainMod .. " + Q", hl.dsp.window.close())                              -- Close
-hl.bind(mainMod .. " + SHIFT + Q", hl.dsp.window.close())                      -- Close (Super+Shift+Q)
+superBind(mainMod .. " + Q", hl.dsp.window.close())                              -- Close
+superBind(mainMod .. " + SHIFT + Q", hl.dsp.window.close())                      -- Close (Super+Shift+Q)
 hl.bind("ALT + F4", hl.dsp.window.close())                                     -- Close (Alt+F4)
-hl.bind(mainMod .. " + SHIFT + ALT + Q", hl.dsp.exec_cmd("hyprctl kill"))      -- Forcefully zap a window
-hl.bind(mainMod .. " + SHIFT + Space", hl.dsp.window.float({ action = "toggle" }))  -- Super+Shift+Space: Float/Tile
-hl.bind(mainMod .. " + ALT + Space", hl.dsp.window.float({ action = "toggle" }))    -- Super+Alt+Space: Float/Tile
-hl.bind(mainMod .. " + F", hl.dsp.window.fullscreen({ mode = "fullscreen" }))    -- Fullscreen
-hl.bind(mainMod .. " + SHIFT + F", hl.dsp.window.fullscreen({ mode = "maximized" })) -- Maximize (fullscreen with gaps)
-hl.bind(mainMod .. " + P", hl.dsp.layout("togglesplit"))                        -- Super+P: Toggle dwindle split
-hl.bind(mainMod .. " + SHIFT + P", hl.dsp.exec_cmd("titan-cycle-power"))        -- Super+Shift+P: Cycle power profile
+superBind(mainMod .. " + SHIFT + ALT + Q", hl.dsp.exec_cmd("hyprctl kill"))      -- Forcefully zap a window
+superBind(mainMod .. " + SHIFT + space", hl.dsp.window.float({ action = "toggle" }))  -- Super+Shift+Space: Float/Tile
+superBind(mainMod .. " + SHIFT + Space", hl.dsp.window.float({ action = "toggle" }))
+superBind(mainMod .. " + ALT + space", hl.dsp.window.float({ action = "toggle" }))    -- Super+Alt+Space: Float/Tile
+superBind(mainMod .. " + ALT + Space", hl.dsp.window.float({ action = "toggle" }))
+superBind(mainMod .. " + F", hl.dsp.window.fullscreen({ mode = "fullscreen" }))    -- Fullscreen
+superBind(mainMod .. " + SHIFT + F", hl.dsp.window.fullscreen({ mode = "maximized" })) -- Maximize (fullscreen with gaps)
+superBind(mainMod .. " + P", hl.dsp.layout("togglesplit"))                        -- Super+P: Toggle dwindle split
+superBind(mainMod .. " + SHIFT + P", hl.dsp.exec_cmd("titan-cycle-power"))        -- Super+Shift+P: Cycle power profile
 
 -- Move Focus (Arrow keys & Vim H/J/K/L)
-hl.bind(mainMod .. " + left",  hl.dsp.focus({ direction = "left" }))
-hl.bind(mainMod .. " + right", hl.dsp.focus({ direction = "right" }))
-hl.bind(mainMod .. " + up",    hl.dsp.focus({ direction = "up" }))
-hl.bind(mainMod .. " + down",  hl.dsp.focus({ direction = "down" }))
-hl.bind(mainMod .. " + H",     hl.dsp.focus({ direction = "left" }))
-hl.bind(mainMod .. " + L",     hl.dsp.focus({ direction = "right" }))
-hl.bind(mainMod .. " + K",     hl.dsp.focus({ direction = "up" }))
-hl.bind(mainMod .. " + J",     hl.dsp.focus({ direction = "down" }))
+superBind(mainMod .. " + left",  hl.dsp.focus({ direction = "left" }))
+superBind(mainMod .. " + right", hl.dsp.focus({ direction = "right" }))
+superBind(mainMod .. " + up",    hl.dsp.focus({ direction = "up" }))
+superBind(mainMod .. " + down",  hl.dsp.focus({ direction = "down" }))
+superBind(mainMod .. " + H",     hl.dsp.focus({ direction = "left" }))
+superBind(mainMod .. " + L",     hl.dsp.focus({ direction = "right" }))
+superBind(mainMod .. " + K",     hl.dsp.focus({ direction = "up" }))
+superBind(mainMod .. " + J",     hl.dsp.focus({ direction = "down" }))
 
 -- Move Window (Arrow keys & Vim Shift+H/J/K/L)
-hl.bind(mainMod .. " + SHIFT + left",  hl.dsp.window.move({ direction = "left" }))
-hl.bind(mainMod .. " + SHIFT + right", hl.dsp.window.move({ direction = "right" }))
-hl.bind(mainMod .. " + SHIFT + up",    hl.dsp.window.move({ direction = "up" }))
-hl.bind(mainMod .. " + SHIFT + down",  hl.dsp.window.move({ direction = "down" }))
-hl.bind(mainMod .. " + SHIFT + H",     hl.dsp.window.move({ direction = "left" }))
-hl.bind(mainMod .. " + SHIFT + L",     hl.dsp.window.move({ direction = "right" }))
-hl.bind(mainMod .. " + SHIFT + K",     hl.dsp.window.move({ direction = "up" }))
-hl.bind(mainMod .. " + SHIFT + J",     hl.dsp.window.move({ direction = "down" }))
+superBind(mainMod .. " + SHIFT + left",  hl.dsp.window.move({ direction = "left" }))
+superBind(mainMod .. " + SHIFT + right", hl.dsp.window.move({ direction = "right" }))
+superBind(mainMod .. " + SHIFT + up",    hl.dsp.window.move({ direction = "up" }))
+superBind(mainMod .. " + SHIFT + down",  hl.dsp.window.move({ direction = "down" }))
+superBind(mainMod .. " + SHIFT + H",     hl.dsp.window.move({ direction = "left" }))
+superBind(mainMod .. " + SHIFT + L",     hl.dsp.window.move({ direction = "right" }))
+superBind(mainMod .. " + SHIFT + K",     hl.dsp.window.move({ direction = "up" }))
+superBind(mainMod .. " + SHIFT + J",     hl.dsp.window.move({ direction = "down" }))
 
 -- Workspaces (Super+1..9, 0 to switch, Super+Shift+1..9, 0 to move window)
 for i = 1, 10 do
     local key = tostring(i % 10)
-    hl.bind(mainMod .. " + " .. key, hl.dsp.focus({ workspace = tostring(i) }))
-    hl.bind(mainMod .. " + SHIFT + " .. key, hl.dsp.window.move({ workspace = tostring(i) }))
+    superBind(mainMod .. " + " .. key, hl.dsp.focus({ workspace = tostring(i) }))
+    superBind(mainMod .. " + SHIFT + " .. key, hl.dsp.window.move({ workspace = tostring(i) }))
 end
 
 -- Focus Workspace Left/Right
-hl.bind("CTRL + " .. mainMod .. " + left",  hl.dsp.focus({ workspace = "e-1" }))
-hl.bind("CTRL + " .. mainMod .. " + right", hl.dsp.focus({ workspace = "e+1" }))
-hl.bind(mainMod .. " + Page_Down", hl.dsp.focus({ workspace = "e+1" }))
-hl.bind(mainMod .. " + Page_Up",   hl.dsp.focus({ workspace = "e-1" }))
-hl.bind(mainMod .. " + mouse_down", hl.dsp.focus({ workspace = "e+1" }))
-hl.bind(mainMod .. " + mouse_up",   hl.dsp.focus({ workspace = "e-1" }))
+superBind("CTRL + " .. mainMod .. " + left",  hl.dsp.focus({ workspace = "e-1" }))
+superBind("CTRL + " .. mainMod .. " + right", hl.dsp.focus({ workspace = "e+1" }))
+superBind(mainMod .. " + Page_Down", hl.dsp.focus({ workspace = "e+1" }))
+superBind(mainMod .. " + Page_Up",   hl.dsp.focus({ workspace = "e-1" }))
+superBind(mainMod .. " + mouse_down", hl.dsp.focus({ workspace = "e+1" }))
+superBind(mainMod .. " + mouse_up",   hl.dsp.focus({ workspace = "e-1" }))
 
 -- Scratchpad
-hl.bind(mainMod .. " + S", hl.dsp.workspace.toggle_special("magic"))
-hl.bind(mainMod .. " + ALT + S", hl.dsp.window.move({ workspace = "special:magic" }))
+superBind(mainMod .. " + S", hl.dsp.workspace.toggle_special("magic"))
+superBind(mainMod .. " + ALT + S", hl.dsp.window.move({ workspace = "special:magic" }))
 
 -- Mouse bindings
 hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true })
@@ -374,7 +411,7 @@ hl.window_rule({
 
 -- Frosted-glass surfaces. (On Hyprland >= 0.55 these live here, not in
 -- hyprland.conf -- the .lua file supersedes .conf entirely.)
-hl.layer_rule({ match = { namespace = "^waybar$" }, blur = true, ignore_alpha = 0 })
+hl.layer_rule({ match = { namespace = "^waybar$" }, blur = true, ignore_alpha = 0.1 })
 hl.layer_rule({ match = { namespace = "^titan-spotlight$" }, blur = true, ignore_alpha = 0 })
 hl.layer_rule({ match = { namespace = "^titan-powermenu$" }, blur = true, ignore_alpha = 0 })
 hl.layer_rule({ match = { namespace = "^swaync-control-center$" }, blur = true, ignore_alpha = 0 })
@@ -383,6 +420,7 @@ hl.layer_rule({ match = { namespace = "^titan-quicksettings$" }, blur = true, ig
 hl.layer_rule({ match = { namespace = "^titan-quicksettings-blur$" }, blur = true, ignore_alpha = 0 })
 hl.layer_rule({ match = { namespace = "^titan-sysmon$" }, blur = true, ignore_alpha = 0 })
 hl.layer_rule({ match = { namespace = "^titan-menu$" }, blur = true, ignore_alpha = 0 })
+hl.layer_rule({ match = { namespace = "^titan-workspace-hud$" }, blur = true, ignore_alpha = 0 })
 hl.layer_rule({ match = { namespace = "^swayosd$" }, blur = true, ignore_alpha = 0 })
 
 -- Hot-zone / gesture OSD overlay. Full-screen and input-transparent; opacity is

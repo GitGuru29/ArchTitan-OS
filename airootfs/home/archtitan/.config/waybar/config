@@ -1,12 +1,13 @@
 {
     "layer"        : "top",
     "position"     : "top",
-    "height"       : 40,
-    "margin-top"   : 5,
-    "margin-left"  : 5,
-    "margin-right" : 5,
+    "height"       : 38,
+    "margin-top"   : 8,
+    "margin-left"  : 14,
+    "margin-right" : 14,
     "spacing"      : 0,
     "exclusive"    : true,
+    "reload_style_on_change": true,
 
     "modules-left": [
         "custom/install-badge",

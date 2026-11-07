@@ -199,38 +199,69 @@ def waybar_body(t: dict) -> str:
     text_mid = "#4C4F69" if not dark else p["textMid"]
     text_low = "#6C6F85" if not dark else p["textLow"]
 
-    glass_opacity = float(t.get("glassOpacity", 0.35))
-    glass_factor = glass_opacity / 0.35
-
-    # Floating Bento Modules (zero outer bar background)
-    bar_bg = "transparent"
-    bar_border = "transparent"
-    bar_border_top = "transparent"
-    bar_shadow = "transparent"
+    glass_opacity = float(t.get("glassOpacity", 0.50))
 
     if dark:
-        mod_alpha = max(0.12, min(0.95, 0.65 * glass_factor))
-        hov_alpha = max(0.20, min(0.98, 0.85 * glass_factor))
-        border_alpha = max(0.04, min(0.35, 0.12 * glass_factor))
-        module_bg = rgba(crust, mod_alpha)
-        module_border = f"rgba(255, 255, 255, {border_alpha:.2f})"
-        module_hover = rgba(crust, hov_alpha)
+        # Outer bar capsule (window#waybar>box) dynamically scales with glass opacity slider:
+        # 0.10 (crystal clear) -> alpha 0.12
+        # 0.50 (balanced glass) -> alpha 0.40
+        # 0.95 (frosted solid) -> alpha 0.82
+        bar_alpha = max(0.12, min(0.90, round(0.12 + 0.70 * (glass_opacity - 0.10) / 0.85, 2)))
+        bar_border_alpha = max(0.06, min(0.35, round(0.06 + 0.22 * (glass_opacity - 0.10) / 0.85, 2)))
+        bar_bg = rgba(crust, bar_alpha)
+        bar_border = f"rgba(255, 255, 255, {bar_border_alpha:.2f})"
+        bar_border_top = f"rgba(255, 255, 255, {min(0.40, bar_border_alpha + 0.12):.2f})"
+        bar_shadow = f"rgba(0, 0, 0, {min(0.35, bar_alpha * 0.40):.2f})"
+        bar_grad_start = "rgba(255, 255, 255, 0.14)"
+        bar_grad_end = "rgba(0, 0, 0, 0.18)"
+
+        # Inner bento capsules (#workspaces, #hardware, #custom-titan-center, #clock, etc.)
+        mod_alpha = max(0.02, min(0.18, round(0.02 + 0.10 * (glass_opacity - 0.10) / 0.85, 2)))
+        mod_border_alpha = max(0.04, min(0.20, round(0.04 + 0.10 * (glass_opacity - 0.10) / 0.85, 2)))
+        hov_alpha = max(0.06, min(0.25, round(mod_alpha + 0.05, 2)))
+
+        module_bg = f"rgba(255, 255, 255, {mod_alpha:.2f})"
+        module_border = f"rgba(255, 255, 255, {mod_border_alpha:.2f})"
+        module_highlight = "rgba(255, 255, 255, 0.08)"
+        module_hover = f"rgba(255, 255, 255, {hov_alpha:.2f})"
         accent_soft = rgba(acc, 0.16)
         accent_glow = rgba(acc, 0.35)
         accent_border = rgba(acc, 0.55)
+
+        tooltip_bg = rgba(crust, 0.94)
+        tooltip_border = "rgba(255, 255, 255, 0.14)"
+        tooltip_border_top = "rgba(255, 255, 255, 0.30)"
+        tooltip_shadow = "rgba(0, 0, 0, 0.55)"
     else:
-        # Soothing, glare-free light frosted glass using theme's mantle & surface tones
-        mantle = p.get("mantle", "#E6E9EF")
-        surface0 = p.get("surface0", "#CCD0DA")
-        mod_alpha = max(0.15, min(0.95, 0.78 * glass_factor))
-        hov_alpha = max(0.25, min(0.98, 0.88 * glass_factor))
-        border_alpha = max(0.06, min(0.40, 0.18 * glass_factor))
-        module_bg = rgba(mantle, mod_alpha)
-        module_border = f"rgba(108, 112, 134, {border_alpha:.2f})"
-        module_hover = rgba(surface0, hov_alpha)
-        accent_soft = rgba(acc, 0.14)
-        accent_glow = rgba(acc, 0.22)
-        accent_border = rgba(acc, 0.45)
+        # Luxury Frosted Light Glass (One UI 9.0 / iOS Fluent style):
+        # Crisp white acrylic foundation that guarantees high-contrast text over any wallpaper.
+        # Scales cleanly from 0.70 (frosted translucent) to 0.94 (solid executive white).
+        bar_alpha = max(0.70, min(0.96, round(0.72 + 0.22 * (glass_opacity - 0.10) / 0.85, 2)))
+        bar_border_alpha = max(0.06, min(0.18, round(0.06 + 0.10 * (glass_opacity - 0.10) / 0.85, 2)))
+        bar_bg = f"rgba(255, 255, 255, {bar_alpha:.2f})"
+        bar_border = f"rgba(0, 0, 0, {bar_border_alpha:.2f})"
+        bar_border_top = "rgba(255, 255, 255, 0.95)"
+        bar_shadow = "rgba(0, 0, 0, 0.04)"
+        bar_grad_start = "rgba(255, 255, 255, 0.80)"
+        bar_grad_end = "rgba(255, 255, 255, 0.20)"
+
+        # Crisp, elevated white bento pill capsules
+        mod_alpha = max(0.65, min(0.94, round(0.68 + 0.24 * (glass_opacity - 0.10) / 0.85, 2)))
+        mod_border_alpha = max(0.04, min(0.12, round(0.04 + 0.06 * (glass_opacity - 0.10) / 0.85, 2)))
+        hov_alpha = min(0.98, round(mod_alpha + 0.08, 2))
+
+        module_bg = f"rgba(255, 255, 255, {mod_alpha:.2f})"
+        module_border = f"rgba(0, 0, 0, {mod_border_alpha:.2f})"
+        module_highlight = "rgba(255, 255, 255, 0.90)"
+        module_hover = f"rgba(255, 255, 255, {hov_alpha:.2f})"
+        accent_soft = rgba(acc, 0.12)
+        accent_glow = rgba(acc, 0.20)
+        accent_border = rgba(acc, 0.40)
+
+        tooltip_bg = "rgba(255, 255, 255, 0.96)"
+        tooltip_border = "rgba(0, 0, 0, 0.08)"
+        tooltip_border_top = "rgba(255, 255, 255, 1.0)"
+        tooltip_shadow = "rgba(0, 0, 0, 0.12)"
 
     on_bar = "#FFFFFF" if dark else "#1E1E2E"
     on_accent = fg.lower()
@@ -240,9 +271,16 @@ def waybar_body(t: dict) -> str:
         ("bar-border", bar_border),
         ("bar-border-top", bar_border_top),
         ("bar-shadow", bar_shadow),
+        ("bar-grad-start", bar_grad_start),
+        ("bar-grad-end", bar_grad_end),
         ("module-bg", module_bg),
         ("module-border", module_border),
+        ("module-highlight", module_highlight),
         ("module-hover", module_hover),
+        ("tooltip-bg", tooltip_bg),
+        ("tooltip-border", tooltip_border),
+        ("tooltip-border-top", tooltip_border_top),
+        ("tooltip-shadow", tooltip_shadow),
         ("text-high", text_high.lower()),
         ("text-mid", text_mid.lower()),
         ("text-low", text_low.lower()),
@@ -540,8 +578,8 @@ def reload_shell() -> None:
             pass
 
     run_quiet(["pkill", "-SIGUSR1", "-x", "kitty"], timeout=1.0)
-    time.sleep(0.35)
-    run_quiet(["pkill", "-SIGUSR2", "-x", "waybar"], timeout=1.0)
+    # Note: Waybar uses 'reload_style_on_change: true' to hot-reload CSS in-place.
+    # Do NOT send SIGUSR2, which triggers bar.reset() and destroys/flickers the bar window.
     if shutil.which("swayosd-server") and shutil.which("pgrep"):
         try:
             res = subprocess.run(["pgrep", "-x", "swayosd-server"], capture_output=True, text=True, timeout=0.5)
@@ -573,6 +611,16 @@ def cmd_apply() -> None:
 
     # Marker blocks — regenerated verbatim from the palette.
     replace_block(WAYBAR_CSS, CSS_BEGIN, CSS_END, waybar_body(theme))
+    # If running on dev/source tree, also keep repo waybar css in sync across all profile trees
+    dev_css_paths = [
+        "/home/msfvenom/custom-os-build/airootfs/etc/skel/.config/waybar/style.css",
+        "/home/msfvenom/custom-os-build/airootfs/home/archtitan/.config/waybar/style.css",
+        "/home/msfvenom/custom-os-build/airootfs/root/.config/waybar/style.css",
+    ]
+    for dcss in dev_css_paths:
+        if os.path.isfile(dcss) and os.path.abspath(dcss) != os.path.abspath(WAYBAR_CSS):
+            replace_block(dcss, CSS_BEGIN, CSS_END, waybar_body(theme))
+
     replace_block(SWAYNC_CSS, CSS_BEGIN, CSS_END, swaync_body(theme))
     replace_block(SWAYOSD_CSS, CSS_BEGIN, CSS_END, swayosd_body(theme))
     replace_block(ROFI_RASI, CSS_BEGIN, CSS_END, rofi_body(theme))
@@ -598,38 +646,58 @@ def cmd_apply() -> None:
     reload_shell()
 
 
-def cmd_set(tid: str) -> None:
+def active_wallpaper() -> str:
+    """Return the currently set wallpaper path, or empty string."""
+    if os.path.isfile(WALLPAPER_FILE):
+        try:
+            with open(WALLPAPER_FILE, "r", encoding="utf-8") as fh:
+                line = fh.readline().strip()
+                if line:
+                    return line
+        except OSError:
+            pass
+    return read_state().get("wallpaper", "")
+
+
+def cmd_set(tid: str, change_wallpaper: bool = True, notify_user: bool = True) -> None:
     ids = installed_ids()
     if tid not in ids:
         die(f"unknown theme '{tid}' (try: titan-theme list)")
     theme = theme_def(tid)
+
+    if not change_wallpaper:
+        cur_wp = active_wallpaper()
+        if cur_wp:
+            theme["wallpaper"] = cur_wp
+
     write_state(theme)
 
-    # 1. Apply assigned wallpaper FIRST so the desktop visually switches immediately,
-    # and Waybar adaptive luminance styling samples the new wallpaper.
-    target = theme.get("wallpaper", "")
-    if target and not os.path.isfile(target):
-        _local_wp = os.path.normpath(os.path.join("/home/msfvenom/custom-os-build/airootfs", target.lstrip("/")))
-        if os.path.isfile(_local_wp):
-            target = _local_wp
-    if target and os.path.isfile(target):
-        set_wp = shutil.which("titan-set-wallpaper") or "/usr/local/bin/titan-set-wallpaper"
-        if os.path.isfile(set_wp) and os.access(set_wp, os.X_OK):
-            env = dict(os.environ, TITAN_QUIET="1")
-            try:
-                subprocess.run(
-                    [set_wp, target],
-                    check=False, env=env, timeout=3.0,
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                )
-            except (OSError, subprocess.TimeoutExpired):
-                pass
+    # 1. Apply assigned wallpaper only if change_wallpaper is requested
+    if change_wallpaper:
+        target = theme.get("wallpaper", "")
+        if target and not os.path.isfile(target):
+            _local_wp = os.path.normpath(os.path.join("/home/msfvenom/custom-os-build/airootfs", target.lstrip("/")))
+            if os.path.isfile(_local_wp):
+                target = _local_wp
+        if target and os.path.isfile(target):
+            set_wp = shutil.which("titan-set-wallpaper") or "/usr/local/bin/titan-set-wallpaper"
+            if os.path.isfile(set_wp) and os.access(set_wp, os.X_OK):
+                env = dict(os.environ, TITAN_QUIET="1")
+                try:
+                    subprocess.run(
+                        [set_wp, target],
+                        check=False, env=env, timeout=3.0,
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL,
+                    )
+                except (OSError, subprocess.TimeoutExpired):
+                    pass
 
     # 2. Update and sync all shell configuration blocks
     cmd_apply()
 
-    notify("Theme", theme["name"])
+    if notify_user:
+        notify("Theme", theme["name"])
 
 
 def cmd_accent(hexv: str) -> None:
@@ -654,11 +722,12 @@ def cmd_mode(mode: str) -> None:
         print(theme["id"])
         return
 
-    cmd_set(target)
+    # Switch theme mode without touching or reloading wallpaper.
+    cmd_set(target, change_wallpaper=False, notify_user=False)
     notify("Theme Mode", f"{'Dark' if want_dark else 'Light'} Mode")
 
 
-def cmd_glass(val_str: str) -> None:
+def cmd_glass(val_str: str, quiet: bool = False) -> None:
     try:
         raw = val_str.strip().rstrip("%")
         v = float(raw)
@@ -670,8 +739,27 @@ def cmd_glass(val_str: str) -> None:
     theme = read_state()
     theme["glassOpacity"] = v
     write_state(theme)
-    cmd_apply()
-    notify("Glass Transparency", f"{int(v * 100)}% Opacity")
+
+    # 1. Update Waybar style with the new module-bg/border/hover alpha values
+    replace_block(WAYBAR_CSS, CSS_BEGIN, CSS_END, waybar_body(theme))
+    # If running on dev/source tree, also keep repo waybar css in sync across all profile trees
+    dev_css_paths = [
+        "/home/msfvenom/custom-os-build/airootfs/etc/skel/.config/waybar/style.css",
+        "/home/msfvenom/custom-os-build/airootfs/home/archtitan/.config/waybar/style.css",
+        "/home/msfvenom/custom-os-build/airootfs/root/.config/waybar/style.css",
+    ]
+    for dcss in dev_css_paths:
+        if os.path.isfile(dcss) and os.path.abspath(dcss) != os.path.abspath(WAYBAR_CSS):
+            replace_block(dcss, CSS_BEGIN, CSS_END, waybar_body(theme))
+
+    # 2. Update SwayNC if present
+    replace_block(SWAYNC_CSS, CSS_BEGIN, CSS_END, swaync_body(theme))
+
+    # Note: Waybar uses 'reload_style_on_change: true' to hot-reload CSS in-place
+    # without destroying the window or triggering a disruptive bar reset.
+
+    if not quiet and os.environ.get("TITAN_QUIET") != "1":
+        notify("Glass Transparency", f"{int(v * 100)}% Opacity")
 
 
 def cmd_cycle(step: int) -> None:
@@ -729,7 +817,11 @@ def main(argv: list[str]) -> int:
     elif cmd == "glass":
         if not rest:
             die("glass: missing value (e.g. 35 or 0.35)")
-        cmd_glass(rest[0])
+        quiet = "--quiet" in rest or "-q" in rest
+        val_args = [r for r in rest if r not in ("--quiet", "-q")]
+        if not val_args:
+            die("glass: missing value (e.g. 35 or 0.35)")
+        cmd_glass(val_args[0], quiet=quiet)
     elif cmd == "mode":
         if not rest:
             die("mode: missing dark|light")

@@ -378,10 +378,10 @@ ArchTitan is developed as a modular group project with 4 members. The repository
 | **ArchTitan Guard** | Security Enforcer | @GitGuru29 (Lead) | 🟢 Shipped | `subsystems/archtitan-guard/` |
 | **BTRFS Snapshot Hook** | Safety Feature | @GitGuru29 (Lead) | 🟢 Shipped | `airootfs/etc/pacman.d/hooks/` |
 | **Auto GPU Switcher** | Subsystem | @GitGuru29 (Lead) | 🟡 In Dev | `subsystems/auto-gpu-switcher/` |
-| **TITAN AI** | Subsystem | Teammate | 🟡 In Dev | `subsystems/titan-ai/` |
-| **TITAN Task Manager** | Subsystem | Teammate | 🟡 In Dev | `subsystems/titan-task-manager/` |
-| **TITAN Share** | Subsystem | Teammate | 🟡 In Dev | `subsystems/titan-share/` |
-| **TITAN Mirror** | Subsystem | Teammate | 🟡 In Dev | `subsystems/titan-mirror/` |
+| **TITAN AI** | Subsystem | @Kaveesha23dil | 🟡 In Dev | `subsystems/titan-ai/` |
+| **TITAN Task Manager** | Subsystem | Anuradhi-Gunawardhana | 🟡 In Dev | `subsystems/titan-task-manager/` |
+| **TITAN Share** | Subsystem | Zumrahassan222 | 🟡 In Dev | `subsystems/titan-share/` |
+| **TITAN Mirror** | Subsystem | Zumrahassan222 | 🟡 In Dev | `subsystems/titan-mirror/` |
 
 ---
 

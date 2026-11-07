@@ -1,4 +1,5 @@
 #include <QCommandLineParser>
+#include <QDir>
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
@@ -68,6 +69,11 @@ int main(int argc, char *argv[])
         return 1;
 
     QQmlApplicationEngine engine;
+    engine.addImportPath(QStringLiteral("/usr/lib/qt6/qml"));
+    engine.addImportPath(QStringLiteral("/home/msfvenom/custom-os-build/airootfs/usr/lib/qt6/qml"));
+    engine.addImportPath(QDir::homePath() + QStringLiteral("/.local/lib/qt6/qml"));
+    engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/../../../airootfs/usr/lib/qt6/qml"));
+    engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/../../airootfs/usr/lib/qt6/qml"));
     engine.rootContext()->setContextProperty("menu", &menu);
 
     const QUrl url(QStringLiteral("qrc:/qml/MenuWindow.qml"));

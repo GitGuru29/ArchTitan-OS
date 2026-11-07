@@ -27,6 +27,10 @@ ALLOW_FILE = REPO / "scripts" / "colour-allow.txt"
 # static config files is the baseline theme's palette.
 BASELINE_THEME = (REPO / "airootfs" / "usr" / "share" / "archtitan"
                   / "themes" / "mocha.json")
+SIGNATURE_THEME = (REPO / "airootfs" / "usr" / "share" / "archtitan"
+                   / "themes" / "archtitan.json")
+LATTE_THEME = (REPO / "airootfs" / "usr" / "share" / "archtitan"
+               / "themes" / "latte.json")
 
 # The adaptive accent's default (Catppuccin Mocha blue) and ArchTitan signature cyan;
 # runtime accent may be any colour, so any alpha of it is accepted in addition to the static palette.
@@ -65,17 +69,18 @@ def load_palette() -> set[str]:
         TOKEN_FILE.read_text(encoding="utf-8")
     )}
 
-    if BASELINE_THEME.exists():
-        import json
+    for theme_path in (BASELINE_THEME, SIGNATURE_THEME, LATTE_THEME):
+        if theme_path.exists():
+            import json
 
-        theme = json.loads(BASELINE_THEME.read_text(encoding="utf-8"))
-        values = list(theme.get("palette", {}).values())
-        values += [theme.get("accent", ""), theme.get("accent2", "")]
-        for value in values:
-            if isinstance(value, str):
-                digits = value.strip().lstrip("#")
-                if re.fullmatch(r"[0-9a-fA-F]{6}", digits):
-                    hexes.add(digits.lower())
+            theme = json.loads(theme_path.read_text(encoding="utf-8"))
+            values = list(theme.get("palette", {}).values())
+            values += [theme.get("accent", ""), theme.get("accent2", "")]
+            for value in values:
+                if isinstance(value, str):
+                    digits = value.strip().lstrip("#")
+                    if re.fullmatch(r"[0-9a-fA-F]{6}", digits):
+                        hexes.add(digits.lower())
 
     hexes.add(ACCENT_DEFAULT)
     hexes.add(TITAN_ACCENT)

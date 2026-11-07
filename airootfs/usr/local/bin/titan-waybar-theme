@@ -65,7 +65,7 @@ BAR_SAT = 0.1
 # (identity lightness, lift-to, deepen-to) per mode — dark themes lift away
 # from dark wallpapers / deepen behind bright ones; light themes do the
 # mirror image around a near-white identity surface.
-DARK_RANGE = (0.065, 0.34, 0.03)
+DARK_RANGE = (0.09, 0.34, 0.07)
 LIGHT_RANGE = (0.92, 0.97, 0.84)
 
 MARKED = re.compile(
@@ -320,7 +320,7 @@ def build_palette(avg_rgb, theme: dict | None = None) -> dict[str, str]:
     glass_opacity = float(theme.get("glassOpacity", 0.35)) if theme else 0.35
     glass_factor = glass_opacity / 0.35
 
-    bar_alpha = _clamp((0.58 + t * 0.08) * glass_factor, 0.12, 0.95) if is_dark else _clamp((0.70 + t * 0.06) * glass_factor, 0.20, 0.95)
+    bar_alpha = _clamp((0.36 + t * 0.06) * glass_factor, 0.15, 0.65) if is_dark else _clamp((0.55 + t * 0.06) * glass_factor, 0.20, 0.85)
     bar_l = _solve_lightness(
         hue,
         BAR_SAT,
@@ -459,12 +459,10 @@ def patch_css(css_path: str, palette: dict[str, str]) -> bool:
 
 
 def reload_waybar() -> None:
-    """Ask Waybar to re-read its stylesheet. Its default SIGUSR2 action is
-    `reload`, which re-applies style.css without restarting the bar.
+    """Waybar uses 'reload_style_on_change: true' to hot-reload CSS in-place.
+    Sending SIGUSR2 triggers bar.reset() which destroys and respawns the bar window.
     """
-    if not shutil.which("pkill"):
-        return
-    subprocess.run(["pkill", "-SIGUSR2", "-x", "waybar"], check=False)
+    pass
 
 
 def main(argv: list[str]) -> int:
