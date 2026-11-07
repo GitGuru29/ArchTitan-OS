@@ -437,7 +437,7 @@ ColumnLayout {
                 from: 0
                 to: 100
                 value: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.brightness : 80
-                fillAccent: "#FFFFFF"
+                fillAccent: TitanTheme.accent
                 onChanged: (v) => {
                     if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.setBrightness(v)
                 }
@@ -472,7 +472,7 @@ ColumnLayout {
                 to: 100
                 value: (typeof audioCtrl !== "undefined" && audioCtrl) ? audioCtrl.sinkVolume : 60
                 muted: typeof audioCtrl !== "undefined" && audioCtrl && audioCtrl.sinkMuted
-                fillAccent: "#FFFFFF"
+                fillAccent: TitanTheme.accent
                 onChanged: (v) => {
                     if (typeof audioCtrl !== "undefined" && audioCtrl) audioCtrl.setVolume(v)
                 }

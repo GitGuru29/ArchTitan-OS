@@ -5,6 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUILD_DIR="${SCRIPT_DIR}/build"
 
 echo "=== Building ArchTitan Quick Settings & Notification Center ==="
+touch "${SCRIPT_DIR}/resources.qrc"
 mkdir -p "${BUILD_DIR}"
 cd "${BUILD_DIR}"
 cmake ..
