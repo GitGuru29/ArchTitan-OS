@@ -16,8 +16,8 @@ import "style"
 Window {
     id: rootWindow
     title: "titan-quicksettings"
-    width: showNotificationPanel ? 800 : 364
-    height: 620
+    width: showNotificationPanel ? 870 : 420
+    height: 990
 
     flags: Qt.FramelessWindowHint
     color: "transparent"
@@ -30,7 +30,7 @@ Window {
     property bool showWifiPage: false
 
     onShowNotificationPanelChanged: {
-        rootWindow.width = showNotificationPanel ? 800 : 364;
+        rootWindow.width = showNotificationPanel ? 870 : 420;
     }
 
     function openDrawer() {
@@ -129,7 +129,7 @@ Window {
             // ═════════════════════════════════════════════════════════════════
             Rectangle {
                 id: leftCard
-                Layout.preferredWidth: showNotificationPanel ? 364 : 364
+                Layout.preferredWidth: showNotificationPanel ? 416 : 420
                 Layout.fillWidth: !showNotificationPanel
                 Layout.fillHeight: true
                 radius: TitanTheme.radiusWindow

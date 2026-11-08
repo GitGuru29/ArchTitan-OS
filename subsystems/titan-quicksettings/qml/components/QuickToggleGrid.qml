@@ -108,22 +108,17 @@ ColumnLayout {
     // ── 4. 8x Full-Circle Quick Action Grid (Super-Round Pebble Card) ──────
     Rectangle {
         Layout.fillWidth: true
-        implicitHeight: actionCol.implicitHeight + 24
+        implicitHeight: actionGrid.implicitHeight + 28
         radius: TitanTheme.radiusCard // 24px super-round
         color: TitanTheme.bgOneUICard
         border.color: TitanTheme.borderGlass
         border.width: 1
         clip: true
 
-        ColumnLayout {
-            id: actionCol
+        CircularActionGrid {
+            id: actionGrid
             anchors.fill: parent
-            anchors.margins: 12
-            spacing: 10
-
-            CircularActionGrid {
-                Layout.fillWidth: true
-            }
+            anchors.margins: 14
         }
     }
 

@@ -14,7 +14,7 @@ import "../style"
  */
 Rectangle {
     id: musicRoot
-    Layout.preferredWidth: 172
+    Layout.fillWidth: true
     Layout.preferredHeight: 168
     radius: TitanTheme.radiusBento // 28px super-round
     color: TitanTheme.bgOneUICard

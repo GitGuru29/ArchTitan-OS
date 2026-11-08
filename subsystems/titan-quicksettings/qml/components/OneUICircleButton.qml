@@ -10,7 +10,7 @@ import "../style"
 ColumnLayout {
     id: buttonRoot
     spacing: 5
-    Layout.alignment: Qt.AlignHCenter
+    Layout.fillWidth: true
 
     property string iconGlyph: "\uf186"
     property string label: "Dark mode"
