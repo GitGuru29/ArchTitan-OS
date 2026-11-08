@@ -3,55 +3,59 @@ import QtQuick.Layouts
 import "../style"
 
 /**
- * OneUICircleButton — Samsung One UI 9.0 round quick action toggle.
+ * OneUICircleButton — 100% Full-Circle Quick Action Toggle.
  *
- * 52px circular button with centered glyph and descriptive label below.
+ * 48px circle with centered glyph, spring bounce dynamics, and micro-label below.
  */
 ColumnLayout {
     id: buttonRoot
-    spacing: 6
+    spacing: 5
     Layout.alignment: Qt.AlignHCenter
 
     property string iconGlyph: "\uf186"
     property string label: "Dark mode"
     property string statusText: ""
     property bool active: false
-    property color activeColor: TitanTheme.accentBlue
+    property color activeColor: TitanTheme.accent
 
     signal clicked()
 
     Rectangle {
         id: circle
-        Layout.preferredWidth: 50
-        Layout.preferredHeight: 50
+        Layout.preferredWidth: 48
+        Layout.preferredHeight: 48
         Layout.alignment: Qt.AlignHCenter
-        radius: 25
+        radius: 24 // 100% Full Circle
         clip: true
-        // Keyboard: reachable with Tab / arrows, activated with Enter or Space.
+
         activeFocusOnTab: true
         Keys.onReturnPressed: (event) => { buttonRoot.clicked(); event.accepted = true }
         Keys.onEnterPressed:  (event) => { buttonRoot.clicked(); event.accepted = true }
         Keys.onSpacePressed:  (event) => { buttonRoot.clicked(); event.accepted = true }
-        color: buttonRoot.active ? buttonRoot.activeColor : ((btnMa.containsMouse || activeFocus) ? TitanTheme.bgHover : TitanTheme.bgOneUIPill)
+
+        color: buttonRoot.active
+               ? buttonRoot.activeColor
+               : ((btnMa.containsMouse || activeFocus) ? TitanTheme.bgHover : TitanTheme.bgOneUIPill)
+
         border.color: activeFocus ? TitanTheme.accent
                       : buttonRoot.active ? TitanTheme.borderActive
                       : (btnMa.containsMouse ? TitanTheme.borderHover : TitanTheme.borderGlass)
         border.width: activeFocus ? 2 : 1
 
-        // Tactile Liquid Touch: spring bounce on press and hover
-        scale: btnMa.pressed ? 0.91 : (btnMa.containsMouse ? 1.07 : 1.0)
+        // Tactile Spring Bounce
+        scale: btnMa.pressed ? 0.88 : (btnMa.containsMouse ? 1.08 : 1.0)
         Behavior on scale {
-            NumberAnimation { duration: 140; easing.type: Easing.OutBack; easing.overshoot: 1.3 }
+            NumberAnimation { duration: 130; easing.type: Easing.OutBack; easing.overshoot: 1.3 }
         }
-
         Behavior on color { ColorAnimation { duration: 130 } }
 
         Text {
             anchors.centerIn: parent
             text: buttonRoot.iconGlyph
             font.family: TitanTheme.monoFamily
-            font.pixelSize: 18
-            color: buttonRoot.active ? "#FFFFFF" : TitanTheme.textPrimary
+            font.pixelSize: 16
+            color: buttonRoot.active ? "#0F141C" : TitanTheme.textPrimary
+            Behavior on color { ColorAnimation { duration: 120 } }
         }
 
         MouseArea {
@@ -63,29 +67,16 @@ ColumnLayout {
         }
     }
 
-    ColumnLayout {
+    Text {
         Layout.alignment: Qt.AlignHCenter
-        spacing: 1
-
-        Text {
-            Layout.alignment: Qt.AlignHCenter
-            text: buttonRoot.label
-            font.family: TitanTheme.fontFamily
-            font.pixelSize: 10
-            font.weight: Font.DemiBold
-            color: buttonRoot.active ? TitanTheme.textPrimary : TitanTheme.textSubtle
-            horizontalAlignment: Text.AlignHCenter
-        }
-
-        Text {
-            visible: buttonRoot.statusText.length > 0
-            Layout.alignment: Qt.AlignHCenter
-            text: buttonRoot.statusText
-            font.family: TitanTheme.fontFamily
-            font.pixelSize: 9
-            color: buttonRoot.active ? TitanTheme.cyan : TitanTheme.textSubtle
-            horizontalAlignment: Text.AlignHCenter
-        }
+        text: buttonRoot.label
+        font.family: TitanTheme.fontFamily
+        font.pixelSize: 10
+        font.weight: Font.Medium
+        color: buttonRoot.active ? TitanTheme.textPrimary : TitanTheme.textSubtle
+        horizontalAlignment: Text.AlignHCenter
+        elide: Text.ElideRight
+        Layout.maximumWidth: 64
     }
 
     Accessible.role: Accessible.Button

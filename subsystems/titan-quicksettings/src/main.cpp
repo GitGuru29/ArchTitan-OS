@@ -29,18 +29,18 @@ static void ensureDefaultConfig()
         QSettings cfg(path, QSettings::IniFormat);
         cfg.beginGroup("layout");
         // Layout metrics:
-        //   top_margin:        px below bar surface (4 snaps cleanly below waybar)
-        //   bottom_margin:     px from screen foot / workspace bottom edge (default 8)
-        //   right_margin:      px from right screen edge (default 8)
-        //   panel_width:       drawer width in px (default 420)
-        //   panel_height:      fallback height in px (used if stretch_to_bottom=false)
-        //   stretch_to_bottom: stretch drawer from bar to workspace foot (default true)
-        cfg.setValue("top_margin",        4);
-        cfg.setValue("bottom_margin",      8);
-        cfg.setValue("right_margin",       8);
-        cfg.setValue("panel_width",      420);
-        cfg.setValue("panel_height",     860);
-        cfg.setValue("stretch_to_bottom", true);
+        //   top_margin:        px below bar surface (8 snaps cleanly below waybar)
+        //   bottom_margin:     px from screen foot / workspace bottom edge (default 12)
+        //   right_margin:      px from right screen edge (default 12)
+        //   panel_width:       floating island width in px (default 364)
+        //   panel_height:      compact island height in px (default 540)
+        //   stretch_to_bottom: false = floating island, true = stretch drawer
+        cfg.setValue("top_margin",        8);
+        cfg.setValue("bottom_margin",     12);
+        cfg.setValue("right_margin",      12);
+        cfg.setValue("panel_width",      364);
+        cfg.setValue("panel_height",     620);
+        cfg.setValue("stretch_to_bottom", false);
         cfg.endGroup();
         cfg.sync();
         std::cout << "[titan-qs] Created default config: "
@@ -62,12 +62,12 @@ static LayoutConfig readConfig()
     QSettings cfg(configPath(), QSettings::IniFormat);
     cfg.beginGroup("layout");
     LayoutConfig lc;
-    lc.topMargin        = cfg.value("top_margin",        4).toInt();
-    lc.bottomMargin     = cfg.value("bottom_margin",      8).toInt();
-    lc.rightMargin      = cfg.value("right_margin",       8).toInt();
-    lc.panelWidth       = cfg.value("panel_width",      420).toInt();
-    lc.panelHeight      = cfg.value("panel_height",     860).toInt();
-    lc.stretchToBottom  = cfg.value("stretch_to_bottom", true).toBool();
+    lc.topMargin        = cfg.value("top_margin",        8).toInt();
+    lc.bottomMargin     = cfg.value("bottom_margin",     12).toInt();
+    lc.rightMargin      = cfg.value("right_margin",      12).toInt();
+    lc.panelWidth       = cfg.value("panel_width",      364).toInt();
+    lc.panelHeight      = cfg.value("panel_height",     620).toInt();
+    lc.stretchToBottom  = cfg.value("stretch_to_bottom", false).toBool();
     cfg.endGroup();
     return lc;
 }
