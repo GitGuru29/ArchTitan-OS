@@ -134,19 +134,6 @@ ColumnLayout {
                 enabled: !trackMa.pressed
                 NumberAnimation { duration: 90; easing.type: Easing.OutQuad }
             }
-
-            // Top Specular Sheen (Subtle 3D Gloss Glint)
-            Rectangle {
-                anchors.top: parent.top
-                anchors.left: parent.left
-                anchors.right: parent.right
-                height: 11
-                radius: parent.radius
-                gradient: Gradient {
-                    GradientStop { position: 0.0; color: Qt.rgba(1, 1, 1, 0.30) }
-                    GradientStop { position: 1.0; color: "transparent" }
-                }
-            }
         }
 
         // Embedded Contrasting Glyph (macOS Control Center Style)

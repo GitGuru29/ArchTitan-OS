@@ -17,15 +17,16 @@ ColumnLayout {
     property string statusText: ""
     property bool active: false
     property color activeColor: TitanTheme.accent
+    property int diameter: 48
 
     signal clicked()
 
     Rectangle {
         id: circle
-        Layout.preferredWidth: 48
-        Layout.preferredHeight: 48
+        Layout.preferredWidth: buttonRoot.diameter
+        Layout.preferredHeight: buttonRoot.diameter
         Layout.alignment: Qt.AlignHCenter
-        radius: 24 // 100% Full Circle
+        radius: buttonRoot.diameter / 2 // 100% Full Circle
         clip: true
 
         activeFocusOnTab: true
@@ -53,7 +54,7 @@ ColumnLayout {
             anchors.centerIn: parent
             text: buttonRoot.iconGlyph
             font.family: TitanTheme.monoFamily
-            font.pixelSize: 16
+            font.pixelSize: Math.round(buttonRoot.diameter * 0.35)
             color: buttonRoot.active ? "#0F141C" : TitanTheme.textPrimary
             Behavior on color { ColorAnimation { duration: 120 } }
         }
@@ -71,12 +72,12 @@ ColumnLayout {
         Layout.alignment: Qt.AlignHCenter
         text: buttonRoot.label
         font.family: TitanTheme.fontFamily
-        font.pixelSize: 10
+        font.pixelSize: Math.max(9, Math.round(buttonRoot.diameter * 0.21))
         font.weight: Font.Medium
         color: buttonRoot.active ? TitanTheme.textPrimary : TitanTheme.textSubtle
         horizontalAlignment: Text.AlignHCenter
         elide: Text.ElideRight
-        Layout.maximumWidth: 64
+        Layout.maximumWidth: Math.max(56, buttonRoot.diameter + 18)
     }
 
     Accessible.role: Accessible.Button
