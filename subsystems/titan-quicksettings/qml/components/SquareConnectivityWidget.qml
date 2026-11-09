@@ -103,10 +103,12 @@ ColumnLayout {
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
             onClicked: {
-                if (mouse.x > parent.width - 32) {
+                if (mouse.x < 46) {
+                    if (typeof networkCtrl !== "undefined" && networkCtrl) {
+                        networkCtrl.wifiEnabled = !networkCtrl.wifiEnabled;
+                    }
+                } else {
                     connRoot.openWifiRequested();
-                } else if (typeof networkCtrl !== "undefined" && networkCtrl) {
-                    networkCtrl.wifiEnabled = !networkCtrl.wifiEnabled;
                 }
             }
         }

@@ -150,13 +150,17 @@ ColumnLayout {
             // List of toggleable action buttons
             Repeater {
                 model: [
+                    { key: "focus",        icon: "\uf186", title: "Focus Mode",        desc: "Do not disturb notifications" },
+                    { key: "dark",         icon: "\uf042", title: "Dark Theme",        desc: "Toggle light and dark color scheme" },
+                    { key: "night",        icon: "\uf06e", title: "Night Light",       desc: "Warm screen color filter" },
+                    { key: "mic",          icon: "\uf130", title: "Microphone",        desc: "Mute or unmute audio input" },
+                    { key: "caffeine",     icon: "\uf0f4", title: "Stay Awake",        desc: "Inhibit screen timeout & suspend" },
                     { key: "capture",      icon: "\uf030", title: "Screen Capture",    desc: "Region screenshot to clipboard" },
+                    { key: "record",       icon: "\uf03d", title: "Screen Record",     desc: "Wayland video screen recording" },
                     { key: "colorPick",    icon: "\uf1fb", title: "Color Picker",      desc: "Hyprpicker hex eyedropper" },
                     { key: "gameMode",     icon: "\uf11b", title: "Game Mode",         desc: "Performance profile & compositor" },
                     { key: "clipboard",    icon: "\uf0ea", title: "Clipboard",         desc: "Cliphist history manager" },
-                    { key: "caffeine",     icon: "\uf0f4", title: "Stay Awake",        desc: "Inhibit screen timeout & suspend" },
                     { key: "virtualInput", icon: "\uf11c", title: "Virtual Keyboard",  desc: "wvkbd on-screen touch keyboard" },
-                    { key: "record",       icon: "\uf111", title: "Screen Record",     desc: "Wayland video screen recording" },
                     { key: "airplane",     icon: "\uf072", title: "Airplane Mode",     desc: "Disable Wi-Fi and Bluetooth" }
                 ]
 

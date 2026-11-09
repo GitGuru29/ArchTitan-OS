@@ -16,7 +16,7 @@ import "../style"
 Rectangle {
     id: powerRoot
     radius: TitanTheme.radiusWindow
-    color: TitanTheme.bgMenu
+    color: TitanTheme.isDark ? "#181825" : "#EFF1F5"
     border.color: TitanTheme.borderGlass
     border.width: 1
     clip: true

@@ -189,6 +189,7 @@ Window {
                         contentHeight: Math.max(height, currentContent.implicitHeight)
                         clip: true
                         boundsBehavior: Flickable.StopAtBounds
+                        visible: !rootWindow.showWifiPage && !rootWindow.showPowerMenu
 
                         /**
                          * Keyboard focus follow: Tab / arrow focus can land on a

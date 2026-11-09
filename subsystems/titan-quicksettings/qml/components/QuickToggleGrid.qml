@@ -37,6 +37,7 @@ ColumnLayout {
         // Right Square: Music Player Widget (radius: 28px)
         SquareMusicWidget {
             Layout.fillWidth: true
+            visible: (typeof systemCtrl === "undefined" || !systemCtrl) || ((systemCtrl.tileVisibilityRevision >= 0) && systemCtrl.getTileVisible("deviceMedia", true))
         }
     }
 
@@ -49,6 +50,7 @@ ColumnLayout {
         border.color: TitanTheme.borderGlass
         border.width: 1
         clip: true
+        visible: (typeof systemCtrl === "undefined" || !systemCtrl) || ((systemCtrl.tileVisibilityRevision >= 0) && systemCtrl.getTileVisible("sliders", true))
 
         ColumnLayout {
             id: displayCol
@@ -79,6 +81,7 @@ ColumnLayout {
         border.color: TitanTheme.borderGlass
         border.width: 1
         clip: true
+        visible: (typeof systemCtrl === "undefined" || !systemCtrl) || ((systemCtrl.tileVisibilityRevision >= 0) && systemCtrl.getTileVisible("sliders", true))
 
         ColumnLayout {
             id: soundCol
@@ -117,7 +120,9 @@ ColumnLayout {
 
         CircularActionGrid {
             id: actionGrid
-            anchors.fill: parent
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: parent.top
             anchors.margins: 14
         }
     }

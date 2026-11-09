@@ -20,6 +20,8 @@ signals:
     void showRequested();
     void hideRequested();
     void notificationsRequested();
+    void wifiRequested();
+    void editRequested();
 
 private slots:
     void handleNewConnection();
