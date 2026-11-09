@@ -74,6 +74,13 @@ GridLayout {
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignHCenter
 
+            diameter: {
+                var rev = gridRoot.revision;
+                return (typeof systemCtrl !== "undefined" && systemCtrl)
+                       ? systemCtrl.getEffectiveActionSize(modelData.key)
+                       : 48;
+            }
+
             iconGlyph: {
                 if (modelData.key === "mic") {
                     return (typeof audioCtrl !== "undefined" && audioCtrl && audioCtrl.sourceMuted) ? "\uf131" : "\uf130";

@@ -72,6 +72,12 @@ SystemController::SystemController(QObject *parent)
     updateStats();
 
     QString cfgDir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
+    QSettings settings(cfgDir + "/archtitan/settings.ini", QSettings::IniFormat);
+    int savedIconSize = settings.value("quicksettings/globalIconSize", 48).toInt();
+    if (savedIconSize >= 30 && savedIconSize <= 80) {
+        m_globalIconSize = savedIconSize;
+    }
+
     QString themeFile = cfgDir + "/archtitan/theme.json";
     if (QFile::exists(themeFile)) {
         m_themeWatcher->addPath(themeFile);
@@ -593,6 +599,64 @@ void SystemController::moveActionOrder(int fromIndex, int toIndex)
     }
     order.move(fromIndex, toIndex);
     setActionOrder(order);
+}
+
+void SystemController::setGlobalIconSize(int size)
+{
+    size = qBound(32, size, 72);
+    if (m_globalIconSize != size) {
+        m_globalIconSize = size;
+        QString cfgDir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
+        QSettings settings(cfgDir + "/archtitan/settings.ini", QSettings::IniFormat);
+        settings.setValue("quicksettings/globalIconSize", m_globalIconSize);
+        settings.sync();
+        m_tileVisibilityRevision++;
+        emit iconSizesChanged();
+        emit tileVisibilityChanged();
+    }
+}
+
+QString SystemController::getActionSize(const QString &key) const
+{
+    QString cfgDir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
+    QSettings settings(cfgDir + "/archtitan/settings.ini", QSettings::IniFormat);
+    return settings.value("quicksettings/actionSize_" + key, "default").toString();
+}
+
+void SystemController::setActionSize(const QString &key, const QString &size)
+{
+    QString cfgDir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
+    QSettings settings(cfgDir + "/archtitan/settings.ini", QSettings::IniFormat);
+    settings.setValue("quicksettings/actionSize_" + key, size);
+    settings.sync();
+    m_tileVisibilityRevision++;
+    emit iconSizesChanged();
+    emit tileVisibilityChanged();
+}
+
+int SystemController::getEffectiveActionSize(const QString &key) const
+{
+    QString sz = getActionSize(key).toLower();
+    if (sz == "small" || sz == "s") return 38;
+    if (sz == "medium" || sz == "m") return 48;
+    if (sz == "large" || sz == "l") return 56;
+    if (sz == "huge" || sz == "xl") return 64;
+    bool ok = false;
+    int n = sz.toInt(&ok);
+    if (ok && n >= 30 && n <= 80) return n;
+    return m_globalIconSize;
+}
+
+void SystemController::cycleActionSize(const QString &key)
+{
+    QString cur = getActionSize(key).toLower();
+    QString next = "default";
+    if (cur == "default") next = "large";
+    else if (cur == "large") next = "huge";
+    else if (cur == "huge") next = "small";
+    else if (cur == "small") next = "medium";
+    else if (cur == "medium") next = "default";
+    setActionSize(key, next);
 }
 
 void SystemController::updateStats()

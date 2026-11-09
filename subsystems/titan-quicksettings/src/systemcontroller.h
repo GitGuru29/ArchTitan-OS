@@ -27,6 +27,7 @@ class SystemController : public QObject {
   Q_PROPERTY(int brightness READ brightness NOTIFY brightnessChanged)
   Q_PROPERTY(int glassOpacity READ glassOpacity WRITE setGlassOpacity NOTIFY glassOpacityChanged)
   Q_PROPERTY(int tileVisibilityRevision READ tileVisibilityRevision NOTIFY tileVisibilityChanged)
+  Q_PROPERTY(int globalIconSize READ globalIconSize WRITE setGlobalIconSize NOTIFY iconSizesChanged)
   Q_PROPERTY(int cpuUsage READ cpuUsage NOTIFY statsChanged)
   Q_PROPERTY(int ramUsage READ ramUsage NOTIFY statsChanged)
   Q_PROPERTY(int batteryPercent READ batteryPercent NOTIFY statsChanged)
@@ -49,6 +50,7 @@ public:
   int brightness() const { return m_brightness; }
   int glassOpacity() const { return m_glassOpacity; }
   int tileVisibilityRevision() const { return m_tileVisibilityRevision; }
+  int globalIconSize() const { return m_globalIconSize; }
   int cpuUsage() const { return m_cpuUsage; }
   int ramUsage() const { return m_ramUsage; }
   int batteryPercent() const { return m_batteryPercent; }
@@ -68,6 +70,11 @@ public:
   Q_INVOKABLE QStringList getActionOrder() const;
   Q_INVOKABLE void setActionOrder(const QStringList &order);
   Q_INVOKABLE void moveActionOrder(int fromIndex, int toIndex);
+  Q_INVOKABLE void setGlobalIconSize(int size);
+  Q_INVOKABLE QString getActionSize(const QString &key) const;
+  Q_INVOKABLE void setActionSize(const QString &key, const QString &size);
+  Q_INVOKABLE int getEffectiveActionSize(const QString &key) const;
+  Q_INVOKABLE void cycleActionSize(const QString &key);
 
   Q_INVOKABLE QStringList getSectionOrder() const;
   Q_INVOKABLE void setSectionOrder(const QStringList &order);
@@ -112,6 +119,7 @@ signals:
   void brightnessChanged();
   void glassOpacityChanged();
   void tileVisibilityChanged();
+  void iconSizesChanged();
   void statsChanged();
 
 private:
@@ -137,6 +145,7 @@ private:
   int m_brightness{80};
   int m_glassOpacity{35};
   int m_tileVisibilityRevision{0};
+  int m_globalIconSize{48};
 
   int m_cpuUsage{0};
   int m_ramUsage{0};

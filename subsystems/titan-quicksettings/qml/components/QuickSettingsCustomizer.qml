@@ -179,6 +179,86 @@ ColumnLayout {
                 color: TitanTheme.textSubtle
             }
 
+            // ── Global Icon Size Control ────────────────────────────────────
+            Rectangle {
+                Layout.fillWidth: true
+                height: 38
+                radius: 12
+                color: TitanTheme.bgInset
+                border.color: TitanTheme.borderGlass
+                border.width: 1
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: 10
+                    anchors.rightMargin: 10
+                    spacing: 8
+
+                    Text {
+                        text: "Global Size"
+                        font.family: TitanTheme.fontFamily
+                        font.pixelSize: 11
+                        font.weight: Font.DemiBold
+                        color: TitanTheme.textPrimary
+                    }
+
+                    Item { Layout.fillWidth: true }
+
+                    // Segmented pill chips: S (38) | M (48) | L (56) | XL (64)
+                    RowLayout {
+                        spacing: 4
+
+                        Repeater {
+                            model: [
+                                { label: "S",  size: 38 },
+                                { label: "M",  size: 48 },
+                                { label: "L",  size: 56 },
+                                { label: "XL", size: 64 }
+                            ]
+
+                            delegate: Rectangle {
+                                width: 34
+                                height: 24
+                                radius: 12
+                                property bool isSelected: {
+                                    var rev = customizerRoot.revision;
+                                    var cur = (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.globalIconSize : 48;
+                                    return cur === modelData.size;
+                                }
+
+                                color: isSelected ? TitanTheme.accent : (chipMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgOneUIPill)
+                                border.color: isSelected ? TitanTheme.borderActive : TitanTheme.borderGlass
+                                border.width: 1
+
+                                scale: chipMa.pressed ? 0.92 : 1.0
+                                Behavior on scale { NumberAnimation { duration: 110 } }
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: modelData.label
+                                    font.family: TitanTheme.fontFamily
+                                    font.pixelSize: 10
+                                    font.weight: Font.Bold
+                                    color: parent.isSelected ? "#0F141C" : TitanTheme.textPrimary
+                                }
+
+                                MouseArea {
+                                    id: chipMa
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        if (typeof systemCtrl !== "undefined" && systemCtrl) {
+                                            systemCtrl.setGlobalIconSize(modelData.size);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             // List of toggleable & reorderable action buttons
             Repeater {
                 model: customizerRoot.orderedActions
@@ -320,6 +400,55 @@ ColumnLayout {
                                 onClicked: {
                                     if (typeof systemCtrl !== "undefined" && systemCtrl)
                                         systemCtrl.setTileVisible(modelData.key, !isTileActive);
+                                }
+                            }
+                        }
+
+                        // Per-Button Custom Size Chip
+                        Rectangle {
+                            width: 36
+                            height: 22
+                            radius: 11
+                            property string currentSize: {
+                                var rev = customizerRoot.revision;
+                                return (typeof systemCtrl !== "undefined" && systemCtrl)
+                                       ? systemCtrl.getActionSize(modelData.key)
+                                       : "default";
+                            }
+                            property bool isOverridden: currentSize !== "default"
+
+                            color: isOverridden ? Qt.rgba(0, 0.82, 1, 0.22) : (sizeChipMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgInset)
+                            border.color: isOverridden ? TitanTheme.accent : TitanTheme.borderGlass
+                            border.width: 1
+
+                            scale: sizeChipMa.pressed ? 0.92 : 1.0
+                            Behavior on scale { NumberAnimation { duration: 110 } }
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: {
+                                    var sz = parent.currentSize.toLowerCase();
+                                    if (sz === "small" || sz === "s") return "S";
+                                    if (sz === "medium" || sz === "m") return "M";
+                                    if (sz === "large" || sz === "l") return "L";
+                                    if (sz === "huge" || sz === "xl") return "XL";
+                                    return "Def";
+                                }
+                                font.family: TitanTheme.fontFamily
+                                font.pixelSize: 10
+                                font.weight: Font.Bold
+                                color: parent.isOverridden ? TitanTheme.accent : TitanTheme.textMuted
+                            }
+
+                            MouseArea {
+                                id: sizeChipMa
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    if (typeof systemCtrl !== "undefined" && systemCtrl) {
+                                        systemCtrl.cycleActionSize(modelData.key);
+                                    }
                                 }
                             }
                         }
