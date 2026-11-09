@@ -25,5 +25,8 @@
         <file>qml/components/QuickSettingsCustomizer.qml</file>
         <file>qml/components/OneUIPowerMenu.qml</file>
         <file>qml/components/OneUIWifiPage.qml</file>
+        <file>qml/components/SquareMusicWidget.qml</file>
+        <file>qml/components/SquareConnectivityWidget.qml</file>
+        <file>qml/components/CircularActionGrid.qml</file>
     </qresource>
 </RCC>

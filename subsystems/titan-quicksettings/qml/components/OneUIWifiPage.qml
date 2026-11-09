@@ -12,7 +12,7 @@ import "../style"
 Rectangle {
     id: wifiPageRoot
     radius: TitanTheme.radiusWindow
-    color: TitanTheme.bgMenu
+    color: TitanTheme.isDark ? "#181825" : "#EFF1F5"
     border.color: TitanTheme.borderGlass
     border.width: 1
     clip: true
@@ -268,13 +268,18 @@ Rectangle {
             }
 
             // State B: Wi-Fi Enabled (List of Networks)
-            ScrollView {
+            Flickable {
+                id: wifiFlick
                 anchors.fill: parent
                 clip: true
+                contentWidth: width
+                contentHeight: wifiListCol.implicitHeight + 24
+                boundsBehavior: Flickable.StopAtBounds
                 visible: (typeof networkCtrl !== "undefined" && networkCtrl) ? networkCtrl.wifiEnabled : true
 
                 ColumnLayout {
-                    width: parent.width
+                    id: wifiListCol
+                    width: wifiFlick.width
                     spacing: 12
 
                     // ── Active Connected Card ────────────────────────────────
@@ -343,9 +348,9 @@ Rectangle {
                                 }
 
                                 Rectangle {
-                                    Layout.preferredWidth: 76
-                                    Layout.preferredHeight: 28
-                                    radius: 14
+                                    Layout.preferredWidth: 84
+                                    Layout.preferredHeight: 30
+                                    radius: 15
                                     color: disMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgOneUIPill
                                     border.color: disMa.containsMouse ? TitanTheme.borderHover : TitanTheme.borderGlass
                                     border.width: 1
@@ -354,7 +359,7 @@ Rectangle {
                                         anchors.centerIn: parent
                                         text: "Disconnect"
                                         font.family: TitanTheme.fontFamily
-                                        font.pixelSize: 10
+                                        font.pixelSize: 11
                                         font.weight: Font.Bold
                                         color: TitanTheme.textSecondary
                                     }

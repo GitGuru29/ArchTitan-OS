@@ -111,6 +111,16 @@ int main(int argc, char *argv[])
                 return 0;
             }
             break;
+        } else if (arg == "--wifi" || arg == "-w") {
+            if (IpcServer::sendCommand("WIFI")) {
+                return 0;
+            }
+            break;
+        } else if (arg == "--edit" || arg == "-e") {
+            if (IpcServer::sendCommand("EDIT")) {
+                return 0;
+            }
+            break;
         } else if (arg == "--set-margin" && i + 1 < argc) {
             // Quick CLI override: titan-quicksettings --set-margin top=N
             // Writes to config.ini so it persists on next daemon restart.
@@ -288,6 +298,14 @@ int main(int argc, char *argv[])
             } else {
                 window->setProperty("showNotificationPanel", !isShown);
             }
+        });
+        QObject::connect(&ipc, &IpcServer::wifiRequested, window, [window]() {
+            window->setProperty("showWifiPage", true);
+            QMetaObject::invokeMethod(window, "openDrawer");
+        });
+        QObject::connect(&ipc, &IpcServer::editRequested, window, [window]() {
+            window->setProperty("editMode", true);
+            QMetaObject::invokeMethod(window, "openDrawer");
         });
 
         // Dismiss on click-away: a layer-shell surface only receives keyboard

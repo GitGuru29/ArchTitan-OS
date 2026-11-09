@@ -71,6 +71,10 @@ void IpcServer::handleNewConnection()
                 emit hideRequested();
             } else if (cmd.compare("NOTIFICATIONS", Qt::CaseInsensitive) == 0) {
                 emit notificationsRequested();
+            } else if (cmd.compare("WIFI", Qt::CaseInsensitive) == 0) {
+                emit wifiRequested();
+            } else if (cmd.compare("EDIT", Qt::CaseInsensitive) == 0) {
+                emit editRequested();
             }
             client->disconnectFromServer();
         });

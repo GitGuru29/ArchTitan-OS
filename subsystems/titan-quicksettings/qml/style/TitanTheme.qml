@@ -70,15 +70,15 @@ QtObject {
     readonly property int sizeSmall:    11
     readonly property int sizeCaption:  9
 
-    // ── One UI geometry & radii ─────────────────────────────────────────────
-    readonly property int radiusWindow:     TDL.TitanTheme.radiusWindow
-    readonly property int radiusBento:      TDL.TitanTheme.radiusBento
-    readonly property int radiusCard:       TDL.TitanTheme.radiusCard
-    readonly property int radiusControl:    TDL.TitanTheme.radiusControl
-    readonly property int radiusSlider:     TDL.TitanTheme.radiusSlider
-    readonly property int radiusCircle:     TDL.TitanTheme.radiusSlider
-    readonly property int radiusPill:       TDL.TitanTheme.radiusBento
-    readonly property int radiusIcon:       TDL.TitanTheme.radiusCard
+    // ── Super-Round Pebble Geometry & Radii ──────────────────────────────
+    readonly property int radiusWindow:     32
+    readonly property int radiusBento:      28
+    readonly property int radiusCard:       24
+    readonly property int radiusControl:    24
+    readonly property int radiusSlider:     14
+    readonly property int radiusCircle:     24
+    readonly property int radiusPill:       99
+    readonly property int radiusIcon:       22
 
     readonly property int spacing:         10
     readonly property int panelPadding:    14
