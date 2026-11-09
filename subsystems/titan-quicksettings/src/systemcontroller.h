@@ -27,6 +27,11 @@ class SystemController : public QObject {
   Q_PROPERTY(int brightness READ brightness NOTIFY brightnessChanged)
   Q_PROPERTY(int glassOpacity READ glassOpacity WRITE setGlassOpacity NOTIFY glassOpacityChanged)
   Q_PROPERTY(int tileVisibilityRevision READ tileVisibilityRevision NOTIFY tileVisibilityChanged)
+  Q_PROPERTY(int cpuUsage READ cpuUsage NOTIFY statsChanged)
+  Q_PROPERTY(int ramUsage READ ramUsage NOTIFY statsChanged)
+  Q_PROPERTY(int batteryPercent READ batteryPercent NOTIFY statsChanged)
+  Q_PROPERTY(bool batteryCharging READ batteryCharging NOTIFY statsChanged)
+  Q_PROPERTY(bool hasBattery READ hasBattery NOTIFY statsChanged)
 
 public:
   explicit SystemController(QObject *parent = nullptr);
@@ -44,6 +49,11 @@ public:
   int brightness() const { return m_brightness; }
   int glassOpacity() const { return m_glassOpacity; }
   int tileVisibilityRevision() const { return m_tileVisibilityRevision; }
+  int cpuUsage() const { return m_cpuUsage; }
+  int ramUsage() const { return m_ramUsage; }
+  int batteryPercent() const { return m_batteryPercent; }
+  bool batteryCharging() const { return m_batteryCharging; }
+  bool hasBattery() const { return m_hasBattery; }
 
   void setCaffeineActive(bool active);
   void setThemeDark(bool dark);
@@ -58,6 +68,17 @@ public:
   Q_INVOKABLE QStringList getActionOrder() const;
   Q_INVOKABLE void setActionOrder(const QStringList &order);
   Q_INVOKABLE void moveActionOrder(int fromIndex, int toIndex);
+
+  Q_INVOKABLE QStringList getSectionOrder() const;
+  Q_INVOKABLE void setSectionOrder(const QStringList &order);
+  Q_INVOKABLE void moveSectionOrder(int fromIndex, int toIndex);
+  Q_INVOKABLE void addSection(const QString &sectionKey);
+  Q_INVOKABLE void removeSection(const QString &sectionKey);
+  Q_INVOKABLE void splitTopRow();
+  Q_INVOKABLE void mergeTopRow();
+  Q_INVOKABLE QString getWidgetSize(const QString &widgetKey, const QString &defaultSize = "compact") const;
+  Q_INVOKABLE void setWidgetSize(const QString &widgetKey, const QString &size);
+  Q_INVOKABLE void toggleWidgetSize(const QString &widgetKey);
 
 public slots:
   void refresh();
@@ -91,6 +112,7 @@ signals:
   void brightnessChanged();
   void glassOpacityChanged();
   void tileVisibilityChanged();
+  void statsChanged();
 
 private:
   void updateUptime();
@@ -99,6 +121,7 @@ private:
   void updateTheme();
   void updateScreenRecording();
   void updateAirplaneMode();
+  void updateStats();
 
   QString m_uptime{"Up 0m"};
   QString m_currentDateString;
@@ -114,6 +137,14 @@ private:
   int m_brightness{80};
   int m_glassOpacity{35};
   int m_tileVisibilityRevision{0};
+
+  int m_cpuUsage{0};
+  int m_ramUsage{0};
+  int m_batteryPercent{100};
+  bool m_batteryCharging{false};
+  bool m_hasBattery{false};
+  unsigned long long m_prevCpuIdle{0};
+  unsigned long long m_prevCpuTotal{0};
 
   QTimer *m_timer;
   QTimer *m_glassApplyTimer{nullptr};

@@ -483,4 +483,385 @@ ColumnLayout {
             }
         }
     }
+
+    // ── 4. Panel Layout & Widgets (Move Everything & Add Widgets) ───────────
+    Rectangle {
+        id: layoutCard
+        Layout.fillWidth: true
+        implicitHeight: layoutCol.implicitHeight + 24
+        radius: TitanTheme.radiusBento
+        color: TitanTheme.bgOneUICard
+        border.color: TitanTheme.borderGlass
+        border.width: 1
+
+        readonly property var sectionMap: ({
+            "topRow":       { key: "topRow",       icon: "\uf1eb", title: "Top Row (Dual Square)", desc: "Connectivity + Music Player paired" },
+            "connectivity": { key: "connectivity", icon: "\uf1eb", title: "Connectivity Card",     desc: "Wi-Fi, Bluetooth, TitanDrop" },
+            "music":        { key: "music",        icon: "\uf001", title: "Music Player Banner",   desc: "Full-width media player banner" },
+            "sliders":      { key: "sliders",      icon: "\uf1de", title: "Sliders Bento",          desc: "Display brightness & sound volume" },
+            "actions":      { key: "actions",      icon: "\uf009", title: "Floating Action Grid",  desc: "Independent circular action buttons" },
+            "liquidGlass":  { key: "liquidGlass",  icon: "\uf043", title: "Liquid Glass",          desc: "Compositor frosted glass opacity" },
+            "performance":  { key: "performance",  icon: "\uf2db", title: "Performance Monitor",  desc: "Live CPU & Memory utilization" },
+            "battery":      { key: "battery",      icon: "\uf240", title: "Battery & Energy",      desc: "Battery status & power profile" }
+        })
+
+        readonly property var activeSections: {
+            var rev = customizerRoot.revision;
+            var order = (typeof systemCtrl !== "undefined" && systemCtrl)
+                        ? systemCtrl.getSectionOrder()
+                        : ["topRow", "sliders", "actions", "liquidGlass"];
+            var list = [];
+            for (var i = 0; i < order.length; ++i) {
+                var k = order[i];
+                if (sectionMap[k]) list.push(sectionMap[k]);
+            }
+            return list;
+        }
+
+        ColumnLayout {
+            id: layoutCol
+            anchors.fill: parent
+            anchors.margins: 14
+            spacing: 12
+
+            Text {
+                text: "PANEL LAYOUT ORDER"
+                font.family: TitanTheme.fontFamily
+                font.pixelSize: 11
+                font.weight: Font.Bold
+                color: TitanTheme.textSubtle
+            }
+
+            Text {
+                text: "Move sections up or down to organize your panel"
+                font.family: TitanTheme.fontFamily
+                font.pixelSize: 11
+                color: TitanTheme.textMuted
+            }
+
+            // Section list with Move Up and Move Down
+            Repeater {
+                model: layoutCard.activeSections
+
+                delegate: Rectangle {
+                    Layout.fillWidth: true
+                    height: 44
+                    radius: 12
+                    color: TitanTheme.bgInset
+
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: 8
+                        anchors.rightMargin: 8
+                        spacing: 8
+
+                        // Move Up / Down controls
+                        ColumnLayout {
+                            spacing: 1
+                            Layout.alignment: Qt.AlignVCenter
+
+                            Rectangle {
+                                width: 22
+                                height: 16
+                                radius: 8
+                                color: secUpMa.containsMouse ? TitanTheme.bgHover : "transparent"
+                                opacity: index > 0 ? 1.0 : 0.25
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "\uf077"
+                                    font.family: TitanTheme.monoFamily
+                                    font.pixelSize: 9
+                                    color: secUpMa.containsMouse ? TitanTheme.accent : TitanTheme.textMuted
+                                }
+
+                                MouseArea {
+                                    id: secUpMa
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: index > 0 ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                    enabled: index > 0
+                                    onClicked: {
+                                        if (typeof systemCtrl !== "undefined" && systemCtrl)
+                                            systemCtrl.moveSectionOrder(index, index - 1);
+                                    }
+                                }
+                            }
+
+                            Rectangle {
+                                width: 22
+                                height: 16
+                                radius: 8
+                                color: secDownMa.containsMouse ? TitanTheme.bgHover : "transparent"
+                                opacity: index < layoutCard.activeSections.length - 1 ? 1.0 : 0.25
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "\uf078"
+                                    font.family: TitanTheme.monoFamily
+                                    font.pixelSize: 9
+                                    color: secDownMa.containsMouse ? TitanTheme.accent : TitanTheme.textMuted
+                                }
+
+                                MouseArea {
+                                    id: secDownMa
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: index < layoutCard.activeSections.length - 1 ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                    enabled: index < layoutCard.activeSections.length - 1
+                                    onClicked: {
+                                        if (typeof systemCtrl !== "undefined" && systemCtrl)
+                                            systemCtrl.moveSectionOrder(index, index + 1);
+                                    }
+                                }
+                            }
+                        }
+
+                        // Icon Medallion
+                        Rectangle {
+                            width: 32
+                            height: 32
+                            radius: 16
+                            color: TitanTheme.bgOneUIPill
+                            border.color: TitanTheme.borderGlass
+                            border.width: 1
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: modelData.icon
+                                font.family: TitanTheme.monoFamily
+                                font.pixelSize: 13
+                                color: TitanTheme.textPrimary
+                            }
+                        }
+
+                        // Labels
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 1
+
+                            Text {
+                                text: modelData.title
+                                font.family: TitanTheme.fontFamily
+                                font.pixelSize: 12
+                                font.weight: Font.DemiBold
+                                color: TitanTheme.textPrimary
+                            }
+
+                            Text {
+                                text: modelData.desc
+                                font.family: TitanTheme.fontFamily
+                                font.pixelSize: 10
+                                color: TitanTheme.textSubtle
+                                elide: Text.ElideRight
+                                Layout.fillWidth: true
+                            }
+                        }
+
+                        // Remove / Hide button
+                        Rectangle {
+                            width: 28
+                            height: 28
+                            radius: 14
+                            color: removeSecMa.containsMouse ? Qt.rgba(0.95, 0.55, 0.66, 0.25) : "transparent"
+                            visible: modelData.key !== "actions"
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "\uf00d"
+                                font.family: TitanTheme.monoFamily
+                                font.pixelSize: 10
+                                color: removeSecMa.containsMouse ? TitanTheme.red : TitanTheme.textMuted
+                            }
+
+                            MouseArea {
+                                id: removeSecMa
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    if (typeof systemCtrl !== "undefined" && systemCtrl)
+                                        systemCtrl.removeSection(modelData.key);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ── Widget Actions & Add Widgets Row ────────────────────────────
+            Text {
+                text: "ADD & ORGANIZE WIDGETS"
+                font.family: TitanTheme.fontFamily
+                font.pixelSize: 11
+                font.weight: Font.Bold
+                color: TitanTheme.textSubtle
+                Layout.topMargin: 6
+            }
+
+            Flow {
+                Layout.fillWidth: true
+                spacing: 8
+
+                // Move Music to Bottom / Separate Music Button
+                Rectangle {
+                    implicitWidth: musicBtnRow.implicitWidth + 20
+                    height: 32
+                    radius: 16
+                    color: musicBtnMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgOneUIPill
+                    border.color: TitanTheme.borderGlass
+                    border.width: 1
+
+                    property bool hasSeparateMusic: {
+                        var rev = customizerRoot.revision;
+                        var order = (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.getSectionOrder() : [];
+                        return order.indexOf("music") !== -1;
+                    }
+
+                    RowLayout {
+                        id: musicBtnRow
+                        anchors.centerIn: parent
+                        spacing: 6
+
+                        Text {
+                            text: parent.parent.hasSeparateMusic ? "\uf066" : "\uf001"
+                            font.family: TitanTheme.monoFamily
+                            font.pixelSize: 11
+                            color: TitanTheme.accent
+                        }
+
+                        Text {
+                            text: parent.parent.hasSeparateMusic ? "Pair Music at Top" : "Move Music to Bottom"
+                            font.family: TitanTheme.fontFamily
+                            font.pixelSize: 11
+                            font.weight: Font.DemiBold
+                            color: TitanTheme.textPrimary
+                        }
+                    }
+
+                    MouseArea {
+                        id: musicBtnMa
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            if (typeof systemCtrl !== "undefined" && systemCtrl) {
+                                if (parent.hasSeparateMusic) {
+                                    systemCtrl.mergeTopRow();
+                                } else {
+                                    systemCtrl.splitTopRow();
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Add Performance Monitor Widget
+                Rectangle {
+                    implicitWidth: perfBtnRow.implicitWidth + 20
+                    height: 32
+                    radius: 16
+                    color: perfBtnMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgOneUIPill
+                    border.color: TitanTheme.borderGlass
+                    border.width: 1
+
+                    property bool hasPerf: {
+                        var rev = customizerRoot.revision;
+                        var order = (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.getSectionOrder() : [];
+                        return order.indexOf("performance") !== -1;
+                    }
+
+                    RowLayout {
+                        id: perfBtnRow
+                        anchors.centerIn: parent
+                        spacing: 6
+
+                        Text {
+                            text: parent.parent.hasPerf ? "\uf00d" : "\uf067"
+                            font.family: TitanTheme.monoFamily
+                            font.pixelSize: 11
+                            color: parent.parent.hasPerf ? TitanTheme.red : TitanTheme.green
+                        }
+
+                        Text {
+                            text: parent.parent.hasPerf ? "Remove CPU/RAM" : "Add CPU/RAM Monitor"
+                            font.family: TitanTheme.fontFamily
+                            font.pixelSize: 11
+                            font.weight: Font.DemiBold
+                            color: TitanTheme.textPrimary
+                        }
+                    }
+
+                    MouseArea {
+                        id: perfBtnMa
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            if (typeof systemCtrl !== "undefined" && systemCtrl) {
+                                if (parent.hasPerf) {
+                                    systemCtrl.removeSection("performance");
+                                } else {
+                                    systemCtrl.addSection("performance");
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Add Battery & Energy Widget
+                Rectangle {
+                    implicitWidth: batBtnRow.implicitWidth + 20
+                    height: 32
+                    radius: 16
+                    color: batBtnMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgOneUIPill
+                    border.color: TitanTheme.borderGlass
+                    border.width: 1
+
+                    property bool hasBat: {
+                        var rev = customizerRoot.revision;
+                        var order = (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.getSectionOrder() : [];
+                        return order.indexOf("battery") !== -1;
+                    }
+
+                    RowLayout {
+                        id: batBtnRow
+                        anchors.centerIn: parent
+                        spacing: 6
+
+                        Text {
+                            text: parent.parent.hasBat ? "\uf00d" : "\uf067"
+                            font.family: TitanTheme.monoFamily
+                            font.pixelSize: 11
+                            color: parent.parent.hasBat ? TitanTheme.red : TitanTheme.green
+                        }
+
+                        Text {
+                            text: parent.parent.hasBat ? "Remove Battery" : "Add Battery Widget"
+                            font.family: TitanTheme.fontFamily
+                            font.pixelSize: 11
+                            font.weight: Font.DemiBold
+                            color: TitanTheme.textPrimary
+                        }
+                    }
+
+                    MouseArea {
+                        id: batBtnMa
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            if (typeof systemCtrl !== "undefined" && systemCtrl) {
+                                if (parent.hasBat) {
+                                    systemCtrl.removeSection("battery");
+                                } else {
+                                    systemCtrl.addSection("battery");
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
