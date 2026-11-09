@@ -136,6 +136,7 @@ ColumnLayout {
         border.color: TitanTheme.borderGlass
         border.width: 1
         clip: true
+        visible: (typeof systemCtrl === "undefined" || !systemCtrl) || ((systemCtrl.tileVisibilityRevision >= 0) && systemCtrl.getTileVisible("liquidGlass", true))
 
         ColumnLayout {
             id: glassCol

@@ -55,6 +55,9 @@ public:
   Q_INVOKABLE bool getTileVisible(const QString &tileKey, bool defaultVal = true) const;
   Q_INVOKABLE void setTileVisible(const QString &tileKey, bool visible);
   Q_INVOKABLE void resetTileVisibility();
+  Q_INVOKABLE QStringList getActionOrder() const;
+  Q_INVOKABLE void setActionOrder(const QStringList &order);
+  Q_INVOKABLE void moveActionOrder(int fromIndex, int toIndex);
 
 public slots:
   void refresh();

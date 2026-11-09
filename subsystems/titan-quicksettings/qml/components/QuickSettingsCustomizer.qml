@@ -15,6 +15,38 @@ ColumnLayout {
 
     signal doneRequested()
 
+    property int revision: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.tileVisibilityRevision : 0
+
+    readonly property var allActionMap: ({
+        "focus":        { key: "focus",        icon: "\uf186", title: "Focus Mode",        desc: "Do not disturb notifications" },
+        "dark":         { key: "dark",         icon: "\uf042", title: "Dark Theme",        desc: "Toggle light and dark color scheme" },
+        "night":        { key: "night",        icon: "\uf06e", title: "Night Light",       desc: "Warm screen color filter" },
+        "mic":          { key: "mic",          icon: "\uf130", title: "Microphone",        desc: "Mute or unmute audio input" },
+        "caffeine":     { key: "caffeine",     icon: "\uf0f4", title: "Stay Awake",        desc: "Inhibit screen timeout & suspend" },
+        "capture":      { key: "capture",      icon: "\uf030", title: "Screen Capture",    desc: "Region screenshot to clipboard" },
+        "record":       { key: "record",       icon: "\uf03d", title: "Screen Record",     desc: "Wayland video screen recording" },
+        "colorPick":    { key: "colorPick",    icon: "\uf1fb", title: "Color Picker",      desc: "Hyprpicker hex eyedropper" },
+        "gameMode":     { key: "gameMode",     icon: "\uf11b", title: "Game Mode",         desc: "Performance profile & compositor" },
+        "clipboard":    { key: "clipboard",    icon: "\uf0ea", title: "Clipboard",         desc: "Cliphist history manager" },
+        "virtualInput": { key: "virtualInput", icon: "\uf11c", title: "Virtual Keyboard",  desc: "wvkbd on-screen touch keyboard" },
+        "airplane":     { key: "airplane",     icon: "\uf072", title: "Airplane Mode",     desc: "Disable Wi-Fi and Bluetooth" }
+    })
+
+    property var orderedActions: {
+        var rev = revision;
+        var order = (typeof systemCtrl !== "undefined" && systemCtrl)
+                    ? systemCtrl.getActionOrder()
+                    : ["focus", "dark", "night", "mic", "caffeine", "capture", "record", "colorPick", "gameMode", "clipboard", "virtualInput", "airplane"];
+        var list = [];
+        for (var i = 0; i < order.length; ++i) {
+            var k = order[i];
+            if (allActionMap[k]) {
+                list.push(allActionMap[k]);
+            }
+        }
+        return list;
+    }
+
     // ── 1. Customizer Header ────────────────────────────────────────────────
     Rectangle {
         Layout.fillWidth: true
@@ -147,22 +179,9 @@ ColumnLayout {
                 color: TitanTheme.textSubtle
             }
 
-            // List of toggleable action buttons
+            // List of toggleable & reorderable action buttons
             Repeater {
-                model: [
-                    { key: "focus",        icon: "\uf186", title: "Focus Mode",        desc: "Do not disturb notifications" },
-                    { key: "dark",         icon: "\uf042", title: "Dark Theme",        desc: "Toggle light and dark color scheme" },
-                    { key: "night",        icon: "\uf06e", title: "Night Light",       desc: "Warm screen color filter" },
-                    { key: "mic",          icon: "\uf130", title: "Microphone",        desc: "Mute or unmute audio input" },
-                    { key: "caffeine",     icon: "\uf0f4", title: "Stay Awake",        desc: "Inhibit screen timeout & suspend" },
-                    { key: "capture",      icon: "\uf030", title: "Screen Capture",    desc: "Region screenshot to clipboard" },
-                    { key: "record",       icon: "\uf03d", title: "Screen Record",     desc: "Wayland video screen recording" },
-                    { key: "colorPick",    icon: "\uf1fb", title: "Color Picker",      desc: "Hyprpicker hex eyedropper" },
-                    { key: "gameMode",     icon: "\uf11b", title: "Game Mode",         desc: "Performance profile & compositor" },
-                    { key: "clipboard",    icon: "\uf0ea", title: "Clipboard",         desc: "Cliphist history manager" },
-                    { key: "virtualInput", icon: "\uf11c", title: "Virtual Keyboard",  desc: "wvkbd on-screen touch keyboard" },
-                    { key: "airplane",     icon: "\uf072", title: "Airplane Mode",     desc: "Disable Wi-Fi and Bluetooth" }
-                ]
+                model: customizerRoot.orderedActions
 
                 delegate: Rectangle {
                     Layout.fillWidth: true
@@ -177,9 +196,75 @@ ColumnLayout {
 
                     RowLayout {
                         anchors.fill: parent
-                        anchors.leftMargin: 8
+                        anchors.leftMargin: 6
                         anchors.rightMargin: 8
-                        spacing: 12
+                        spacing: 8
+
+                        // ── Reorder Arrows (Move Up / Down) ──────────────────
+                        ColumnLayout {
+                            spacing: 1
+                            Layout.alignment: Qt.AlignVCenter
+
+                            // Move Up Arrow
+                            Rectangle {
+                                width: 22
+                                height: 16
+                                radius: 8
+                                color: upMa.containsMouse ? TitanTheme.bgHover : "transparent"
+                                opacity: index > 0 ? 1.0 : 0.25
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "\uf077" // chevron up
+                                    font.family: TitanTheme.monoFamily
+                                    font.pixelSize: 9
+                                    color: upMa.containsMouse ? TitanTheme.accent : TitanTheme.textMuted
+                                }
+
+                                MouseArea {
+                                    id: upMa
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: index > 0 ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                    enabled: index > 0
+                                    onClicked: {
+                                        if (typeof systemCtrl !== "undefined" && systemCtrl) {
+                                            systemCtrl.moveActionOrder(index, index - 1);
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Move Down Arrow
+                            Rectangle {
+                                width: 22
+                                height: 16
+                                radius: 8
+                                color: downMa.containsMouse ? TitanTheme.bgHover : "transparent"
+                                opacity: index < customizerRoot.orderedActions.length - 1 ? 1.0 : 0.25
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "\uf078" // chevron down
+                                    font.family: TitanTheme.monoFamily
+                                    font.pixelSize: 9
+                                    color: downMa.containsMouse ? TitanTheme.accent : TitanTheme.textMuted
+                                }
+
+                                MouseArea {
+                                    id: downMa
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: index < customizerRoot.orderedActions.length - 1 ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                    enabled: index < customizerRoot.orderedActions.length - 1
+                                    onClicked: {
+                                        if (typeof systemCtrl !== "undefined" && systemCtrl) {
+                                            systemCtrl.moveActionOrder(index, index + 1);
+                                        }
+                                    }
+                                }
+                            }
+                        }
 
                         // Icon Medallion
                         Rectangle {
@@ -199,26 +284,43 @@ ColumnLayout {
                             }
                         }
 
-                        // Labels
-                        ColumnLayout {
+                        // Labels & Click-to-Toggle Area
+                        Item {
                             Layout.fillWidth: true
-                            spacing: 1
+                            Layout.fillHeight: true
 
-                            Text {
-                                text: modelData.title
-                                font.family: TitanTheme.fontFamily
-                                font.pixelSize: 12
-                                font.weight: Font.DemiBold
-                                color: isTileActive ? TitanTheme.textPrimary : TitanTheme.textMuted
+                            ColumnLayout {
+                                anchors.fill: parent
+                                anchors.verticalCenter: parent.verticalCenter
+                                spacing: 1
+
+                                Text {
+                                    text: modelData.title
+                                    font.family: TitanTheme.fontFamily
+                                    font.pixelSize: 12
+                                    font.weight: Font.DemiBold
+                                    color: isTileActive ? TitanTheme.textPrimary : TitanTheme.textMuted
+                                }
+
+                                Text {
+                                    text: modelData.desc
+                                    font.family: TitanTheme.fontFamily
+                                    font.pixelSize: 10
+                                    color: TitanTheme.textSubtle
+                                    elide: Text.ElideRight
+                                    Layout.fillWidth: true
+                                }
                             }
 
-                            Text {
-                                text: modelData.desc
-                                font.family: TitanTheme.fontFamily
-                                font.pixelSize: 10
-                                color: TitanTheme.textSubtle
-                                elide: Text.ElideRight
-                                Layout.fillWidth: true
+                            MouseArea {
+                                id: itemMa
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    if (typeof systemCtrl !== "undefined" && systemCtrl)
+                                        systemCtrl.setTileVisible(modelData.key, !isTileActive);
+                                }
                             }
                         }
 
@@ -243,17 +345,15 @@ ColumnLayout {
                                 color: "#FFFFFF"
                                 Behavior on x { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
                             }
-                        }
-                    }
 
-                    MouseArea {
-                        id: itemMa
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            if (typeof systemCtrl !== "undefined" && systemCtrl)
-                                systemCtrl.setTileVisible(modelData.key, !isTileActive);
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    if (typeof systemCtrl !== "undefined" && systemCtrl)
+                                        systemCtrl.setTileVisible(modelData.key, !isTileActive);
+                                }
+                            }
                         }
                     }
                 }
@@ -287,7 +387,8 @@ ColumnLayout {
             Repeater {
                 model: [
                     { key: "sliders",     icon: "\uf1de", title: "Sliders Bento",      desc: "Display brightness and audio volume" },
-                    { key: "deviceMedia", icon: "\uf025", title: "Media Controller",   desc: "Output device & audio player status" }
+                    { key: "deviceMedia", icon: "\uf025", title: "Media Controller",   desc: "Output device & audio player status" },
+                    { key: "liquidGlass", icon: "\uf043", title: "Liquid Glass",       desc: "Compositor frosted glass opacity" }
                 ]
 
                 delegate: Rectangle {

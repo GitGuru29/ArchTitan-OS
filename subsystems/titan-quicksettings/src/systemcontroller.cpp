@@ -527,3 +527,67 @@ void SystemController::resetTileVisibility()
     m_tileVisibilityRevision++;
     emit tileVisibilityChanged();
 }
+
+QStringList SystemController::getActionOrder() const
+{
+    QString cfgDir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
+    QSettings settings(cfgDir + "/archtitan/settings.ini", QSettings::IniFormat);
+    const QStringList defaultOrder = {
+        "focus", "dark", "night", "mic",
+        "caffeine", "capture", "record", "colorPick",
+        "gameMode", "clipboard", "virtualInput", "airplane"
+    };
+    QVariant val = settings.value("quicksettings/actionOrder");
+    if (!val.isValid()) {
+        val = settings.value("quicksettings/actionorder");
+    }
+    if (!val.isValid()) {
+        return defaultOrder;
+    }
+
+    QStringList rawList;
+    if (val.typeId() == QMetaType::QStringList) {
+        rawList = val.toStringList();
+        // If single string item contains commas, split it
+        if (rawList.size() == 1 && rawList.first().contains(',')) {
+            rawList = rawList.first().split(',', Qt::SkipEmptyParts);
+        }
+    } else {
+        rawList = val.toString().split(',', Qt::SkipEmptyParts);
+    }
+
+    QStringList result;
+    for (QString k : rawList) {
+        k = k.remove('"').remove('\'').trimmed();
+        if (defaultOrder.contains(k) && !result.contains(k)) {
+            result.append(k);
+        }
+    }
+
+    for (const QString &key : defaultOrder) {
+        if (!result.contains(key)) {
+            result.append(key);
+        }
+    }
+    return result;
+}
+
+void SystemController::setActionOrder(const QStringList &order)
+{
+    QString cfgDir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
+    QSettings settings(cfgDir + "/archtitan/settings.ini", QSettings::IniFormat);
+    settings.setValue("quicksettings/actionOrder", order.join(","));
+    settings.sync();
+    m_tileVisibilityRevision++;
+    emit tileVisibilityChanged();
+}
+
+void SystemController::moveActionOrder(int fromIndex, int toIndex)
+{
+    QStringList order = getActionOrder();
+    if (fromIndex < 0 || fromIndex >= order.size() || toIndex < 0 || toIndex >= order.size() || fromIndex == toIndex) {
+        return;
+    }
+    order.move(fromIndex, toIndex);
+    setActionOrder(order);
+}

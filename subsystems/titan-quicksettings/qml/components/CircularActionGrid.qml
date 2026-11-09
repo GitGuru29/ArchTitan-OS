@@ -30,32 +30,38 @@ GridLayout {
     property bool dndActive: false
     property int revision: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.tileVisibilityRevision : 0
 
-    readonly property var allActionDefs: [
-        { key: "focus",        icon: "\uf186", label: "Focus",       color: TitanTheme.lavender },
-        { key: "dark",         icon: "\uf042", label: "Dark",        color: TitanTheme.accent },
-        { key: "night",        icon: "\uf06e", label: "Night",       color: TitanTheme.peach },
-        { key: "mic",          icon: "\uf130", label: "Mic",         color: TitanTheme.red },
-        { key: "caffeine",     icon: "\uf0f4", label: "Awake",       color: TitanTheme.yellow },
-        { key: "capture",      icon: "\uf030", label: "Screenshot",  color: TitanTheme.cyan },
-        { key: "record",       icon: "\uf03d", label: "Record",      color: TitanTheme.red },
-        { key: "colorPick",    icon: "\uf1fb", label: "Picker",      color: TitanTheme.teal },
-        { key: "gameMode",     icon: "\uf11b", label: "Game",        color: TitanTheme.accentBlue },
-        { key: "clipboard",    icon: "\uf0ea", label: "Clipboard",   color: TitanTheme.lavender },
-        { key: "virtualInput", icon: "\uf11c", label: "Keyboard",    color: TitanTheme.peach },
-        { key: "airplane",     icon: "\uf072", label: "Airplane",    color: TitanTheme.red }
-    ]
+    readonly property var actionMap: ({
+        "focus":        { key: "focus",        icon: "\uf186", label: "Focus",       color: TitanTheme.lavender },
+        "dark":         { key: "dark",         icon: "\uf042", label: "Dark",        color: TitanTheme.accent },
+        "night":        { key: "night",        icon: "\uf06e", label: "Night",       color: TitanTheme.peach },
+        "mic":          { key: "mic",          icon: "\uf130", label: "Mic",         color: TitanTheme.red },
+        "caffeine":     { key: "caffeine",     icon: "\uf0f4", label: "Awake",       color: TitanTheme.yellow },
+        "capture":      { key: "capture",      icon: "\uf030", label: "Screenshot",  color: TitanTheme.cyan },
+        "record":       { key: "record",       icon: "\uf03d", label: "Record",      color: TitanTheme.red },
+        "colorPick":    { key: "colorPick",    icon: "\uf1fb", label: "Picker",      color: TitanTheme.teal },
+        "gameMode":     { key: "gameMode",     icon: "\uf11b", label: "Game",        color: TitanTheme.accentBlue },
+        "clipboard":    { key: "clipboard",    icon: "\uf0ea", label: "Clipboard",   color: TitanTheme.lavender },
+        "virtualInput": { key: "virtualInput", icon: "\uf11c", label: "Keyboard",    color: TitanTheme.peach },
+        "airplane":     { key: "airplane",     icon: "\uf072", label: "Airplane",    color: TitanTheme.red }
+    })
 
     property var visibleActions: {
         var rev = revision;
+        var order = (typeof systemCtrl !== "undefined" && systemCtrl)
+                    ? systemCtrl.getActionOrder()
+                    : ["focus", "dark", "night", "mic", "caffeine", "capture", "record", "colorPick", "gameMode", "clipboard", "virtualInput", "airplane"];
         var list = [];
-        for (var i = 0; i < allActionDefs.length; ++i) {
-            var item = allActionDefs[i];
-            var isVisible = true;
-            if (typeof systemCtrl !== "undefined" && systemCtrl) {
-                isVisible = systemCtrl.getTileVisible(item.key, true);
-            }
-            if (isVisible) {
-                list.push(item);
+        for (var i = 0; i < order.length; ++i) {
+            var k = order[i];
+            var item = actionMap[k];
+            if (item) {
+                var isVisible = true;
+                if (typeof systemCtrl !== "undefined" && systemCtrl) {
+                    isVisible = systemCtrl.getTileVisible(k, true);
+                }
+                if (isVisible) {
+                    list.push(item);
+                }
             }
         }
         return list;
