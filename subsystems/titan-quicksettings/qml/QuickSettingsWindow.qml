@@ -16,8 +16,8 @@ import "style"
 Window {
     id: rootWindow
     title: "titan-quicksettings"
-    width: showNotificationPanel ? 870 : 420
-    height: 990
+    width: showNotificationPanel ? 820 : 390
+    height: 660
 
     flags: Qt.FramelessWindowHint
     color: "transparent"
@@ -30,7 +30,7 @@ Window {
     property bool showWifiPage: false
 
     onShowNotificationPanelChanged: {
-        rootWindow.width = showNotificationPanel ? 870 : 420;
+        rootWindow.width = showNotificationPanel ? 820 : 390;
     }
 
     function openDrawer() {
@@ -129,52 +129,33 @@ Window {
             // ═════════════════════════════════════════════════════════════════
             Rectangle {
                 id: leftCard
-                Layout.preferredWidth: showNotificationPanel ? 416 : 420
+                Layout.preferredWidth: showNotificationPanel ? 416 : 390
                 Layout.fillWidth: !showNotificationPanel
                 Layout.fillHeight: true
                 radius: TitanTheme.radiusWindow
-                border.color: TitanTheme.borderGlass
+                border.color: TitanTheme.borderHairline
                 border.width: 1
                 clip: true
 
-                // Ambient vertical luminance gradient (macOS .ultraThinMaterial)
-                gradient: Gradient {
-                    GradientStop {
-                        position: 0.0
-                        color: TitanTheme.isDark ?
-                            Qt.rgba(TitanTheme.bgWindow.r + 0.06, TitanTheme.bgWindow.g + 0.06, TitanTheme.bgWindow.b + 0.08, Math.min(0.95, 0.52 * TitanTheme.glassFactor)) :
-                            Qt.rgba(1.0, 1.0, 1.0, Math.min(0.95, 0.72 * TitanTheme.glassFactor))
-                    }
-                    GradientStop {
-                        position: 0.35
-                        color: TitanTheme.isDark ?
-                            Qt.rgba(TitanTheme.bgWindow.r, TitanTheme.bgWindow.g, TitanTheme.bgWindow.b, Math.min(0.95, 0.46 * TitanTheme.glassFactor)) :
-                            Qt.rgba(TitanTheme.bgWindow.r, TitanTheme.bgWindow.g, TitanTheme.bgWindow.b, Math.min(0.95, 0.60 * TitanTheme.glassFactor))
-                    }
-                    GradientStop {
-                        position: 1.0
-                        color: TitanTheme.isDark ?
-                            Qt.rgba(TitanTheme.bgWindow.r * 0.85, TitanTheme.bgWindow.g * 0.85, TitanTheme.bgWindow.b * 0.85, Math.min(0.95, 0.40 * TitanTheme.glassFactor)) :
-                            Qt.rgba(TitanTheme.bgWindow.r * 0.95, TitanTheme.bgWindow.g * 0.95, TitanTheme.bgWindow.b * 0.95, Math.min(0.95, 0.52 * TitanTheme.glassFactor))
-                    }
-                }
+                // Obsidian deep graphite surface
+                color: TitanTheme.bgWindow
 
                 ColumnLayout {
                     anchors.fill: parent
-                    anchors.margins: 14
-                    spacing: 12
+                    anchors.margins: 10
+                    spacing: 8
 
-                    // Session Header (Large Clock, Date, Greeting, Edit, Settings, Power)
-                    HeaderBar {
-                        showNotificationPanel: rootWindow.showNotificationPanel
-                        editMode: rootWindow.editMode
-                        showPowerMenu: rootWindow.showPowerMenu
-                        onToggleNotificationPanel: rootWindow.showNotificationPanel = !rootWindow.showNotificationPanel
-                        onToggleEditMode: {
+                    // Titan Control Center Top Header
+                    TitanHeader {
+                        onEditRequested: {
                             rootWindow.editMode = !rootWindow.editMode;
                             if (rootWindow.editMode) rootWindow.showPowerMenu = false;
                         }
-                        onTogglePowerMenu: {
+                        onSettingsRequested: {
+                            if (typeof systemCtrl !== "undefined" && systemCtrl)
+                                systemCtrl.openSettings();
+                        }
+                        onPowerRequested: {
                             rootWindow.showPowerMenu = !rootWindow.showPowerMenu;
                             if (rootWindow.showPowerMenu) rootWindow.editMode = false;
                         }
@@ -235,15 +216,9 @@ Window {
                                 visible: !rootWindow.editMode
                                 opacity: visible ? 1.0 : 0.0
                                 Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
-                                spacing: 12
+                                spacing: 8
 
                                 QuickToggleGrid {}
-
-                                Item {
-                                    Layout.fillHeight: true
-                                }
-
-                                CalendarFooter {}
                             }
 
                             // One UI 9 Edit Quick Panel Customizer View

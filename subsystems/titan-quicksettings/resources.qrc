@@ -31,5 +31,12 @@
         <file>qml/components/PerformanceWidget.qml</file>
         <file>qml/components/BatteryWidget.qml</file>
         <file>qml/components/BannerMusicWidget.qml</file>
+        <file>qml/components/TitanHeader.qml</file>
+        <file>qml/components/UnifiedConnectivityModule.qml</file>
+        <file>qml/components/TitanSliderModule.qml</file>
+        <file>qml/components/NowPlayingModule.qml</file>
+        <file>qml/components/TitanActionTile.qml</file>
+        <file>qml/components/TitanActionGrid.qml</file>
+        <file>qml/components/TitanPulseModule.qml</file>
     </qresource>
 </RCC>

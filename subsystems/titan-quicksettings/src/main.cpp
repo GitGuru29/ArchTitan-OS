@@ -35,12 +35,12 @@ static void ensureDefaultConfig()
         //   panel_width:       drawer width in px (default 420)
         //   panel_height:      fallback height in px (used if stretch_to_bottom=false)
         //   stretch_to_bottom: stretch drawer from bar to workspace foot (default true)
-        cfg.setValue("top_margin",        4);
+        cfg.setValue("top_margin",        8);
         cfg.setValue("bottom_margin",      8);
         cfg.setValue("right_margin",       8);
-        cfg.setValue("panel_width",      420);
-        cfg.setValue("panel_height",     860);
-        cfg.setValue("stretch_to_bottom", true);
+        cfg.setValue("panel_width",      390);
+        cfg.setValue("panel_height",     660);
+        cfg.setValue("stretch_to_bottom", false);
         cfg.endGroup();
         cfg.sync();
         std::cout << "[titan-qs] Created default config: "
@@ -62,12 +62,12 @@ static LayoutConfig readConfig()
     QSettings cfg(configPath(), QSettings::IniFormat);
     cfg.beginGroup("layout");
     LayoutConfig lc;
-    lc.topMargin        = cfg.value("top_margin",        4).toInt();
+    lc.topMargin        = cfg.value("top_margin",        8).toInt();
     lc.bottomMargin     = cfg.value("bottom_margin",      8).toInt();
     lc.rightMargin      = cfg.value("right_margin",       8).toInt();
-    lc.panelWidth       = cfg.value("panel_width",      420).toInt();
-    lc.panelHeight      = cfg.value("panel_height",     860).toInt();
-    lc.stretchToBottom  = cfg.value("stretch_to_bottom", true).toBool();
+    lc.panelWidth       = cfg.value("panel_width",      390).toInt();
+    lc.panelHeight      = cfg.value("panel_height",     660).toInt();
+    lc.stretchToBottom  = cfg.value("stretch_to_bottom", false).toBool();
     cfg.endGroup();
     return lc;
 }
