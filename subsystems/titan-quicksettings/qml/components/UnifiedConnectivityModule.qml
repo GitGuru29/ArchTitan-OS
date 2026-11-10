@@ -7,9 +7,9 @@ import "../style"
  *
  * Implements the ArchTitan bento card with:
  * - Header: "Connectivity" + live SSID badge
- * - 3 Squircle Buttons: Wi-Fi, Bluetooth, TitanDrop
+ * - 3 Squircle Buttons: Wi-Fi, Bluetooth, Titan Share
+ * - Clean squircle buttons (no power icons)
  * - Left click on Wi-Fi directly opens Wi-Fi Networks Picker
- * - Dedicated power toggle dot to toggle on/off
  * - Sapphire Cyan accents
  */
 Rectangle {
@@ -70,7 +70,7 @@ Rectangle {
             Layout.fillHeight: true
             spacing: 8
 
-            // 1. Wi-Fi Button
+            // 1. Wi-Fi Button (Clean squircle - opens Network Picker)
             Rectangle {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
@@ -81,50 +81,27 @@ Rectangle {
                               : TitanTheme.borderHairline
                 border.width: 1
 
-                // Active Sapphire Status Dot / Power Toggle (Top-Right)
+                // Active Sapphire Status Dot (Top-Right)
                 Rectangle {
-                    id: wifiDot
-                    width: 14
-                    height: 14
-                    radius: 7
+                    width: 6
+                    height: 6
+                    radius: 3
                     anchors.top: parent.top
                     anchors.right: parent.right
-                    anchors.topMargin: 5
-                    anchors.rightMargin: 5
+                    anchors.topMargin: 7
+                    anchors.rightMargin: 7
                     color: (typeof networkCtrl !== "undefined" && networkCtrl && networkCtrl.wifiEnabled)
                            ? TitanTheme.accent
-                           : Qt.rgba(1, 1, 1, 0.12)
+                           : "transparent"
+                    visible: (typeof networkCtrl !== "undefined" && networkCtrl && networkCtrl.wifiEnabled)
 
                     Rectangle {
                         anchors.centerIn: parent
-                        width: 18
-                        height: 18
-                        radius: 9
-                        color: (typeof networkCtrl !== "undefined" && networkCtrl && networkCtrl.wifiEnabled)
-                               ? TitanTheme.accentGlow
-                               : "transparent"
+                        width: 10
+                        height: 10
+                        radius: 5
+                        color: TitanTheme.accentGlow
                         z: -1
-                    }
-
-                    // Power toggle icon
-                    Text {
-                        anchors.centerIn: parent
-                        text: "\uf011" // power
-                        font.family: TitanTheme.monoFamily
-                        font.pixelSize: 8
-                        color: (typeof networkCtrl !== "undefined" && networkCtrl && networkCtrl.wifiEnabled)
-                               ? "#FFFFFF"
-                               : TitanTheme.textMuted
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            if (typeof networkCtrl !== "undefined" && networkCtrl)
-                                networkCtrl.toggleWifi();
-                        }
                     }
                 }
 
@@ -260,16 +237,16 @@ Rectangle {
                 }
             }
 
-            // 3. TitanDrop Button
+            // 3. Titan Share Button (formerly TitanDrop)
             Rectangle {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 radius: 12
                 color: dropBtnMa.pressed ? TitanTheme.bgPressed : (dropBtnMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgInset)
-                border.color: titanDropActive ? Qt.rgba(0.04, 0.52, 1.0, 0.45) : TitanTheme.borderHairline
+                border.color: titanShareActive ? Qt.rgba(0.04, 0.52, 1.0, 0.45) : TitanTheme.borderHairline
                 border.width: 1
 
-                property bool titanDropActive: true
+                property bool titanShareActive: true
 
                 // Active Sapphire Status Dot (Top-Right)
                 Rectangle {
@@ -280,7 +257,7 @@ Rectangle {
                     anchors.right: parent.right
                     anchors.topMargin: 7
                     anchors.rightMargin: 7
-                    color: parent.titanDropActive ? TitanTheme.accent : "transparent"
+                    color: parent.titanShareActive ? TitanTheme.accent : "transparent"
 
                     Rectangle {
                         anchors.centerIn: parent
@@ -298,24 +275,24 @@ Rectangle {
 
                     Text {
                         Layout.alignment: Qt.AlignHCenter
-                        text: "\uf0ee" // cloud-upload / air-share
+                        text: "\uf1e0" // share-nodes / air-share
                         font.family: TitanTheme.monoFamily
                         font.pixelSize: 18
-                        color: parent.parent.titanDropActive ? TitanTheme.accent : TitanTheme.textMuted
+                        color: parent.parent.titanShareActive ? TitanTheme.accent : TitanTheme.textMuted
                     }
 
                     Text {
                         Layout.alignment: Qt.AlignHCenter
-                        text: "TitanDrop"
+                        text: "Titan Share"
                         font.family: TitanTheme.fontFamily
                         font.pixelSize: 10
                         font.weight: Font.DemiBold
-                        color: parent.parent.titanDropActive ? TitanTheme.textPrimary : TitanTheme.textSecondary
+                        color: parent.parent.titanShareActive ? TitanTheme.textPrimary : TitanTheme.textSecondary
                     }
 
                     Text {
                         Layout.alignment: Qt.AlignHCenter
-                        text: parent.parent.titanDropActive ? "Ready" : "Off"
+                        text: parent.parent.titanShareActive ? "Ready" : "Off"
                         font.family: TitanTheme.fontFamily
                         font.pixelSize: 8
                         color: TitanTheme.textMuted
@@ -328,7 +305,7 @@ Rectangle {
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
-                        parent.titanDropActive = !parent.titanDropActive;
+                        parent.titanShareActive = !parent.titanShareActive;
                     }
                 }
             }

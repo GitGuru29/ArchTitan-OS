@@ -8,8 +8,9 @@ import "../style"
  * Implements a balanced macOS-inspired bento layout:
  * - Cluster 1 (140px): Unified Connectivity (Left) balanced with Brightness & Volume (Right)
  * - Cluster 2 (110px): Media Player (Left) balanced with Titan Pulse Hardware Telemetry (Right)
- * - Cluster 3: Symmetrical 2-Column Quick Actions Grid
- * - Cluster 4: Dedicated Liquid Glass / Transparency Capsule Slider Controller
+ * - Cluster 3: Symmetrical Quick Actions Grid (All 12 buttons, Compact/Wide resizeable)
+ * - Cluster 4: Liquid Glass / Transparency Capsule Slider Controller
+ * - Cluster 5: Integrated Collapsible Mini-Calendar Strip
  *
  * Uses the macOS Sapphire Cyan/Blue palette for a calm, premium desktop OS aesthetic.
  */
@@ -42,7 +43,7 @@ ColumnLayout {
             }
 
             Text {
-                text: "CUSTOMIZING CONTROL CENTER"
+                text: "CUSTOMIZING CONTROL CENTER · Reorder buttons with ◀ ▶"
                 font.family: TitanTheme.fontFamily
                 font.pixelSize: 9
                 font.weight: Font.DemiBold
@@ -146,7 +147,7 @@ ColumnLayout {
     }
 
     // ═════════════════════════════════════════════════════════════════════════
-    //  CLUSTER 3: Symmetrical Quick Actions Grid
+    //  CLUSTER 3: Comprehensive Quick Actions Grid (All 12 buttons)
     // ═════════════════════════════════════════════════════════════════════════
     TitanActionGrid {
         Layout.fillWidth: true
@@ -164,5 +165,12 @@ ColumnLayout {
         onChanged: (v) => {
             if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.setGlassOpacity(v);
         }
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    //  CLUSTER 5: Calendar Footer (Collapsible Mini-Calendar)
+    // ═════════════════════════════════════════════════════════════════════════
+    CalendarFooter {
+        Layout.fillWidth: true
     }
 }

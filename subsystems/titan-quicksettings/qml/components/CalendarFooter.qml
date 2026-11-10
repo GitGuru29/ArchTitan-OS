@@ -12,8 +12,8 @@ Rectangle {
     Layout.fillWidth: true
     Layout.preferredHeight: contentHeight
     radius: TitanTheme.radiusCard
-    color: TitanTheme.bgOneUICard
-    border.color: TitanTheme.borderGlass
+    color: TitanTheme.bgTitanium
+    border.color: TitanTheme.borderHairline
     border.width: 1
     clip: true
 

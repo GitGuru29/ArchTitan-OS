@@ -45,19 +45,30 @@ Rectangle {
 
             Item { Layout.fillWidth: true }
 
-            // Triple dot options pill
+            // System Monitor / Telemetry settings button
             Rectangle {
-                width: 20
-                height: 14
-                radius: 7
-                color: Qt.rgba(1, 1, 1, 0.06)
+                width: 22
+                height: 22
+                radius: 11
+                color: pulseOptMa.containsMouse ? TitanTheme.bgHover : Qt.rgba(1, 1, 1, 0.06)
 
                 Text {
                     anchors.centerIn: parent
-                    text: "•••"
-                    font.pixelSize: 8
-                    font.weight: Font.Bold
-                    color: TitanTheme.textMuted
+                    text: "\uf080" // chart-bar / telemetry
+                    font.family: TitanTheme.monoFamily
+                    font.pixelSize: 10
+                    color: pulseOptMa.containsMouse ? TitanTheme.accent : TitanTheme.textMuted
+                }
+
+                MouseArea {
+                    id: pulseOptMa
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        if (typeof systemCtrl !== "undefined" && systemCtrl)
+                            systemCtrl.openSettings();
+                    }
                 }
             }
         }
