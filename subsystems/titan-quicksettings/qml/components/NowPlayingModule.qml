@@ -5,17 +5,16 @@ import "../style"
 /**
  * NowPlayingModule — ArchTitan macOS-style Media Player Bento Module.
  *
- * Implements the approved ArchTitan media card with:
+ * Implements the ArchTitan media card with:
  * - Header: "Media Player" with options badge
  * - Solaris album art badge with neon depth
- * - Dynamic animated Titan Orange soundwave / equalizer visualizer
+ * - Dynamic animated Sapphire Cyan soundwave / equalizer visualizer
  * - Tactile media controls (Prev, Play/Pause, Next)
- * - Integrated in-place corner resize handle
  */
 Rectangle {
     id: mediaRoot
     Layout.fillWidth: true
-    implicitHeight: 112
+    implicitHeight: 110
     radius: TitanTheme.radiusCard
     color: TitanTheme.bgTitanium
     border.color: (typeof rootWindow !== "undefined" && rootWindow.inPlaceEditMode)
@@ -30,7 +29,7 @@ Rectangle {
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: 10
-        spacing: 8
+        spacing: 6
 
         // ── Card Header ─────────────────────────────────────────────────────
         RowLayout {
@@ -46,19 +45,30 @@ Rectangle {
 
             Item { Layout.fillWidth: true }
 
-            // Triple dot options pill
+            // Audio settings / mixer button
             Rectangle {
-                width: 20
-                height: 14
-                radius: 7
-                color: Qt.rgba(1, 1, 1, 0.06)
+                width: 22
+                height: 22
+                radius: 11
+                color: mediaOptMa.containsMouse ? TitanTheme.bgHover : Qt.rgba(1, 1, 1, 0.06)
 
                 Text {
                     anchors.centerIn: parent
-                    text: "•••"
-                    font.pixelSize: 8
-                    font.weight: Font.Bold
-                    color: TitanTheme.textMuted
+                    text: "\uf025" // headphones / audio settings
+                    font.family: TitanTheme.monoFamily
+                    font.pixelSize: 10
+                    color: mediaOptMa.containsMouse ? TitanTheme.accent : TitanTheme.textMuted
+                }
+
+                MouseArea {
+                    id: mediaOptMa
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        if (typeof systemCtrl !== "undefined" && systemCtrl)
+                            systemCtrl.openMediaWidget();
+                    }
                 }
             }
         }
@@ -71,19 +81,19 @@ Rectangle {
 
             // Album Art Medallion ("SOLARIS")
             Rectangle {
-                width: 52
-                height: 52
+                width: 50
+                height: 50
                 radius: 10
-                color: "#1A2234"
-                border.color: Qt.rgba(1.0, 0.42, 0.0, 0.3)
+                color: "#121A28"
+                border.color: Qt.rgba(0.04, 0.52, 1.0, 0.35)
                 border.width: 1
                 clip: true
 
-                // Deep space nebula gradient
+                // Deep sapphire nebula gradient
                 gradient: Gradient {
                     GradientStop { position: 0.0; color: "#0B1528" }
-                    GradientStop { position: 0.6; color: "#1B2A47" }
-                    GradientStop { position: 1.0; color: "#2B1B32" }
+                    GradientStop { position: 0.6; color: "#162846" }
+                    GradientStop { position: 1.0; color: "#0E3A5F" }
                 }
 
                 // Album Art Label
@@ -94,7 +104,7 @@ Rectangle {
                     font.pixelSize: 7
                     font.weight: Font.Black
                     font.letterSpacing: 1.2
-                    color: Qt.rgba(1, 1, 1, 0.75)
+                    color: Qt.rgba(1, 1, 1, 0.85)
                 }
 
                 // Tiny glowing starburst dot
@@ -116,32 +126,27 @@ Rectangle {
                 spacing: 2
 
                 // Track & Artist Title
-                RowLayout {
+                ColumnLayout {
                     Layout.fillWidth: true
-                    spacing: 4
+                    spacing: 0
 
-                    ColumnLayout {
+                    Text {
+                        text: mediaRoot.title
+                        font.family: TitanTheme.fontFamily
+                        font.pixelSize: 11
+                        font.weight: Font.Bold
+                        color: TitanTheme.textPrimary
+                        elide: Text.ElideRight
                         Layout.fillWidth: true
-                        spacing: 0
+                    }
 
-                        Text {
-                            text: mediaRoot.title
-                            font.family: TitanTheme.fontFamily
-                            font.pixelSize: 11
-                            font.weight: Font.Bold
-                            color: TitanTheme.textPrimary
-                            elide: Text.ElideRight
-                            Layout.fillWidth: true
-                        }
-
-                        Text {
-                            text: mediaRoot.artist
-                            font.family: TitanTheme.fontFamily
-                            font.pixelSize: 9
-                            color: TitanTheme.textMuted
-                            elide: Text.ElideRight
-                            Layout.fillWidth: true
-                        }
+                    Text {
+                        text: mediaRoot.artist
+                        font.family: TitanTheme.fontFamily
+                        font.pixelSize: 9
+                        color: TitanTheme.textMuted
+                        elide: Text.ElideRight
+                        Layout.fillWidth: true
                     }
                 }
 
@@ -152,7 +157,7 @@ Rectangle {
                     spacing: 2
 
                     Repeater {
-                        model: [7, 12, 5, 14, 9, 13, 6, 11, 4, 13, 8, 12, 6, 10]
+                        model: [6, 12, 5, 14, 9, 13, 6, 11, 4, 13, 8, 12, 6, 10]
                         Rectangle {
                             id: waveBar
                             width: 2
@@ -268,38 +273,6 @@ Rectangle {
                         }
                     }
                 }
-            }
-        }
-    }
-
-    // ── In-Place Corner Resize Handle ───────────────────────────────────────
-    Rectangle {
-        id: resizeHandle
-        width: 18
-        height: 18
-        radius: 4
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
-        anchors.margins: 3
-        color: resizeMa.containsMouse ? TitanTheme.accent : Qt.rgba(1, 1, 1, 0.12)
-        visible: (typeof rootWindow !== "undefined" && rootWindow.inPlaceEditMode)
-        z: 10
-
-        Text {
-            anchors.centerIn: parent
-            text: "⤡"
-            font.pixelSize: 12
-            color: resizeMa.containsMouse ? "#0D1017" : TitanTheme.accent
-        }
-
-        MouseArea {
-            id: resizeMa
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.SizeFDiagCursor
-            onClicked: {
-                if (typeof systemCtrl !== "undefined" && systemCtrl)
-                    systemCtrl.toggleWidgetSize("music");
             }
         }
     }

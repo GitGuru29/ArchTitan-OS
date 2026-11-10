@@ -45,27 +45,27 @@ QtObject {
     readonly property color borderHairline:    Qt.rgba(1, 1, 1, 0.08)
     readonly property color borderSubtle:      Qt.rgba(1, 1, 1, 0.08)
     readonly property color borderHover:       Qt.rgba(1, 1, 1, 0.18)
-    readonly property color borderActive:      Qt.rgba(1.0, 0.42, 0.0, 0.65)
+    readonly property color borderActive:      Qt.rgba(0.04, 0.52, 1.0, 0.65)
     readonly property color borderGlass:       Qt.rgba(1, 1, 1, 0.08)
     readonly property color borderOneUIGlass:  Qt.rgba(1, 1, 1, 0.08)
 
-    // ── Titan Signature Accents (Titan Electric Orange & Amber) ─────────────
-    readonly property color titanOrange:       "#FF6B00"
-    readonly property color titanOrangeHover:  "#FF7A1A"
-    readonly property color titanOrangeGlow:   Qt.rgba(1.0, 0.42, 0.0, 0.28)
-    readonly property color titanCrimson:      "#D84315"
+    // ── Titan Signature Accents (macOS Electric Sapphire Blue & Cyan) ──────
+    readonly property color titanBlue:         "#0A84FF"
+    readonly property color titanBlueHover:    "#38BDF8"
+    readonly property color titanBlueGlow:     Qt.rgba(0.04, 0.52, 1.0, 0.28)
+    readonly property color titanCyan:         "#00B4D8"
 
-    readonly property color accent:            titanOrange
-    readonly property color accentBlue:        titanOrange
-    readonly property color accentGlow:        titanOrangeGlow
+    readonly property color accent:            titanBlue
+    readonly property color accentBlue:        titanBlue
+    readonly property color accentGlow:        titanBlueGlow
     readonly property color accentText:        "#FFFFFF"
-    readonly property color cyan:              "#FF8C33"
+    readonly property color cyan:              "#38BDF8"
     readonly property color green:             "#10B981"
     readonly property color red:               "#EF4444"
     readonly property color yellow:            "#F59E0B"
-    readonly property color teal:              "#FF7A1A"
-    readonly property color lavender:          "#FFA726"
-    readonly property color peach:             "#FF8F00"
+    readonly property color teal:              "#00B4D8"
+    readonly property color lavender:          "#818CF8"
+    readonly property color peach:             "#38BDF8"
 
     // ── Text & typography ──────────────────────────────────────────────────
     readonly property color textPrimary:       "#FFFFFF"

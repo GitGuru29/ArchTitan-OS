@@ -5,16 +5,15 @@ import "../style"
 /**
  * TitanSliderModule — ArchTitan macOS-style Dedicated Capsule Slider Bento Module.
  *
- * Implements the approved mockup slider card:
+ * Implements the capsule slider card:
  * - Header: Module Title + Percentage Readout
- * - Capsule Slider: Deep inset track, glowing Titan Orange progress bar, circular drag thumb
+ * - Capsule Slider: Deep inset track, glowing Sapphire Cyan progress bar, circular white drag thumb
  * - Integrated Icon on right
- * - In-place corner resize handle
  */
 Rectangle {
     id: sliderRoot
     Layout.fillWidth: true
-    implicitHeight: 72
+    implicitHeight: 66
     radius: TitanTheme.radiusCard
     color: TitanTheme.bgTitanium
     border.color: (typeof rootWindow !== "undefined" && rootWindow.inPlaceEditMode)
@@ -28,14 +27,13 @@ Rectangle {
     property int to: 100
     property int value: 72
     property color fillAccent: TitanTheme.accent
-    property string widgetKey: "slider_" + title.toLowerCase()
 
     signal changed(int val)
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: 10
-        spacing: 6
+        anchors.margins: 9
+        spacing: 5
 
         // ── Card Header ─────────────────────────────────────────────────────
         RowLayout {
@@ -68,23 +66,23 @@ Rectangle {
             Rectangle {
                 id: track
                 Layout.fillWidth: true
-                height: 26
-                radius: 13
+                height: 24
+                radius: 12
                 color: TitanTheme.bgInset
                 clip: true
 
-                // Glowing Orange Progress Fill
+                // Glowing Sapphire Cyan Progress Fill
                 Rectangle {
                     id: progressFill
                     anchors.left: parent.left
                     anchors.top: parent.top
                     anchors.bottom: parent.bottom
-                    width: Math.max(26, parent.width * Math.max(0, Math.min(1, (sliderRoot.value - sliderRoot.from) / (sliderRoot.to - sliderRoot.from))))
-                    radius: 13
+                    width: Math.max(24, parent.width * Math.max(0, Math.min(1, (sliderRoot.value - sliderRoot.from) / (sliderRoot.to - sliderRoot.from))))
+                    radius: 12
 
                     gradient: Gradient {
                         orientation: Gradient.Horizontal
-                        GradientStop { position: 0.0; color: Qt.darker(sliderRoot.fillAccent, 1.15) }
+                        GradientStop { position: 0.0; color: Qt.darker(sliderRoot.fillAccent, 1.2) }
                         GradientStop { position: 1.0; color: sliderRoot.fillAccent }
                     }
 
@@ -96,23 +94,23 @@ Rectangle {
                     // Circular Drag Thumb
                     Rectangle {
                         id: thumb
-                        width: 20
-                        height: 20
-                        radius: 10
+                        width: 18
+                        height: 18
+                        radius: 9
                         anchors.right: parent.right
                         anchors.rightMargin: 3
                         anchors.verticalCenter: parent.verticalCenter
-                        color: "#FFE3CC"
-                        border.color: Qt.rgba(1, 1, 1, 0.4)
+                        color: "#FFFFFF"
+                        border.color: Qt.rgba(1, 1, 1, 0.6)
                         border.width: 1
 
-                        // Glow around thumb
+                        // Subtle glow around thumb
                         Rectangle {
                             anchors.centerIn: parent
-                            width: 24
-                            height: 24
-                            radius: 12
-                            color: Qt.rgba(1.0, 0.42, 0.0, 0.3)
+                            width: 22
+                            height: 22
+                            radius: 11
+                            color: TitanTheme.accentGlow
                             z: -1
                         }
                     }
@@ -147,38 +145,6 @@ Rectangle {
                 font.pixelSize: 13
                 color: TitanTheme.textSecondary
                 Layout.alignment: Qt.AlignVCenter
-            }
-        }
-    }
-
-    // ── In-Place Corner Resize Handle ───────────────────────────────────────
-    Rectangle {
-        id: resizeHandle
-        width: 16
-        height: 16
-        radius: 4
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
-        anchors.margins: 2
-        color: resizeMa.containsMouse ? TitanTheme.accent : Qt.rgba(1, 1, 1, 0.12)
-        visible: (typeof rootWindow !== "undefined" && rootWindow.inPlaceEditMode)
-        z: 10
-
-        Text {
-            anchors.centerIn: parent
-            text: "⤡"
-            font.pixelSize: 11
-            color: resizeMa.containsMouse ? "#0D1017" : TitanTheme.accent
-        }
-
-        MouseArea {
-            id: resizeMa
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.SizeFDiagCursor
-            onClicked: {
-                if (typeof systemCtrl !== "undefined" && systemCtrl)
-                    systemCtrl.toggleWidgetSize(sliderRoot.widgetKey);
             }
         }
     }
