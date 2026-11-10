@@ -16,8 +16,8 @@ import "style"
 Window {
     id: rootWindow
     title: "titan-quicksettings"
-    width: showNotificationPanel ? 820 : 390
-    height: 660
+    width: showNotificationPanel ? 880 : 450
+    height: 720
 
     flags: Qt.FramelessWindowHint
     color: "transparent"
@@ -25,12 +25,13 @@ Window {
 
     property bool drawerOpen: false
     property bool showNotificationPanel: false
-    property bool editMode: false
+    property bool inPlaceEditMode: false
+    property alias editMode: rootWindow.inPlaceEditMode
     property bool showPowerMenu: false
     property bool showWifiPage: false
 
     onShowNotificationPanelChanged: {
-        rootWindow.width = showNotificationPanel ? 820 : 390;
+        rootWindow.width = showNotificationPanel ? 880 : 450;
     }
 
     function openDrawer() {
@@ -41,7 +42,7 @@ Window {
 
     function closeDrawer() {
         drawerOpen = false;
-        editMode = false;
+        inPlaceEditMode = false;
         showPowerMenu = false;
         showWifiPage = false;
         closeTimer.start();
@@ -94,8 +95,8 @@ Window {
                 rootWindow.showPowerMenu = false;
             } else if (rootWindow.showWifiPage) {
                 rootWindow.showWifiPage = false;
-            } else if (rootWindow.editMode) {
-                rootWindow.editMode = false;
+            } else if (rootWindow.inPlaceEditMode) {
+                rootWindow.inPlaceEditMode = false;
             } else {
                 rootWindow.closeDrawer();
             }
@@ -129,7 +130,7 @@ Window {
             // ═════════════════════════════════════════════════════════════════
             Rectangle {
                 id: leftCard
-                Layout.preferredWidth: showNotificationPanel ? 416 : 390
+                Layout.preferredWidth: showNotificationPanel ? 450 : 450
                 Layout.fillWidth: !showNotificationPanel
                 Layout.fillHeight: true
                 radius: TitanTheme.radiusWindow
@@ -147,9 +148,10 @@ Window {
 
                     // Titan Control Center Top Header
                     TitanHeader {
+                        inPlaceEditMode: rootWindow.inPlaceEditMode
                         onEditRequested: {
-                            rootWindow.editMode = !rootWindow.editMode;
-                            if (rootWindow.editMode) rootWindow.showPowerMenu = false;
+                            rootWindow.inPlaceEditMode = !rootWindow.inPlaceEditMode;
+                            if (rootWindow.inPlaceEditMode) rootWindow.showPowerMenu = false;
                         }
                         onSettingsRequested: {
                             if (typeof systemCtrl !== "undefined" && systemCtrl)
@@ -157,32 +159,29 @@ Window {
                         }
                         onPowerRequested: {
                             rootWindow.showPowerMenu = !rootWindow.showPowerMenu;
-                            if (rootWindow.showPowerMenu) rootWindow.editMode = false;
+                            if (rootWindow.showPowerMenu) rootWindow.inPlaceEditMode = false;
                         }
                     }
 
-                    // Scrollable Bento Controls vs Edit Customizer View
+                    // Scrollable Bento Controls (In-Place Customization on Same UI!)
                     Flickable {
                         id: bentoFlick
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         contentWidth: width
-                        contentHeight: Math.max(height, currentContent.implicitHeight)
+                        contentHeight: Math.max(height, bentoContent.implicitHeight)
                         clip: true
                         boundsBehavior: Flickable.StopAtBounds
                         visible: !rootWindow.showWifiPage && !rootWindow.showPowerMenu
 
                         /**
                          * Keyboard focus follow: Tab / arrow focus can land on a
-                         * control below the fold, so scroll it into view. Without
-                         * this the focus ring would walk off-screen and the panel
-                         * would look like it stopped responding.
+                         * control below the fold, so scroll it into view.
                          */
                         function revealFocus() {
                             var item = rootWindow.activeFocusItem;
                             if (!item) return;
 
-                            // Only act on items inside this flickable's content.
                             var node = item;
                             while (node && node !== contentItem) node = node.parent;
                             if (node !== contentItem) return;
@@ -204,32 +203,13 @@ Window {
                             function onActiveFocusItemChanged() { bentoFlick.revealFocus() }
                         }
 
-                        Item {
-                            id: currentContent
+                        // Normal Bento Quick Settings & In-Place Customizer on Same Screen
+                        ColumnLayout {
+                            id: bentoContent
                             width: parent.width
-                            implicitHeight: rootWindow.editMode ? customizerView.implicitHeight : bentoContent.implicitHeight
+                            spacing: 8
 
-                            // Normal Bento Quick Settings
-                            ColumnLayout {
-                                id: bentoContent
-                                width: parent.width
-                                visible: !rootWindow.editMode
-                                opacity: visible ? 1.0 : 0.0
-                                Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
-                                spacing: 8
-
-                                QuickToggleGrid {}
-                            }
-
-                            // One UI 9 Edit Quick Panel Customizer View
-                            QuickSettingsCustomizer {
-                                id: customizerView
-                                width: parent.width
-                                visible: rootWindow.editMode
-                                opacity: visible ? 1.0 : 0.0
-                                Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
-                                onDoneRequested: rootWindow.editMode = false
-                            }
+                            QuickToggleGrid {}
                         }
                     }
                 }
