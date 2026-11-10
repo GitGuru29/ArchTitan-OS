@@ -776,7 +776,7 @@ QStringList SystemController::getSectionOrder() const
     QString cfgDir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
     QSettings settings(cfgDir + "/archtitan/settings.ini", QSettings::IniFormat);
     const QStringList defaultOrder = {
-        "topRow", "sliders", "actions", "liquidGlass"
+        "topSplit", "nowPlaying", "actions", "pulse"
     };
     QVariant val = settings.value("quicksettings/sectionOrder");
     if (!val.isValid()) {
@@ -798,7 +798,8 @@ QStringList SystemController::getSectionOrder() const
 
     QStringList result;
     const QStringList validSections = {
-        "topRow", "connectivity", "music", "sliders", "actions", "liquidGlass", "performance", "battery"
+        "topSplit", "nowPlaying", "actions", "pulse",
+        "topRow", "connectivity", "music", "sliders", "liquidGlass", "performance", "battery"
     };
     for (QString s : rawList) {
         s = s.remove('"').remove('\'').trimmed();

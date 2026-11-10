@@ -21,65 +21,80 @@ QtObject {
     readonly property string fontFamily: TDL.TitanTheme.fontFamily
     readonly property string monoFamily: TDL.TitanTheme.monoFamily
 
-    // ── Window / bento surfaces (macOS Liquid Frosted Glass) ──────────────
-    readonly property color bgWindow:          isDark ? Qt.rgba(TDL.TitanTheme.base.r, TDL.TitanTheme.base.g, TDL.TitanTheme.base.b, Math.min(0.95, 0.46 * glassFactor)) : Qt.rgba(TDL.TitanTheme.base.r, TDL.TitanTheme.base.g, TDL.TitanTheme.base.b, Math.min(0.95, 0.62 * glassFactor))
-    readonly property color bgSurface:         isDark ? Qt.rgba(1, 1, 1, 0.05) : Qt.rgba(1, 1, 1, 0.45)
-    readonly property color bgSurfaceAlt:      isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(1, 1, 1, 0.60)
-    readonly property color bgInset:           isDark ? Qt.rgba(0, 0, 0, 0.28) : Qt.rgba(0, 0, 0, 0.05)
-    readonly property color bgHover:           isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(1, 1, 1, 0.70)
-    readonly property color bgPressed:         isDark ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(0, 0, 0, 0.10)
-    readonly property color bgActive:          TDL.TitanTheme.accent
+    // ── Window / bento surfaces (ArchTitan Obsidian & Titanium) ─────────
+    readonly property color bgObsidian:        Qt.rgba(0.05, 0.066, 0.09, Math.min(0.96, 0.88 * glassFactor))
+    readonly property color bgTitanium:        Qt.rgba(0.086, 0.105, 0.135, 0.82)
+    readonly property color bgTitaniumCard:    Qt.rgba(0.095, 0.115, 0.148, 0.85)
+    readonly property color bgTitaniumHover:   Qt.rgba(0.135, 0.16, 0.20, 0.90)
 
-    readonly property color bgOneUICard:       isDark ? Qt.rgba(1, 1, 1, 0.06) : Qt.rgba(1, 1, 1, 0.50)
-    readonly property color bgOneUICardAlt:    isDark ? Qt.rgba(1, 1, 1, 0.09) : Qt.rgba(1, 1, 1, 0.65)
-    readonly property color bgOneUITrack:      isDark ? Qt.rgba(0, 0, 0, 0.25) : Qt.rgba(0, 0, 0, 0.06)
-    readonly property color bgOneUIPill:       isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(1, 1, 1, 0.60)
-    readonly property color bgMenu:            isDark ? Qt.rgba(TDL.TitanTheme.bg0.r, TDL.TitanTheme.bg0.g, TDL.TitanTheme.bg0.b, 0.75) : Qt.rgba(1, 1, 1, 0.88)
+    readonly property color bgWindow:          bgObsidian
+    readonly property color bgSurface:         bgTitanium
+    readonly property color bgSurfaceAlt:      bgTitaniumCard
+    readonly property color bgInset:           Qt.rgba(0, 0, 0, 0.35)
+    readonly property color bgHover:           Qt.rgba(1, 1, 1, 0.08)
+    readonly property color bgPressed:         Qt.rgba(1, 1, 1, 0.12)
+    readonly property color bgActive:          accent
 
-    // ── Borders & glass contours ───────────────────────────────────────────
-    readonly property color borderSubtle:      isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.08)
-    readonly property color borderHover:       isDark ? Qt.rgba(1, 1, 1, 0.22) : Qt.rgba(0, 0, 0, 0.20)
-    readonly property color borderActive:      TDL.TitanTheme.accentEdge
-    readonly property color borderGlass:       isDark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0, 0, 0, 0.12)
-    readonly property color borderOneUIGlass:  isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.10)
+    readonly property color bgOneUICard:       bgTitaniumCard
+    readonly property color bgOneUICardAlt:    bgTitanium
+    readonly property color bgOneUITrack:      Qt.rgba(0, 0, 0, 0.40)
+    readonly property color bgOneUIPill:       Qt.rgba(1, 1, 1, 0.07)
+    readonly property color bgMenu:            Qt.rgba(0.07, 0.085, 0.11, 0.94)
 
-    // ── Accents & indicators ───────────────────────────────────────────────
-    readonly property color accent:            TDL.TitanTheme.accent
-    readonly property color accentBlue:        TDL.TitanTheme.accent
-    readonly property color accentText:        TDL.TitanTheme.accentFg
-    readonly property color cyan:              TDL.TitanTheme.teal
-    readonly property color green:             TDL.TitanTheme.success
-    readonly property color red:               TDL.TitanTheme.danger
-    readonly property color yellow:            TDL.TitanTheme.warning
-    readonly property color teal:              TDL.TitanTheme.teal
-    readonly property color lavender:          TDL.TitanTheme.mauve
-    readonly property color peach:             TDL.TitanTheme.peach
+    // ── Borders & metallic contours ────────────────────────────────────────
+    readonly property color borderHairline:    Qt.rgba(1, 1, 1, 0.08)
+    readonly property color borderSubtle:      Qt.rgba(1, 1, 1, 0.08)
+    readonly property color borderHover:       Qt.rgba(1, 1, 1, 0.18)
+    readonly property color borderActive:      Qt.rgba(1.0, 0.42, 0.0, 0.65)
+    readonly property color borderGlass:       Qt.rgba(1, 1, 1, 0.08)
+    readonly property color borderOneUIGlass:  Qt.rgba(1, 1, 1, 0.08)
+
+    // ── Titan Signature Accents (Titan Electric Orange & Amber) ─────────────
+    readonly property color titanOrange:       "#FF6B00"
+    readonly property color titanOrangeHover:  "#FF7A1A"
+    readonly property color titanOrangeGlow:   Qt.rgba(1.0, 0.42, 0.0, 0.28)
+    readonly property color titanCrimson:      "#D84315"
+
+    readonly property color accent:            titanOrange
+    readonly property color accentBlue:        titanOrange
+    readonly property color accentGlow:        titanOrangeGlow
+    readonly property color accentText:        "#FFFFFF"
+    readonly property color cyan:              "#FF8C33"
+    readonly property color green:             "#10B981"
+    readonly property color red:               "#EF4444"
+    readonly property color yellow:            "#F59E0B"
+    readonly property color teal:              "#FF7A1A"
+    readonly property color lavender:          "#FFA726"
+    readonly property color peach:             "#FF8F00"
 
     // ── Text & typography ──────────────────────────────────────────────────
-    readonly property color textPrimary:       TDL.TitanTheme.textHigh
-    readonly property color textSecondary:     TDL.TitanTheme.textMid
-    readonly property color textMuted:         TDL.TitanTheme.textLow
-    readonly property color textSubtle:        TDL.TitanTheme.textLow
-    readonly property color textOnAccent:      TDL.TitanTheme.accentFg
+    readonly property color textPrimary:       "#FFFFFF"
+    readonly property color textSecondary:     Qt.rgba(1, 1, 1, 0.78)
+    readonly property color textMuted:         Qt.rgba(1, 1, 1, 0.52)
+    readonly property color textSubtle:        Qt.rgba(1, 1, 1, 0.38)
+    readonly property color textOnAccent:      "#FFFFFF"
 
     // ── Type scale ──────────────────────────────────────────────────────────
-    readonly property int sizeClock:    32
-    readonly property int sizeDisplay:  18
-    readonly property int sizeTitle:    14
-    readonly property int sizeBody:     12
-    readonly property int sizeSmall:    11
+    readonly property int sizeClock:    28
+    readonly property int sizeDisplay:  16
+    readonly property int sizeTitle:    13
+    readonly property int sizeBody:     11
+    readonly property int sizeSmall:    10
     readonly property int sizeCaption:  9
 
-    // ── Super-Round Pebble Geometry & Radii ──────────────────────────────
-    readonly property int radiusWindow:     32
-    readonly property int radiusBento:      28
-    readonly property int radiusCard:       24
-    readonly property int radiusControl:    24
-    readonly property int radiusSlider:     14
+    // ── macOS-Inspired Refined Bento Geometry & Radii ──────────────────────
+    readonly property int radiusWindow:     20
+    readonly property int radiusBento:      16
+    readonly property int radiusCard:       14
+    readonly property int radiusModule:     14
+    readonly property int radiusTile:       12
+    readonly property int radiusControl:    12
+    readonly property int radiusSlider:     12
     readonly property int radiusCircle:     24
     readonly property int radiusPill:       99
-    readonly property int radiusIcon:       22
+    readonly property int radiusCapsule:    16
+    readonly property int radiusIcon:       14
 
-    readonly property int spacing:         10
-    readonly property int panelPadding:    14
+    readonly property int spacing:         8
+    readonly property int panelPadding:    12
 }
