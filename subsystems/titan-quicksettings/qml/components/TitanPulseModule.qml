@@ -13,7 +13,7 @@ import "../style"
 Rectangle {
     id: pulseRoot
     Layout.fillWidth: true
-    implicitHeight: 110
+    implicitHeight: 136
     radius: TitanTheme.radiusCard
     color: TitanTheme.bgTitanium
     border.color: (typeof rootWindow !== "undefined" && rootWindow.inPlaceEditMode)
@@ -217,11 +217,12 @@ Rectangle {
         // ── Power Profile Selector: Efficiency | Balanced | Performance ─────
         Rectangle {
             Layout.fillWidth: true
-            height: 22
-            radius: 11
+            Layout.preferredHeight: 24
+            radius: 12
             color: TitanTheme.bgInset
             border.color: TitanTheme.borderHairline
             border.width: 1
+            clip: true
 
             RowLayout {
                 anchors.fill: parent

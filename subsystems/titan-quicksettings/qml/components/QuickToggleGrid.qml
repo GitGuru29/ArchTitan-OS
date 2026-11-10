@@ -43,7 +43,7 @@ ColumnLayout {
             }
 
             Text {
-                text: "CUSTOMIZING CONTROL CENTER · Reorder buttons with ◀ ▶"
+                text: "CUSTOMIZING CONTROL CENTER · Drag and drop tiles to reorder"
                 font.family: TitanTheme.fontFamily
                 font.pixelSize: 9
                 font.weight: Font.DemiBold

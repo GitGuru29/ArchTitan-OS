@@ -235,173 +235,206 @@ Rectangle {
             Repeater {
                 model: gridCardRoot.currentOrder
 
-                delegate: Rectangle {
-                    id: tileItem
+                delegate: Item {
+                    id: tileDelegate
                     Layout.fillWidth: true
                     implicitHeight: gridCardRoot.sizeMode === "compact" ? 52 : 44
-                    radius: 10
-                    clip: true
 
                     readonly property var def: gridCardRoot.actionCatalog[modelData] || null
                     readonly property bool isActive: (def && def.active) ? true : false
                     readonly property int itemIndex: index
+                    readonly property string tileKey: modelData
 
-                    color: isActive
-                           ? Qt.rgba(0.04, 0.52, 1.0, 0.16)
-                           : (tileMa.pressed ? TitanTheme.bgPressed : (tileMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgInset))
-
-                    border.color: (typeof rootWindow !== "undefined" && rootWindow.inPlaceEditMode)
-                                  ? TitanTheme.accent
-                                  : (isActive ? TitanTheme.accent : (tileMa.containsMouse ? TitanTheme.borderHover : TitanTheme.borderHairline))
-                    border.width: 1
-
-                    // ── Mode 1: Compact Squircle (4 columns) ─────────────────
-                    ColumnLayout {
+                    // DropArea catches when another tile is dragged over this tile
+                    DropArea {
+                        id: dropArea
                         anchors.fill: parent
-                        anchors.margins: 4
-                        spacing: 2
-                        visible: gridCardRoot.sizeMode === "compact"
-
-                        Item { Layout.fillHeight: true }
-
-                        Text {
-                            Layout.alignment: Qt.AlignHCenter
-                            text: tileItem.def ? tileItem.def.icon : "\uf013"
-                            font.family: TitanTheme.monoFamily
-                            font.pixelSize: 14
-                            color: tileItem.isActive ? TitanTheme.accent : TitanTheme.textSecondary
+                        keys: ["quick-action-tile"]
+                        onEntered: (drag) => {
+                            if (drag.source && typeof drag.source.itemIndex !== "undefined") {
+                                var fromIdx = drag.source.itemIndex;
+                                var toIdx = tileDelegate.itemIndex;
+                                if (fromIdx !== toIdx && fromIdx >= 0 && toIdx >= 0) {
+                                    if (typeof systemCtrl !== "undefined" && systemCtrl) {
+                                        systemCtrl.moveActionOrder(fromIdx, toIdx);
+                                    }
+                                }
+                            }
                         }
-
-                        Text {
-                            Layout.alignment: Qt.AlignHCenter
-                            text: tileItem.def ? tileItem.def.title : modelData
-                            font.family: TitanTheme.fontFamily
-                            font.pixelSize: 8
-                            font.weight: Font.DemiBold
-                            color: tileItem.isActive ? TitanTheme.textPrimary : TitanTheme.textMuted
-                            elide: Text.ElideRight
-                            Layout.maximumWidth: parent.width - 6
-                        }
-
-                        Item { Layout.fillHeight: true }
                     }
 
-                    // ── Mode 2: Wide 2-Column Tile ───────────────────────────
-                    RowLayout {
+                    // The visual tile that can be dragged
+                    Rectangle {
+                        id: tileItem
                         anchors.fill: parent
-                        anchors.leftMargin: 8
-                        anchors.rightMargin: 8
-                        spacing: 8
-                        visible: gridCardRoot.sizeMode === "wide"
+                        radius: 10
+                        clip: true
 
+                        property bool isDragged: false
+
+                        z: isDragged ? 99 : 1
+                        scale: isDragged ? 1.08 : (tileMa.pressed ? 0.95 : (tileMa.containsMouse ? 1.02 : 1.0))
+                        Behavior on scale { NumberAnimation { duration: 110; easing.type: Easing.OutBack } }
+
+                        color: tileDelegate.isActive
+                               ? Qt.rgba(0.04, 0.52, 1.0, 0.16)
+                               : (tileMa.pressed ? TitanTheme.bgPressed : (tileMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgInset))
+
+                        border.color: tileItem.isDragged
+                                      ? TitanTheme.accent
+                                      : ((typeof rootWindow !== "undefined" && rootWindow.inPlaceEditMode)
+                                         ? Qt.rgba(0.04, 0.52, 1.0, 0.5)
+                                         : (tileDelegate.isActive ? TitanTheme.accent : (tileMa.containsMouse ? TitanTheme.borderHover : TitanTheme.borderHairline)))
+                        border.width: tileItem.isDragged ? 2 : 1
+
+                        Drag.active: tileItem.isDragged
+                        Drag.source: tileDelegate
+                        Drag.keys: ["quick-action-tile"]
+                        Drag.hotSpot.x: width / 2
+                        Drag.hotSpot.y: height / 2
+
+                        // Edit mode drag grip indicator in corner
                         Rectangle {
-                            width: 26
-                            height: 26
-                            radius: 13
-                            color: tileItem.isActive ? TitanTheme.accent : Qt.rgba(1, 1, 1, 0.08)
+                            width: 14
+                            height: 14
+                            radius: 7
+                            anchors.top: parent.top
+                            anchors.right: parent.right
+                            anchors.margins: 3
+                            color: Qt.rgba(0.04, 0.52, 1.0, 0.35)
+                            visible: (typeof rootWindow !== "undefined" && rootWindow.inPlaceEditMode)
+                            z: 5
 
                             Text {
                                 anchors.centerIn: parent
-                                text: tileItem.def ? tileItem.def.icon : "\uf013"
-                                font.family: TitanTheme.monoFamily
-                                font.pixelSize: 12
-                                color: tileItem.isActive ? "#FFFFFF" : TitanTheme.textMuted
+                                text: "⋮⋮"
+                                font.pixelSize: 8
+                                color: "#FFFFFF"
                             }
                         }
 
+                        // Mode 1: Compact Squircle (4 columns)
                         ColumnLayout {
-                            Layout.fillWidth: true
-                            spacing: 0
+                            anchors.fill: parent
+                            anchors.margins: 4
+                            spacing: 2
+                            visible: gridCardRoot.sizeMode === "compact"
+
+                            Item { Layout.fillHeight: true }
 
                             Text {
-                                text: tileItem.def ? tileItem.def.title : modelData
-                                font.family: TitanTheme.fontFamily
-                                font.pixelSize: 10
-                                font.weight: Font.DemiBold
-                                color: tileItem.isActive ? TitanTheme.textPrimary : TitanTheme.textSecondary
-                                elide: Text.ElideRight
-                                Layout.fillWidth: true
+                                Layout.alignment: Qt.AlignHCenter
+                                text: tileDelegate.def ? tileDelegate.def.icon : "\uf013"
+                                font.family: TitanTheme.monoFamily
+                                font.pixelSize: 14
+                                color: tileDelegate.isActive ? TitanTheme.accent : TitanTheme.textSecondary
                             }
 
                             Text {
-                                text: tileItem.def ? tileItem.def.status : "Off"
+                                Layout.alignment: Qt.AlignHCenter
+                                text: tileDelegate.def ? tileDelegate.def.title : modelData
                                 font.family: TitanTheme.fontFamily
                                 font.pixelSize: 8
-                                color: tileItem.isActive ? TitanTheme.accent : TitanTheme.textSubtle
+                                font.weight: Font.DemiBold
+                                color: tileDelegate.isActive ? TitanTheme.textPrimary : TitanTheme.textMuted
                                 elide: Text.ElideRight
+                                Layout.maximumWidth: parent.width - 6
+                            }
+
+                            Item { Layout.fillHeight: true }
+                        }
+
+                        // Mode 2: Wide 2-Column Tile
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.leftMargin: 8
+                            anchors.rightMargin: 8
+                            spacing: 8
+                            visible: gridCardRoot.sizeMode === "wide"
+
+                            Rectangle {
+                                width: 26
+                                height: 26
+                                radius: 13
+                                color: tileDelegate.isActive ? TitanTheme.accent : Qt.rgba(1, 1, 1, 0.08)
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: tileDelegate.def ? tileDelegate.def.icon : "\uf013"
+                                    font.family: TitanTheme.monoFamily
+                                    font.pixelSize: 12
+                                    color: tileDelegate.isActive ? "#FFFFFF" : TitanTheme.textMuted
+                                }
+                            }
+
+                            ColumnLayout {
                                 Layout.fillWidth: true
-                            }
-                        }
-                    }
+                                spacing: 0
 
-                    // ── In-Place Reorder Controls (Visible in Edit Mode) ─────
-                    RowLayout {
-                        anchors.top: parent.top
-                        anchors.right: parent.right
-                        anchors.margins: 2
-                        spacing: 2
-                        visible: (typeof rootWindow !== "undefined" && rootWindow.inPlaceEditMode)
-                        z: 10
+                                Text {
+                                    text: tileDelegate.def ? tileDelegate.def.title : modelData
+                                    font.family: TitanTheme.fontFamily
+                                    font.pixelSize: 10
+                                    font.weight: Font.DemiBold
+                                    color: tileDelegate.isActive ? TitanTheme.textPrimary : TitanTheme.textSecondary
+                                    elide: Text.ElideRight
+                                    Layout.fillWidth: true
+                                }
 
-                        // Move Left / Up
-                        Rectangle {
-                            width: 14
-                            height: 14
-                            radius: 3
-                            color: Qt.rgba(0, 0, 0, 0.6)
-                            visible: tileItem.itemIndex > 0
-
-                            Text {
-                                anchors.centerIn: parent
-                                text: "◀"
-                                font.pixelSize: 7
-                                color: TitanTheme.accent
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: {
-                                    if (typeof systemCtrl !== "undefined" && systemCtrl)
-                                        systemCtrl.moveActionOrder(tileItem.itemIndex, tileItem.itemIndex - 1);
+                                Text {
+                                    text: tileDelegate.def ? tileDelegate.def.status : "Off"
+                                    font.family: TitanTheme.fontFamily
+                                    font.pixelSize: 8
+                                    color: tileDelegate.isActive ? TitanTheme.accent : TitanTheme.textSubtle
+                                    elide: Text.ElideRight
+                                    Layout.fillWidth: true
                                 }
                             }
                         }
 
-                        // Move Right / Down
-                        Rectangle {
-                            width: 14
-                            height: 14
-                            radius: 3
-                            color: Qt.rgba(0, 0, 0, 0.6)
-                            visible: tileItem.itemIndex < gridCardRoot.currentOrder.length - 1
+                        MouseArea {
+                            id: tileMa
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: (typeof rootWindow !== "undefined" && rootWindow.inPlaceEditMode)
+                                         ? (pressed ? Qt.ClosedHandCursor : Qt.OpenHandCursor)
+                                         : Qt.PointingHandCursor
 
-                            Text {
-                                anchors.centerIn: parent
-                                text: "▶"
-                                font.pixelSize: 7
-                                color: TitanTheme.accent
-                            }
+                            drag.target: (typeof rootWindow !== "undefined" && rootWindow.inPlaceEditMode) ? tileItem : undefined
 
-                            MouseArea {
-                                anchors.fill: parent
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: {
-                                    if (typeof systemCtrl !== "undefined" && systemCtrl)
-                                        systemCtrl.moveActionOrder(tileItem.itemIndex, tileItem.itemIndex + 1);
+                            onPressed: {
+                                if (typeof rootWindow !== "undefined" && rootWindow.inPlaceEditMode) {
+                                    tileItem.isDragged = true;
+                                    tileItem.Drag.start();
                                 }
                             }
-                        }
-                    }
 
-                    MouseArea {
-                        id: tileMa
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            if (tileItem.def && tileItem.def.action) {
-                                tileItem.def.action();
+                            onReleased: {
+                                if (tileItem.isDragged) {
+                                    tileItem.Drag.drop();
+                                    tileItem.isDragged = false;
+                                    tileItem.x = 0;
+                                    tileItem.y = 0;
+                                }
+                            }
+
+                            onCanceled: {
+                                if (tileItem.isDragged) {
+                                    tileItem.Drag.drop();
+                                    tileItem.isDragged = false;
+                                    tileItem.x = 0;
+                                    tileItem.y = 0;
+                                }
+                            }
+
+                            onClicked: {
+                                if (typeof rootWindow !== "undefined" && rootWindow.inPlaceEditMode) {
+                                    // In edit mode, clicking doesn't trigger action
+                                } else {
+                                    if (tileDelegate.def && tileDelegate.def.action) {
+                                        tileDelegate.def.action();
+                                    }
+                                }
                             }
                         }
                     }

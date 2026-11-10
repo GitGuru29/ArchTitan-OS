@@ -14,7 +14,7 @@ import "../style"
 Rectangle {
     id: mediaRoot
     Layout.fillWidth: true
-    implicitHeight: 110
+    implicitHeight: 136
     radius: TitanTheme.radiusCard
     color: TitanTheme.bgTitanium
     border.color: (typeof rootWindow !== "undefined" && rootWindow.inPlaceEditMode)
