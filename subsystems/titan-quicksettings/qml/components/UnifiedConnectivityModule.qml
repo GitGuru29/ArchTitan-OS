@@ -5,16 +5,17 @@ import "../style"
 /**
  * UnifiedConnectivityModule — ArchTitan macOS-style Connectivity Bento Card.
  *
- * Implements the approved ArchTitan bento card with:
- * - Header: "Connectivity"
+ * Implements the ArchTitan bento card with:
+ * - Header: "Connectivity" + live SSID badge
  * - 3 Squircle Buttons: Wi-Fi, Bluetooth, TitanDrop
- * - Top-right glowing Titan Orange status dots
- * - Integrated in-place edit affordances (Drag & Drop + Corner Resize handle)
+ * - Left click on Wi-Fi directly opens Wi-Fi Networks Picker
+ * - Dedicated power toggle dot to toggle on/off
+ * - Sapphire Cyan accents
  */
 Rectangle {
     id: connRoot
     Layout.fillWidth: true
-    implicitHeight: 112
+    implicitHeight: 140
     radius: TitanTheme.radiusCard
     color: TitanTheme.bgTitanium
     border.color: (typeof rootWindow !== "undefined" && rootWindow.inPlaceEditMode)
@@ -22,7 +23,6 @@ Rectangle {
                   : (connMa.containsMouse ? TitanTheme.borderHover : TitanTheme.borderHairline)
     border.width: 1
 
-    property bool isExpanded: false
     signal openWifiRequested()
     signal openBluetoothRequested()
 
@@ -51,7 +51,7 @@ Rectangle {
                     if (typeof networkCtrl === "undefined" || !networkCtrl) return "Offline";
                     if (!networkCtrl.wifiEnabled) return "Disabled";
                     var ssid = networkCtrl.activeSsid;
-                    return (ssid && ssid.length > 0) ? ssid : "Active";
+                    return (ssid && ssid.length > 0) ? ssid : "Connected";
                 }
                 font.family: TitanTheme.fontFamily
                 font.pixelSize: 9
@@ -77,31 +77,54 @@ Rectangle {
                 radius: 12
                 color: wifiBtnMa.pressed ? TitanTheme.bgPressed : (wifiBtnMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgInset)
                 border.color: (typeof networkCtrl !== "undefined" && networkCtrl && networkCtrl.wifiEnabled)
-                              ? Qt.rgba(1.0, 0.42, 0.0, 0.35)
+                              ? Qt.rgba(0.04, 0.52, 1.0, 0.45)
                               : TitanTheme.borderHairline
                 border.width: 1
 
-                // Active Orange Status Dot (Top-Right)
+                // Active Sapphire Status Dot / Power Toggle (Top-Right)
                 Rectangle {
-                    width: 6
-                    height: 6
-                    radius: 3
+                    id: wifiDot
+                    width: 14
+                    height: 14
+                    radius: 7
                     anchors.top: parent.top
                     anchors.right: parent.right
-                    anchors.topMargin: 7
-                    anchors.rightMargin: 7
+                    anchors.topMargin: 5
+                    anchors.rightMargin: 5
                     color: (typeof networkCtrl !== "undefined" && networkCtrl && networkCtrl.wifiEnabled)
                            ? TitanTheme.accent
-                           : "transparent"
-                    visible: (typeof networkCtrl !== "undefined" && networkCtrl && networkCtrl.wifiEnabled)
+                           : Qt.rgba(1, 1, 1, 0.12)
 
                     Rectangle {
                         anchors.centerIn: parent
-                        width: 10
-                        height: 10
-                        radius: 5
-                        color: Qt.rgba(1.0, 0.42, 0.0, 0.30)
+                        width: 18
+                        height: 18
+                        radius: 9
+                        color: (typeof networkCtrl !== "undefined" && networkCtrl && networkCtrl.wifiEnabled)
+                               ? TitanTheme.accentGlow
+                               : "transparent"
                         z: -1
+                    }
+
+                    // Power toggle icon
+                    Text {
+                        anchors.centerIn: parent
+                        text: "\uf011" // power
+                        font.family: TitanTheme.monoFamily
+                        font.pixelSize: 8
+                        color: (typeof networkCtrl !== "undefined" && networkCtrl && networkCtrl.wifiEnabled)
+                               ? "#FFFFFF"
+                               : TitanTheme.textMuted
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            if (typeof networkCtrl !== "undefined" && networkCtrl)
+                                networkCtrl.toggleWifi();
+                        }
                     }
                 }
 
@@ -113,9 +136,9 @@ Rectangle {
                         Layout.alignment: Qt.AlignHCenter
                         text: "\uf1eb" // wifi
                         font.family: TitanTheme.monoFamily
-                        font.pixelSize: 16
+                        font.pixelSize: 18
                         color: (typeof networkCtrl !== "undefined" && networkCtrl && networkCtrl.wifiEnabled)
-                               ? TitanTheme.textPrimary
+                               ? TitanTheme.accent
                                : TitanTheme.textMuted
                     }
 
@@ -129,23 +152,30 @@ Rectangle {
                                ? TitanTheme.textPrimary
                                : TitanTheme.textSecondary
                     }
+
+                    Text {
+                        Layout.alignment: Qt.AlignHCenter
+                        text: {
+                            if (typeof networkCtrl === "undefined" || !networkCtrl) return "Off";
+                            if (!networkCtrl.wifiEnabled) return "Disabled";
+                            var ssid = networkCtrl.activeSsid;
+                            return (ssid && ssid.length > 0) ? ssid : "Select Network";
+                        }
+                        font.family: TitanTheme.fontFamily
+                        font.pixelSize: 8
+                        color: TitanTheme.textMuted
+                        elide: Text.ElideRight
+                        Layout.maximumWidth: parent.width - 10
+                    }
                 }
 
                 MouseArea {
                     id: wifiBtnMa
                     anchors.fill: parent
                     hoverEnabled: true
-                    acceptedButtons: Qt.LeftButton | Qt.RightButton
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: (mouse) => {
-                        if (mouse.button === Qt.RightButton) {
-                            connRoot.openWifiRequested();
-                        } else {
-                            if (typeof networkCtrl !== "undefined" && networkCtrl)
-                                networkCtrl.toggleWifi();
-                        }
-                    }
-                    onDoubleClicked: connRoot.openWifiRequested()
+                    // Clicking Wi-Fi button opens the network selection list!
+                    onClicked: connRoot.openWifiRequested()
                 }
             }
 
@@ -156,11 +186,11 @@ Rectangle {
                 radius: 12
                 color: btBtnMa.pressed ? TitanTheme.bgPressed : (btBtnMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgInset)
                 border.color: (typeof bluetoothCtrl !== "undefined" && bluetoothCtrl && bluetoothCtrl.powered)
-                              ? Qt.rgba(1.0, 0.42, 0.0, 0.35)
+                              ? Qt.rgba(0.04, 0.52, 1.0, 0.45)
                               : TitanTheme.borderHairline
                 border.width: 1
 
-                // Active Orange Status Dot (Top-Right)
+                // Active Sapphire Status Dot (Top-Right)
                 Rectangle {
                     width: 6
                     height: 6
@@ -179,7 +209,7 @@ Rectangle {
                         width: 10
                         height: 10
                         radius: 5
-                        color: Qt.rgba(1.0, 0.42, 0.0, 0.30)
+                        color: TitanTheme.accentGlow
                         z: -1
                     }
                 }
@@ -192,9 +222,9 @@ Rectangle {
                         Layout.alignment: Qt.AlignHCenter
                         text: "\uf293" // bluetooth
                         font.family: TitanTheme.monoFamily
-                        font.pixelSize: 16
+                        font.pixelSize: 18
                         color: (typeof bluetoothCtrl !== "undefined" && bluetoothCtrl && bluetoothCtrl.powered)
-                               ? TitanTheme.textPrimary
+                               ? TitanTheme.accent
                                : TitanTheme.textMuted
                     }
 
@@ -207,6 +237,14 @@ Rectangle {
                         color: (typeof bluetoothCtrl !== "undefined" && bluetoothCtrl && bluetoothCtrl.powered)
                                ? TitanTheme.textPrimary
                                : TitanTheme.textSecondary
+                    }
+
+                    Text {
+                        Layout.alignment: Qt.AlignHCenter
+                        text: (typeof bluetoothCtrl !== "undefined" && bluetoothCtrl && bluetoothCtrl.powered) ? "Enabled" : "Off"
+                        font.family: TitanTheme.fontFamily
+                        font.pixelSize: 8
+                        color: TitanTheme.textMuted
                     }
                 }
 
@@ -228,12 +266,12 @@ Rectangle {
                 Layout.fillHeight: true
                 radius: 12
                 color: dropBtnMa.pressed ? TitanTheme.bgPressed : (dropBtnMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgInset)
-                border.color: titanDropActive ? Qt.rgba(1.0, 0.42, 0.0, 0.35) : TitanTheme.borderHairline
+                border.color: titanDropActive ? Qt.rgba(0.04, 0.52, 1.0, 0.45) : TitanTheme.borderHairline
                 border.width: 1
 
                 property bool titanDropActive: true
 
-                // Active Orange Status Dot (Top-Right)
+                // Active Sapphire Status Dot (Top-Right)
                 Rectangle {
                     width: 6
                     height: 6
@@ -249,7 +287,7 @@ Rectangle {
                         width: 10
                         height: 10
                         radius: 5
-                        color: Qt.rgba(1.0, 0.42, 0.0, 0.30)
+                        color: TitanTheme.accentGlow
                         z: -1
                     }
                 }
@@ -262,8 +300,8 @@ Rectangle {
                         Layout.alignment: Qt.AlignHCenter
                         text: "\uf0ee" // cloud-upload / air-share
                         font.family: TitanTheme.monoFamily
-                        font.pixelSize: 16
-                        color: parent.parent.titanDropActive ? TitanTheme.textPrimary : TitanTheme.textMuted
+                        font.pixelSize: 18
+                        color: parent.parent.titanDropActive ? TitanTheme.accent : TitanTheme.textMuted
                     }
 
                     Text {
@@ -273,6 +311,14 @@ Rectangle {
                         font.pixelSize: 10
                         font.weight: Font.DemiBold
                         color: parent.parent.titanDropActive ? TitanTheme.textPrimary : TitanTheme.textSecondary
+                    }
+
+                    Text {
+                        Layout.alignment: Qt.AlignHCenter
+                        text: parent.parent.titanDropActive ? "Ready" : "Off"
+                        font.family: TitanTheme.fontFamily
+                        font.pixelSize: 8
+                        color: TitanTheme.textMuted
                     }
                 }
 
@@ -285,38 +331,6 @@ Rectangle {
                         parent.titanDropActive = !parent.titanDropActive;
                     }
                 }
-            }
-        }
-    }
-
-    // ── In-Place Corner Resize Handle ───────────────────────────────────────
-    Rectangle {
-        id: resizeHandle
-        width: 18
-        height: 18
-        radius: 4
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
-        anchors.margins: 3
-        color: resizeMa.containsMouse ? TitanTheme.accent : Qt.rgba(1, 1, 1, 0.12)
-        visible: (typeof rootWindow !== "undefined" && rootWindow.inPlaceEditMode)
-        z: 10
-
-        Text {
-            anchors.centerIn: parent
-            text: "⤡"
-            font.pixelSize: 12
-            color: resizeMa.containsMouse ? "#0D1017" : TitanTheme.accent
-        }
-
-        MouseArea {
-            id: resizeMa
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.SizeFDiagCursor
-            onClicked: {
-                if (typeof systemCtrl !== "undefined" && systemCtrl)
-                    systemCtrl.toggleWidgetSize("connectivity");
             }
         }
     }

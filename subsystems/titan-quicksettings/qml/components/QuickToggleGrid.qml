@@ -5,31 +5,25 @@ import "../style"
 /**
  * QuickToggleGrid — ArchTitan Control Center Modular Bento Dashboard.
  *
- * Implements the approved macOS-inspired 2-column bento layout:
- * - Row 1 Left:  Unified Connectivity (Wi-Fi, Bluetooth, TitanDrop)
- * - Row 1 Right: Media Player (Solaris album art, animated soundwave, controls)
- * - Row 2 Left:  Brightness Capsule Slider Module
- * - Row 2 Right: Volume Capsule Slider Module
- * - Row 3 Left:  Quick Action 3x2 Squircle Grid
- * - Row 3 Right: Titan Pulse Hardware Telemetry (Horseshoe Gauges + Profiles)
- * - Row 4 Full:  Liquid Glass / Transparency Capsule Slider Controller
+ * Implements a balanced macOS-inspired bento layout:
+ * - Cluster 1 (140px): Unified Connectivity (Left) balanced with Brightness & Volume (Right)
+ * - Cluster 2 (110px): Media Player (Left) balanced with Titan Pulse Hardware Telemetry (Right)
+ * - Cluster 3: Symmetrical 2-Column Quick Actions Grid
+ * - Cluster 4: Dedicated Liquid Glass / Transparency Capsule Slider Controller
  *
- * All modules feature in-place corner resizing [ ⤡ ] and in-place customization
- * directly on the live dashboard.
+ * Uses the macOS Sapphire Cyan/Blue palette for a calm, premium desktop OS aesthetic.
  */
 ColumnLayout {
     id: bentoRoot
     Layout.fillWidth: true
     spacing: 8
 
-    property int revision: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.tileVisibilityRevision : 0
-
     // ── In-Place Edit Mode Banner ───────────────────────────────────────────
     Rectangle {
         Layout.fillWidth: true
         height: 28
         radius: 14
-        color: Qt.rgba(1.0, 0.42, 0.0, 0.15)
+        color: Qt.rgba(0.04, 0.52, 1.0, 0.16)
         border.color: TitanTheme.accent
         border.width: 1
         visible: (typeof rootWindow !== "undefined" && rootWindow.inPlaceEditMode)
@@ -48,7 +42,7 @@ ColumnLayout {
             }
 
             Text {
-                text: "CUSTOMIZING · Drag corners [ ⤡ ] to resize"
+                text: "CUSTOMIZING CONTROL CENTER"
                 font.family: TitanTheme.fontFamily
                 font.pixelSize: 9
                 font.weight: Font.DemiBold
@@ -58,7 +52,7 @@ ColumnLayout {
             Item { Layout.fillWidth: true }
 
             Rectangle {
-                width: 46
+                width: 48
                 height: 20
                 radius: 10
                 color: TitanTheme.accent
@@ -69,7 +63,7 @@ ColumnLayout {
                     font.family: TitanTheme.fontFamily
                     font.pixelSize: 9
                     font.weight: Font.Bold
-                    color: "#0D1017"
+                    color: "#FFFFFF"
                 }
 
                 MouseArea {
@@ -84,32 +78,32 @@ ColumnLayout {
         }
     }
 
-    // ── Symmetrical 2-Column Bento Dashboard (Approved Mockup Layout) ───────
+    // ═════════════════════════════════════════════════════════════════════════
+    //  CLUSTER 1 (Height: 140px): Connectivity (Left) & Sliders (Right)
+    // ═════════════════════════════════════════════════════════════════════════
     RowLayout {
         Layout.fillWidth: true
         spacing: 8
 
-        // ═════════════════════════════════════════════════════════════════════
-        //  LEFT COLUMN
-        // ═════════════════════════════════════════════════════════════════════
+        // Left: Unified Connectivity (140px)
+        UnifiedConnectivityModule {
+            Layout.preferredWidth: (parent.width - 8) / 2
+            Layout.fillWidth: true
+            onOpenWifiRequested: {
+                if (typeof rootWindow !== "undefined" && rootWindow)
+                    rootWindow.showWifiPage = true;
+            }
+        }
+
+        // Right: Display Brightness (66px) + Sound Volume (66px) = 140px total
         ColumnLayout {
             Layout.preferredWidth: (parent.width - 8) / 2
             Layout.fillWidth: true
             spacing: 8
 
-            // 1. Connectivity Card
-            UnifiedConnectivityModule {
-                Layout.fillWidth: true
-                onOpenWifiRequested: {
-                    if (typeof rootWindow !== "undefined" && rootWindow)
-                        rootWindow.showWifiPage = true;
-                }
-            }
-
-            // 2. Brightness Slider Card
             TitanSliderModule {
                 Layout.fillWidth: true
-                title: "Brightness"
+                title: "Display Brightness"
                 iconGlyph: "\uf185" // sun
                 value: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.brightness : 72
                 fillAccent: TitanTheme.accent
@@ -118,29 +112,9 @@ ColumnLayout {
                 }
             }
 
-            // 3. Quick Action Grid Card
-            TitanActionGrid {
-                Layout.fillWidth: true
-            }
-        }
-
-        // ═════════════════════════════════════════════════════════════════════
-        //  RIGHT COLUMN
-        // ═════════════════════════════════════════════════════════════════════
-        ColumnLayout {
-            Layout.preferredWidth: (parent.width - 8) / 2
-            Layout.fillWidth: true
-            spacing: 8
-
-            // 1. Media Player Card
-            NowPlayingModule {
-                Layout.fillWidth: true
-            }
-
-            // 2. Volume Slider Card
             TitanSliderModule {
                 Layout.fillWidth: true
-                title: "Volume"
+                title: "Sound Volume"
                 iconGlyph: "\uf028" // volume
                 value: (typeof audioCtrl !== "undefined" && audioCtrl) ? audioCtrl.sinkVolume : 55
                 fillAccent: TitanTheme.accent
@@ -148,21 +122,43 @@ ColumnLayout {
                     if (typeof audioCtrl !== "undefined" && audioCtrl) audioCtrl.setVolume(v);
                 }
             }
-
-            // 3. Titan Pulse Telemetry Card
-            TitanPulseModule {
-                Layout.fillWidth: true
-            }
         }
     }
 
     // ═════════════════════════════════════════════════════════════════════════
-    //  ROW 4: Liquid Glass / Transparency Controller (User Mandatory Feature)
+    //  CLUSTER 2 (Height: 110px): Media Player (Left) & Titan Pulse (Right)
+    // ═════════════════════════════════════════════════════════════════════════
+    RowLayout {
+        Layout.fillWidth: true
+        spacing: 8
+
+        // Left: Now Playing Media Player (110px)
+        NowPlayingModule {
+            Layout.preferredWidth: (parent.width - 8) / 2
+            Layout.fillWidth: true
+        }
+
+        // Right: Titan Pulse Telemetry (110px)
+        TitanPulseModule {
+            Layout.preferredWidth: (parent.width - 8) / 2
+            Layout.fillWidth: true
+        }
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    //  CLUSTER 3: Symmetrical Quick Actions Grid
+    // ═════════════════════════════════════════════════════════════════════════
+    TitanActionGrid {
+        Layout.fillWidth: true
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    //  CLUSTER 4: Liquid Glass / Transparency Controller
     // ═════════════════════════════════════════════════════════════════════════
     TitanSliderModule {
         Layout.fillWidth: true
-        title: "Liquid Glass / Transparency"
-        iconGlyph: "\uf043" // droplet / glass
+        title: "Liquid Glass / Frosted Blur"
+        iconGlyph: "\uf043" // droplet / glass tint
         value: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.glassOpacity : 35
         fillAccent: TitanTheme.accent
         onChanged: (v) => {

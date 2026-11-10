@@ -5,16 +5,15 @@ import "../style"
 /**
  * TitanPulseModule — ArchTitan Signature Hardware Intelligence Bento Module.
  *
- * Implements the approved mockup Titan Pulse card:
+ * Implements the Titan Pulse card:
  * - Header: "Titan Pulse" with options badge
  * - Dual glowing circular / horseshoe gauge meters (CPU % + Temp, RAM %)
- * - Power Profile Selector: Efficiency | Balanced | Performance
- * - In-place corner resize handle
+ * - Power Profile Selector: Efficiency | Balanced | Performance in Sapphire Cyan
  */
 Rectangle {
     id: pulseRoot
     Layout.fillWidth: true
-    implicitHeight: 148
+    implicitHeight: 110
     radius: TitanTheme.radiusCard
     color: TitanTheme.bgTitanium
     border.color: (typeof rootWindow !== "undefined" && rootWindow.inPlaceEditMode)
@@ -22,15 +21,15 @@ Rectangle {
                   : (pulseMa.containsMouse ? TitanTheme.borderHover : TitanTheme.borderHairline)
     border.width: 1
 
-    readonly property int cpuVal: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.cpuUsage : 32
-    readonly property int ramVal: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.ramUsage : 38
+    readonly property int cpuVal: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.cpuUsage : 33
+    readonly property int ramVal: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.ramUsage : 49
     readonly property int cpuTemp: 46
     property string activeProfile: "Performance"
 
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: 10
-        spacing: 8
+        spacing: 6
 
         // ── Card Header ─────────────────────────────────────────────────────
         RowLayout {
@@ -71,7 +70,7 @@ Rectangle {
             // Gauge 1: CPU % + Temp
             Item {
                 Layout.fillWidth: true
-                height: 64
+                height: 48
 
                 Canvas {
                     id: cpuCanvas
@@ -80,8 +79,8 @@ Rectangle {
                         var ctx = getContext("2d");
                         ctx.reset();
                         var cx = width / 2;
-                        var cy = height / 2 - 2;
-                        var radius = Math.min(cx, cy) - 5;
+                        var cy = height / 2;
+                        var radius = Math.min(cx, cy) - 4;
                         var startAngle = 0.75 * Math.PI;
                         var endAngle = 2.25 * Math.PI;
                         var sweep = endAngle - startAngle;
@@ -90,7 +89,7 @@ Rectangle {
                         ctx.beginPath();
                         ctx.arc(cx, cy, radius, startAngle, endAngle);
                         ctx.strokeStyle = Qt.rgba(1, 1, 1, 0.08);
-                        ctx.lineWidth = 5;
+                        ctx.lineWidth = 4;
                         ctx.lineCap = "round";
                         ctx.stroke();
 
@@ -99,8 +98,8 @@ Rectangle {
                         var activeAngle = startAngle + sweep * progress;
                         ctx.beginPath();
                         ctx.arc(cx, cy, radius, startAngle, activeAngle);
-                        ctx.strokeStyle = "#FF6B00";
-                        ctx.lineWidth = 5;
+                        ctx.strokeStyle = "#0A84FF";
+                        ctx.lineWidth = 4;
                         ctx.lineCap = "round";
                         ctx.stroke();
                     }
@@ -119,7 +118,7 @@ Rectangle {
                         Layout.alignment: Qt.AlignHCenter
                         text: pulseRoot.cpuVal + "%"
                         font.family: TitanTheme.fontFamily
-                        font.pixelSize: 13
+                        font.pixelSize: 11
                         font.weight: Font.Bold
                         color: TitanTheme.textPrimary
                     }
@@ -138,7 +137,7 @@ Rectangle {
             // Gauge 2: RAM % + Label
             Item {
                 Layout.fillWidth: true
-                height: 64
+                height: 48
 
                 Canvas {
                     id: ramCanvas
@@ -147,8 +146,8 @@ Rectangle {
                         var ctx = getContext("2d");
                         ctx.reset();
                         var cx = width / 2;
-                        var cy = height / 2 - 2;
-                        var radius = Math.min(cx, cy) - 5;
+                        var cy = height / 2;
+                        var radius = Math.min(cx, cy) - 4;
                         var startAngle = 0.75 * Math.PI;
                         var endAngle = 2.25 * Math.PI;
                         var sweep = endAngle - startAngle;
@@ -157,7 +156,7 @@ Rectangle {
                         ctx.beginPath();
                         ctx.arc(cx, cy, radius, startAngle, endAngle);
                         ctx.strokeStyle = Qt.rgba(1, 1, 1, 0.08);
-                        ctx.lineWidth = 5;
+                        ctx.lineWidth = 4;
                         ctx.lineCap = "round";
                         ctx.stroke();
 
@@ -166,8 +165,8 @@ Rectangle {
                         var activeAngle = startAngle + sweep * progress;
                         ctx.beginPath();
                         ctx.arc(cx, cy, radius, startAngle, activeAngle);
-                        ctx.strokeStyle = "#FF6B00";
-                        ctx.lineWidth = 5;
+                        ctx.strokeStyle = "#0A84FF";
+                        ctx.lineWidth = 4;
                         ctx.lineCap = "round";
                         ctx.stroke();
                     }
@@ -186,7 +185,7 @@ Rectangle {
                         Layout.alignment: Qt.AlignHCenter
                         text: pulseRoot.ramVal + "%"
                         font.family: TitanTheme.fontFamily
-                        font.pixelSize: 13
+                        font.pixelSize: 11
                         font.weight: Font.Bold
                         color: TitanTheme.textPrimary
                     }
@@ -207,8 +206,8 @@ Rectangle {
         // ── Power Profile Selector: Efficiency | Balanced | Performance ─────
         Rectangle {
             Layout.fillWidth: true
-            height: 24
-            radius: 12
+            height: 22
+            radius: 11
             color: TitanTheme.bgInset
             border.color: TitanTheme.borderHairline
             border.width: 1
@@ -221,8 +220,8 @@ Rectangle {
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    radius: 10
-                    color: pulseRoot.activeProfile === "Efficiency" ? Qt.rgba(1.0, 0.42, 0.0, 0.15) : "transparent"
+                    radius: 9
+                    color: pulseRoot.activeProfile === "Efficiency" ? Qt.rgba(0.04, 0.52, 1.0, 0.20) : "transparent"
                     border.color: pulseRoot.activeProfile === "Efficiency" ? TitanTheme.accent : "transparent"
                     border.width: 1
 
@@ -230,7 +229,7 @@ Rectangle {
                         anchors.centerIn: parent
                         text: "Efficiency"
                         font.family: TitanTheme.fontFamily
-                        font.pixelSize: 9
+                        font.pixelSize: 8
                         font.weight: pulseRoot.activeProfile === "Efficiency" ? Font.Bold : Font.Normal
                         color: pulseRoot.activeProfile === "Efficiency" ? TitanTheme.accent : TitanTheme.textMuted
                     }
@@ -243,14 +242,14 @@ Rectangle {
                     }
                 }
 
-                Rectangle { width: 1; height: 12; color: TitanTheme.borderHairline; Layout.alignment: Qt.AlignVCenter }
+                Rectangle { width: 1; height: 10; color: TitanTheme.borderHairline; Layout.alignment: Qt.AlignVCenter }
 
                 // 2. Balanced
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    radius: 10
-                    color: pulseRoot.activeProfile === "Balanced" ? Qt.rgba(1.0, 0.42, 0.0, 0.15) : "transparent"
+                    radius: 9
+                    color: pulseRoot.activeProfile === "Balanced" ? Qt.rgba(0.04, 0.52, 1.0, 0.20) : "transparent"
                     border.color: pulseRoot.activeProfile === "Balanced" ? TitanTheme.accent : "transparent"
                     border.width: 1
 
@@ -258,7 +257,7 @@ Rectangle {
                         anchors.centerIn: parent
                         text: "Balanced"
                         font.family: TitanTheme.fontFamily
-                        font.pixelSize: 9
+                        font.pixelSize: 8
                         font.weight: pulseRoot.activeProfile === "Balanced" ? Font.Bold : Font.Normal
                         color: pulseRoot.activeProfile === "Balanced" ? TitanTheme.accent : TitanTheme.textMuted
                     }
@@ -271,14 +270,14 @@ Rectangle {
                     }
                 }
 
-                Rectangle { width: 1; height: 12; color: TitanTheme.borderHairline; Layout.alignment: Qt.AlignVCenter }
+                Rectangle { width: 1; height: 10; color: TitanTheme.borderHairline; Layout.alignment: Qt.AlignVCenter }
 
                 // 3. Performance
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    radius: 10
-                    color: pulseRoot.activeProfile === "Performance" ? Qt.rgba(1.0, 0.42, 0.0, 0.15) : "transparent"
+                    radius: 9
+                    color: pulseRoot.activeProfile === "Performance" ? Qt.rgba(0.04, 0.52, 1.0, 0.20) : "transparent"
                     border.color: pulseRoot.activeProfile === "Performance" ? TitanTheme.accent : "transparent"
                     border.width: 1
 
@@ -286,7 +285,7 @@ Rectangle {
                         anchors.centerIn: parent
                         text: "Performance"
                         font.family: TitanTheme.fontFamily
-                        font.pixelSize: 9
+                        font.pixelSize: 8
                         font.weight: pulseRoot.activeProfile === "Performance" ? Font.Bold : Font.Normal
                         color: pulseRoot.activeProfile === "Performance" ? TitanTheme.accent : TitanTheme.textMuted
                     }
@@ -298,38 +297,6 @@ Rectangle {
                         onClicked: pulseRoot.activeProfile = "Performance"
                     }
                 }
-            }
-        }
-    }
-
-    // ── In-Place Corner Resize Handle ───────────────────────────────────────
-    Rectangle {
-        id: resizeHandle
-        width: 18
-        height: 18
-        radius: 4
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
-        anchors.margins: 3
-        color: resizeMa.containsMouse ? TitanTheme.accent : Qt.rgba(1, 1, 1, 0.12)
-        visible: (typeof rootWindow !== "undefined" && rootWindow.inPlaceEditMode)
-        z: 10
-
-        Text {
-            anchors.centerIn: parent
-            text: "⤡"
-            font.pixelSize: 12
-            color: resizeMa.containsMouse ? "#0D1017" : TitanTheme.accent
-        }
-
-        MouseArea {
-            id: resizeMa
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.SizeFDiagCursor
-            onClicked: {
-                if (typeof systemCtrl !== "undefined" && systemCtrl)
-                    systemCtrl.toggleWidgetSize("pulse");
             }
         }
     }
