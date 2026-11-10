@@ -38,8 +38,8 @@ static void ensureDefaultConfig()
         cfg.setValue("top_margin",        8);
         cfg.setValue("bottom_margin",      8);
         cfg.setValue("right_margin",       8);
-        cfg.setValue("panel_width",      390);
-        cfg.setValue("panel_height",     660);
+        cfg.setValue("panel_width",      450);
+        cfg.setValue("panel_height",     720);
         cfg.setValue("stretch_to_bottom", false);
         cfg.endGroup();
         cfg.sync();
@@ -65,8 +65,8 @@ static LayoutConfig readConfig()
     lc.topMargin        = cfg.value("top_margin",        8).toInt();
     lc.bottomMargin     = cfg.value("bottom_margin",      8).toInt();
     lc.rightMargin      = cfg.value("right_margin",       8).toInt();
-    lc.panelWidth       = cfg.value("panel_width",      390).toInt();
-    lc.panelHeight      = cfg.value("panel_height",     660).toInt();
+    lc.panelWidth       = cfg.value("panel_width",      450).toInt();
+    lc.panelHeight      = cfg.value("panel_height",     720).toInt();
     lc.stretchToBottom  = cfg.value("stretch_to_bottom", false).toBool();
     cfg.endGroup();
     return lc;
@@ -304,7 +304,7 @@ int main(int argc, char *argv[])
             QMetaObject::invokeMethod(window, "openDrawer");
         });
         QObject::connect(&ipc, &IpcServer::editRequested, window, [window]() {
-            window->setProperty("editMode", true);
+            window->setProperty("inPlaceEditMode", true);
             QMetaObject::invokeMethod(window, "openDrawer");
         });
 

@@ -17,6 +17,8 @@ Rectangle {
     border.color: TitanTheme.borderHairline
     border.width: 1
 
+    property bool inPlaceEditMode: (typeof rootWindow !== "undefined" && rootWindow) ? rootWindow.inPlaceEditMode : false
+
     signal editRequested()
     signal settingsRequested()
     signal powerRequested()
@@ -75,22 +77,36 @@ Rectangle {
 
             // 1. Customize / Edit Mode Button
             Rectangle {
-                width: 28
+                width: headerRoot.inPlaceEditMode ? 62 : 28
                 height: 28
                 radius: 14
-                color: editMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgOneUIPill
-                border.color: editMa.containsMouse ? TitanTheme.borderHover : TitanTheme.borderHairline
+                color: headerRoot.inPlaceEditMode ? TitanTheme.accent : (editMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgOneUIPill)
+                border.color: headerRoot.inPlaceEditMode ? TitanTheme.accent : (editMa.containsMouse ? TitanTheme.borderHover : TitanTheme.borderHairline)
                 border.width: 1
 
                 scale: editMa.pressed ? 0.92 : 1.0
                 Behavior on scale { NumberAnimation { duration: 110 } }
+                Behavior on width { NumberAnimation { duration: 150; easing.type: Easing.OutQuad } }
 
-                Text {
+                RowLayout {
                     anchors.centerIn: parent
-                    text: "\uf044" // edit
-                    font.family: TitanTheme.monoFamily
-                    font.pixelSize: 11
-                    color: editMa.containsMouse ? TitanTheme.accent : TitanTheme.textMuted
+                    spacing: 4
+
+                    Text {
+                        text: headerRoot.inPlaceEditMode ? "\uf00c" : "\uf044" // check : edit
+                        font.family: TitanTheme.monoFamily
+                        font.pixelSize: 11
+                        color: headerRoot.inPlaceEditMode ? "#0D1017" : (editMa.containsMouse ? TitanTheme.accent : TitanTheme.textMuted)
+                    }
+
+                    Text {
+                        visible: headerRoot.inPlaceEditMode
+                        text: "Done"
+                        font.family: TitanTheme.fontFamily
+                        font.pixelSize: 10
+                        font.weight: Font.Bold
+                        color: "#0D1017"
+                    }
                 }
 
                 MouseArea {
