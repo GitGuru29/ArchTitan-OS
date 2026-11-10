@@ -171,6 +171,7 @@ Window {
                         contentWidth: width
                         contentHeight: Math.max(height, bentoContent.implicitHeight)
                         clip: true
+                        interactive: !rootWindow.inPlaceEditMode
                         boundsBehavior: Flickable.StopAtBounds
                         visible: !rootWindow.showWifiPage && !rootWindow.showPowerMenu
 

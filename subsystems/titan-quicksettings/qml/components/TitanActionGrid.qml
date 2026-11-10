@@ -12,16 +12,11 @@ import "../style"
  * - Sapphire Cyan active indicators
  * - Perfectly aligned layout (zero gaps or jigsaw breakage)
  */
-Rectangle {
+Item {
     id: gridCardRoot
     Layout.fillWidth: true
-    implicitHeight: actionCol.implicitHeight + 20
-    radius: TitanTheme.radiusCard
-    color: TitanTheme.bgTitanium
-    border.color: (typeof rootWindow !== "undefined" && rootWindow.inPlaceEditMode)
-                  ? TitanTheme.accent
-                  : (cardMa.containsMouse ? TitanTheme.borderHover : TitanTheme.borderHairline)
-    border.width: 1
+    implicitHeight: actionCol.implicitHeight
+
 
     property int revision: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.tileVisibilityRevision : 0
     property string sizeMode: (typeof systemCtrl !== "undefined" && systemCtrl)
@@ -137,7 +132,7 @@ Rectangle {
     ColumnLayout {
         id: actionCol
         anchors.fill: parent
-        anchors.margins: 10
+        anchors.margins: 0
         spacing: 8
 
         // ── Card Header + Grid Resize Pill Switcher ─────────────────────────
@@ -232,6 +227,9 @@ Rectangle {
             columnSpacing: 6
             rowSpacing: 6
 
+            property int hoverTargetIndex: -1
+            property int dragSourceIndex: -1
+
             Repeater {
                 model: gridCardRoot.currentOrder
 
@@ -251,14 +249,11 @@ Rectangle {
                         anchors.fill: parent
                         keys: ["quick-action-tile"]
                         onEntered: (drag) => {
-                            if (drag.source && typeof drag.source.itemIndex !== "undefined") {
-                                var fromIdx = drag.source.itemIndex;
-                                var toIdx = tileDelegate.itemIndex;
-                                if (fromIdx !== toIdx && fromIdx >= 0 && toIdx >= 0) {
-                                    if (typeof systemCtrl !== "undefined" && systemCtrl) {
-                                        systemCtrl.moveActionOrder(fromIdx, toIdx);
-                                    }
-                                }
+                            actionsLayout.hoverTargetIndex = tileDelegate.itemIndex;
+                        }
+                        onExited: {
+                            if (actionsLayout.hoverTargetIndex === tileDelegate.itemIndex) {
+                                actionsLayout.hoverTargetIndex = -1;
                             }
                         }
                     }
@@ -266,26 +261,31 @@ Rectangle {
                     // The visual tile that can be dragged
                     Rectangle {
                         id: tileItem
-                        anchors.fill: parent
+                        // When dragged, unanchor so x and y follow drag freely!
+                        anchors.fill: isDragged ? undefined : parent
+                        width: isDragged ? tileDelegate.width : undefined
+                        height: isDragged ? tileDelegate.height : undefined
                         radius: 10
                         clip: true
 
                         property bool isDragged: false
 
-                        z: isDragged ? 99 : 1
+                        z: isDragged ? 999 : 1
                         scale: isDragged ? 1.08 : (tileMa.pressed ? 0.95 : (tileMa.containsMouse ? 1.02 : 1.0))
                         Behavior on scale { NumberAnimation { duration: 110; easing.type: Easing.OutBack } }
 
                         color: tileDelegate.isActive
                                ? Qt.rgba(0.04, 0.52, 1.0, 0.16)
-                               : (tileMa.pressed ? TitanTheme.bgPressed : (tileMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgInset))
+                               : (actionsLayout.hoverTargetIndex === index
+                                  ? Qt.rgba(0.04, 0.52, 1.0, 0.28)
+                                  : (tileMa.pressed ? TitanTheme.bgPressed : (tileMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgInset)))
 
-                        border.color: tileItem.isDragged
+                        border.color: (tileItem.isDragged || actionsLayout.hoverTargetIndex === index)
                                       ? TitanTheme.accent
                                       : ((typeof rootWindow !== "undefined" && rootWindow.inPlaceEditMode)
                                          ? Qt.rgba(0.04, 0.52, 1.0, 0.5)
                                          : (tileDelegate.isActive ? TitanTheme.accent : (tileMa.containsMouse ? TitanTheme.borderHover : TitanTheme.borderHairline)))
-                        border.width: tileItem.isDragged ? 2 : 1
+                        border.width: (tileItem.isDragged || actionsLayout.hoverTargetIndex === index) ? 2 : 1
 
                         Drag.active: tileItem.isDragged
                         Drag.source: tileDelegate
@@ -293,23 +293,67 @@ Rectangle {
                         Drag.hotSpot.x: width / 2
                         Drag.hotSpot.y: height / 2
 
-                        // Edit mode drag grip indicator in corner
-                        Rectangle {
-                            width: 14
-                            height: 14
-                            radius: 7
+                        // Edit mode nudge buttons (left/right reorder in 1 tap)
+                        RowLayout {
                             anchors.top: parent.top
                             anchors.right: parent.right
-                            anchors.margins: 3
-                            color: Qt.rgba(0.04, 0.52, 1.0, 0.35)
+                            anchors.margins: 2
+                            spacing: 2
                             visible: (typeof rootWindow !== "undefined" && rootWindow.inPlaceEditMode)
-                            z: 5
+                            z: 10
 
-                            Text {
-                                anchors.centerIn: parent
-                                text: "⋮⋮"
-                                font.pixelSize: 8
-                                color: "#FFFFFF"
+                            Rectangle {
+                                width: 14
+                                height: 14
+                                radius: 7
+                                color: leftNudgeMa.containsMouse ? TitanTheme.accent : Qt.rgba(0.04, 0.52, 1.0, 0.35)
+                                visible: index > 0
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "◄"
+                                    font.pixelSize: 7
+                                    color: "#FFFFFF"
+                                }
+
+                                MouseArea {
+                                    id: leftNudgeMa
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        if (typeof systemCtrl !== "undefined" && systemCtrl && index > 0) {
+                                            systemCtrl.moveActionOrder(index, index - 1);
+                                        }
+                                    }
+                                }
+                            }
+
+                            Rectangle {
+                                width: 14
+                                height: 14
+                                radius: 7
+                                color: rightNudgeMa.containsMouse ? TitanTheme.accent : Qt.rgba(0.04, 0.52, 1.0, 0.35)
+                                visible: index < (gridCardRoot.currentOrder.length - 1)
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "►"
+                                    font.pixelSize: 7
+                                    color: "#FFFFFF"
+                                }
+
+                                MouseArea {
+                                    id: rightNudgeMa
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        if (typeof systemCtrl !== "undefined" && systemCtrl && index < (gridCardRoot.currentOrder.length - 1)) {
+                                            systemCtrl.moveActionOrder(index, index + 1);
+                                        }
+                                    }
+                                }
                             }
                         }
 
@@ -401,10 +445,12 @@ Rectangle {
                                          : Qt.PointingHandCursor
 
                             drag.target: (typeof rootWindow !== "undefined" && rootWindow.inPlaceEditMode) ? tileItem : undefined
+                            drag.axis: Drag.XAndYAxis
 
                             onPressed: {
                                 if (typeof rootWindow !== "undefined" && rootWindow.inPlaceEditMode) {
                                     tileItem.isDragged = true;
+                                    actionsLayout.dragSourceIndex = tileDelegate.itemIndex;
                                     tileItem.Drag.start();
                                 }
                             }
@@ -413,6 +459,15 @@ Rectangle {
                                 if (tileItem.isDragged) {
                                     tileItem.Drag.drop();
                                     tileItem.isDragged = false;
+                                    var fromIdx = actionsLayout.dragSourceIndex;
+                                    var toIdx = actionsLayout.hoverTargetIndex;
+                                    if (fromIdx !== -1 && toIdx !== -1 && fromIdx !== toIdx) {
+                                        if (typeof systemCtrl !== "undefined" && systemCtrl) {
+                                            systemCtrl.moveActionOrder(fromIdx, toIdx);
+                                        }
+                                    }
+                                    actionsLayout.dragSourceIndex = -1;
+                                    actionsLayout.hoverTargetIndex = -1;
                                     tileItem.x = 0;
                                     tileItem.y = 0;
                                 }
@@ -422,6 +477,8 @@ Rectangle {
                                 if (tileItem.isDragged) {
                                     tileItem.Drag.drop();
                                     tileItem.isDragged = false;
+                                    actionsLayout.dragSourceIndex = -1;
+                                    actionsLayout.hoverTargetIndex = -1;
                                     tileItem.x = 0;
                                     tileItem.y = 0;
                                 }
@@ -441,12 +498,5 @@ Rectangle {
                 }
             }
         }
-    }
-
-    MouseArea {
-        id: cardMa
-        anchors.fill: parent
-        hoverEnabled: true
-        z: -1
     }
 }
