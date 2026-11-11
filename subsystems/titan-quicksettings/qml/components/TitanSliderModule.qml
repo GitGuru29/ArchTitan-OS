@@ -5,17 +5,16 @@ import "../style"
 /**
  * TitanSliderModule — Authentic macOS Control Center Embedded-Icon Capsule Slider.
  *
- * Features:
- * - Clean bold header ("Display", "Sound", "Liquid Glass")
- * - Thick 26px rounded capsule track with luminous white/ice-sapphire fill
- * - Icon embedded directly inside the left side of the slider track
- * - Live percentage readout inside the capsule
- * - Optional circular Audio Output / AirPlay button on the right (for Sound)
+ * Modes:
+ * - Standard Capsule Mode (Display, Sound): Header + 26px thick white capsule with embedded left icon.
+ * - Headerless Capsule Mode (showHeader: false): 46px compact card with 26px thick white capsule + embedded icon.
+ * - Thumb Bar Mode (thumbStyle: true, for Liquid Glass): 46px compact card with "Liquid Glass" header,
+ *   sleek glowing white bar, circular thumb handle, and right percentage label.
  */
 Rectangle {
     id: sliderRoot
     Layout.fillWidth: true
-    implicitHeight: 66
+    implicitHeight: (!showHeader || thumbStyle) ? 50 : 64
     radius: TitanTheme.radiusCard
     color: TitanTheme.bgTitanium
     border.color: (typeof rootWindow !== "undefined" && rootWindow.inPlaceEditMode)
@@ -30,6 +29,8 @@ Rectangle {
     property int value: 75
     property color fillAccent: "#FFFFFF"
     property bool showOutputButton: false
+    property bool showHeader: true
+    property bool thumbStyle: false
 
     signal changed(int val)
     signal outputClicked()
@@ -40,13 +41,14 @@ Rectangle {
         anchors.fill: parent
         anchors.leftMargin: 12
         anchors.rightMargin: 12
-        anchors.topMargin: 8
-        anchors.bottomMargin: 10
-        spacing: 5
+        anchors.topMargin: sliderRoot.showHeader ? 7 : 11
+        anchors.bottomMargin: sliderRoot.showHeader ? 9 : 11
+        spacing: sliderRoot.thumbStyle ? 4 : 5
 
         // ── Card Header ─────────────────────────────────────────────────────
         RowLayout {
             Layout.fillWidth: true
+            visible: sliderRoot.showHeader
 
             Text {
                 text: sliderRoot.title
@@ -59,10 +61,11 @@ Rectangle {
             Item { Layout.fillWidth: true }
         }
 
-        // ── macOS Thick Capsule Slider Track + Optional Output Circle ───────
+        // ── Mode A: macOS Thick Capsule Slider Track + Optional Output Circle ─
         RowLayout {
             Layout.fillWidth: true
             spacing: 8
+            visible: !sliderRoot.thumbStyle
 
             Rectangle {
                 id: track
@@ -182,12 +185,81 @@ Rectangle {
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
-                        if (typeof rootWindow !== "undefined" && rootWindow.inPlaceEditMode) return;
                         sliderRoot.outputClicked();
-                        if (typeof systemCtrl !== "undefined" && systemCtrl)
-                            systemCtrl.openMediaWidget();
+                        if (typeof systemCtrl !== "undefined" && systemCtrl) {
+                            systemCtrl.openAudioSettings();
+                        }
                     }
                 }
+            }
+        }
+
+        // ── Mode B: Sleek Thumb Bar Slider (Liquid Glass Card in Row 3) ─────
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 8
+            visible: sliderRoot.thumbStyle
+
+            Item {
+                id: thinTrackContainer
+                Layout.fillWidth: true
+                height: 16
+
+                Rectangle {
+                    id: thinTrack
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: parent.width
+                    height: 8
+                    radius: 4
+                    color: Qt.rgba(1, 1, 1, 0.16)
+
+                    Rectangle {
+                        width: Math.max(8, parent.width * sliderRoot.normVal)
+                        height: parent.height
+                        radius: 4
+                        gradient: Gradient {
+                            orientation: Gradient.Horizontal
+                            GradientStop { position: 0.0; color: "#E2E8F0" }
+                            GradientStop { position: 1.0; color: "#FFFFFF" }
+                        }
+                    }
+                }
+
+                // Glowing circular white thumb
+                Rectangle {
+                    width: 14
+                    height: 14
+                    radius: 7
+                    anchors.verticalCenter: parent.verticalCenter
+                    x: Math.max(0, Math.min(parent.width - width, parent.width * sliderRoot.normVal - width / 2))
+                    color: "#FFFFFF"
+                    border.color: Qt.rgba(0, 0, 0, 0.25)
+                    border.width: 1
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    function updateThin(mx) {
+                        if (typeof rootWindow !== "undefined" && rootWindow.inPlaceEditMode) return;
+                        var ratio = Math.max(0.0, Math.min(1.0, mx / Math.max(1, thinTrackContainer.width)));
+                        var newVal = Math.round(sliderRoot.from + ratio * (sliderRoot.to - sliderRoot.from));
+                        if (newVal !== sliderRoot.value) {
+                            sliderRoot.value = newVal;
+                            sliderRoot.changed(newVal);
+                        }
+                    }
+                    onPressed: (mouse) => updateThin(mouse.x)
+                    onPositionChanged: (mouse) => { if (pressed) updateThin(mouse.x); }
+                }
+            }
+
+            Text {
+                text: Math.round(sliderRoot.value) + "%"
+                font.family: TitanTheme.fontFamily
+                font.pixelSize: 10
+                font.weight: Font.DemiBold
+                color: TitanTheme.textSecondary
             }
         }
     }

@@ -22,11 +22,23 @@ ColumnLayout {
     property int dragSourceCardIndex: -1
     property int hoverTargetCardIndex: -1
 
-    readonly property var sectionOrder: {
+    readonly property var rawSectionOrder: {
         var rev = revision;
         return (typeof systemCtrl !== "undefined" && systemCtrl)
                ? systemCtrl.getSectionOrder()
-               : ["connectivity", "focusCluster", "sliders", "liquidGlass", "media", "pulse", "actions", "calendar"];
+               : ["connectivity", "focusCluster", "sliders", "liquidGlass", "media", "pulse"];
+    }
+
+    readonly property var sectionOrder: {
+        var list = [];
+        for (var i = 0; i < rawSectionOrder.length; ++i) {
+            var s = rawSectionOrder[i];
+            // "actions" lives inside the stepped Bottleneck Dock at the bottom of the popover
+            if (s !== "actions" && s !== "calendar") {
+                list.push(s);
+            }
+        }
+        return list;
     }
 
     function getDefaultSizeForSection(secKey) {
@@ -195,13 +207,30 @@ ColumnLayout {
 
     Component {
         id: liquidGlassComponent
-        TitanSliderModule {
+        RowLayout {
             width: parent ? parent.width : undefined
-            title: "Liquid Glass"
-            iconGlyph: "\uf043" // droplet
-            value: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.glassOpacity : 68
-            onChanged: (v) => {
-                if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.setGlassOpacity(v);
+            spacing: 8
+
+            // Left Card: Headerless Capsule Slider (Contrast / Warmth — matches Row 3 left of mockup)
+            TitanSliderModule {
+                Layout.preferredWidth: (parent.width - 8) / 2
+                Layout.fillWidth: true
+                showHeader: false
+                title: "Warmth"
+                iconGlyph: "\uf042" // contrast / moon
+                value: 75
+            }
+
+            // Right Card: Liquid Glass Thumb Slider (matches Row 3 right of mockup)
+            TitanSliderModule {
+                Layout.preferredWidth: (parent.width - 8) / 2
+                Layout.fillWidth: true
+                title: "Liquid Glass"
+                thumbStyle: true
+                value: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.glassOpacity : 68
+                onChanged: (v) => {
+                    if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.setGlassOpacity(v);
+                }
             }
         }
     }

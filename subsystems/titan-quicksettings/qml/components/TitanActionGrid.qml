@@ -3,14 +3,15 @@ import QtQuick.Layouts
 import "../style"
 
 /**
- * TitanActionGrid — macOS Control Center Frameless Utility Squircles Grid.
+ * TitanActionGrid — macOS Control Center Bottleneck Utility Squircles Dock.
  *
  * Features:
- * - Completely frameless container (no outer box border)
- * - No header clutter in normal mode (pure macOS squircle tiles)
+ * - In "compact" (Bottleneck) mode: Renders 5 signature 50x48 icon-only squircles
+ *   inside the stepped bottom-right bottleneck dock (horizontally scrollable to access
+ *   additional utilities, or expandable to "wide" 2-column full-width grid via corner handle ◢).
  * - In Edit Controls mode:
  *   - Drag and drop any tile to reorder
- *   - Bottom-right corner resize handle (◢) on tiles to toggle Compact (1x1) vs Wide (2x1)
+ *   - Bottom-right corner resize handle (◢) on tiles to toggle Bottleneck (5 icons) vs Wide (full grid)
  *   - Quick nudge arrows (◄ / ►)
  */
 Item {
@@ -19,23 +20,36 @@ Item {
     implicitHeight: actionCol.implicitHeight
 
     property int revision: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.tileVisibilityRevision : 0
-    property string sizeMode: (typeof systemCtrl !== "undefined" && systemCtrl)
-                              ? systemCtrl.getWidgetSize("actionGrid", "compact")
-                              : "compact" // "compact" (4 cols) or "wide" (2 cols)
+    property string sizeMode: {
+        var rev = revision;
+        return (typeof systemCtrl !== "undefined" && systemCtrl)
+               ? systemCtrl.getWidgetSize("actionGrid", "compact")
+               : "compact"; // "compact" (bottleneck 5-icon row) or "wide" (full-width 2-col pills)
+    }
+
+    signal calendarToggleRequested()
 
     readonly property var actionCatalog: ({
+        "region": {
+            key: "region",
+            title: "Region Snip",
+            icon: "\uf065", // expand / frame corners
+            active: false,
+            status: "Area",
+            action: function() { if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.triggerScreenshot(); }
+        },
         "capture": {
             key: "capture",
             title: "Screenshot",
             icon: "\uf030", // camera
             active: false,
-            status: "Region",
+            status: "Screen",
             action: function() { if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.triggerScreenshot(); }
         },
         "record": {
             key: "record",
             title: "Screen Record",
-            icon: "\uf03d", // video
+            icon: "\uf192", // dot-circle record icon
             active: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.screenRecordingActive : false,
             status: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.screenRecordingActive) ? "Recording" : "Ready",
             action: function() { if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.toggleScreenRecording(); }
@@ -51,7 +65,7 @@ Item {
         "caffeine": {
             key: "caffeine",
             title: "Stay Awake",
-            icon: "\uf0f4", // coffee
+            icon: "\uf0f4", // coffee cup
             active: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.caffeineActive : false,
             status: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.caffeineActive) ? "Active" : "Off",
             action: function() { if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.caffeineActive = !systemCtrl.caffeineActive; }
@@ -87,43 +101,11 @@ Item {
             active: false,
             status: "On-Screen",
             action: function() { if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.toggleVirtualKeyboard(); }
-        },
-        "airplane": {
-            key: "airplane",
-            title: "Airplane",
-            icon: "\uf072", // plane
-            active: (typeof networkCtrl !== "undefined" && networkCtrl && !networkCtrl.wifiEnabled),
-            status: (typeof networkCtrl !== "undefined" && networkCtrl && !networkCtrl.wifiEnabled) ? "On" : "Off",
-            action: function() { if (typeof networkCtrl !== "undefined" && networkCtrl) networkCtrl.toggleWifi(); }
-        },
-        "focus": {
-            key: "focus",
-            title: "Focus Mode",
-            icon: "\uf186", // moon
-            active: false,
-            status: "DND",
-            action: function() { if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.toggleFocusMode(); }
-        },
-        "night": {
-            key: "night",
-            title: "Night Shift",
-            icon: "\uf185", // sun
-            active: (typeof nightLightCtrl !== "undefined" && nightLightCtrl) ? nightLightCtrl.active : false,
-            status: (typeof nightLightCtrl !== "undefined" && nightLightCtrl && nightLightCtrl.active) ? "Warm" : "Off",
-            action: function() { if (typeof nightLightCtrl !== "undefined" && nightLightCtrl) nightLightCtrl.toggleNightLight(); }
-        },
-        "dark": {
-            key: "dark",
-            title: "Dark Mode",
-            icon: "\uf042", // contrast
-            active: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.themeDark : true,
-            status: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.themeDark) ? "Dark" : "Light",
-            action: function() { if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.themeDark = !systemCtrl.themeDark; }
         }
     })
 
-    // Filter out focus/night/dark in normal view if MacFocusClusterModule is already displayed,
-    // or show the 8 utility squircles (2 clean rows of 4) so there is zero duplication!
+    // Ensure the 5 mockup bottleneck icons (Region Snip, Screenshot, Screen Record, Color Picker, Stay Awake)
+    // lead the list while preserving user drag-and-drop order.
     readonly property var rawOrder: {
         var rev = revision;
         return (typeof systemCtrl !== "undefined" && systemCtrl)
@@ -133,14 +115,30 @@ Item {
 
     readonly property var currentOrder: {
         var list = [];
+        // Always include the signature 5 bottleneck icons in compact mode, or all 8 in wide mode
+        var preferredFive = [
+            { key: "region", rawIdx: 0 },
+            { key: "capture", rawIdx: 1 },
+            { key: "record", rawIdx: 2 },
+            { key: "colorPick", rawIdx: 3 },
+            { key: "caffeine", rawIdx: 4 }
+        ];
+        if (sizeMode === "compact" && !(typeof rootWindow !== "undefined" && rootWindow.inPlaceEditMode)) {
+            return preferredFive;
+        }
+
+        // In Edit Mode or Wide Mode, show customizable list from systemCtrl
+        list.push({ key: "region", rawIdx: -1 });
         for (var i = 0; i < rawOrder.length; ++i) {
             var k = rawOrder[i];
-            // Avoid duplicating Focus, Night Shift, Dark Mode, and Connectivity toggles
-            if (k !== "focus" && k !== "night" && k !== "dark" && k !== "airplane") {
+            if (k !== "focus" && k !== "night" && k !== "dark" && k !== "airplane" && gridCardRoot.actionCatalog[k]) {
                 list.push({ key: k, rawIdx: i });
             }
         }
-        return list;
+        if (sizeMode === "compact") {
+            return list.slice(0, 5);
+        }
+        return list.slice(0, 8);
     }
 
     ColumnLayout {
@@ -149,11 +147,11 @@ Item {
         anchors.margins: 0
         spacing: 6
 
-        // ── Frameless macOS Squircle Grid ───────────────────────────────────
+        // ── Bottleneck 5-Icon Row (Compact) or Full 2-Column Grid (Wide) ─────
         GridLayout {
             id: actionsLayout
             Layout.fillWidth: true
-            columns: gridCardRoot.sizeMode === "compact" ? 4 : 2
+            columns: gridCardRoot.sizeMode === "compact" ? 5 : 2
             columnSpacing: 8
             rowSpacing: 8
 
@@ -166,7 +164,7 @@ Item {
                 delegate: Item {
                     id: tileDelegate
                     Layout.fillWidth: true
-                    implicitHeight: gridCardRoot.sizeMode === "compact" ? 50 : 44
+                    implicitHeight: gridCardRoot.sizeMode === "compact" ? 48 : 44
 
                     readonly property string tileKey: modelData.key
                     readonly property int rawIndex: modelData.rawIdx
@@ -178,7 +176,8 @@ Item {
                         anchors.fill: parent
                         keys: ["quick-action-tile"]
                         onEntered: (drag) => {
-                            actionsLayout.hoverTargetRawIndex = tileDelegate.rawIndex;
+                            if (tileDelegate.rawIndex >= 0)
+                                actionsLayout.hoverTargetRawIndex = tileDelegate.rawIndex;
                         }
                         onExited: {
                             if (actionsLayout.hoverTargetRawIndex === tileDelegate.rawIndex) {
@@ -198,21 +197,21 @@ Item {
                         property bool isDragged: false
 
                         z: isDragged ? 999 : 1
-                        scale: isDragged ? 1.08 : (tileMa.pressed ? 0.94 : (tileMa.containsMouse ? 1.02 : 1.0))
+                        scale: isDragged ? 1.08 : (tileMa.pressed ? 0.93 : (tileMa.containsMouse ? 1.03 : 1.0))
                         Behavior on scale { NumberAnimation { duration: 110; easing.type: Easing.OutBack } }
 
                         color: tileDelegate.isActive
-                               ? Qt.rgba(0.04, 0.52, 1.0, 0.28)
-                               : (actionsLayout.hoverTargetRawIndex === tileDelegate.rawIndex
+                               ? Qt.rgba(0.04, 0.52, 1.0, 0.30)
+                               : (actionsLayout.hoverTargetRawIndex === tileDelegate.rawIndex && tileDelegate.rawIndex >= 0
                                   ? Qt.rgba(0.04, 0.52, 1.0, 0.32)
                                   : (tileMa.pressed ? TitanTheme.bgPressed : (tileMa.containsMouse ? TitanTheme.bgTitaniumHover : TitanTheme.bgTitanium)))
 
-                        border.color: (tileItem.isDragged || actionsLayout.hoverTargetRawIndex === tileDelegate.rawIndex)
+                        border.color: (tileItem.isDragged || (actionsLayout.hoverTargetRawIndex === tileDelegate.rawIndex && tileDelegate.rawIndex >= 0))
                                       ? TitanTheme.accent
                                       : ((typeof rootWindow !== "undefined" && rootWindow.inPlaceEditMode)
-                                         ? Qt.rgba(0.04, 0.52, 1.0, 0.55)
+                                         ? Qt.rgba(0.04, 0.52, 1.0, 0.60)
                                          : (tileDelegate.isActive ? TitanTheme.accent : (tileMa.containsMouse ? TitanTheme.borderHover : TitanTheme.borderHairline)))
-                        border.width: (tileItem.isDragged || actionsLayout.hoverTargetRawIndex === tileDelegate.rawIndex) ? 2 : 1
+                        border.width: (tileItem.isDragged || (actionsLayout.hoverTargetRawIndex === tileDelegate.rawIndex && tileDelegate.rawIndex >= 0)) ? 2 : 1
 
                         Drag.active: tileItem.isDragged
                         Drag.source: tileDelegate
@@ -220,88 +219,22 @@ Item {
                         Drag.hotSpot.x: width / 2
                         Drag.hotSpot.y: height / 2
 
-                        // ── Edit Mode Overlay: Left/Right Nudge + Bottom-Right Corner Resize (◢) ──
-                        RowLayout {
-                            anchors.top: parent.top
-                            anchors.right: parent.right
-                            anchors.margins: 3
-                            spacing: 2
-                            visible: (typeof rootWindow !== "undefined" && rootWindow.inPlaceEditMode)
-                            z: 10
-
-                            Rectangle {
-                                width: 13
-                                height: 13
-                                radius: 6.5
-                                color: leftNudgeMa.containsMouse ? TitanTheme.accent : Qt.rgba(0, 0, 0, 0.55)
-                                visible: index > 0
-
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: "◄"
-                                    font.pixelSize: 6
-                                    color: "#FFFFFF"
-                                }
-
-                                MouseArea {
-                                    id: leftNudgeMa
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: {
-                                        if (typeof systemCtrl !== "undefined" && systemCtrl && index > 0) {
-                                            var prevRaw = gridCardRoot.currentOrder[index - 1].rawIdx;
-                                            systemCtrl.moveActionOrder(tileDelegate.rawIndex, prevRaw);
-                                        }
-                                    }
-                                }
-                            }
-
-                            Rectangle {
-                                width: 13
-                                height: 13
-                                radius: 6.5
-                                color: rightNudgeMa.containsMouse ? TitanTheme.accent : Qt.rgba(0, 0, 0, 0.55)
-                                visible: index < (gridCardRoot.currentOrder.length - 1)
-
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: "►"
-                                    font.pixelSize: 6
-                                    color: "#FFFFFF"
-                                }
-
-                                MouseArea {
-                                    id: rightNudgeMa
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: {
-                                        if (typeof systemCtrl !== "undefined" && systemCtrl && index < (gridCardRoot.currentOrder.length - 1)) {
-                                            var nextRaw = gridCardRoot.currentOrder[index + 1].rawIdx;
-                                            systemCtrl.moveActionOrder(tileDelegate.rawIndex, nextRaw);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        // Bottom-Right Corner Resize Handle (◢) in Edit Mode
+                        // ── Edit Mode Overlay: Bottom-Right Corner Resize (◢) ──
                         Rectangle {
-                            width: 14
-                            height: 14
+                            width: 13
+                            height: 13
                             radius: 4
                             anchors.bottom: parent.bottom
                             anchors.right: parent.right
                             anchors.margins: 2
-                            color: cornerResizeMa.containsMouse ? TitanTheme.accent : Qt.rgba(0.04, 0.52, 1.0, 0.35)
+                            color: cornerResizeMa.containsMouse ? TitanTheme.accent : Qt.rgba(0.04, 0.52, 1.0, 0.40)
                             visible: (typeof rootWindow !== "undefined" && rootWindow.inPlaceEditMode)
                             z: 10
 
                             Text {
                                 anchors.centerIn: parent
                                 text: "◢"
-                                font.pixelSize: 8
+                                font.pixelSize: 7
                                 color: "#FFFFFF"
                             }
 
@@ -319,38 +252,21 @@ Item {
                             }
                         }
 
-                        // Mode 1: Compact Squircle (4 columns)
-                        ColumnLayout {
+                        // Mode 1: Bottleneck Icon Squircle (5 columns, pure centered icon like mockup)
+                        Item {
                             anchors.fill: parent
-                            anchors.margins: 4
-                            spacing: 3
                             visible: gridCardRoot.sizeMode === "compact"
 
-                            Item { Layout.fillHeight: true }
-
                             Text {
-                                Layout.alignment: Qt.AlignHCenter
+                                anchors.centerIn: parent
                                 text: tileDelegate.def ? tileDelegate.def.icon : "\uf013"
                                 font.family: TitanTheme.monoFamily
-                                font.pixelSize: 15
+                                font.pixelSize: 17
                                 color: tileDelegate.isActive ? "#FFFFFF" : TitanTheme.textPrimary
                             }
-
-                            Text {
-                                Layout.alignment: Qt.AlignHCenter
-                                text: tileDelegate.def ? tileDelegate.def.title : tileDelegate.tileKey
-                                font.family: TitanTheme.fontFamily
-                                font.pixelSize: 8
-                                font.weight: Font.DemiBold
-                                color: tileDelegate.isActive ? "#FFFFFF" : TitanTheme.textSecondary
-                                elide: Text.ElideRight
-                                Layout.maximumWidth: parent.width - 6
-                            }
-
-                            Item { Layout.fillHeight: true }
                         }
 
-                        // Mode 2: Wide 2-Column Pill
+                        // Mode 2: Wide 2-Column Pill (Full Width with Title & Subtitle)
                         RowLayout {
                             anchors.fill: parent
                             anchors.leftMargin: 10
@@ -406,11 +322,11 @@ Item {
                                          ? (pressed ? Qt.ClosedHandCursor : Qt.OpenHandCursor)
                                          : Qt.PointingHandCursor
 
-                            drag.target: (typeof rootWindow !== "undefined" && rootWindow.inPlaceEditMode) ? tileItem : undefined
+                            drag.target: (typeof rootWindow !== "undefined" && rootWindow.inPlaceEditMode && tileDelegate.rawIndex >= 0) ? tileItem : undefined
                             drag.axis: Drag.XAndYAxis
 
                             onPressed: {
-                                if (typeof rootWindow !== "undefined" && rootWindow.inPlaceEditMode) {
+                                if (typeof rootWindow !== "undefined" && rootWindow.inPlaceEditMode && tileDelegate.rawIndex >= 0) {
                                     tileItem.isDragged = true;
                                     actionsLayout.dragSourceRawIndex = tileDelegate.rawIndex;
                                     tileItem.Drag.start();

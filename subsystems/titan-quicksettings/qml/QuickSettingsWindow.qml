@@ -139,35 +139,127 @@ Window {
                     onClicked: rootWindow.closeDrawer()
                 }
 
-                Rectangle {
+                Item {
                     id: leftCard
                     anchors.top: parent.top
                     anchors.left: parent.left
                     anchors.right: parent.right
                     height: (rootWindow.showWifiPage || rootWindow.showPowerMenu)
                             ? Math.min(parent.height, 560)
-                            : Math.min(parent.height, bentoContent.implicitHeight + footerBar.implicitHeight + 36)
+                            : Math.min(parent.height, bentoContent.implicitHeight + bottleneckDock.implicitHeight + 36)
                     Behavior on height { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
 
-                    radius: TitanTheme.radiusWindow
-                    border.color: TitanTheme.borderGlass
-                    border.width: 1
-                    clip: true
-
-                    // Obsidian deep frosted glass surface
-                    color: TitanTheme.bgWindow
-
-                    // Absorb clicks inside the popover
-                    MouseArea {
-                        anchors.fill: parent
+                    readonly property int revision: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.tileVisibilityRevision : 0
+                    readonly property string actionGridMode: {
+                        var rev = revision;
+                        return (typeof systemCtrl !== "undefined" && systemCtrl)
+                               ? systemCtrl.getWidgetSize("actionGrid", "compact")
+                               : "compact";
                     }
 
+                    // Stepped Bottleneck Geometry (matches archtitan_control_center_mockup)
+                    readonly property bool bottleneckActive: !rootWindow.showWifiPage && !rootWindow.showPowerMenu && (actionGridMode === "compact")
+                    readonly property real stepX: bottleneckActive ? 114 : 0
+                    readonly property real stepY: Math.max(120, height - bottleneckDock.implicitHeight - 18)
+
+                    onWidthChanged: glassSilhouetteCanvas.requestPaint()
+                    onHeightChanged: glassSilhouetteCanvas.requestPaint()
+                    onStepXChanged: glassSilhouetteCanvas.requestPaint()
+                    onStepYChanged: glassSilhouetteCanvas.requestPaint()
+
+                    // ── Stepped Bottleneck Frosted Glass Silhouette (Canvas) ──
+                    Canvas {
+                        id: glassSilhouetteCanvas
+                        anchors.fill: parent
+                        antialiasing: true
+
+                        property color bgCol: TitanTheme.bgWindow
+                        property color borderCol: TitanTheme.borderGlass
+                        onBgColChanged: requestPaint()
+                        onBorderColChanged: requestPaint()
+
+                        onPaint: {
+                            var ctx = getContext("2d");
+                            ctx.reset();
+
+                            var W = width - 1;
+                            var H = height - 1;
+                            var x0 = 0.5;
+                            var y0 = 0.5;
+                            var r = TitanTheme.radiusWindow;
+                            var sx = leftCard.stepX;
+                            var sy = Math.min(H - 40, Math.max(80, leftCard.stepY));
+                            var rBot = 18;
+                            var rInner = 16;
+
+                            ctx.beginPath();
+                            if (sx <= 1) {
+                                // Standard Full Rounded Rectangle (when Wi-Fi, Power, or Wide Grid active)
+                                ctx.moveTo(x0 + r, y0);
+                                ctx.lineTo(W - r, y0);
+                                ctx.arcTo(W, y0, W, y0 + r, r);
+                                ctx.lineTo(W, H - r);
+                                ctx.arcTo(W, H, W - r, H, r);
+                                ctx.lineTo(x0 + r, H);
+                                ctx.arcTo(x0, H, x0, H - r, r);
+                                ctx.lineTo(x0, y0 + r);
+                                ctx.arcTo(x0, y0, x0 + r, y0, r);
+                            } else {
+                                // Asymmetric Stepped "Bottleneck" Silhouette with Concave Fillet at (sx, sy)
+                                ctx.moveTo(x0 + r, y0);
+                                // Top edge -> Top-Right corner
+                                ctx.lineTo(W - r, y0);
+                                ctx.arcTo(W, y0, W, y0 + r, r);
+                                // Right edge -> Bottom-Right corner
+                                ctx.lineTo(W, H - r);
+                                ctx.arcTo(W, H, W - r, H, r);
+                                // Bottleneck bottom edge -> Bottleneck Bottom-Left corner (sx, H)
+                                ctx.lineTo(sx + rBot, H);
+                                ctx.arcTo(sx, H, sx, H - rBot, rBot);
+                                // Bottleneck left vertical wall up to Concave Inner Fillet (sx, sy)
+                                ctx.lineTo(sx, sy + rInner);
+                                ctx.arcTo(sx, sy, sx - rInner, sy, rInner);
+                                // Upper body bottom-left overhang -> Upper Body Bottom-Left corner (x0, sy)
+                                ctx.lineTo(x0 + r, sy);
+                                ctx.arcTo(x0, sy, x0, sy - r, r);
+                                // Left edge back up to Top-Left corner
+                                ctx.lineTo(x0, y0 + r);
+                                ctx.arcTo(x0, y0, x0 + r, y0, r);
+                            }
+                            ctx.closePath();
+
+                            ctx.fillStyle = bgCol;
+                            ctx.fill();
+
+                            ctx.lineWidth = 1.2;
+                            ctx.strokeStyle = borderCol;
+                            ctx.stroke();
+                        }
+                    }
+
+                    // Absorb clicks inside the upper body
+                    MouseArea {
+                        x: 0
+                        y: 0
+                        width: parent.width
+                        height: leftCard.stepY
+                    }
+
+                    // Absorb clicks inside the right-aligned bottleneck dock
+                    MouseArea {
+                        x: leftCard.stepX
+                        y: leftCard.stepY
+                        width: parent.width - leftCard.stepX
+                        height: parent.height - leftCard.stepY
+                    }
+
+                    // Main Upper Body + Stepped Bottleneck Layout
                     ColumnLayout {
                         anchors.fill: parent
                         anchors.margins: 12
-                        spacing: 8
+                        spacing: 10
 
-                        // Scrollable Bento Controls (In-Place Customization on Same UI!)
+                        // 1. Upper 2-Column Bento Body (Connectivity, Focus, Sliders, Media, Pulse)
                         Flickable {
                             id: bentoFlick
                             Layout.fillWidth: true
@@ -179,10 +271,6 @@ Window {
                             boundsBehavior: Flickable.StopAtBounds
                             visible: !rootWindow.showWifiPage && !rootWindow.showPowerMenu
 
-                            /**
-                             * Keyboard focus follow: Tab / arrow focus can land on a
-                             * control below the fold, so scroll it into view.
-                             */
                             function revealFocus() {
                                 var item = rootWindow.activeFocusItem;
                                 if (!item) return;
@@ -208,7 +296,6 @@ Window {
                                 function onActiveFocusItemChanged() { bentoFlick.revealFocus() }
                             }
 
-                            // Normal Bento Quick Settings & In-Place Customizer on Same Screen
                             ColumnLayout {
                                 id: bentoContent
                                 width: parent.width
@@ -218,22 +305,43 @@ Window {
                             }
                         }
 
-                        // macOS Bottom Status & Controls Strip (Battery | Edit Controls | Settings & Power)
-                        TitanFooterBar {
-                            id: footerBar
+                        // 2. Stepped Bottom-Right Bottleneck Dock (5 Icon Squircles + Thin Separator + Status Footer)
+                        ColumnLayout {
+                            id: bottleneckDock
                             visible: !rootWindow.showWifiPage && !rootWindow.showPowerMenu
-                            inPlaceEditMode: rootWindow.inPlaceEditMode
-                            onEditRequested: {
-                                rootWindow.inPlaceEditMode = !rootWindow.inPlaceEditMode;
-                                if (rootWindow.inPlaceEditMode) rootWindow.showPowerMenu = false;
+                            Layout.fillWidth: true
+                            Layout.leftMargin: leftCard.bottleneckActive ? leftCard.stepX : 0
+                            spacing: 8
+
+                            // Utility Squircles Row inside the Bottleneck
+                            TitanActionGrid {
+                                Layout.fillWidth: true
                             }
-                            onSettingsRequested: {
-                                if (typeof systemCtrl !== "undefined" && systemCtrl)
-                                    systemCtrl.openSettings();
+
+                            // Subtle 1px Glass Separator Line inside the Bottleneck
+                            Rectangle {
+                                Layout.fillWidth: true
+                                height: 1
+                                color: Qt.rgba(1, 1, 1, 0.08)
                             }
-                            onPowerRequested: {
-                                rootWindow.showPowerMenu = !rootWindow.showPowerMenu;
-                                if (rootWindow.showPowerMenu) rootWindow.inPlaceEditMode = false;
+
+                            // macOS Bottom Status & Controls Strip (Battery | Edit Controls | Settings & Power)
+                            TitanFooterBar {
+                                id: footerBar
+                                Layout.fillWidth: true
+                                inPlaceEditMode: rootWindow.inPlaceEditMode
+                                onEditRequested: {
+                                    rootWindow.inPlaceEditMode = !rootWindow.inPlaceEditMode;
+                                    if (rootWindow.inPlaceEditMode) rootWindow.showPowerMenu = false;
+                                }
+                                onSettingsRequested: {
+                                    if (typeof systemCtrl !== "undefined" && systemCtrl)
+                                        systemCtrl.openSettings();
+                                }
+                                onPowerRequested: {
+                                    rootWindow.showPowerMenu = !rootWindow.showPowerMenu;
+                                    if (rootWindow.showPowerMenu) rootWindow.inPlaceEditMode = false;
+                                }
                             }
                         }
                     }
