@@ -30,7 +30,7 @@ Rectangle {
         return "Not Playing";
     }
     readonly property string artist: {
-        if (typeof mprisCtrl !== "undefined" && mprisCtrl && mprisCtrl.artist && mprisCtrl.artist.length > 0)
+        if (typeof mprisCtrl !== "undefined" && mprisCtrl && mprisCtrl.artist && mprisCtrl.artist.length > 0 && mprisCtrl.artist !== "Unknown Artist")
             return mprisCtrl.artist;
         if (typeof mprisCtrl !== "undefined" && mprisCtrl && mprisCtrl.playerName && mprisCtrl.playerName.length > 0)
             return mprisCtrl.playerName;
