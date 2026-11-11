@@ -6,13 +6,13 @@ import "../style"
  * TitanActionGrid — macOS Control Center Bottleneck Utility Squircles Dock.
  *
  * Features:
- * - In "compact" (Bottleneck) mode: Renders 5 signature 50x48 icon-only squircles
- *   inside the stepped bottom-right bottleneck dock (horizontally scrollable to access
- *   additional utilities, or expandable to "wide" 2-column full-width grid via corner handle ◢).
- * - In Edit Controls mode:
- *   - Drag and drop any tile to reorder
- *   - Bottom-right corner resize handle (◢) on tiles to toggle Bottleneck (5 icons) vs Wide (full grid)
- *   - Quick nudge arrows (◄ / ►)
+ * - Renders active utility squircles in a 5-column bottleneck grid (or 2-column Wide mode).
+ * - Full Add / Remove / Reorder / Resize support in Edit Controls mode:
+ *   - Top-Left [−] badge on active tiles removes the tile from the dock.
+ *   - Inline "+ Add Controls" tray lets users add more buttons (Mic Mute, Game Mode,
+ *     Clipboard, Keyboard, Airplane, etc.) with 1 click.
+ *   - Drag and drop any tile to reorder.
+ *   - Bottom-right corner resize handle (◢) toggles Compact (5-col icons) vs Wide (2-col pills).
  */
 Item {
     id: gridCardRoot
@@ -24,32 +24,35 @@ Item {
         var rev = revision;
         return (typeof systemCtrl !== "undefined" && systemCtrl)
                ? systemCtrl.getWidgetSize("actionGrid", "compact")
-               : "compact"; // "compact" (bottleneck 5-icon row) or "wide" (full-width 2-col pills)
+               : "compact"; // "compact" (bottleneck 5-col icon squircles) or "wide" (full-width 2-col pills)
     }
 
-    signal calendarToggleRequested()
+    readonly property bool editActive: (typeof rootWindow !== "undefined" && rootWindow && rootWindow.inPlaceEditMode)
 
     readonly property var actionCatalog: ({
         "region": {
             key: "region",
             title: "Region Snip",
             icon: "\uf065", // expand / frame corners
+            defaultVisible: true,
             active: false,
             status: "Area",
-            action: function() { if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.triggerScreenshot(); }
+            action: function() { if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.takeScreenshot(); }
         },
         "capture": {
             key: "capture",
             title: "Screenshot",
             icon: "\uf030", // camera
+            defaultVisible: true,
             active: false,
             status: "Screen",
-            action: function() { if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.triggerScreenshot(); }
+            action: function() { if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.takeScreenshot(); }
         },
         "record": {
             key: "record",
             title: "Screen Record",
             icon: "\uf192", // dot-circle record icon
+            defaultVisible: true,
             active: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.screenRecordingActive : false,
             status: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.screenRecordingActive) ? "Recording" : "Ready",
             action: function() { if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.toggleScreenRecording(); }
@@ -58,6 +61,7 @@ Item {
             key: "colorPick",
             title: "Color Picker",
             icon: "\uf1fb", // eye-dropper
+            defaultVisible: true,
             active: false,
             status: "Hex",
             action: function() { if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.pickColor(); }
@@ -66,6 +70,7 @@ Item {
             key: "caffeine",
             title: "Stay Awake",
             icon: "\uf0f4", // coffee cup
+            defaultVisible: true,
             active: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.caffeineActive : false,
             status: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.caffeineActive) ? "Active" : "Off",
             action: function() { if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.caffeineActive = !systemCtrl.caffeineActive; }
@@ -74,6 +79,7 @@ Item {
             key: "mic",
             title: "Mic Mute",
             icon: (typeof audioCtrl !== "undefined" && audioCtrl && audioCtrl.sourceMuted) ? "\uf131" : "\uf130",
+            defaultVisible: false,
             active: (typeof audioCtrl !== "undefined" && audioCtrl) ? audioCtrl.sourceMuted : false,
             status: (typeof audioCtrl !== "undefined" && audioCtrl && audioCtrl.sourceMuted) ? "Muted" : "Active",
             action: function() { if (typeof audioCtrl !== "undefined" && audioCtrl) audioCtrl.toggleSourceMute(); }
@@ -82,6 +88,7 @@ Item {
             key: "gameMode",
             title: "Game Mode",
             icon: "\uf11b", // gamepad
+            defaultVisible: false,
             active: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.gameModeActive : false,
             status: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.gameModeActive) ? "Boosted" : "Off",
             action: function() { if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.gameModeActive = !systemCtrl.gameModeActive; }
@@ -90,6 +97,7 @@ Item {
             key: "clipboard",
             title: "Clipboard",
             icon: "\uf0ea", // paste
+            defaultVisible: false,
             active: false,
             status: "History",
             action: function() { if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.openClipboard(); }
@@ -98,47 +106,70 @@ Item {
             key: "virtualInput",
             title: "Keyboard",
             icon: "\uf11c", // keyboard
+            defaultVisible: false,
             active: false,
             status: "On-Screen",
             action: function() { if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.toggleVirtualKeyboard(); }
+        },
+        "airplane": {
+            key: "airplane",
+            title: "Airplane",
+            icon: "\uf072", // plane
+            defaultVisible: false,
+            active: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.airplaneMode : false,
+            status: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.airplaneMode) ? "On" : "Off",
+            action: function() { if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.toggleAirplaneMode(); }
         }
     })
 
-    // Ensure the 5 mockup bottleneck icons (Region Snip, Screenshot, Screen Record, Color Picker, Stay Awake)
-    // lead the list while preserving user drag-and-drop order.
     readonly property var rawOrder: {
         var rev = revision;
         return (typeof systemCtrl !== "undefined" && systemCtrl)
                ? systemCtrl.getActionOrder()
-               : ["capture", "record", "colorPick", "caffeine", "mic", "gameMode", "clipboard", "virtualInput"];
+               : ["region", "capture", "record", "colorPick", "caffeine", "mic", "gameMode", "clipboard", "virtualInput", "airplane"];
     }
 
-    readonly property var currentOrder: {
-        var list = [];
-        // Always include the signature 5 bottleneck icons in compact mode, or all 8 in wide mode
-        var preferredFive = [
-            { key: "region", rawIdx: 0 },
-            { key: "capture", rawIdx: 1 },
-            { key: "record", rawIdx: 2 },
-            { key: "colorPick", rawIdx: 3 },
-            { key: "caffeine", rawIdx: 4 }
-        ];
-        if (sizeMode === "compact" && !(typeof rootWindow !== "undefined" && rootWindow.inPlaceEditMode)) {
-            return preferredFive;
+    function isKeyVisible(k) {
+        var defObj = gridCardRoot.actionCatalog[k];
+        if (!defObj) return false;
+        if (typeof systemCtrl !== "undefined" && systemCtrl) {
+            return systemCtrl.getTileVisible("bottleneck_" + k, defObj.defaultVisible);
         }
+        return defObj.defaultVisible;
+    }
 
-        // In Edit Mode or Wide Mode, show customizable list from systemCtrl
-        list.push({ key: "region", rawIdx: -1 });
+    // Active (visible) buttons in the bottleneck dock
+    readonly property var currentOrder: {
+        var rev = revision;
+        var list = [];
         for (var i = 0; i < rawOrder.length; ++i) {
             var k = rawOrder[i];
-            if (k !== "focus" && k !== "night" && k !== "dark" && k !== "airplane" && gridCardRoot.actionCatalog[k]) {
-                list.push({ key: k, rawIdx: i });
+            if (k !== "focus" && k !== "night" && k !== "dark" && gridCardRoot.actionCatalog[k]) {
+                if (gridCardRoot.isKeyVisible(k)) {
+                    list.push({ key: k, rawIdx: i });
+                }
             }
         }
-        if (sizeMode === "compact") {
-            return list.slice(0, 5);
+        // Always ensure at least 1 button remains visible
+        if (list.length === 0) {
+            list.push({ key: "capture", rawIdx: 0 });
         }
-        return list.slice(0, 8);
+        return list;
+    }
+
+    // Hidden (available to add) buttons shown in the "+ Add Buttons" tray
+    readonly property var availableToAdd: {
+        var rev = revision;
+        var list = [];
+        for (var i = 0; i < rawOrder.length; ++i) {
+            var k = rawOrder[i];
+            if (k !== "focus" && k !== "night" && k !== "dark" && gridCardRoot.actionCatalog[k]) {
+                if (!gridCardRoot.isKeyVisible(k)) {
+                    list.push({ key: k, rawIdx: i });
+                }
+            }
+        }
+        return list;
     }
 
     ColumnLayout {
@@ -147,7 +178,7 @@ Item {
         anchors.margins: 0
         spacing: 6
 
-        // ── Bottleneck 5-Icon Row (Compact) or Full 2-Column Grid (Wide) ─────
+        // ── Bottleneck 5-Column Icon Row (or 2-Column Wide Grid) ─────────────
         GridLayout {
             id: actionsLayout
             Layout.fillWidth: true
@@ -208,7 +239,7 @@ Item {
 
                         border.color: (tileItem.isDragged || (actionsLayout.hoverTargetRawIndex === tileDelegate.rawIndex && tileDelegate.rawIndex >= 0))
                                       ? TitanTheme.accent
-                                      : ((typeof rootWindow !== "undefined" && rootWindow.inPlaceEditMode)
+                                      : (gridCardRoot.editActive
                                          ? Qt.rgba(0.04, 0.52, 1.0, 0.60)
                                          : (tileDelegate.isActive ? TitanTheme.accent : (tileMa.containsMouse ? TitanTheme.borderHover : TitanTheme.borderHairline)))
                         border.width: (tileItem.isDragged || (actionsLayout.hoverTargetRawIndex === tileDelegate.rawIndex && tileDelegate.rawIndex >= 0)) ? 2 : 1
@@ -219,7 +250,40 @@ Item {
                         Drag.hotSpot.x: width / 2
                         Drag.hotSpot.y: height / 2
 
-                        // ── Edit Mode Overlay: Bottom-Right Corner Resize (◢) ──
+                        // ── Edit Mode Top-Left [−] Remove Button ─────────────────
+                        Rectangle {
+                            width: 14
+                            height: 14
+                            radius: 7
+                            anchors.top: parent.top
+                            anchors.left: parent.left
+                            anchors.margins: 2
+                            color: removeMa.containsMouse ? TitanTheme.red : Qt.rgba(0.94, 0.27, 0.27, 0.85)
+                            visible: gridCardRoot.editActive && gridCardRoot.currentOrder.length > 1
+                            z: 12
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "−"
+                                font.pixelSize: 10
+                                font.weight: Font.Bold
+                                color: "#FFFFFF"
+                            }
+
+                            MouseArea {
+                                id: removeMa
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    if (typeof systemCtrl !== "undefined" && systemCtrl) {
+                                        systemCtrl.setTileVisible("bottleneck_" + tileDelegate.tileKey, false);
+                                    }
+                                }
+                            }
+                        }
+
+                        // ── Edit Mode Bottom-Right Corner Resize (◢) ─────────────
                         Rectangle {
                             width: 13
                             height: 13
@@ -228,7 +292,7 @@ Item {
                             anchors.right: parent.right
                             anchors.margins: 2
                             color: cornerResizeMa.containsMouse ? TitanTheme.accent : Qt.rgba(0.04, 0.52, 1.0, 0.40)
-                            visible: (typeof rootWindow !== "undefined" && rootWindow.inPlaceEditMode)
+                            visible: gridCardRoot.editActive
                             z: 10
 
                             Text {
@@ -261,7 +325,7 @@ Item {
                                 anchors.centerIn: parent
                                 text: tileDelegate.def ? tileDelegate.def.icon : "\uf013"
                                 font.family: TitanTheme.monoFamily
-                                font.pixelSize: 17
+                                font.pixelSize: 16
                                 color: tileDelegate.isActive ? "#FFFFFF" : TitanTheme.textPrimary
                             }
                         }
@@ -318,15 +382,15 @@ Item {
                             id: tileMa
                             anchors.fill: parent
                             hoverEnabled: true
-                            cursorShape: (typeof rootWindow !== "undefined" && rootWindow.inPlaceEditMode)
+                            cursorShape: gridCardRoot.editActive
                                          ? (pressed ? Qt.ClosedHandCursor : Qt.OpenHandCursor)
                                          : Qt.PointingHandCursor
 
-                            drag.target: (typeof rootWindow !== "undefined" && rootWindow.inPlaceEditMode && tileDelegate.rawIndex >= 0) ? tileItem : undefined
+                            drag.target: (gridCardRoot.editActive && tileDelegate.rawIndex >= 0) ? tileItem : undefined
                             drag.axis: Drag.XAndYAxis
 
                             onPressed: {
-                                if (typeof rootWindow !== "undefined" && rootWindow.inPlaceEditMode && tileDelegate.rawIndex >= 0) {
+                                if (gridCardRoot.editActive && tileDelegate.rawIndex >= 0) {
                                     tileItem.isDragged = true;
                                     actionsLayout.dragSourceRawIndex = tileDelegate.rawIndex;
                                     tileItem.Drag.start();
@@ -363,9 +427,95 @@ Item {
                             }
 
                             onClicked: {
-                                if (!(typeof rootWindow !== "undefined" && rootWindow.inPlaceEditMode)) {
+                                if (!gridCardRoot.editActive) {
                                     if (tileDelegate.def && tileDelegate.def.action) {
                                         tileDelegate.def.action();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // ── Inline "+ Add More Buttons" Tray (Shown in Edit Controls Mode) ───
+        Rectangle {
+            Layout.fillWidth: true
+            implicitHeight: addTrayCol.implicitHeight + 14
+            radius: 12
+            color: Qt.rgba(0.04, 0.52, 1.0, 0.10)
+            border.color: Qt.rgba(0.04, 0.52, 1.0, 0.40)
+            border.width: 1
+            visible: gridCardRoot.editActive && gridCardRoot.availableToAdd.length > 0
+
+            ColumnLayout {
+                id: addTrayCol
+                anchors.fill: parent
+                anchors.margins: 7
+                spacing: 5
+
+                Text {
+                    text: "+ ADD MORE CONTROLS TO BOTTLENECK"
+                    font.family: TitanTheme.fontFamily
+                    font.pixelSize: 8
+                    font.weight: Font.Bold
+                    font.letterSpacing: 0.6
+                    color: TitanTheme.accent
+                }
+
+                Flow {
+                    Layout.fillWidth: true
+                    spacing: 5
+
+                    Repeater {
+                        model: gridCardRoot.availableToAdd
+
+                        delegate: Rectangle {
+                            readonly property var def: gridCardRoot.actionCatalog[modelData.key] || null
+                            width: addChipRow.implicitWidth + 14
+                            height: 24
+                            radius: 12
+                            color: addChipMa.containsMouse ? TitanTheme.accent : Qt.rgba(1, 1, 1, 0.12)
+                            border.color: TitanTheme.accent
+                            border.width: 1
+
+                            RowLayout {
+                                id: addChipRow
+                                anchors.centerIn: parent
+                                spacing: 4
+
+                                Text {
+                                    text: "+"
+                                    font.pixelSize: 10
+                                    font.weight: Font.Bold
+                                    color: "#FFFFFF"
+                                }
+
+                                Text {
+                                    text: def ? def.icon : ""
+                                    font.family: TitanTheme.monoFamily
+                                    font.pixelSize: 10
+                                    color: "#FFFFFF"
+                                }
+
+                                Text {
+                                    text: def ? def.title : modelData.key
+                                    font.family: TitanTheme.fontFamily
+                                    font.pixelSize: 9
+                                    font.weight: Font.DemiBold
+                                    color: "#FFFFFF"
+                                }
+                            }
+
+                            MouseArea {
+                                id: addChipMa
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    if (typeof systemCtrl !== "undefined" && systemCtrl) {
+                                        systemCtrl.setTileVisible("bottleneck_" + modelData.key, true);
                                     }
                                 }
                             }

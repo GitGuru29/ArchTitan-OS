@@ -281,12 +281,15 @@ int main(int argc, char *argv[])
         }
 
         QObject::connect(&ipc, &IpcServer::toggleRequested, window, [window]() {
+            window->setProperty("titanFocusArmedAt", QDateTime::currentMSecsSinceEpoch());
             QMetaObject::invokeMethod(window, "toggleDrawer");
         });
         QObject::connect(&ipc, &IpcServer::showRequested, window, [window]() {
+            window->setProperty("titanFocusArmedAt", QDateTime::currentMSecsSinceEpoch());
             QMetaObject::invokeMethod(window, "openDrawer");
         });
         QObject::connect(&ipc, &IpcServer::hideRequested, window, [window]() {
+            window->setProperty("titanFocusArmedAt", QVariant(0));
             QMetaObject::invokeMethod(window, "closeDrawer");
         });
         QObject::connect(&ipc, &IpcServer::notificationsRequested, window, [window]() {

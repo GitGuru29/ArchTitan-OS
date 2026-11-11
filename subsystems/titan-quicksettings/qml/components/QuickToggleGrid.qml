@@ -157,6 +157,7 @@ ColumnLayout {
         id: slidersFullComponent
         RowLayout {
             width: parent ? parent.width : undefined
+            implicitHeight: 64
             spacing: 8
 
             TitanSliderModule {
@@ -209,6 +210,7 @@ ColumnLayout {
         id: liquidGlassComponent
         RowLayout {
             width: parent ? parent.width : undefined
+            implicitHeight: 50
             spacing: 8
 
             // Left Card: Headerless Capsule Slider (Contrast / Warmth — matches Row 3 left of mockup)

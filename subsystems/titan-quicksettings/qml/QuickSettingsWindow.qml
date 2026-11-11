@@ -35,9 +35,14 @@ Window {
     }
 
     function openDrawer() {
+        closeTimer.stop();
         drawerOpen = true;
         rootWindow.visible = true;
         rootWindow.requestActivate();
+        if (typeof systemCtrl !== "undefined" && systemCtrl) {
+            systemCtrl.refresh();
+        }
+        glassSilhouetteCanvas.requestPaint();
     }
 
     function closeDrawer() {
@@ -146,7 +151,7 @@ Window {
                     anchors.right: parent.right
                     height: (rootWindow.showWifiPage || rootWindow.showPowerMenu)
                             ? Math.min(parent.height, 560)
-                            : Math.min(parent.height, bentoContent.implicitHeight + bottleneckDock.implicitHeight + 36)
+                            : Math.min(parent.height, Math.max(400, bentoContent.implicitHeight) + bottleneckDock.implicitHeight + 36)
                     Behavior on height { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
 
                     readonly property int revision: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.tileVisibilityRevision : 0
@@ -263,6 +268,7 @@ Window {
                         Flickable {
                             id: bentoFlick
                             Layout.fillWidth: true
+                            Layout.preferredHeight: bentoContent.implicitHeight
                             Layout.fillHeight: true
                             contentWidth: width
                             contentHeight: Math.max(height, bentoContent.implicitHeight)
@@ -305,16 +311,21 @@ Window {
                             }
                         }
 
-                        // 2. Stepped Bottom-Right Bottleneck Dock (5 Icon Squircles + Thin Separator + Status Footer)
+                        // 2. Stepped Bottom-Right Bottleneck Dock (Utility Squircles + Calendar + Separator + Status Footer)
                         ColumnLayout {
                             id: bottleneckDock
                             visible: !rootWindow.showWifiPage && !rootWindow.showPowerMenu
                             Layout.fillWidth: true
                             Layout.leftMargin: leftCard.bottleneckActive ? leftCard.stepX : 0
-                            spacing: 8
+                            spacing: 7
 
-                            // Utility Squircles Row inside the Bottleneck
+                            // Utility Squircles Row (+ Add/Remove Tray in Edit Mode) inside the Bottleneck
                             TitanActionGrid {
+                                Layout.fillWidth: true
+                            }
+
+                            // Collapsible Calendar Strip inside the Bottleneck ("Neck") Area
+                            CalendarFooter {
                                 Layout.fillWidth: true
                             }
 
