@@ -126,111 +126,135 @@ Window {
             spacing: 12
 
             // ═════════════════════════════════════════════════════════════════
-            //  PANEL 1: Quick Settings (Left) — Liquid Frosted Glass
+            //  PANEL 1: macOS Control Center Popover — Liquid Frosted Glass
             // ═════════════════════════════════════════════════════════════════
-            Rectangle {
-                id: leftCard
-                Layout.preferredWidth: showNotificationPanel ? 450 : 450
+            Item {
+                Layout.preferredWidth: showNotificationPanel ? 430 : 430
                 Layout.fillWidth: !showNotificationPanel
                 Layout.fillHeight: true
-                radius: TitanTheme.radiusWindow
-                border.color: TitanTheme.borderHairline
-                border.width: 1
-                clip: true
 
-                // Obsidian deep graphite surface
-                color: TitanTheme.bgWindow
-
-                ColumnLayout {
+                // Click-away area below the floating popover
+                MouseArea {
                     anchors.fill: parent
-                    anchors.margins: 10
-                    spacing: 8
+                    onClicked: rootWindow.closeDrawer()
+                }
 
-                    // Titan Control Center Top Header
-                    TitanHeader {
-                        inPlaceEditMode: rootWindow.inPlaceEditMode
-                        onEditRequested: {
-                            rootWindow.inPlaceEditMode = !rootWindow.inPlaceEditMode;
-                            if (rootWindow.inPlaceEditMode) rootWindow.showPowerMenu = false;
+                Rectangle {
+                    id: leftCard
+                    anchors.top: parent.top
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    height: (rootWindow.showWifiPage || rootWindow.showPowerMenu)
+                            ? Math.min(parent.height, 560)
+                            : Math.min(parent.height, bentoContent.implicitHeight + footerBar.implicitHeight + 36)
+                    Behavior on height { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+
+                    radius: TitanTheme.radiusWindow
+                    border.color: TitanTheme.borderGlass
+                    border.width: 1
+                    clip: true
+
+                    // Obsidian deep frosted glass surface
+                    color: TitanTheme.bgWindow
+
+                    // Absorb clicks inside the popover
+                    MouseArea {
+                        anchors.fill: parent
+                    }
+
+                    ColumnLayout {
+                        anchors.fill: parent
+                        anchors.margins: 12
+                        spacing: 8
+
+                        // Scrollable Bento Controls (In-Place Customization on Same UI!)
+                        Flickable {
+                            id: bentoFlick
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            contentWidth: width
+                            contentHeight: Math.max(height, bentoContent.implicitHeight)
+                            clip: true
+                            interactive: !rootWindow.inPlaceEditMode
+                            boundsBehavior: Flickable.StopAtBounds
+                            visible: !rootWindow.showWifiPage && !rootWindow.showPowerMenu
+
+                            /**
+                             * Keyboard focus follow: Tab / arrow focus can land on a
+                             * control below the fold, so scroll it into view.
+                             */
+                            function revealFocus() {
+                                var item = rootWindow.activeFocusItem;
+                                if (!item) return;
+
+                                var node = item;
+                                while (node && node !== contentItem) node = node.parent;
+                                if (node !== contentItem) return;
+
+                                var pad = 12;
+                                var y = item.mapToItem(contentItem, 0, 0).y;
+                                var h = item.height;
+                                var target = contentY;
+                                if (y - pad < contentY)
+                                    target = y - pad;
+                                else if (y + h + pad > contentY + height)
+                                    target = y + h + pad - height;
+                                var maxY = Math.max(0, contentHeight - height);
+                                contentY = Math.max(0, Math.min(maxY, target));
+                            }
+
+                            Connections {
+                                target: rootWindow
+                                function onActiveFocusItemChanged() { bentoFlick.revealFocus() }
+                            }
+
+                            // Normal Bento Quick Settings & In-Place Customizer on Same Screen
+                            ColumnLayout {
+                                id: bentoContent
+                                width: parent.width
+                                spacing: 8
+
+                                QuickToggleGrid {}
+                            }
                         }
-                        onSettingsRequested: {
-                            if (typeof systemCtrl !== "undefined" && systemCtrl)
-                                systemCtrl.openSettings();
-                        }
-                        onPowerRequested: {
-                            rootWindow.showPowerMenu = !rootWindow.showPowerMenu;
-                            if (rootWindow.showPowerMenu) rootWindow.inPlaceEditMode = false;
+
+                        // macOS Bottom Status & Controls Strip (Battery | Edit Controls | Settings & Power)
+                        TitanFooterBar {
+                            id: footerBar
+                            visible: !rootWindow.showWifiPage && !rootWindow.showPowerMenu
+                            inPlaceEditMode: rootWindow.inPlaceEditMode
+                            onEditRequested: {
+                                rootWindow.inPlaceEditMode = !rootWindow.inPlaceEditMode;
+                                if (rootWindow.inPlaceEditMode) rootWindow.showPowerMenu = false;
+                            }
+                            onSettingsRequested: {
+                                if (typeof systemCtrl !== "undefined" && systemCtrl)
+                                    systemCtrl.openSettings();
+                            }
+                            onPowerRequested: {
+                                rootWindow.showPowerMenu = !rootWindow.showPowerMenu;
+                                if (rootWindow.showPowerMenu) rootWindow.inPlaceEditMode = false;
+                            }
                         }
                     }
 
-                    // Scrollable Bento Controls (In-Place Customization on Same UI!)
-                    Flickable {
-                        id: bentoFlick
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        contentWidth: width
-                        contentHeight: Math.max(height, bentoContent.implicitHeight)
-                        clip: true
-                        interactive: !rootWindow.inPlaceEditMode
-                        boundsBehavior: Flickable.StopAtBounds
-                        visible: !rootWindow.showWifiPage && !rootWindow.showPowerMenu
-
-                        /**
-                         * Keyboard focus follow: Tab / arrow focus can land on a
-                         * control below the fold, so scroll it into view.
-                         */
-                        function revealFocus() {
-                            var item = rootWindow.activeFocusItem;
-                            if (!item) return;
-
-                            var node = item;
-                            while (node && node !== contentItem) node = node.parent;
-                            if (node !== contentItem) return;
-
-                            var pad = 12;
-                            var y = item.mapToItem(contentItem, 0, 0).y;
-                            var h = item.height;
-                            var target = contentY;
-                            if (y - pad < contentY)
-                                target = y - pad;
-                            else if (y + h + pad > contentY + height)
-                                target = y + h + pad - height;
-                            var maxY = Math.max(0, contentHeight - height);
-                            contentY = Math.max(0, Math.min(maxY, target));
-                        }
-
-                        Connections {
-                            target: rootWindow
-                            function onActiveFocusItemChanged() { bentoFlick.revealFocus() }
-                        }
-
-                        // Normal Bento Quick Settings & In-Place Customizer on Same Screen
-                        ColumnLayout {
-                            id: bentoContent
-                            width: parent.width
-                            spacing: 8
-
-                            QuickToggleGrid {}
-                        }
+                    // ── Inline Wi-Fi Network Picker Overlay ──────────────────
+                    OneUIWifiPage {
+                        id: wifiPageOverlay
+                        anchors.fill: parent
+                        visible: rootWindow.showWifiPage
+                        z: 98
+                        onCloseRequested: rootWindow.showWifiPage = false
                     }
-                }
 
-                // ── One UI Wi-Fi Selection Overlay ───────────────────────
-                OneUIWifiPage {
-                    id: wifiPageOverlay
-                    anchors.fill: parent
-                    visible: rootWindow.showWifiPage
-                    z: 98
-                    onCloseRequested: rootWindow.showWifiPage = false
-                }
-
-                // ── One UI Power & Session Overlay ───────────────────────
-                OneUIPowerMenu {
-                    id: powerMenuOverlay
-                    anchors.fill: parent
-                    visible: rootWindow.showPowerMenu
-                    z: 99
-                    onCloseRequested: rootWindow.showPowerMenu = false
+                    // ── Inline Power & Session Overlay ───────────────────────
+                    OneUIPowerMenu {
+                        id: powerMenuOverlay
+                        anchors.fill: parent
+                        visible: rootWindow.showPowerMenu
+                        z: 99
+                        onCloseRequested: rootWindow.showPowerMenu = false
+                    }
                 }
             }
 

@@ -776,7 +776,7 @@ QStringList SystemController::getSectionOrder() const
     QString cfgDir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
     QSettings settings(cfgDir + "/archtitan/settings.ini", QSettings::IniFormat);
     const QStringList defaultOrder = {
-        "connectivity", "sliders", "media", "pulse", "actions", "liquidGlass", "calendar"
+        "connectivity", "focusCluster", "sliders", "liquidGlass", "media", "pulse", "actions", "calendar"
     };
     QVariant val = settings.value("quicksettings/sectionOrder");
     if (!val.isValid()) {
@@ -803,7 +803,7 @@ QStringList SystemController::getSectionOrder() const
         if (s == "performance") s = "pulse";
         if (s == "topSplit" || s == "topRow") {
             if (!result.contains("connectivity")) result.append("connectivity");
-            if (!result.contains("sliders")) result.append("sliders");
+            if (!result.contains("focusCluster")) result.append("focusCluster");
             continue;
         }
         if (defaultOrder.contains(s) && !result.contains(s)) {
@@ -910,6 +910,9 @@ void SystemController::toggleWidgetSize(const QString &widgetKey)
     } else if (widgetKey == "calendar") {
         QString cur = getWidgetSize(widgetKey, "compact");
         setWidgetSize(widgetKey, (cur == "compact") ? "expanded" : "compact");
+    } else if (widgetKey == "sliders" || widgetKey == "liquidGlass") {
+        QString cur = getWidgetSize(widgetKey, "full");
+        setWidgetSize(widgetKey, (cur == "full") ? "half" : "full");
     } else {
         QString cur = getWidgetSize(widgetKey, "half");
         setWidgetSize(widgetKey, (cur == "half") ? "full" : "half");

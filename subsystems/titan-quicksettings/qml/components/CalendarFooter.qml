@@ -10,6 +10,7 @@ import "../style"
 Rectangle {
     id: calFooterRoot
     Layout.fillWidth: true
+    implicitHeight: contentHeight
     Layout.preferredHeight: contentHeight
     radius: TitanTheme.radiusCard
     color: TitanTheme.bgTitanium
@@ -18,7 +19,7 @@ Rectangle {
     clip: true
 
     property bool expanded: false
-    property int contentHeight: 40
+    property int contentHeight: expanded ? 262 : 38
     Behavior on contentHeight { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
 
     readonly property date today: new Date()
@@ -36,7 +37,6 @@ Rectangle {
 
     function toggle() {
         expanded = !expanded;
-        contentHeight = expanded ? 262 : 40;
     }
 
     function dayNumberFor(col, row) {

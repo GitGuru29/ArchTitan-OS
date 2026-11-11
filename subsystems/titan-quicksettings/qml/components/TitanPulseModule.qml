@@ -3,32 +3,40 @@ import QtQuick.Layouts
 import "../style"
 
 /**
- * TitanPulseModule — ArchTitan Signature Hardware Intelligence Bento Module.
+ * TitanPulseModule — macOS Control Center Hardware Telemetry Bento Card.
  *
- * Implements the Titan Pulse card:
- * - Header: "Titan Pulse" with options badge
- * - Dual glowing circular / horseshoe gauge meters (CPU % + Temp, RAM %)
- * - Power Profile Selector: Efficiency | Balanced | Performance in Sapphire Cyan
+ * Matches the concept mockup:
+ * - Header: "Titan Pulse"
+ * - Two crisp 52x52 circular ring gauges ("CPU XX%" and "RAM XX%")
+ * - Glowing Sapphire "Performance" / "Balanced" / "Efficiency" power profile pill
  */
 Rectangle {
     id: pulseRoot
     Layout.fillWidth: true
-    implicitHeight: 136
+    implicitHeight: 108
     radius: TitanTheme.radiusCard
     color: TitanTheme.bgTitanium
     border.color: (typeof rootWindow !== "undefined" && rootWindow.inPlaceEditMode)
                   ? TitanTheme.accent
-                  : (pulseMa.containsMouse ? TitanTheme.borderHover : TitanTheme.borderHairline)
+                  : TitanTheme.borderHairline
     border.width: 1
 
-    readonly property int cpuVal: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.cpuUsage : 33
-    readonly property int ramVal: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.ramUsage : 49
-    readonly property int cpuTemp: 46
-    property string activeProfile: "Performance"
+    readonly property int cpuVal: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.cpuUsage : 18
+    readonly property int ramVal: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.ramUsage : 42
+
+    property int profileIdx: 0
+    readonly property var profiles: ["Performance", "Balanced", "Efficiency"]
+    readonly property string activeProfile: profiles[profileIdx]
+
+    onCpuValChanged: cpuRing.requestPaint()
+    onRamValChanged: ramRing.requestPaint()
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: 10
+        anchors.leftMargin: 12
+        anchors.rightMargin: 12
+        anchors.topMargin: 8
+        anchors.bottomMargin: 10
         spacing: 6
 
         // ── Card Header ─────────────────────────────────────────────────────
@@ -39,284 +47,173 @@ Rectangle {
                 text: "Titan Pulse"
                 font.family: TitanTheme.fontFamily
                 font.pixelSize: 11
-                font.weight: Font.DemiBold
+                font.weight: Font.Bold
                 color: TitanTheme.textPrimary
             }
 
             Item { Layout.fillWidth: true }
-
-            // System Monitor / Telemetry settings button
-            Rectangle {
-                width: 22
-                height: 22
-                radius: 11
-                color: pulseOptMa.containsMouse ? TitanTheme.bgHover : Qt.rgba(1, 1, 1, 0.06)
-
-                Text {
-                    anchors.centerIn: parent
-                    text: "\uf080" // chart-bar / telemetry
-                    font.family: TitanTheme.monoFamily
-                    font.pixelSize: 10
-                    color: pulseOptMa.containsMouse ? TitanTheme.accent : TitanTheme.textMuted
-                }
-
-                MouseArea {
-                    id: pulseOptMa
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        if (typeof systemCtrl !== "undefined" && systemCtrl)
-                            systemCtrl.openSettings();
-                    }
-                }
-            }
         }
 
-        // ── Dual Circular Horseshoe Gauge Meters ────────────────────────────
+        // ── Gauges + Power Profile Pill Row ─────────────────────────────────
         RowLayout {
             Layout.fillWidth: true
-            spacing: 12
+            Layout.fillHeight: true
+            spacing: 8
 
-            // Gauge 1: CPU % + Temp
+            // 1. CPU Ring Gauge (52x52)
             Item {
-                Layout.fillWidth: true
-                height: 48
+                width: 52
+                height: 52
 
                 Canvas {
-                    id: cpuCanvas
+                    id: cpuRing
                     anchors.fill: parent
                     onPaint: {
                         var ctx = getContext("2d");
                         ctx.reset();
                         var cx = width / 2;
                         var cy = height / 2;
-                        var radius = Math.min(cx, cy) - 4;
-                        var startAngle = 0.75 * Math.PI;
-                        var endAngle = 2.25 * Math.PI;
-                        var sweep = endAngle - startAngle;
+                        var r = Math.min(cx, cy) - 3.5;
+                        var startA = -0.5 * Math.PI;
+                        var fullSweep = 2.0 * Math.PI;
 
-                        // Background track
+                        // Background ring track
                         ctx.beginPath();
-                        ctx.arc(cx, cy, radius, startAngle, endAngle);
-                        ctx.strokeStyle = Qt.rgba(1, 1, 1, 0.08);
-                        ctx.lineWidth = 4;
-                        ctx.lineCap = "round";
+                        ctx.arc(cx, cy, r, 0, fullSweep, false);
+                        ctx.lineWidth = 4.2;
+                        ctx.strokeStyle = "rgba(255, 255, 255, 0.12)";
                         ctx.stroke();
 
-                        // Progress arc
-                        var progress = Math.max(0.05, Math.min(1.0, pulseRoot.cpuVal / 100.0));
-                        var activeAngle = startAngle + sweep * progress;
+                        // Sapphire progress arc
+                        var pct = Math.max(0.05, Math.min(1.0, pulseRoot.cpuVal / 100.0));
                         ctx.beginPath();
-                        ctx.arc(cx, cy, radius, startAngle, activeAngle);
-                        ctx.strokeStyle = "#0A84FF";
-                        ctx.lineWidth = 4;
+                        ctx.arc(cx, cy, r, startA, startA + fullSweep * pct, false);
+                        ctx.lineWidth = 4.2;
                         ctx.lineCap = "round";
+                        ctx.strokeStyle = "#0A84FF";
                         ctx.stroke();
                     }
                 }
 
-                Connections {
-                    target: pulseRoot
-                    function onCpuValChanged() { cpuCanvas.requestPaint(); }
-                }
-
                 ColumnLayout {
                     anchors.centerIn: parent
-                    spacing: -2
+                    spacing: -1
+
+                    Text {
+                        Layout.alignment: Qt.AlignHCenter
+                        text: "CPU"
+                        font.family: TitanTheme.fontFamily
+                        font.pixelSize: 8
+                        font.weight: Font.DemiBold
+                        color: TitanTheme.textMuted
+                    }
 
                     Text {
                         Layout.alignment: Qt.AlignHCenter
                         text: pulseRoot.cpuVal + "%"
                         font.family: TitanTheme.fontFamily
-                        font.pixelSize: 11
+                        font.pixelSize: 10
                         font.weight: Font.Bold
-                        color: TitanTheme.textPrimary
-                    }
-
-                    Text {
-                        Layout.alignment: Qt.AlignHCenter
-                        text: pulseRoot.cpuTemp + "°C"
-                        font.family: TitanTheme.fontFamily
-                        font.pixelSize: 8
-                        font.weight: Font.Medium
-                        color: TitanTheme.textMuted
+                        color: "#FFFFFF"
                     }
                 }
             }
 
-            // Gauge 2: RAM % + Label
+            // 2. RAM Ring Gauge (52x52)
             Item {
-                Layout.fillWidth: true
-                height: 48
+                width: 52
+                height: 52
 
                 Canvas {
-                    id: ramCanvas
+                    id: ramRing
                     anchors.fill: parent
                     onPaint: {
                         var ctx = getContext("2d");
                         ctx.reset();
                         var cx = width / 2;
                         var cy = height / 2;
-                        var radius = Math.min(cx, cy) - 4;
-                        var startAngle = 0.75 * Math.PI;
-                        var endAngle = 2.25 * Math.PI;
-                        var sweep = endAngle - startAngle;
+                        var r = Math.min(cx, cy) - 3.5;
+                        var startA = -0.5 * Math.PI;
+                        var fullSweep = 2.0 * Math.PI;
 
-                        // Background track
+                        // Background ring track
                         ctx.beginPath();
-                        ctx.arc(cx, cy, radius, startAngle, endAngle);
-                        ctx.strokeStyle = Qt.rgba(1, 1, 1, 0.08);
-                        ctx.lineWidth = 4;
-                        ctx.lineCap = "round";
+                        ctx.arc(cx, cy, r, 0, fullSweep, false);
+                        ctx.lineWidth = 4.2;
+                        ctx.strokeStyle = "rgba(255, 255, 255, 0.12)";
                         ctx.stroke();
 
-                        // Progress arc
-                        var progress = Math.max(0.05, Math.min(1.0, pulseRoot.ramVal / 100.0));
-                        var activeAngle = startAngle + sweep * progress;
+                        // Sapphire progress arc
+                        var pct = Math.max(0.05, Math.min(1.0, pulseRoot.ramVal / 100.0));
                         ctx.beginPath();
-                        ctx.arc(cx, cy, radius, startAngle, activeAngle);
-                        ctx.strokeStyle = "#0A84FF";
-                        ctx.lineWidth = 4;
+                        ctx.arc(cx, cy, r, startA, startA + fullSweep * pct, false);
+                        ctx.lineWidth = 4.2;
                         ctx.lineCap = "round";
+                        ctx.strokeStyle = "#0A84FF";
                         ctx.stroke();
                     }
-                }
-
-                Connections {
-                    target: pulseRoot
-                    function onRamValChanged() { ramCanvas.requestPaint(); }
                 }
 
                 ColumnLayout {
                     anchors.centerIn: parent
-                    spacing: -2
-
-                    Text {
-                        Layout.alignment: Qt.AlignHCenter
-                        text: pulseRoot.ramVal + "%"
-                        font.family: TitanTheme.fontFamily
-                        font.pixelSize: 11
-                        font.weight: Font.Bold
-                        color: TitanTheme.textPrimary
-                    }
+                    spacing: -1
 
                     Text {
                         Layout.alignment: Qt.AlignHCenter
                         text: "RAM"
                         font.family: TitanTheme.fontFamily
                         font.pixelSize: 8
-                        font.weight: Font.Bold
-                        font.letterSpacing: 0.5
+                        font.weight: Font.DemiBold
                         color: TitanTheme.textMuted
                     }
+
+                    Text {
+                        Layout.alignment: Qt.AlignHCenter
+                        text: pulseRoot.ramVal + "%"
+                        font.family: TitanTheme.fontFamily
+                        font.pixelSize: 10
+                        font.weight: Font.Bold
+                        color: "#FFFFFF"
+                    }
                 }
             }
-        }
 
-        // ── Power Profile Selector: Efficiency | Balanced | Performance ─────
-        Rectangle {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 24
-            radius: 12
-            color: TitanTheme.bgInset
-            border.color: TitanTheme.borderHairline
-            border.width: 1
-            clip: true
+            // 3. Power Profile Capsule Pill (Right side, matching mockup)
+            Rectangle {
+                Layout.fillWidth: true
+                height: 24
+                radius: 12
+                color: pulseRoot.profileIdx === 0
+                       ? "#0A84FF"
+                       : (pulseRoot.profileIdx === 1 ? Qt.rgba(0.04, 0.52, 1.0, 0.32) : Qt.rgba(1, 1, 1, 0.14))
+                border.color: Qt.rgba(1, 1, 1, 0.20)
+                border.width: 1
+                scale: profMa.pressed ? 0.94 : 1.0
+                Behavior on scale { NumberAnimation { duration: 90 } }
+                Behavior on color { ColorAnimation { duration: 150 } }
 
-            RowLayout {
-                anchors.fill: parent
-                spacing: 0
-
-                // 1. Efficiency
-                Rectangle {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    radius: 9
-                    color: pulseRoot.activeProfile === "Efficiency" ? Qt.rgba(0.04, 0.52, 1.0, 0.20) : "transparent"
-                    border.color: pulseRoot.activeProfile === "Efficiency" ? TitanTheme.accent : "transparent"
-                    border.width: 1
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: "Efficiency"
-                        font.family: TitanTheme.fontFamily
-                        font.pixelSize: 8
-                        font.weight: pulseRoot.activeProfile === "Efficiency" ? Font.Bold : Font.Normal
-                        color: pulseRoot.activeProfile === "Efficiency" ? TitanTheme.accent : TitanTheme.textMuted
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: pulseRoot.activeProfile = "Efficiency"
-                    }
+                Text {
+                    anchors.centerIn: parent
+                    text: pulseRoot.activeProfile
+                    font.family: TitanTheme.fontFamily
+                    font.pixelSize: 9
+                    font.weight: Font.Bold
+                    color: "#FFFFFF"
+                    elide: Text.ElideRight
+                    width: Math.min(implicitWidth, parent.width - 8)
+                    horizontalAlignment: Text.AlignHCenter
                 }
 
-                Rectangle { width: 1; height: 10; color: TitanTheme.borderHairline; Layout.alignment: Qt.AlignVCenter }
-
-                // 2. Balanced
-                Rectangle {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    radius: 9
-                    color: pulseRoot.activeProfile === "Balanced" ? Qt.rgba(0.04, 0.52, 1.0, 0.20) : "transparent"
-                    border.color: pulseRoot.activeProfile === "Balanced" ? TitanTheme.accent : "transparent"
-                    border.width: 1
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: "Balanced"
-                        font.family: TitanTheme.fontFamily
-                        font.pixelSize: 8
-                        font.weight: pulseRoot.activeProfile === "Balanced" ? Font.Bold : Font.Normal
-                        color: pulseRoot.activeProfile === "Balanced" ? TitanTheme.accent : TitanTheme.textMuted
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: pulseRoot.activeProfile = "Balanced"
-                    }
-                }
-
-                Rectangle { width: 1; height: 10; color: TitanTheme.borderHairline; Layout.alignment: Qt.AlignVCenter }
-
-                // 3. Performance
-                Rectangle {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    radius: 9
-                    color: pulseRoot.activeProfile === "Performance" ? Qt.rgba(0.04, 0.52, 1.0, 0.20) : "transparent"
-                    border.color: pulseRoot.activeProfile === "Performance" ? TitanTheme.accent : "transparent"
-                    border.width: 1
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: "Performance"
-                        font.family: TitanTheme.fontFamily
-                        font.pixelSize: 8
-                        font.weight: pulseRoot.activeProfile === "Performance" ? Font.Bold : Font.Normal
-                        color: pulseRoot.activeProfile === "Performance" ? TitanTheme.accent : TitanTheme.textMuted
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: pulseRoot.activeProfile = "Performance"
+                MouseArea {
+                    id: profMa
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        if (typeof rootWindow !== "undefined" && rootWindow.inPlaceEditMode) return;
+                        pulseRoot.profileIdx = (pulseRoot.profileIdx + 1) % 3;
                     }
                 }
             }
         }
-    }
-
-    MouseArea {
-        id: pulseMa
-        anchors.fill: parent
-        hoverEnabled: true
-        z: -1
     }
 }

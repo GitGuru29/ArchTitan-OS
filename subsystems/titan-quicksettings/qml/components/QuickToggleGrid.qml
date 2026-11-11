@@ -3,15 +3,15 @@ import QtQuick.Layouts
 import "../style"
 
 /**
- * QuickToggleGrid — ArchTitan Control Center Dynamic Modular Bento Dashboard.
+ * QuickToggleGrid — ArchTitan macOS Control Center Bento Dashboard.
  *
- * Implements a fully customizable macOS-inspired bento layout:
- * - Dynamic Section Order from systemCtrl.getSectionOrder()
- * - Move the places of whole cards (drag-and-drop or ▲ / ▼ 1-tap reorder buttons)
- * - Resize cards on the same screen ([⬌ Half] vs [⤢ Full], Compact vs Wide, etc.)
- * - Automatic paired row grouping for adjacent half-width cards
- * - Frameless Quick Actions (outer border completely removed)
- * - macOS Sapphire Blue palette
+ * Implements the authentic macOS Control Center layout:
+ * - Row 1: 3-Row Connectivity Stack (Left) + Focus / Night Shift / Dark Mode Cluster (Right)
+ * - Row 2: Display & Sound Embedded-Icon Capsule Sliders (Side-by-Side or Stacked)
+ * - Row 3: Liquid Glass / Frosted Blur Capsule Slider
+ * - Row 4: Now Playing Media Card (Left) + Titan Pulse Ring Gauges (Right)
+ * - Row 5: Frameless Utility Squircles Grid
+ * - Row 6: Collapsible Mini-Calendar Strip
  */
 ColumnLayout {
     id: bentoRoot
@@ -26,7 +26,13 @@ ColumnLayout {
         var rev = revision;
         return (typeof systemCtrl !== "undefined" && systemCtrl)
                ? systemCtrl.getSectionOrder()
-               : ["connectivity", "sliders", "media", "pulse", "actions", "liquidGlass", "calendar"];
+               : ["connectivity", "focusCluster", "sliders", "liquidGlass", "media", "pulse", "actions", "calendar"];
+    }
+
+    function getDefaultSizeForSection(secKey) {
+        if (secKey === "actions" || secKey === "liquidGlass" || secKey === "calendar" || secKey === "sliders")
+            return "full";
+        return "half";
     }
 
     function computeLayoutRows() {
@@ -35,14 +41,14 @@ ColumnLayout {
         var i = 0;
         while (i < order.length) {
             var secKey = order[i];
-            var defaultSize = (secKey === "actions" || secKey === "liquidGlass" || secKey === "calendar") ? "full" : "half";
+            var defaultSize = getDefaultSizeForSection(secKey);
             var size = (typeof systemCtrl !== "undefined" && systemCtrl)
                        ? systemCtrl.getWidgetSize(secKey, defaultSize)
                        : defaultSize;
 
             if (size === "half" && (i + 1) < order.length) {
                 var nextSecKey = order[i + 1];
-                var nextDefaultSize = (nextSecKey === "actions" || nextSecKey === "liquidGlass" || nextSecKey === "calendar") ? "full" : "half";
+                var nextDefaultSize = getDefaultSizeForSection(nextSecKey);
                 var nextSize = (typeof systemCtrl !== "undefined" && systemCtrl)
                                ? systemCtrl.getWidgetSize(nextSecKey, nextDefaultSize)
                                : nextDefaultSize;
@@ -73,6 +79,7 @@ ColumnLayout {
     function getComponentForSection(key, isHalf) {
         switch (key) {
             case "connectivity": return connectivityComponent;
+            case "focusCluster": return focusClusterComponent;
             case "sliders":      return isHalf ? slidersHalfComponent : slidersFullComponent;
             case "media":        return mediaComponent;
             case "pulse":        return pulseComponent;
@@ -80,66 +87,6 @@ ColumnLayout {
             case "liquidGlass":  return liquidGlassComponent;
             case "calendar":     return calendarComponent;
             default:             return null;
-        }
-    }
-
-    // ── In-Place Edit Mode Banner ───────────────────────────────────────────
-    Rectangle {
-        Layout.fillWidth: true
-        height: 28
-        radius: 14
-        color: Qt.rgba(0.04, 0.52, 1.0, 0.16)
-        border.color: TitanTheme.accent
-        border.width: 1
-        visible: (typeof rootWindow !== "undefined" && rootWindow.inPlaceEditMode)
-
-        RowLayout {
-            anchors.fill: parent
-            anchors.leftMargin: 10
-            anchors.rightMargin: 6
-            spacing: 8
-
-            Text {
-                text: "\uf044"
-                font.family: TitanTheme.monoFamily
-                font.pixelSize: 11
-                color: TitanTheme.accent
-            }
-
-            Text {
-                text: "CUSTOMIZING CONTROL CENTER · Drag or use ▲▼ to reorder · Toggle size"
-                font.family: TitanTheme.fontFamily
-                font.pixelSize: 9
-                font.weight: Font.DemiBold
-                color: TitanTheme.textPrimary
-            }
-
-            Item { Layout.fillWidth: true }
-
-            Rectangle {
-                width: 48
-                height: 20
-                radius: 10
-                color: TitanTheme.accent
-
-                Text {
-                    anchors.centerIn: parent
-                    text: "Done"
-                    font.family: TitanTheme.fontFamily
-                    font.pixelSize: 9
-                    font.weight: Font.Bold
-                    color: "#FFFFFF"
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        if (typeof rootWindow !== "undefined" && rootWindow)
-                            rootWindow.inPlaceEditMode = false;
-                    }
-                }
-            }
         }
     }
 
@@ -159,6 +106,13 @@ ColumnLayout {
     }
 
     Component {
+        id: focusClusterComponent
+        MacFocusClusterModule {
+            width: parent ? parent.width : undefined
+        }
+    }
+
+    Component {
         id: slidersHalfComponent
         ColumnLayout {
             width: parent ? parent.width : undefined
@@ -166,10 +120,9 @@ ColumnLayout {
 
             TitanSliderModule {
                 Layout.fillWidth: true
-                title: "Display Brightness"
+                title: "Display"
                 iconGlyph: "\uf185" // sun
-                value: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.brightness : 72
-                fillAccent: TitanTheme.accent
+                value: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.brightness : 75
                 onChanged: (v) => {
                     if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.setBrightness(v);
                 }
@@ -177,10 +130,10 @@ ColumnLayout {
 
             TitanSliderModule {
                 Layout.fillWidth: true
-                title: "Sound Volume"
-                iconGlyph: "\uf028" // volume
-                value: (typeof audioCtrl !== "undefined" && audioCtrl) ? audioCtrl.sinkVolume : 55
-                fillAccent: TitanTheme.accent
+                title: "Sound"
+                iconGlyph: "\uf028" // speaker
+                showOutputButton: true
+                value: (typeof audioCtrl !== "undefined" && audioCtrl) ? audioCtrl.sinkVolume : 60
                 onChanged: (v) => {
                     if (typeof audioCtrl !== "undefined" && audioCtrl) audioCtrl.setVolume(v);
                 }
@@ -197,10 +150,9 @@ ColumnLayout {
             TitanSliderModule {
                 Layout.preferredWidth: (parent.width - 8) / 2
                 Layout.fillWidth: true
-                title: "Display Brightness"
+                title: "Display"
                 iconGlyph: "\uf185" // sun
-                value: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.brightness : 72
-                fillAccent: TitanTheme.accent
+                value: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.brightness : 75
                 onChanged: (v) => {
                     if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.setBrightness(v);
                 }
@@ -209,10 +161,10 @@ ColumnLayout {
             TitanSliderModule {
                 Layout.preferredWidth: (parent.width - 8) / 2
                 Layout.fillWidth: true
-                title: "Sound Volume"
-                iconGlyph: "\uf028" // volume
-                value: (typeof audioCtrl !== "undefined" && audioCtrl) ? audioCtrl.sinkVolume : 55
-                fillAccent: TitanTheme.accent
+                title: "Sound"
+                iconGlyph: "\uf028" // speaker
+                showOutputButton: true
+                value: (typeof audioCtrl !== "undefined" && audioCtrl) ? audioCtrl.sinkVolume : 60
                 onChanged: (v) => {
                     if (typeof audioCtrl !== "undefined" && audioCtrl) audioCtrl.setVolume(v);
                 }
@@ -245,10 +197,9 @@ ColumnLayout {
         id: liquidGlassComponent
         TitanSliderModule {
             width: parent ? parent.width : undefined
-            title: "Liquid Glass / Frosted Blur"
+            title: "Liquid Glass"
             iconGlyph: "\uf043" // droplet
-            value: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.glassOpacity : 35
-            fillAccent: TitanTheme.accent
+            value: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.glassOpacity : 68
             onChanged: (v) => {
                 if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.setGlassOpacity(v);
             }
@@ -270,7 +221,7 @@ ColumnLayout {
 
         delegate: Item {
             Layout.fillWidth: true
-            implicitHeight: rowContent.implicitHeight
+            implicitHeight: (rowData && rowData.isPair) ? rowContent.implicitHeight : singleCard.implicitHeight
 
             readonly property var rowData: modelData
 
