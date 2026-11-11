@@ -57,4 +57,10 @@ target_link_libraries(titan-quicksettings PRIVATE
     LayerShellQt::Interface
 )
 
+set_target_properties(titan-quicksettings PROPERTIES
+    BUILD_RPATH "/usr/lib;${CMAKE_CURRENT_SOURCE_DIR}/../../airootfs/usr/lib;${CMAKE_CURRENT_SOURCE_DIR}/../../titan-ui/build"
+    INSTALL_RPATH "/usr/lib;/usr/local/lib"
+    BUILD_WITH_INSTALL_RPATH FALSE
+)
+
 install(TARGETS titan-quicksettings DESTINATION /usr/local/bin)

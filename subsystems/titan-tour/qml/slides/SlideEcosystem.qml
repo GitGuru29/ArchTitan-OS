@@ -1,184 +1,552 @@
 import QtQuick
 import QtQuick.Layouts
-import "../components"
+import ArchTitan.TitanUI
 
 Item {
-    id: slideRoot
+    id: root
 
-    ColumnLayout {
+    property bool simWifi: true
+    property bool simBt: true
+    property bool simShare: false
+    property real simBrightness: 0.82
+    property real simVolume: 0.68
+    property bool simPlaying: true
+    property real eqPhase: 0.0
+
+    NumberAnimation on eqPhase {
+        from: 0; to: 6.283; duration: 1400; loops: Animation.Infinite; running: root.simPlaying
+    }
+
+    RowLayout {
         anchors.fill: parent
-        anchors.leftMargin: 36
-        anchors.rightMargin: 36
-        anchors.topMargin: 8
-        anchors.bottomMargin: 8
-        spacing: 14
+        anchors.margins: 28
+        spacing: 26
 
-        // Header Title
-        ColumnLayout {
-            spacing: 2
-            Text {
-                text: "THE NATIVE TITAN ECOSYSTEM"
-                font.pixelSize: 18
-                font.weight: Font.Black
-                font.letterSpacing: 1.5
-                color: "#F8FAFC"
-                font.family: "Inter, sans-serif"
-            }
-            Text {
-                text: "A suite of bespoke native tools designed specifically for ArchTitan OS."
-                font.pixelSize: 11
-                color: "#94A3B8"
-            }
-        }
-
-        // 2x2 Feature Grid
-        GridLayout {
-            Layout.fillWidth: true
+        // Left Column: Interactive Stepped Bottleneck Control Center Replica
+        Rectangle {
+            Layout.preferredWidth: 420
             Layout.fillHeight: true
-            columns: 2
-            rowSpacing: 12
-            columnSpacing: 14
+            radius: 20
+            color: Qt.rgba(TitanTheme.crust.r, TitanTheme.crust.g, TitanTheme.crust.b, 0.72)
+            border.width: 1
+            border.color: Qt.rgba(TitanTheme.teal.r, TitanTheme.teal.g, TitanTheme.teal.b, 0.3)
 
-            // Feature 1: Titan Share
-            GlowingCard {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
+            TitanReticle {
+                anchors.fill: parent
+                anchors.margins: 10
+                color: TitanTheme.teal
+                bracketLength: 14
+                bracketThickness: 2
+                opacity: 0.45
+            }
 
-                ColumnLayout {
-                    anchors.fill: parent
-                    anchors.margins: 14
-                    spacing: 6
+            ColumnLayout {
+                anchors.fill: parent
+                anchors.margins: 18
+                spacing: 10
 
-                    RowLayout {
-                        spacing: 8
-                        Rectangle {
-                            width: 28; height: 28; radius: 6
-                            color: Qt.rgba(0.05, 0.65, 1.0, 0.25)
-                            border.color: "#38BDF8"
-                            Text { anchors.centerIn: parent; text: "📡"; font.pixelSize: 13 }
-                        }
-                        Text { text: "Titan Share"; font.pixelSize: 12; font.weight: Font.Bold; color: "#38BDF8" }
-                    }
-
+                RowLayout {
+                    Layout.fillWidth: true
                     Text {
-                        text: "Frictionless local network peer-to-peer file transfers. Send files and clipboard text to other Titan devices with zero configuration."
+                        text: "INTERACTIVE REPLICA // STEPPED BOTTLENECK"
+                        color: TitanTheme.teal
+                        font.family: TitanTheme.monoFamily
                         font.pixelSize: 10
-                        color: "#94A3B8"
-                        wrapMode: Text.WordWrap
-                        Layout.fillWidth: true
+                        font.weight: Font.Bold
+                        font.letterSpacing: 1.0
+                    }
+                    Item { Layout.fillWidth: true }
+                    Text {
+                        text: "CLICK TO TOGGLE"
+                        color: TitanTheme.textLow
+                        font.family: TitanTheme.monoFamily
+                        font.pixelSize: 9
+                        font.weight: Font.Bold
                     }
                 }
-            }
 
-            // Feature 2: Titan Wallpaper Engine
-            GlowingCard {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
+                // Upper Bento Deck (Full Width of Stepped Silhouette)
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    radius: 18
+                    color: Qt.rgba(TitanTheme.mantle.r, TitanTheme.mantle.g, TitanTheme.mantle.b, 0.92)
+                    border.width: 1
+                    border.color: Qt.rgba(1, 1, 1, 0.12)
 
-                ColumnLayout {
-                    anchors.fill: parent
-                    anchors.margins: 14
-                    spacing: 6
+                    ColumnLayout {
+                        anchors.fill: parent
+                        anchors.margins: 14
+                        spacing: 10
 
-                    RowLayout {
-                        spacing: 8
-                        Rectangle {
-                            width: 28; height: 28; radius: 6
-                            color: Qt.rgba(0.8, 0.3, 0.9, 0.25)
-                            border.color: "#C084FC"
-                            Text { anchors.centerIn: parent; text: "🎨"; font.pixelSize: 13 }
+                        // Top Row: Connectivity Stack + Now Playing MPRIS Card
+                        RowLayout {
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 118
+                            spacing: 10
+
+                            // Left 3 Connectivity Pills
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+                                spacing: 6
+
+                                Repeater {
+                                    model: [
+                                        { label: "Wi-Fi 6E", sub: root.simWifi ? "ArchTitan-5G" : "Offline", icon: "\uf1eb", active: root.simWifi, idx: 0 },
+                                        { label: "Bluetooth", sub: root.simBt ? "Connected" : "Off", icon: "\uf293", active: root.simBt, idx: 1 },
+                                        { label: "Quick Share", sub: root.simShare ? "Visible" : "Hidden", icon: "\uf1e0", active: root.simShare, idx: 2 }
+                                    ]
+
+                                    delegate: Rectangle {
+                                        required property var modelData
+                                        Layout.fillWidth: true
+                                        Layout.fillHeight: true
+                                        radius: 10
+                                        color: modelData.active
+                                            ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.25)
+                                            : Qt.rgba(1, 1, 1, 0.04)
+                                        border.width: 1
+                                        border.color: modelData.active ? TitanTheme.accent : Qt.rgba(1, 1, 1, 0.08)
+
+                                        RowLayout {
+                                            anchors.fill: parent
+                                            anchors.leftMargin: 10
+                                            anchors.rightMargin: 10
+                                            spacing: 8
+
+                                            Rectangle {
+                                                width: 24; height: 24; radius: 12
+                                                color: modelData.active ? TitanTheme.accent : Qt.rgba(1, 1, 1, 0.08)
+                                                Text {
+                                                    anchors.centerIn: parent
+                                                    text: modelData.icon
+                                                    color: modelData.active ? "#FFFFFF" : TitanTheme.textLow
+                                                    font.family: TitanTheme.monoFamily
+                                                    font.pixelSize: 11
+                                                }
+                                            }
+
+                                            ColumnLayout {
+                                                Layout.fillWidth: true
+                                                spacing: 0
+                                                Text {
+                                                    text: modelData.label
+                                                    color: TitanTheme.textHigh
+                                                    font.family: TitanTheme.fontFamily
+                                                    font.pixelSize: 10
+                                                    font.weight: Font.Bold
+                                                }
+                                                Text {
+                                                    text: modelData.sub
+                                                    color: TitanTheme.textMid
+                                                    font.family: TitanTheme.monoFamily
+                                                    font.pixelSize: 8
+                                                }
+                                            }
+                                        }
+
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: {
+                                                tourCtrl.playSound("click");
+                                                if (modelData.idx === 0) root.simWifi = !root.simWifi;
+                                                else if (modelData.idx === 1) root.simBt = !root.simBt;
+                                                else root.simShare = !root.simShare;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Right Now Playing MPRIS2 Card
+                            Rectangle {
+                                Layout.preferredWidth: 175
+                                Layout.fillHeight: true
+                                radius: 14
+                                color: Qt.rgba(TitanTheme.surface0.r, TitanTheme.surface0.g, TitanTheme.surface0.b, 0.75)
+                                border.width: 1
+                                border.color: Qt.rgba(TitanTheme.info.r, TitanTheme.info.g, TitanTheme.info.b, 0.35)
+
+                                ColumnLayout {
+                                    anchors.fill: parent
+                                    anchors.margins: 10
+                                    spacing: 6
+
+                                    RowLayout {
+                                        Layout.fillWidth: true
+                                        Text {
+                                            text: "NOW PLAYING"
+                                            color: TitanTheme.info
+                                            font.family: TitanTheme.monoFamily
+                                            font.pixelSize: 8
+                                            font.weight: Font.Bold
+                                        }
+                                        Item { Layout.fillWidth: true }
+                                        // Mini Equalizer Bars
+                                        Row {
+                                            spacing: 2
+                                            Repeater {
+                                                model: 4
+                                                delegate: Rectangle {
+                                                    required property int index
+                                                    width: 3
+                                                    height: root.simPlaying ? (6 + 8 * Math.abs(Math.sin(root.eqPhase + index * 1.1))) : 4
+                                                    radius: 1.5
+                                                    color: TitanTheme.info
+                                                    anchors.bottom: parent.bottom
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    RowLayout {
+                                        Layout.fillWidth: true
+                                        spacing: 8
+
+                                        Rectangle {
+                                            width: 38; height: 38; radius: 8
+                                            color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.25)
+                                            border.width: 1
+                                            border.color: TitanTheme.info
+                                            Image {
+                                                anchors.centerIn: parent
+                                                width: 26; height: 26
+                                                source: tourCtrl.logoUrl
+                                                fillMode: Image.PreserveAspectFit
+                                            }
+                                        }
+
+                                        ColumnLayout {
+                                            Layout.fillWidth: true
+                                            spacing: 1
+                                            Text {
+                                                Layout.fillWidth: true
+                                                text: "SOL VIBRA (Slowed)"
+                                                color: TitanTheme.textHigh
+                                                font.family: TitanTheme.fontFamily
+                                                font.pixelSize: 11
+                                                font.weight: Font.Bold
+                                                elide: Text.ElideRight
+                                            }
+                                            Text {
+                                                Layout.fillWidth: true
+                                                text: "MPRIS2 // Live Art"
+                                                color: TitanTheme.textMid
+                                                font.family: TitanTheme.monoFamily
+                                                font.pixelSize: 9
+                                                elide: Text.ElideRight
+                                            }
+                                        }
+                                    }
+
+                                    Item { Layout.fillHeight: true }
+
+                                    // Media Transport Controls
+                                    RowLayout {
+                                        Layout.fillWidth: true
+                                        spacing: 14
+                                        Item { Layout.fillWidth: true }
+                                        Text { text: "\uf04a"; color: TitanTheme.textMid; font.family: TitanTheme.monoFamily; font.pixelSize: 11 }
+                                        Rectangle {
+                                            width: 24; height: 24; radius: 12
+                                            color: TitanTheme.info
+                                            Text {
+                                                anchors.centerIn: parent
+                                                text: root.simPlaying ? "\uf04c" : "\uf04b"
+                                                color: TitanTheme.crust
+                                                font.family: TitanTheme.monoFamily
+                                                font.pixelSize: 10
+                                            }
+                                            MouseArea {
+                                                anchors.fill: parent
+                                                cursorShape: Qt.PointingHandCursor
+                                                onClicked: {
+                                                    tourCtrl.playSound("click");
+                                                    root.simPlaying = !root.simPlaying;
+                                                }
+                                            }
+                                        }
+                                        Text { text: "\uf04e"; color: TitanTheme.textMid; font.family: TitanTheme.monoFamily; font.pixelSize: 11 }
+                                        Item { Layout.fillWidth: true }
+                                    }
+                                }
+                            }
                         }
-                        Text { text: "Titan Wallpaper Engine"; font.pixelSize: 12; font.weight: Font.Bold; color: "#C084FC"; Layout.fillWidth: true }
 
-                        Rectangle {
-                            implicitWidth: 70
-                            implicitHeight: 22
-                            radius: 4
-                            color: Qt.rgba(0.8, 0.3, 0.9, 0.3)
-                            border.color: "#C084FC"
-                            Text { anchors.centerIn: parent; text: "Try Now ❯"; font.pixelSize: 9; font.weight: Font.Bold; color: "#FFFFFF" }
-                            MouseArea {
-                                anchors.fill: parent
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: {
-                                    if (typeof tourCtrl !== "undefined") tourCtrl.launchWallpaperPicker()
+                        // Display & Sound Interactive Sliders
+                        Repeater {
+                            model: [
+                                { name: "DISPLAY", icon: "\uf185", val: root.simBrightness, col: TitanTheme.info, isBri: true },
+                                { name: "PIPEWIRE", icon: "\uf028", val: root.simVolume, col: TitanTheme.accent, isBri: false }
+                            ]
+
+                            delegate: Rectangle {
+                                required property var modelData
+                                Layout.fillWidth: true
+                                height: 36
+                                radius: 10
+                                color: Qt.rgba(1, 1, 1, 0.04)
+                                border.width: 1
+                                border.color: Qt.rgba(1, 1, 1, 0.08)
+
+                                RowLayout {
+                                    anchors.fill: parent
+                                    anchors.leftMargin: 10
+                                    anchors.rightMargin: 10
+                                    spacing: 10
+
+                                    Text {
+                                        text: modelData.icon
+                                        color: modelData.col
+                                        font.family: TitanTheme.monoFamily
+                                        font.pixelSize: 12
+                                    }
+
+                                    Text {
+                                        text: modelData.name
+                                        color: TitanTheme.textMid
+                                        font.family: TitanTheme.monoFamily
+                                        font.pixelSize: 9
+                                        font.weight: Font.Bold
+                                        Layout.preferredWidth: 54
+                                    }
+
+                                    Rectangle {
+                                        id: trackBar
+                                        Layout.fillWidth: true
+                                        height: 10
+                                        radius: 5
+                                        color: Qt.rgba(1, 1, 1, 0.08)
+
+                                        Rectangle {
+                                            width: parent.width * modelData.val
+                                            height: parent.height
+                                            radius: 5
+                                            color: modelData.col
+                                        }
+
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: function(mouse) {
+                                                var v = Math.max(0.08, Math.min(1.0, mouse.x / trackBar.width));
+                                                if (modelData.isBri) root.simBrightness = v;
+                                                else root.simVolume = v;
+                                                tourCtrl.playSound("step");
+                                            }
+                                        }
+                                    }
+
+                                    Text {
+                                        text: Math.round(modelData.val * 100) + "%"
+                                        color: TitanTheme.textHigh
+                                        font.family: TitanTheme.monoFamily
+                                        font.pixelSize: 10
+                                        font.weight: Font.Bold
+                                        Layout.preferredWidth: 32
+                                        horizontalAlignment: Text.AlignRight
+                                    }
                                 }
                             }
                         }
                     }
+                }
+
+                // Narrowed Stepped Bottleneck 5-Icon Dock
+                Rectangle {
+                    Layout.alignment: Qt.AlignHCenter
+                    width: 248
+                    height: 44
+                    radius: 22
+                    color: Qt.rgba(TitanTheme.mantle.r, TitanTheme.mantle.g, TitanTheme.mantle.b, 0.95)
+                    border.width: 1
+                    border.color: Qt.rgba(TitanTheme.teal.r, TitanTheme.teal.g, TitanTheme.teal.b, 0.4)
+
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: 16
+                        anchors.rightMargin: 16
+                        spacing: 12
+
+                        Repeater {
+                            model: ["\uf0e7", "\uf013", "\uf040", "\uf023", "\uf011"]
+                            delegate: Rectangle {
+                                required property string modelData
+                                required property int index
+                                Layout.fillWidth: true
+                                height: 28
+                                radius: 14
+                                color: index === 2 ? Qt.rgba(TitanTheme.teal.r, TitanTheme.teal.g, TitanTheme.teal.b, 0.2) : Qt.rgba(1, 1, 1, 0.05)
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: modelData
+                                    color: index === 4 ? TitanTheme.danger : (index === 2 ? TitanTheme.teal : TitanTheme.textHigh)
+                                    font.family: TitanTheme.monoFamily
+                                    font.pixelSize: 12
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Right Column: Architecture Highlights & Live Control Triggers
+        ColumnLayout {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            spacing: 14
+
+            RowLayout {
+                spacing: 10
+                Rectangle {
+                    height: 24
+                    width: ccTag.implicitWidth + 16
+                    radius: 12
+                    color: Qt.rgba(TitanTheme.teal.r, TitanTheme.teal.g, TitanTheme.teal.b, 0.16)
+                    border.width: 1
+                    border.color: Qt.rgba(TitanTheme.teal.r, TitanTheme.teal.g, TitanTheme.teal.b, 0.45)
 
                     Text {
-                        text: "Curated 4K obsidian, cosmic, and sapphire wallpapers with automatic system palette extraction and adaptive glass blur."
+                        id: ccTag
+                        anchors.centerIn: parent
+                        text: "ACT 04 // MODULAR BENTO CONTROL CENTER"
+                        color: TitanTheme.teal
+                        font.family: TitanTheme.monoFamily
                         font.pixelSize: 10
-                        color: "#94A3B8"
-                        wrapMode: Text.WordWrap
-                        Layout.fillWidth: true
+                        font.weight: Font.Bold
+                        font.letterSpacing: 1.0
                     }
                 }
             }
 
-            // Feature 3: Titan Sandbox
-            GlowingCard {
+            Text {
+                Layout.fillWidth: true
+                text: "Stepped Bottleneck Glass Architecture"
+                color: TitanTheme.textHigh
+                font.family: TitanTheme.fontFamily
+                font.pixelSize: 26
+                font.weight: Font.Black
+            }
+
+            Text {
+                Layout.fillWidth: true
+                text: "Engineered with a unified continuous QPainterPath silhouette, the Control Center combines macOS-inspired Bento modularity with low-level Arch Linux hardware control."
+                color: TitanTheme.textMid
+                font.family: TitanTheme.fontFamily
+                font.pixelSize: 13
+                lineHeight: 1.35
+                wrapMode: Text.WordWrap
+            }
+
+            // 3 Feature Cards
+            ColumnLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
+                spacing: 10
 
-                ColumnLayout {
-                    anchors.fill: parent
-                    anchors.margins: 14
-                    spacing: 6
-
-                    RowLayout {
-                        spacing: 8
-                        Rectangle {
-                            width: 28; height: 28; radius: 6
-                            color: Qt.rgba(0.1, 0.8, 0.4, 0.25)
-                            border.color: "#34D399"
-                            Text { anchors.centerIn: parent; text: "🛡️"; font.pixelSize: 13 }
+                Repeater {
+                    model: [
+                        {
+                            icon: "\uf001",
+                            title: "Smart MPRIS2 Media Prioritization",
+                            desc: "Automatically prioritizes active browser streams (YouTube/SoundCloud via Plasma Integration), Spotify, and MPV—retaining album art across play/pause transitions.",
+                            color: TitanTheme.info
+                        },
+                        {
+                            icon: "\uf040",
+                            title: "Live Edit Mode & Tile Gallery",
+                            desc: "Click the Pencil icon in the bottleneck dock to add, remove, or reorder Quick Toggles (Night Light, Game Mode, Caffeine, VPN, Airplane) in real time.",
+                            color: TitanTheme.accent
+                        },
+                        {
+                            icon: "\uf028",
+                            title: "Bit-Perfect PipeWire + WirePlumber Routing",
+                            desc: "Direct hardware volume & backlight sliders with zero-latency audio sink switching and Bluetooth codec inspection.",
+                            color: TitanTheme.success
                         }
-                        Text { text: "Titan Sandbox Isolation"; font.pixelSize: 12; font.weight: Font.Bold; color: "#34D399" }
-                    }
+                    ]
 
-                    Text {
-                        text: "Run unverified third-party binaries, browser plugins, or test scripts inside bubblewrap namespace sandboxes with restricted network and filesystem access."
-                        font.pixelSize: 10
-                        color: "#94A3B8"
-                        wrapMode: Text.WordWrap
+                    delegate: Rectangle {
+                        required property var modelData
                         Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        radius: 14
+                        color: Qt.rgba(TitanTheme.surface0.r, TitanTheme.surface0.g, TitanTheme.surface0.b, 0.55)
+                        border.width: 1
+                        border.color: Qt.rgba(1, 1, 1, 0.08)
+
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.margins: 12
+                            spacing: 12
+
+                            Rectangle {
+                                width: 38; height: 38; radius: 10
+                                color: Qt.rgba(modelData.color.r, modelData.color.g, modelData.color.b, 0.15)
+                                border.width: 1
+                                border.color: modelData.color
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: modelData.icon
+                                    color: modelData.color
+                                    font.family: TitanTheme.monoFamily
+                                    font.pixelSize: 15
+                                }
+                            }
+
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 2
+                                Text {
+                                    text: modelData.title
+                                    color: TitanTheme.textHigh
+                                    font.family: TitanTheme.fontFamily
+                                    font.pixelSize: 13
+                                    font.weight: Font.Bold
+                                }
+                                Text {
+                                    Layout.fillWidth: true
+                                    text: modelData.desc
+                                    color: TitanTheme.textMid
+                                    font.family: TitanTheme.fontFamily
+                                    font.pixelSize: 11
+                                    lineHeight: 1.25
+                                    wrapMode: Text.WordWrap
+                                }
+                            }
+                        }
                     }
                 }
             }
 
-            // Feature 4: Dynamic HUD & Waybar
-            GlowingCard {
+            // Live Action Bar
+            RowLayout {
                 Layout.fillWidth: true
-                Layout.fillHeight: true
+                spacing: 12
 
-                ColumnLayout {
-                    anchors.fill: parent
-                    anchors.margins: 14
-                    spacing: 6
+                TitanButton {
+                    Layout.fillWidth: true
+                    implicitHeight: 40
+                    text: "Open Real Control Center (Super+N)"
+                    glyph: "\uf1de"
+                    variant: "primary"
+                    onClicked: tourCtrl.toggleControlCenter()
+                }
 
-                    RowLayout {
-                        spacing: 8
-                        Rectangle {
-                            width: 28; height: 28; radius: 6
-                            color: Qt.rgba(0.95, 0.6, 0.1, 0.25)
-                            border.color: "#FBBF24"
-                            Text { anchors.centerIn: parent; text: "⚡"; font.pixelSize: 13 }
-                        }
-                        Text { text: "Contextual Media & Telemetry HUD"; font.pixelSize: 12; font.weight: Font.Bold; color: "#FBBF24" }
-                    }
-
-                    Text {
-                        text: "Dynamic Island-style popups for song transitions, volume/brightness steps, and live GPU/CPU utilization in Waybar."
-                        font.pixelSize: 10
-                        color: "#94A3B8"
-                        wrapMode: Text.WordWrap
-                        Layout.fillWidth: true
-                    }
+                TitanButton {
+                    Layout.preferredWidth: 185
+                    implicitHeight: 40
+                    text: "Test PipeWire Audio"
+                    glyph: "\uf028"
+                    variant: "secondary"
+                    onClicked: tourCtrl.testAudio()
                 }
             }
         }
     }
 }
-
