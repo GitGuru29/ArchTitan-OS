@@ -22,11 +22,21 @@ Rectangle {
                   : TitanTheme.borderHairline
     border.width: 1
 
-    property bool isPlaying: true
-    property string title: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.mediaTitle && systemCtrl.mediaTitle.length > 0)
-                           ? systemCtrl.mediaTitle : "Solaris Drift"
-    property string artist: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.mediaArtist && systemCtrl.mediaArtist.length > 0)
-                            ? systemCtrl.mediaArtist : "Artist · Solaris"
+    readonly property bool hasMedia: (typeof mprisCtrl !== "undefined" && mprisCtrl) ? mprisCtrl.hasMedia : false
+    readonly property bool isPlaying: (typeof mprisCtrl !== "undefined" && mprisCtrl) ? mprisCtrl.isPlaying : false
+    readonly property string title: {
+        if (typeof mprisCtrl !== "undefined" && mprisCtrl && mprisCtrl.title && mprisCtrl.title.length > 0)
+            return mprisCtrl.title;
+        return "Not Playing";
+    }
+    readonly property string artist: {
+        if (typeof mprisCtrl !== "undefined" && mprisCtrl && mprisCtrl.artist && mprisCtrl.artist.length > 0)
+            return mprisCtrl.artist;
+        if (typeof mprisCtrl !== "undefined" && mprisCtrl && mprisCtrl.playerName && mprisCtrl.playerName.length > 0)
+            return mprisCtrl.playerName;
+        return "Music Player";
+    }
+    readonly property string artUrl: (typeof mprisCtrl !== "undefined" && mprisCtrl) ? mprisCtrl.artUrl : ""
 
     ColumnLayout {
         anchors.fill: parent
@@ -69,6 +79,7 @@ Rectangle {
 
                 // Inner diagonal shimmer accent
                 Rectangle {
+                    visible: !albumImg.visible
                     width: 36
                     height: 36
                     radius: 18
@@ -78,11 +89,21 @@ Rectangle {
                 }
 
                 Text {
+                    visible: !albumImg.visible
                     anchors.centerIn: parent
                     text: "\uf001" // music note
                     font.family: TitanTheme.monoFamily
                     font.pixelSize: 16
                     color: Qt.rgba(1, 1, 1, 0.90)
+                }
+
+                Image {
+                    id: albumImg
+                    anchors.fill: parent
+                    source: mediaRoot.artUrl
+                    fillMode: Image.PreserveAspectCrop
+                    visible: status === Image.Ready && mediaRoot.artUrl.length > 0
+                    asynchronous: true
                 }
             }
 
@@ -137,8 +158,8 @@ Rectangle {
                             cursorShape: Qt.PointingHandCursor
                             onClicked: {
                                 if (typeof rootWindow !== "undefined" && rootWindow.inPlaceEditMode) return;
-                                if (typeof systemCtrl !== "undefined" && systemCtrl)
-                                    systemCtrl.mediaPrevious();
+                                if (typeof mprisCtrl !== "undefined" && mprisCtrl)
+                                    mprisCtrl.previous();
                             }
                         }
                     }
@@ -160,9 +181,8 @@ Rectangle {
                             cursorShape: Qt.PointingHandCursor
                             onClicked: {
                                 if (typeof rootWindow !== "undefined" && rootWindow.inPlaceEditMode) return;
-                                mediaRoot.isPlaying = !mediaRoot.isPlaying;
-                                if (typeof systemCtrl !== "undefined" && systemCtrl)
-                                    systemCtrl.mediaPlayPause();
+                                if (typeof mprisCtrl !== "undefined" && mprisCtrl)
+                                    mprisCtrl.playPause();
                             }
                         }
                     }
@@ -184,8 +204,8 @@ Rectangle {
                             cursorShape: Qt.PointingHandCursor
                             onClicked: {
                                 if (typeof rootWindow !== "undefined" && rootWindow.inPlaceEditMode) return;
-                                if (typeof systemCtrl !== "undefined" && systemCtrl)
-                                    systemCtrl.mediaNext();
+                                if (typeof mprisCtrl !== "undefined" && mprisCtrl)
+                                    mprisCtrl.next();
                             }
                         }
                     }

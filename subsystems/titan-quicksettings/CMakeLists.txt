@@ -21,6 +21,7 @@ set(SOURCES
     src/nightlightcontroller.cpp
     src/notificationmodel.cpp
     src/notificationserver.cpp
+    src/mpriscontroller.cpp
 )
 
 set(HEADERS
@@ -32,6 +33,7 @@ set(HEADERS
     src/nightlightcontroller.h
     src/notificationmodel.h
     src/notificationserver.h
+    src/mpriscontroller.h
 )
 
 set(RESOURCES

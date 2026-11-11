@@ -80,6 +80,7 @@ static LayoutConfig readConfig()
 #include "audiocontroller.h"
 #include "nightlightcontroller.h"
 #include "notificationserver.h"
+#include "mpriscontroller.h"
 
 int main(int argc, char *argv[])
 {
@@ -204,6 +205,7 @@ int main(int argc, char *argv[])
     AudioController audioCtrl;
     NightLightController nightCtrl;
     NotificationServer notifServer;
+    MprisController mprisCtrl;
 
     QQmlApplicationEngine engine;
     engine.addImportPath(QStringLiteral("/usr/lib/qt6/qml"));
@@ -218,6 +220,7 @@ int main(int argc, char *argv[])
     context->setContextProperty("nightLightCtrl", &nightCtrl);
     context->setContextProperty("notifServer", &notifServer);
     context->setContextProperty("notifModel", notifServer.model());
+    context->setContextProperty("mprisCtrl", &mprisCtrl);
 
     const QUrl url(QStringLiteral("qrc:/qml/QuickSettingsWindow.qml"));
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
