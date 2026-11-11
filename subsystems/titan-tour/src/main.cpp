@@ -55,6 +55,19 @@ int main(int argc, char *argv[])
 
     TourController tourCtrl;
 
+    // Ensure child processes (titan-quicksettings, titan-sysmon, titan-spotlight, etc.)
+    // can always resolve libTitanUI.so and ArchTitan.TitanUI QML module
+    QStringList libDirs = {
+        QStringLiteral("/usr/lib"),
+        QDir::currentPath() + QStringLiteral("/airootfs/usr/lib"),
+        QDir::currentPath() + QStringLiteral("/titan-ui/build"),
+        QCoreApplication::applicationDirPath() + QStringLiteral("/../../../airootfs/usr/lib"),
+        QCoreApplication::applicationDirPath() + QStringLiteral("/../../airootfs/usr/lib")
+    };
+    QString existingLd = qEnvironmentVariable("LD_LIBRARY_PATH");
+    if (!existingLd.isEmpty()) libDirs.prepend(existingLd);
+    qputenv("LD_LIBRARY_PATH", libDirs.join(QLatin1Char(':')).toUtf8());
+
     QQmlApplicationEngine engine;
     engine.addImportPath(QStringLiteral("/usr/lib/qt6/qml"));
     engine.addImportPath(QDir::currentPath() + QStringLiteral("/airootfs/usr/lib/qt6/qml"));
