@@ -58,6 +58,7 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("swayosd-server")
     hl.exec_cmd("/usr/lib/polkit-kde-authentication-agent-1")
     hl.exec_cmd("xdg-user-dirs-update")
+    hl.exec_cmd("bash -c 'sleep 4 && titan-tour --autostart'")
 
     -- Disable screen timeout / DPMS blanking on live ISO
     -- No hypridle daemon is launched -- no idle daemon = no blanking
@@ -147,6 +148,7 @@ hl.bind("CTRL + " .. mainMod .. " + V", hl.dsp.exec_cmd(sandboxed .. " pavucontr
 hl.bind("CTRL + SHIFT + Escape", hl.dsp.exec_cmd(sandboxed .. " " .. terminal .. " -e btop"))  -- Task manager
 superBind(mainMod .. " + comma", hl.dsp.exec_cmd(sandboxed .. " archtitan-settings"))     -- Settings panel shortcut
 superBind(mainMod .. " + I", hl.dsp.exec_cmd("bash -c 'if [ -d /run/archiso ]; then launch-installer; else titan-exec-hook archtitan-settings; fi'"))  -- Installer on Live ISO / Settings on Installed OS
+superBind(mainMod .. " + F1", hl.dsp.exec_cmd("titan-tour --force"))  -- Interactive Virtual Tour
 
 -- Window Management
 superBind(mainMod .. " + Q", hl.dsp.window.close())                              -- Close
@@ -394,6 +396,14 @@ hl.window_rule({
     float   = true,
     center  = true,
     opacity = "1.0 1.0",
+})
+
+hl.window_rule({
+    name    = "titan-tour-float",
+    match   = { class = "^titan-tour$" },
+    float   = true,
+    size    = "880 560",
+    center  = true,
 })
 
 hl.window_rule({
