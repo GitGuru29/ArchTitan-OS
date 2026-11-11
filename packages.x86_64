@@ -97,7 +97,6 @@ pipewire-jack
 wireplumber
 pavucontrol
 playerctl
-plasma-browser-integration
 cava
 brightnessctl
 power-profiles-daemon

@@ -453,7 +453,7 @@ Item {
                         {
                             icon: "\uf001",
                             title: "Smart MPRIS2 Media Prioritization",
-                            desc: "Automatically prioritizes active browser streams (YouTube/SoundCloud via Plasma Integration), Spotify, and MPV—retaining album art across play/pause transitions.",
+                            desc: "Automatically prioritizes active browser streams (YouTube, SoundCloud, Chromium, Firefox), Spotify, and MPV—retaining album art across play/pause transitions.",
                             color: TitanTheme.info
                         },
                         {

@@ -43,7 +43,7 @@ void MprisController::startPlayerctlProcess()
 
     // Follow metadata events with structured delimiter from prioritized players
     QStringList args;
-    args << "--player=plasma-browser-integration,spotify,vlc,mpv,%any"
+    args << "--player=chromium,firefox,spotify,vlc,mpv,%any"
          << "--follow"
          << "metadata"
          << "--format"
@@ -100,7 +100,7 @@ void MprisController::parseMetadataLine(const QString &line)
     bool isSameTrack = (title == m_title || m_title.isEmpty() || m_title == "Unknown Track");
 
     // If an incoming event has empty artist or empty artUrl, preserve existing valid metadata
-    // from a richer source (e.g. plasma-browser-integration) for the active track
+    // from a richer source (e.g. browser / streaming player) for the active track
     if ((artist.isEmpty() || artist == "Unknown Artist") && isSameTrack && !m_artist.isEmpty() && m_artist != "Unknown Artist") {
         artist = m_artist;
     }
@@ -259,21 +259,21 @@ void MprisController::onDriftCorrection()
 
 void MprisController::playPause()
 {
-    QString target = m_playerName.isEmpty() ? "plasma-browser-integration,spotify,vlc,mpv,%any" : m_playerName;
+    QString target = m_playerName.isEmpty() ? "chromium,firefox,spotify,vlc,mpv,%any" : m_playerName;
     QProcess::startDetached("playerctl", QStringList() << "--player=" + target << "play-pause");
     QTimer::singleShot(200, this, &MprisController::refresh);
 }
 
 void MprisController::next()
 {
-    QString target = m_playerName.isEmpty() ? "plasma-browser-integration,spotify,vlc,mpv,%any" : m_playerName;
+    QString target = m_playerName.isEmpty() ? "chromium,firefox,spotify,vlc,mpv,%any" : m_playerName;
     QProcess::startDetached("playerctl", QStringList() << "--player=" + target << "next");
     QTimer::singleShot(200, this, &MprisController::refresh);
 }
 
 void MprisController::previous()
 {
-    QString target = m_playerName.isEmpty() ? "plasma-browser-integration,spotify,vlc,mpv,%any" : m_playerName;
+    QString target = m_playerName.isEmpty() ? "chromium,firefox,spotify,vlc,mpv,%any" : m_playerName;
     QProcess::startDetached("playerctl", QStringList() << "--player=" + target << "previous");
     QTimer::singleShot(200, this, &MprisController::refresh);
 }
@@ -353,7 +353,7 @@ void MprisController::refresh()
 {
     QProcess queryProc;
     queryProc.start("playerctl", QStringList()
-                    << "--player=plasma-browser-integration,spotify,vlc,mpv,%any"
+                    << "--player=chromium,firefox,spotify,vlc,mpv,%any"
                     << "metadata"
                     << "--format"
                     << "{{playerName}};;{{status}};;{{title}};;{{artist}};;{{album}};;{{mpris:artUrl}};;{{position}};;{{mpris:length}}");
