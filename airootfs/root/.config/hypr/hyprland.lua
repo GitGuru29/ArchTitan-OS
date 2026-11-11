@@ -438,6 +438,7 @@ hl.layer_rule({ match = { namespace = "^titan-quicksettings$" }, blur = true, ig
 hl.layer_rule({ match = { namespace = "^titan-quicksettings-blur$" }, blur = true, ignore_alpha = 0 })
 hl.layer_rule({ match = { namespace = "^titan-sysmon$" }, blur = true, ignore_alpha = 0 })
 hl.layer_rule({ match = { namespace = "^titan-menu$" }, blur = true, ignore_alpha = 0 })
+hl.layer_rule({ match = { namespace = "^titan-tour$" }, blur = true, ignore_alpha = 0 })
 hl.layer_rule({ match = { namespace = "^titan-workspace-hud$" }, blur = true, ignore_alpha = 0 })
 hl.layer_rule({ match = { namespace = "^swayosd$" }, blur = true, ignore_alpha = 0 })
 

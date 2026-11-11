@@ -15,38 +15,38 @@
 
 int main(int argc, char *argv[])
 {
+    qputenv("QML_DISABLE_DISK_CACHE", "1");
     if (qEnvironmentVariableIsEmpty("QT_QPA_PLATFORM")) {
-        if (!qEnvironmentVariableIsEmpty("WAYLAND_DISPLAY")) {
-            qputenv("QT_QPA_PLATFORM", "wayland");
-        }
+        qputenv("QT_QPA_PLATFORM", "wayland;xcb");
     }
+    qputenv("QT_WAYLAND_DISABLE_WINDOWDECORATION", "1");
 
     QGuiApplication app(argc, argv);
-    app.setApplicationName("titan-tour");
-    app.setApplicationDisplayName("ArchTitan Virtual Tour");
-    app.setOrganizationName("ArchTitan");
+    app.setApplicationName(QStringLiteral("titan-tour"));
+    app.setApplicationDisplayName(QStringLiteral("ArchTitan Virtual Tour"));
+    app.setOrganizationName(QStringLiteral("ArchTitan"));
 
-    std::signal(SIGINT, [](int) { QGuiApplication::quit(); });
+    std::signal(SIGINT,  [](int) { QGuiApplication::quit(); });
     std::signal(SIGTERM, [](int) { QGuiApplication::quit(); });
 
     QCommandLineParser parser;
-    parser.setApplicationDescription("ArchTitan Cinematic Virtual Tour & Onboarding");
+    parser.setApplicationDescription(QStringLiteral("ArchTitan Cinematic Virtual Tour & Spatial Onboarding"));
     parser.addHelpOption();
     parser.addVersionOption();
 
-    QCommandLineOption autostartOption("autostart", "Run in autostart mode (respects .tour-done on installed systems)");
-    QCommandLineOption forceOption("force", "Force showing tour even if already completed");
+    QCommandLineOption autostartOption(QStringLiteral("autostart"), QStringLiteral("Run in autostart mode (respects .tour-done on installed systems)"));
+    QCommandLineOption forceOption(QStringLiteral("force"), QStringLiteral("Force showing tour even if already completed"));
     parser.addOption(autostartOption);
     parser.addOption(forceOption);
     parser.process(app);
 
-    bool isAutostart = parser.isSet(autostartOption);
-    bool isForce = parser.isSet(forceOption);
+    const bool isAutostart = parser.isSet(autostartOption);
+    const bool isForce = parser.isSet(forceOption);
 
     if (isAutostart && !isForce) {
-        bool isLive = QFile::exists("/run/archiso");
+        const bool isLive = QFile::exists(QStringLiteral("/run/archiso"));
         if (!isLive) {
-            QString doneFlag = QDir::homePath() + "/.config/archtitan/.tour-done";
+            const QString doneFlag = QDir::homePath() + QStringLiteral("/.config/archtitan/.tour-done");
             if (QFile::exists(doneFlag)) {
                 return 0;
             }
@@ -64,52 +64,51 @@ int main(int argc, char *argv[])
         QCoreApplication::applicationDirPath() + QStringLiteral("/../../../airootfs/usr/lib"),
         QCoreApplication::applicationDirPath() + QStringLiteral("/../../airootfs/usr/lib")
     };
-    QString existingLd = qEnvironmentVariable("LD_LIBRARY_PATH");
+    const QString existingLd = qEnvironmentVariable("LD_LIBRARY_PATH");
     if (!existingLd.isEmpty()) libDirs.prepend(existingLd);
     qputenv("LD_LIBRARY_PATH", libDirs.join(QLatin1Char(':')).toUtf8());
 
     QQmlApplicationEngine engine;
     engine.addImportPath(QStringLiteral("/usr/lib/qt6/qml"));
+    engine.addImportPath(QStringLiteral("/usr/local/lib/qt6/qml"));
     engine.addImportPath(QDir::currentPath() + QStringLiteral("/airootfs/usr/lib/qt6/qml"));
     engine.addImportPath(QDir::currentPath() + QStringLiteral("/titan-ui/build/qml"));
     engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/../../../airootfs/usr/lib/qt6/qml"));
     engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/../../airootfs/usr/lib/qt6/qml"));
 
     auto *context = engine.rootContext();
-    context->setContextProperty("tourCtrl", &tourCtrl);
+    context->setContextProperty(QStringLiteral("tourCtrl"), &tourCtrl);
 
     const QUrl url(QStringLiteral("qrc:/qml/TourWindow.qml"));
-    QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
-                     &app, [url](QObject *obj, const QUrl &objUrl) {
-        if (!obj && url == objUrl) {
-            QCoreApplication::exit(-1);
-        }
-    }, Qt::QueuedConnection);
+    QObject::connect(
+        &engine, &QQmlApplicationEngine::objectCreated, &app,
+        [url](QObject *obj, const QUrl &objUrl) {
+            if (!obj && url == objUrl) {
+                QCoreApplication::exit(-1);
+                return;
+            }
+
+            auto *window = qobject_cast<QQuickWindow *>(obj);
+            if (!window)
+                return;
+
+            if (auto *layer = LayerShellQt::Window::get(window)) {
+                layer->setAnchors(LayerShellQt::Window::Anchors(
+                    LayerShellQt::Window::AnchorLeft |
+                    LayerShellQt::Window::AnchorRight |
+                    LayerShellQt::Window::AnchorTop |
+                    LayerShellQt::Window::AnchorBottom));
+                layer->setLayer(LayerShellQt::Window::LayerOverlay);
+                layer->setExclusiveZone(-1);
+                layer->setKeyboardInteractivity(
+                    LayerShellQt::Window::KeyboardInteractivityExclusive);
+                layer->setScope(QStringLiteral("titan-tour"));
+            }
+
+            QMetaObject::invokeMethod(window, "openTour");
+        },
+        Qt::QueuedConnection);
 
     engine.load(url);
-
-    if (engine.rootObjects().isEmpty()) {
-        return -1;
-    }
-
-    auto *window = qobject_cast<QQuickWindow *>(engine.rootObjects().first());
-    if (window) {
-        if (QGuiApplication::platformName().contains("wayland", Qt::CaseInsensitive)) {
-            if (auto *layerWindow = LayerShellQt::Window::get(window)) {
-                layerWindow->setLayer(LayerShellQt::Window::LayerOverlay);
-                layerWindow->setAnchors(LayerShellQt::Window::Anchors(
-                    LayerShellQt::Window::AnchorTop |
-                    LayerShellQt::Window::AnchorBottom |
-                    LayerShellQt::Window::AnchorLeft |
-                    LayerShellQt::Window::AnchorRight));
-                layerWindow->setExclusiveZone(-1);
-                layerWindow->setKeyboardInteractivity(
-                    LayerShellQt::Window::KeyboardInteractivityExclusive);
-                layerWindow->setScope("titan-tour");
-            }
-        }
-        window->show();
-    }
-
     return app.exec();
 }

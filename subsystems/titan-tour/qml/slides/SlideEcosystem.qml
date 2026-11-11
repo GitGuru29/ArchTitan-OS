@@ -19,17 +19,17 @@ Item {
 
     RowLayout {
         anchors.fill: parent
-        anchors.margins: 28
-        spacing: 26
+        anchors.margins: 26
+        spacing: 24
 
-        // Left Column: Interactive Stepped Bottleneck Control Center Replica
+        // Left Column: True Concave-Fillet Stepped Bottleneck Control Center Replica
         Rectangle {
-            Layout.preferredWidth: 420
+            Layout.preferredWidth: 426
             Layout.fillHeight: true
             radius: 20
             color: Qt.rgba(TitanTheme.crust.r, TitanTheme.crust.g, TitanTheme.crust.b, 0.72)
             border.width: 1
-            border.color: Qt.rgba(TitanTheme.teal.r, TitanTheme.teal.g, TitanTheme.teal.b, 0.3)
+            border.color: Qt.rgba(TitanTheme.teal.r, TitanTheme.teal.g, TitanTheme.teal.b, 0.32)
 
             TitanReticle {
                 anchors.fill: parent
@@ -42,22 +42,22 @@ Item {
 
             ColumnLayout {
                 anchors.fill: parent
-                anchors.margins: 18
-                spacing: 10
+                anchors.margins: 16
+                spacing: 8
 
                 RowLayout {
                     Layout.fillWidth: true
                     Text {
-                        text: "INTERACTIVE REPLICA // STEPPED BOTTLENECK"
+                        text: "STEPPED BOTTLENECK SILHOUETTE // INTERACTIVE"
                         color: TitanTheme.teal
                         font.family: TitanTheme.monoFamily
                         font.pixelSize: 10
                         font.weight: Font.Bold
-                        font.letterSpacing: 1.0
+                        font.letterSpacing: 0.9
                     }
                     Item { Layout.fillWidth: true }
                     Text {
-                        text: "CLICK TO TOGGLE"
+                        text: "CLICK CONTROLS"
                         color: TitanTheme.textLow
                         font.family: TitanTheme.monoFamily
                         font.pixelSize: 9
@@ -65,27 +65,72 @@ Item {
                     }
                 }
 
-                // Upper Bento Deck (Full Width of Stepped Silhouette)
-                Rectangle {
+                // Unified Stepped Bottleneck Canvas Container (Matches QuickSettingsWindow.qml lines 176-243!)
+                Item {
+                    id: bottleneckStage
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    radius: 18
-                    color: Qt.rgba(TitanTheme.mantle.r, TitanTheme.mantle.g, TitanTheme.mantle.b, 0.92)
-                    border.width: 1
-                    border.color: Qt.rgba(1, 1, 1, 0.12)
 
-                    ColumnLayout {
+                    readonly property real stepX: 98
+                    readonly property real stepY: height - 50
+
+                    Canvas {
+                        id: steppedCanvas
                         anchors.fill: parent
-                        anchors.margins: 14
-                        spacing: 10
+                        onWidthChanged: requestPaint()
+                        onHeightChanged: requestPaint()
+                        onPaint: {
+                            var ctx = getContext("2d");
+                            ctx.reset();
+                            var W = width - 1;
+                            var H = height - 1;
+                            var x0 = 0.5;
+                            var y0 = 0.5;
+                            var r = 18;
+                            var sx = bottleneckStage.stepX;
+                            var sy = bottleneckStage.stepY;
+                            var rBot = 16;
+                            var rInner = 14;
+
+                            ctx.beginPath();
+                            ctx.moveTo(x0 + r, y0);
+                            ctx.lineTo(W - r, y0);
+                            ctx.arcTo(W, y0, W, y0 + r, r);
+                            ctx.lineTo(W, H - r);
+                            ctx.arcTo(W, H, W - r, H, r);
+                            ctx.lineTo(sx + rBot, H);
+                            ctx.arcTo(sx, H, sx, H - rBot, rBot);
+                            ctx.lineTo(sx, sy + rInner);
+                            ctx.arcTo(sx, sy, sx - rInner, sy, rInner);
+                            ctx.lineTo(x0 + r, sy);
+                            ctx.arcTo(x0, sy, x0, sy - r, r);
+                            ctx.lineTo(x0, y0 + r);
+                            ctx.arcTo(x0, y0, x0 + r, y0, r);
+                            ctx.closePath();
+
+                            ctx.fillStyle = "rgba(18, 22, 34, 0.92)";
+                            ctx.fill();
+                            ctx.lineWidth = 1.5;
+                            ctx.strokeStyle = "rgba(56, 189, 248, 0.42)";
+                            ctx.stroke();
+                        }
+                    }
+
+                    // Upper Body Content
+                    ColumnLayout {
+                        anchors.top: parent.top
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        height: bottleneckStage.stepY
+                        anchors.margins: 12
+                        spacing: 8
 
                         // Top Row: Connectivity Stack + Now Playing MPRIS Card
                         RowLayout {
                             Layout.fillWidth: true
-                            Layout.preferredHeight: 118
+                            Layout.fillHeight: true
                             spacing: 10
 
-                            // Left 3 Connectivity Pills
                             ColumnLayout {
                                 Layout.fillWidth: true
                                 Layout.fillHeight: true
@@ -165,7 +210,7 @@ Item {
                                 Layout.preferredWidth: 175
                                 Layout.fillHeight: true
                                 radius: 14
-                                color: Qt.rgba(TitanTheme.surface0.r, TitanTheme.surface0.g, TitanTheme.surface0.b, 0.75)
+                                color: Qt.rgba(TitanTheme.surface0.r, TitanTheme.surface0.g, TitanTheme.surface0.b, 0.78)
                                 border.width: 1
                                 border.color: Qt.rgba(TitanTheme.info.r, TitanTheme.info.g, TitanTheme.info.b, 0.35)
 
@@ -184,7 +229,6 @@ Item {
                                             font.weight: Font.Bold
                                         }
                                         Item { Layout.fillWidth: true }
-                                        // Mini Equalizer Bars
                                         Row {
                                             spacing: 2
                                             Repeater {
@@ -232,7 +276,7 @@ Item {
                                             }
                                             Text {
                                                 Layout.fillWidth: true
-                                                text: "MPRIS2 // Live Art"
+                                                text: "DJ Zarek • MPRIS2"
                                                 color: TitanTheme.textMid
                                                 font.family: TitanTheme.monoFamily
                                                 font.pixelSize: 9
@@ -243,7 +287,6 @@ Item {
 
                                     Item { Layout.fillHeight: true }
 
-                                    // Media Transport Controls
                                     RowLayout {
                                         Layout.fillWidth: true
                                         spacing: 14
@@ -285,7 +328,7 @@ Item {
                             delegate: Rectangle {
                                 required property var modelData
                                 Layout.fillWidth: true
-                                height: 36
+                                height: 34
                                 radius: 10
                                 color: Qt.rgba(1, 1, 1, 0.04)
                                 border.width: 1
@@ -352,23 +395,14 @@ Item {
                             }
                         }
                     }
-                }
 
-                // Narrowed Stepped Bottleneck 5-Icon Dock
-                Rectangle {
-                    Layout.alignment: Qt.AlignHCenter
-                    width: 248
-                    height: 44
-                    radius: 22
-                    color: Qt.rgba(TitanTheme.mantle.r, TitanTheme.mantle.g, TitanTheme.mantle.b, 0.95)
-                    border.width: 1
-                    border.color: Qt.rgba(TitanTheme.teal.r, TitanTheme.teal.g, TitanTheme.teal.b, 0.4)
-
+                    // Right-Aligned Stepped Bottleneck 5-Icon Dock inside the concave cutout!
                     RowLayout {
-                        anchors.fill: parent
-                        anchors.leftMargin: 16
-                        anchors.rightMargin: 16
-                        spacing: 12
+                        x: bottleneckStage.stepX + 14
+                        y: bottleneckStage.stepY + 8
+                        width: bottleneckStage.width - bottleneckStage.stepX - 26
+                        height: 34
+                        spacing: 10
 
                         Repeater {
                             model: ["\uf0e7", "\uf013", "\uf040", "\uf023", "\uf011"]
@@ -376,9 +410,9 @@ Item {
                                 required property string modelData
                                 required property int index
                                 Layout.fillWidth: true
-                                height: 28
-                                radius: 14
-                                color: index === 2 ? Qt.rgba(TitanTheme.teal.r, TitanTheme.teal.g, TitanTheme.teal.b, 0.2) : Qt.rgba(1, 1, 1, 0.05)
+                                height: 30
+                                radius: 15
+                                color: index === 2 ? Qt.rgba(TitanTheme.teal.r, TitanTheme.teal.g, TitanTheme.teal.b, 0.22) : Qt.rgba(1, 1, 1, 0.06)
 
                                 Text {
                                     anchors.centerIn: parent
@@ -390,6 +424,17 @@ Item {
                             }
                         }
                     }
+
+                    // Callout Label in the Bottom-Left Cutout Void
+                    Text {
+                        x: 8
+                        y: bottleneckStage.stepY + 16
+                        text: "↖ CONCAVE CUTOUT"
+                        color: TitanTheme.teal
+                        font.family: TitanTheme.monoFamily
+                        font.pixelSize: 8
+                        font.weight: Font.Bold
+                    }
                 }
             }
         }
@@ -398,7 +443,7 @@ Item {
         ColumnLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            spacing: 14
+            spacing: 12
 
             RowLayout {
                 spacing: 10
@@ -413,7 +458,7 @@ Item {
                     Text {
                         id: ccTag
                         anchors.centerIn: parent
-                        text: "ACT 04 // MODULAR BENTO CONTROL CENTER"
+                        text: "ACT 04 // STEPPED BOTTLENECK CONTROL CENTER"
                         color: TitanTheme.teal
                         font.family: TitanTheme.monoFamily
                         font.pixelSize: 10
@@ -425,7 +470,7 @@ Item {
 
             Text {
                 Layout.fillWidth: true
-                text: "Stepped Bottleneck Glass Architecture"
+                text: "Asymmetric Concave-Fillet Glass"
                 color: TitanTheme.textHigh
                 font.family: TitanTheme.fontFamily
                 font.pixelSize: 26
@@ -434,15 +479,14 @@ Item {
 
             Text {
                 Layout.fillWidth: true
-                text: "Engineered with a unified continuous QPainterPath silhouette, the Control Center combines macOS-inspired Bento modularity with low-level Arch Linux hardware control."
+                text: "Look at the bottom-left corner of the replica on the left: titan-quicksettings renders an asymmetric stepped bottleneck silhouette with a smooth concave fillet and a right-aligned 5-icon action dock."
                 color: TitanTheme.textMid
                 font.family: TitanTheme.fontFamily
-                font.pixelSize: 13
+                font.pixelSize: 12
                 lineHeight: 1.35
                 wrapMode: Text.WordWrap
             }
 
-            // 3 Feature Cards
             ColumnLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
@@ -452,20 +496,20 @@ Item {
                     model: [
                         {
                             icon: "\uf001",
-                            title: "Smart MPRIS2 Media Prioritization",
-                            desc: "Automatically prioritizes active browser streams (YouTube/SoundCloud via Plasma Integration), Spotify, and MPV—retaining album art across play/pause transitions.",
+                            title: "Smart MPRIS2 Browser & Spotify Priority",
+                            desc: "Tracks active browser streams (Plasma Integration), Spotify, VLC, and MPV—preserving real album artwork and artist metadata across play/pause states.",
                             color: TitanTheme.info
                         },
                         {
                             icon: "\uf040",
-                            title: "Live Edit Mode & Tile Gallery",
-                            desc: "Click the Pencil icon in the bottleneck dock to add, remove, or reorder Quick Toggles (Night Light, Game Mode, Caffeine, VPN, Airplane) in real time.",
+                            title: "In-Place Edit Mode & Dual-Panel Notifications",
+                            desc: "Click the Pencil icon in the bottleneck dock to add/remove tiles live, or expand the 880px side-by-side Notification & Media Hub.",
                             color: TitanTheme.accent
                         },
                         {
                             icon: "\uf028",
-                            title: "Bit-Perfect PipeWire + WirePlumber Routing",
-                            desc: "Direct hardware volume & backlight sliders with zero-latency audio sink switching and Bluetooth codec inspection.",
+                            title: "PipeWire + SwayOSD Hardware Integration",
+                            desc: "Low-latency audio sink routing, night light temperature control, Wi-Fi 6E scanning, and Bluetooth device pairing.",
                             color: TitanTheme.success
                         }
                     ]
@@ -524,27 +568,26 @@ Item {
                 }
             }
 
-            // Live Action Bar
             RowLayout {
                 Layout.fillWidth: true
-                spacing: 12
+                spacing: 10
 
                 TitanButton {
                     Layout.fillWidth: true
                     implicitHeight: 40
-                    text: "Open Real Control Center (Super+N)"
+                    text: "Summon Control Center (Super+N)"
                     glyph: "\uf1de"
                     variant: "primary"
                     onClicked: tourCtrl.toggleControlCenter()
                 }
 
                 TitanButton {
-                    Layout.preferredWidth: 185
+                    Layout.preferredWidth: 210
                     implicitHeight: 40
-                    text: "Test PipeWire Audio"
-                    glyph: "\uf028"
+                    text: "Open Notification Hub"
+                    glyph: "\uf0f3"
                     variant: "secondary"
-                    onClicked: tourCtrl.testAudio()
+                    onClicked: tourCtrl.openNotifications()
                 }
             }
         }

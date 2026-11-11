@@ -59,9 +59,12 @@ public:
     Q_INVOKABLE void launchInstaller();
     Q_INVOKABLE void launchTerminal();
     Q_INVOKABLE void toggleControlCenter();
+    Q_INVOKABLE void openNotifications();
     Q_INVOKABLE void toggleSpotlight();
     Q_INVOKABLE void toggleSysmon();
     Q_INVOKABLE void toggleMenu();
+    Q_INVOKABLE void toggleWorkspaceHud();
+    Q_INVOKABLE void toggleMediaHud();
     Q_INVOKABLE void launchWallpaperPicker();
     Q_INVOKABLE void applyWallpaper(const QString &path);
     Q_INVOKABLE void launchSettings();

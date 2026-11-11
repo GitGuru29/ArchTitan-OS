@@ -5,15 +5,15 @@ import ArchTitan.TitanUI
 Item {
     id: root
 
-    // 0: Dwindle Split, 1: Floating Overlay, 2: Fullscreen Monocle, 3: 4-Pane Matrix
+    // 0: Dwindle Split, 1: Floating Overlay, 2: Fullscreen Monocle, 3: 10-Workspace HUD
     property int simMode: 0
     property int activeKeyIndex: 0
 
     readonly property var keyDeck: [
         {
             keys: ["SUPER", "T"],
-            title: "Spawn Foot Terminal",
-            desc: "Splits the active workspace automatically using Hyprland's dynamic dwindle tree.",
+            title: "Spawn Kitty GPU Terminal",
+            desc: "Launches Kitty via titan-sandboxd (titan-exec-hook) and splits the active dwindle tree.",
             mode: 0,
             icon: "\uf120",
             color: TitanTheme.accent,
@@ -22,8 +22,8 @@ Item {
         },
         {
             keys: ["SUPER", "SPACE"],
-            title: "Titan Spotlight Launcher",
-            desc: "Summons the floating C++20 fuzzy application & command launcher over your workspace.",
+            title: "Titan Spotlight & Clipboard",
+            desc: "Tap Super alone or press Super+Space for fuzzy launch. Press Super+V for Clipboard History.",
             mode: 1,
             icon: "\uf002",
             color: TitanTheme.info,
@@ -31,42 +31,42 @@ Item {
             runAction: function() { tourCtrl.toggleSpotlight(); }
         },
         {
-            keys: ["SUPER", "F"],
-            title: "Fullscreen Monocle Mode",
-            desc: "Expands the focused window edge-to-edge while preserving your underlying dwindle tree.",
-            mode: 2,
-            icon: "\uf065",
-            color: TitanTheme.mauve,
-            canRun: false,
-            runAction: function() {}
-        },
-        {
-            keys: ["SUPER", "1..4"],
-            title: "Multi-Pane Workspace Matrix",
-            desc: "Switch instantly across 10 independent workspaces or move windows with Super+Shift+1..9.",
+            keys: ["SUPER", "TAB"],
+            title: "10-Workspace HUD Switcher",
+            desc: "Summons titan-workspace-hud (or use 3-finger horizontal touchpad swipe for 1:1 slide).",
             mode: 3,
             icon: "\uf009",
-            color: TitanTheme.success,
-            canRun: false,
-            runAction: function() {}
-        },
-        {
-            keys: ["SUPER", "N"],
-            title: "Stepped Control Center",
-            desc: "Opens the TDL 2.0 quick settings, audio router, Wi-Fi/BT toggles, and MPRIS deck.",
-            mode: 1,
-            icon: "\uf1de",
             color: TitanTheme.teal,
             canRun: true,
-            runAction: function() { tourCtrl.toggleControlCenter(); }
+            runAction: function() { tourCtrl.toggleWorkspaceHud(); }
         },
         {
-            keys: ["SUPER", "Q"],
-            title: "Close Focused Window",
-            desc: "Cleanly terminates the active window and dynamically reflows remaining tiled siblings.",
-            mode: 0,
-            icon: "\uf00d",
+            keys: ["SUPER", "/"],
+            title: "Liquid Glass Command Menu",
+            desc: "Opens titan-menu (Grid & List views) or swipe 3 fingers up on your touchpad.",
+            mode: 1,
+            icon: "\uf00a",
+            color: TitanTheme.mauve,
+            canRun: true,
+            runAction: function() { tourCtrl.toggleMenu(); }
+        },
+        {
+            keys: ["SUPER", "\\"],
+            title: "Wallpaper Picker Studio",
+            desc: "Opens titan-wallpaper-picker to switch live swww wallpapers and adaptive TDL themes.",
+            mode: 2,
+            icon: "\uf03e",
             color: TitanTheme.warning,
+            canRun: true,
+            runAction: function() { tourCtrl.launchWallpaperPicker(); }
+        },
+        {
+            keys: ["3/4", "SWIPE"],
+            title: "Native Touchpad Gestures",
+            desc: "3-Right/Left: Workspace • 3-Up: Menu • 3-Down: Close • 4-Up: Magic Scratchpad (Super+S).",
+            mode: 3,
+            icon: "\uf25a",
+            color: TitanTheme.success,
             canRun: false,
             runAction: function() {}
         }
@@ -74,17 +74,17 @@ Item {
 
     RowLayout {
         anchors.fill: parent
-        anchors.margins: 28
-        spacing: 26
+        anchors.margins: 26
+        spacing: 24
 
         // Left Column: Interactive Animated Hyprland Tiling Simulator
         Rectangle {
-            Layout.preferredWidth: 430
+            Layout.preferredWidth: 426
             Layout.fillHeight: true
             radius: 20
             color: Qt.rgba(TitanTheme.crust.r, TitanTheme.crust.g, TitanTheme.crust.b, 0.72)
             border.width: 1
-            border.color: Qt.rgba(0.65, 0.55, 0.98, 0.32)
+            border.color: Qt.rgba(TitanTheme.mauve.r, TitanTheme.mauve.g, TitanTheme.mauve.b, 0.32)
 
             TitanReticle {
                 anchors.fill: parent
@@ -100,11 +100,10 @@ Item {
                 anchors.margins: 18
                 spacing: 12
 
-                // Simulator Header & Mode Selector Pills
                 RowLayout {
                     Layout.fillWidth: true
                     Text {
-                        text: "HYPRLAND COMPOSITOR SIMULATOR"
+                        text: "HYPRLAND >= 0.55 LUA COMPOSITOR"
                         color: TitanTheme.mauve
                         font.family: TitanTheme.monoFamily
                         font.pixelSize: 10
@@ -113,7 +112,7 @@ Item {
                     }
                     Item { Layout.fillWidth: true }
                     Text {
-                        text: ["DWINDLE TREE", "FLOATING HUD", "MONOCLE MAX", "QUAD MATRIX"][root.simMode]
+                        text: ["DWINDLE TREE", "LIQUID OVERLAY", "MONOCLE MAX", "10-WS MATRIX"][root.simMode]
                         color: TitanTheme.info
                         font.family: TitanTheme.monoFamily
                         font.pixelSize: 10
@@ -136,7 +135,7 @@ Item {
                     readonly property real w: width - pad * 2
                     readonly property real h: height - pad * 2
 
-                    // Window 1: Primary Terminal
+                    // Window 1: Primary Kitty Terminal
                     Rectangle {
                         x: stageBox.pad
                         y: stageBox.pad
@@ -147,8 +146,8 @@ Item {
                         border.width: 2
                         border.color: TitanTheme.accent
 
-                        Behavior on width { NumberAnimation { duration: 320; easing.type: Easing.OutCubic } }
-                        Behavior on height { NumberAnimation { duration: 320; easing.type: Easing.OutCubic } }
+                        Behavior on width { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
+                        Behavior on height { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
 
                         ColumnLayout {
                             anchors.fill: parent
@@ -157,10 +156,10 @@ Item {
                             RowLayout {
                                 spacing: 6
                                 Text { text: "\uf120"; color: TitanTheme.accent; font.family: TitanTheme.monoFamily; font.pixelSize: 12 }
-                                Text { text: "foot // zsh + tmux"; color: TitanTheme.textHigh; font.family: TitanTheme.monoFamily; font.pixelSize: 10; font.weight: Font.Bold }
+                                Text { text: "kitty // titan-exec-hook"; color: TitanTheme.textHigh; font.family: TitanTheme.monoFamily; font.pixelSize: 10; font.weight: Font.Bold }
                             }
                             Text {
-                                text: "$ fastfetch --logo ArchTitan\nKernel: Linux Zen\nWM: Hyprland (Wayland)\nShell: TDL 2.0 Native"
+                                text: "$ fastfetch\nOS: ArchTitan x86_64\nWM: Hyprland 0.55 (Lua)\nSandbox: titan-sandboxd\nShell: TDL 2.0 Liquid Glass"
                                 color: TitanTheme.textMid
                                 font.family: TitanTheme.monoFamily
                                 font.pixelSize: 9
@@ -170,7 +169,7 @@ Item {
                         }
                     }
 
-                    // Window 2: Code Editor (Top-Right)
+                    // Window 2: TitanBrowser (Top-Right)
                     Rectangle {
                         visible: opacity > 0.02
                         opacity: root.simMode === 2 ? 0.0 : 1.0
@@ -190,11 +189,11 @@ Item {
                             anchors.margins: 10
                             RowLayout {
                                 spacing: 6
-                                Text { text: "\uf121"; color: TitanTheme.info; font.family: TitanTheme.monoFamily; font.pixelSize: 11 }
-                                Text { text: "nvim // tourcontroller.cpp"; color: TitanTheme.textHigh; font.family: TitanTheme.monoFamily; font.pixelSize: 9; font.weight: Font.Bold }
+                                Text { text: "\uf268"; color: TitanTheme.info; font.family: TitanTheme.monoFamily; font.pixelSize: 11 }
+                                Text { text: "titanbrowser // Super+B"; color: TitanTheme.textHigh; font.family: TitanTheme.monoFamily; font.pixelSize: 9; font.weight: Font.Bold }
                             }
                             Text {
-                                text: "LayerShellQt::Window::get(win)\n->setLayer(LayerOverlay);"
+                                text: "Sandboxed policy active\nHardware VA-API enabled"
                                 color: TitanTheme.textLow
                                 font.family: TitanTheme.monoFamily
                                 font.pixelSize: 8
@@ -203,7 +202,7 @@ Item {
                         }
                     }
 
-                    // Window 3: Telemetry / Browser (Bottom-Right)
+                    // Window 3: Ranger File Manager (Bottom-Right)
                     Rectangle {
                         visible: opacity > 0.02
                         opacity: root.simMode === 2 ? 0.0 : 1.0
@@ -223,8 +222,8 @@ Item {
                             anchors.margins: 10
                             RowLayout {
                                 spacing: 6
-                                Text { text: "\uf080"; color: TitanTheme.success; font.family: TitanTheme.monoFamily; font.pixelSize: 11 }
-                                Text { text: "btop // telemetry"; color: TitanTheme.textHigh; font.family: TitanTheme.monoFamily; font.pixelSize: 9; font.weight: Font.Bold }
+                                Text { text: "\uf07b"; color: TitanTheme.success; font.family: TitanTheme.monoFamily; font.pixelSize: 11 }
+                                Text { text: "ranger // Super+E"; color: TitanTheme.textHigh; font.family: TitanTheme.monoFamily; font.pixelSize: 9; font.weight: Font.Bold }
                             }
                             Text {
                                 text: "CPU: " + Math.round(tourCtrl.cpuUsage * 100) + "%  TEMP: " + tourCtrl.cpuTemp + "°C"
@@ -245,7 +244,7 @@ Item {
                         width: stageBox.w * 0.54 - 4
                         height: stageBox.h * 0.5 - 4
                         radius: 10
-                        color: Qt.rgba(0.65, 0.55, 0.98, 0.15)
+                        color: Qt.rgba(TitanTheme.mauve.r, TitanTheme.mauve.g, TitanTheme.mauve.b, 0.15)
                         border.width: 1
                         border.color: TitanTheme.mauve
 
@@ -256,24 +255,30 @@ Item {
                             anchors.margins: 10
                             RowLayout {
                                 spacing: 6
-                                Text { text: "\uf07b"; color: TitanTheme.mauve; font.family: TitanTheme.monoFamily; font.pixelSize: 11 }
-                                Text { text: "thunar // airootfs"; color: TitanTheme.textHigh; font.family: TitanTheme.monoFamily; font.pixelSize: 9; font.weight: Font.Bold }
+                                Text { text: "\uf009"; color: TitanTheme.mauve; font.family: TitanTheme.monoFamily; font.pixelSize: 11 }
+                                Text { text: "titan-workspace-hud // WS 1..10"; color: TitanTheme.textHigh; font.family: TitanTheme.monoFamily; font.pixelSize: 9; font.weight: Font.Bold }
+                            }
+                            Text {
+                                text: "3-Finger Swipe • Super+Tab"
+                                color: TitanTheme.textMid
+                                font.family: TitanTheme.monoFamily
+                                font.pixelSize: 8
                             }
                             Item { Layout.fillHeight: true }
                         }
                     }
 
-                    // Floating Overlay Card (In Mode 1 - Spotlight / QuickSettings)
+                    // Floating Overlay Card (In Mode 1 - Spotlight / Menu)
                     Rectangle {
                         visible: opacity > 0.02
                         opacity: root.simMode === 1 ? 1.0 : 0.0
                         anchors.centerIn: parent
-                        width: stageBox.w * 0.68
-                        height: 92
-                        radius: 16
+                        width: stageBox.w * 0.72
+                        height: 94
+                        radius: 18
                         color: Qt.rgba(TitanTheme.mantle.r, TitanTheme.mantle.g, TitanTheme.mantle.b, 0.96)
-                        border.width: 2
-                        border.color: TitanTheme.info
+                        border.width: 1.5
+                        border.color: TitanTheme.accent
 
                         Behavior on opacity { NumberAnimation { duration: 200 } }
 
@@ -283,15 +288,15 @@ Item {
                             RowLayout {
                                 Layout.alignment: Qt.AlignHCenter
                                 spacing: 8
-                                Text { text: "\uf002"; color: TitanTheme.info; font.family: TitanTheme.monoFamily; font.pixelSize: 14 }
-                                Text { text: "FLOAT OVERLAY // LAYER-SHELL"; color: TitanTheme.textHigh; font.family: TitanTheme.monoFamily; font.pixelSize: 11; font.weight: Font.Bold }
+                                Text { text: "\uf002"; color: TitanTheme.accent; font.family: TitanTheme.monoFamily; font.pixelSize: 14 }
+                                Text { text: "LIQUID GLASS OVERLAY // LAYER-SHELL"; color: TitanTheme.textHigh; font.family: TitanTheme.monoFamily; font.pixelSize: 10; font.weight: Font.Bold }
                             }
                             Text {
                                 Layout.alignment: Qt.AlignHCenter
-                                text: "Floats above tiled windows without breaking layout"
+                                text: "Dual-Kawase blur (size=8, passes=4, vibrancy=0.42)"
                                 color: TitanTheme.textMid
-                                font.family: TitanTheme.fontFamily
-                                font.pixelSize: 10
+                                font.family: TitanTheme.monoFamily
+                                font.pixelSize: 9
                             }
                         }
                     }
@@ -303,7 +308,7 @@ Item {
                     spacing: 6
 
                     Repeater {
-                        model: ["01 Dwindle", "02 Float HUD", "03 Monocle", "04 Quad Grid"]
+                        model: ["01 Dwindle", "02 Liquid HUD", "03 Monocle", "04 10-WS Grid"]
 
                         delegate: Rectangle {
                             required property string modelData
@@ -312,7 +317,7 @@ Item {
                             height: 30
                             radius: 8
                             color: root.simMode === index
-                                ? Qt.rgba(0.65, 0.55, 0.98, 0.24)
+                                ? Qt.rgba(TitanTheme.mauve.r, TitanTheme.mauve.g, TitanTheme.mauve.b, 0.24)
                                 : Qt.rgba(1, 1, 1, 0.04)
                             border.width: 1
                             border.color: root.simMode === index ? TitanTheme.mauve : Qt.rgba(1, 1, 1, 0.08)
@@ -340,7 +345,7 @@ Item {
             }
         }
 
-        // Right Column: Mechanical Keycap Matrix
+        // Right Column: Mechanical Keycap Matrix & Trackpad Gestures
         ColumnLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
@@ -352,14 +357,14 @@ Item {
                     height: 24
                     width: actBadge.implicitWidth + 16
                     radius: 12
-                    color: Qt.rgba(0.65, 0.55, 0.98, 0.16)
+                    color: Qt.rgba(TitanTheme.mauve.r, TitanTheme.mauve.g, TitanTheme.mauve.b, 0.16)
                     border.width: 1
-                    border.color: Qt.rgba(0.65, 0.55, 0.98, 0.45)
+                    border.color: Qt.rgba(TitanTheme.mauve.r, TitanTheme.mauve.g, TitanTheme.mauve.b, 0.45)
 
                     Text {
                         id: actBadge
                         anchors.centerIn: parent
-                        text: "ACT 03 // HYPRLAND KEYBOARD WORKFLOW"
+                        text: "ACT 03 // CHORDS, GESTURES & SANDBOXD"
                         color: TitanTheme.mauve
                         font.family: TitanTheme.monoFamily
                         font.pixelSize: 10
@@ -371,7 +376,7 @@ Item {
 
             Text {
                 Layout.fillWidth: true
-                text: "Zero-Friction Tiling & Hotkeys"
+                text: "Chords, 1:1 Touchpad Swipes & Tiling"
                 color: TitanTheme.textHigh
                 font.family: TitanTheme.fontFamily
                 font.pixelSize: 26
@@ -380,7 +385,7 @@ Item {
 
             Text {
                 Layout.fillWidth: true
-                text: "Click any mechanical keybind card below to preview its behavior in the compositor simulator—or fire the command live on your desktop."
+                text: "Click any card below to preview its compositor state on the left—or click RUN LIVE ↗ to fire the native ArchTitan subsystem right now."
                 color: TitanTheme.textMid
                 font.family: TitanTheme.fontFamily
                 font.pixelSize: 12
@@ -407,7 +412,7 @@ Item {
                         Layout.fillHeight: true
                         radius: 14
                         color: isSelected
-                            ? Qt.rgba(modelData.color.r, modelData.color.g, modelData.color.b, 0.15)
+                            ? Qt.rgba(modelData.color.r, modelData.color.g, modelData.color.b, 0.16)
                             : Qt.rgba(TitanTheme.surface0.r, TitanTheme.surface0.g, TitanTheme.surface0.b, 0.55)
                         border.width: isSelected ? 1.5 : 1
                         border.color: isSelected ? modelData.color : Qt.rgba(1, 1, 1, 0.08)
@@ -421,7 +426,6 @@ Item {
                                 Layout.fillWidth: true
                                 spacing: 6
 
-                                // Mechanical Keycap Pills
                                 Repeater {
                                     model: modelData.keys
                                     delegate: Rectangle {
@@ -433,7 +437,6 @@ Item {
                                         border.width: 1
                                         border.color: Qt.rgba(1, 1, 1, 0.22)
 
-                                        // Bottom mechanical keycap bevel
                                         Rectangle {
                                             anchors.bottom: parent.bottom
                                             anchors.left: parent.left
@@ -457,7 +460,6 @@ Item {
 
                                 Item { Layout.fillWidth: true }
 
-                                // Optional "Run Live" pill button
                                 Rectangle {
                                     visible: modelData.canRun
                                     height: 22

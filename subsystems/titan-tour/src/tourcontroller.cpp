@@ -108,6 +108,12 @@ void TourController::toggleControlCenter()
     QProcess::startDetached(QStringLiteral("titan-quicksettings"), QStringList() << QStringLiteral("--toggle"));
 }
 
+void TourController::openNotifications()
+{
+    playSound(QStringLiteral("click"));
+    QProcess::startDetached(QStringLiteral("titan-quicksettings"), QStringList() << QStringLiteral("--notifications"));
+}
+
 void TourController::toggleSpotlight()
 {
     playSound(QStringLiteral("click"));
@@ -133,6 +139,22 @@ void TourController::toggleMenu()
         QProcess::startDetached(QStringLiteral("titan-menu"), QStringList() << QStringLiteral("--toggle"));
     } else {
         toggleSpotlight();
+    }
+}
+
+void TourController::toggleWorkspaceHud()
+{
+    playSound(QStringLiteral("click"));
+    if (!QStandardPaths::findExecutable(QStringLiteral("titan-workspace-hud")).isEmpty()) {
+        QProcess::startDetached(QStringLiteral("titan-workspace-hud"), QStringList() << QStringLiteral("--toggle"));
+    }
+}
+
+void TourController::toggleMediaHud()
+{
+    playSound(QStringLiteral("click"));
+    if (!QStandardPaths::findExecutable(QStringLiteral("titan-media-hud")).isEmpty()) {
+        QProcess::startDetached(QStringLiteral("titan-media-hud"), QStringList() << QStringLiteral("--toggle"));
     }
 }
 

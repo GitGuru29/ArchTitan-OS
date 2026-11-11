@@ -72,7 +72,7 @@ Item {
                     font.weight: TitanTheme.weightSemiBold
                 }
                 Text {
-                    text: "Re-open anytime via Super+Space -> 'Tour'"
+                    text: "Re-open anytime via Super+F1 or Spotlight"
                     color: TitanTheme.textLow
                     font.family: TitanTheme.monoFamily
                     font.pixelSize: 10

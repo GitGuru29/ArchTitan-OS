@@ -9,17 +9,17 @@ Item {
 
     RowLayout {
         anchors.fill: parent
-        anchors.margins: 28
-        spacing: 26
+        anchors.margins: 26
+        spacing: 24
 
         // Left Column: Live Desktop Wallpaper Studio
         Rectangle {
-            Layout.preferredWidth: 450
+            Layout.preferredWidth: 446
             Layout.fillHeight: true
             radius: 20
             color: Qt.rgba(TitanTheme.crust.r, TitanTheme.crust.g, TitanTheme.crust.b, 0.72)
             border.width: 1
-            border.color: Qt.rgba(TitanTheme.warning.r, TitanTheme.warning.g, TitanTheme.warning.b, 0.3)
+            border.color: Qt.rgba(TitanTheme.warning.r, TitanTheme.warning.g, TitanTheme.warning.b, 0.30)
 
             TitanReticle {
                 anchors.fill: parent
@@ -38,7 +38,7 @@ Item {
                 RowLayout {
                     Layout.fillWidth: true
                     Text {
-                        text: "LIVE ATMOSPHERE STUDIO // SWWW ENGINE"
+                        text: "LIVE ATMOSPHERE STUDIO // SWWW + TDL 2.0"
                         color: TitanTheme.warning
                         font.family: TitanTheme.monoFamily
                         font.pixelSize: 10
@@ -88,13 +88,12 @@ Item {
                                 sourceSize.height: 160
                             }
 
-                            // Bottom Label Scrim
                             Rectangle {
                                 anchors.left: parent.left
                                 anchors.right: parent.right
                                 anchors.bottom: parent.bottom
                                 height: 26
-                                color: Qt.rgba(0.02, 0.03, 0.06, 0.84)
+                                color: Qt.rgba(0.02, 0.03, 0.06, 0.86)
 
                                 RowLayout {
                                     anchors.fill: parent
@@ -136,7 +135,7 @@ Item {
                 TitanButton {
                     Layout.fillWidth: true
                     implicitHeight: 38
-                    text: "Open Full Wallpaper Picker Studio (Super+W)"
+                    text: "Open Full Wallpaper Picker Studio (Super + \\)"
                     glyph: "\uf03e"
                     variant: "secondary"
                     onClicked: tourCtrl.launchWallpaperPicker()
@@ -171,12 +170,19 @@ Item {
                         font.letterSpacing: 1.0
                     }
                 }
+
+                Text {
+                    text: "Re-open Tour anytime with Super + F1"
+                    color: TitanTheme.info
+                    font.family: TitanTheme.monoFamily
+                    font.pixelSize: 10
+                }
             }
 
             Text {
                 Layout.fillWidth: true
                 text: tourCtrl.isLiveMode
-                    ? "Ready to Install ArchTitan to Disk?"
+                    ? "Ready to Deploy ArchTitan to NVMe/SSD?"
                     : "Your ArchTitan Workstation Is Armed"
                 color: TitanTheme.textHigh
                 font.family: TitanTheme.fontFamily
@@ -188,8 +194,8 @@ Item {
             Text {
                 Layout.fillWidth: true
                 text: tourCtrl.isLiveMode
-                    ? "You are currently running in the Live ISO environment. Test your audio, explore the tiling desktop, or launch the Calamares installer to deploy ArchTitan onto NVMe/SSD."
-                    : "Customize your live desktop atmosphere on the left or launch directly into your core tools below. You can recall this spatial tour anytime via Titan Spotlight."
+                    ? "Click any wallpaper on the left to watch it transition live behind this Liquid Glass overlay, test your subsystems below, or launch Calamares (Super+I) to install."
+                    : "Click any wallpaper on the left to watch your desktop atmosphere update live through the frosted glass, or jump straight into your core subsystems below."
                 color: TitanTheme.textMid
                 font.family: TitanTheme.fontFamily
                 font.pixelSize: 12
@@ -210,28 +216,28 @@ Item {
                         {
                             icon: "\uf002",
                             title: "Titan Spotlight",
-                            sub: "Super + Space // Fuzzy App Bar",
+                            sub: "Super Tap • Fuzzy & Clipboard",
                             color: TitanTheme.accent,
                             act: function() { tourCtrl.toggleSpotlight(); }
                         },
                         {
-                            icon: "\uf1de",
-                            title: "Control Center",
-                            sub: "Super + N // Stepped Bento HUD",
-                            color: TitanTheme.info,
-                            act: function() { tourCtrl.toggleControlCenter(); }
+                            icon: "\uf009",
+                            title: "10-Workspace HUD",
+                            sub: "Super + Tab • 3-Finger Swipe",
+                            color: TitanTheme.teal,
+                            act: function() { tourCtrl.toggleWorkspaceHud(); }
                         },
                         {
                             icon: "\uf013",
-                            title: "Titan Settings",
-                            sub: "Display, Audio, Network & Theme",
+                            title: "ArchTitan Settings",
+                            sub: "Super + , • System Control",
                             color: TitanTheme.mauve,
                             act: function() { tourCtrl.launchSettings(); }
                         },
                         {
                             icon: "\uf120",
-                            title: "Foot Terminal",
-                            sub: "Super + T // Wayland GPU Shell",
+                            title: "Kitty GPU Terminal",
+                            sub: "Super + T • titan-sandboxd",
                             color: TitanTheme.success,
                             act: function() { tourCtrl.launchTerminal(); }
                         }
@@ -243,7 +249,7 @@ Item {
                         Layout.fillHeight: true
                         radius: 14
                         color: tileMouse.containsMouse
-                            ? Qt.rgba(modelData.color.r, modelData.color.g, modelData.color.b, 0.16)
+                            ? Qt.rgba(modelData.color.r, modelData.color.g, modelData.color.b, 0.18)
                             : Qt.rgba(TitanTheme.surface0.r, TitanTheme.surface0.g, TitanTheme.surface0.b, 0.55)
                         border.width: 1
                         border.color: tileMouse.containsMouse ? modelData.color : Qt.rgba(1, 1, 1, 0.08)
@@ -303,7 +309,7 @@ Item {
             // Hero Primary Ignition CTA Card
             Rectangle {
                 Layout.fillWidth: true
-                height: 76
+                height: 74
                 radius: 18
                 gradient: Gradient {
                     orientation: Gradient.Horizontal
@@ -324,7 +330,7 @@ Item {
                         spacing: 2
                         Text {
                             text: tourCtrl.isLiveMode
-                                ? "CALAMARES SYSTEM INSTALLER"
+                                ? "CALAMARES SYSTEM INSTALLER (SUPER + I)"
                                 : "COMPLETE SPATIAL ONBOARDING"
                             color: TitanTheme.info
                             font.family: TitanTheme.monoFamily
@@ -334,7 +340,7 @@ Item {
                         }
                         Text {
                             text: tourCtrl.isLiveMode
-                                ? "Partition disk, configure encryption & install ArchTitan"
+                                ? "Partition disk, configure LUKS encryption & install ArchTitan"
                                 : "Dismiss overlay and enter your Hyprland workspace"
                             color: TitanTheme.textHigh
                             font.family: TitanTheme.fontFamily
@@ -346,7 +352,7 @@ Item {
                     TitanButton {
                         implicitWidth: 210
                         implicitHeight: 44
-                        text: tourCtrl.isLiveMode ? "Install ArchTitan Now" : "Launch Into Desktop"
+                        text: tourCtrl.isLiveMode ? "Install ArchTitan Now" : "Enter ArchTitan"
                         glyph: tourCtrl.isLiveMode ? "\uf019" : "\uf135"
                         variant: "primary"
                         onClicked: {

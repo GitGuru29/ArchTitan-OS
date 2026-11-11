@@ -19,7 +19,7 @@ Item {
 
     Timer {
         id: diagTimer
-        interval: 260
+        interval: 240
         repeat: true
         onTriggered: {
             if (root.diagnosticIndex < 5) {
@@ -42,17 +42,17 @@ Item {
 
     RowLayout {
         anchors.fill: parent
-        anchors.margins: 28
-        spacing: 28
+        anchors.margins: 26
+        spacing: 24
 
         // Left Column: Triple-Ring GPU Reactor & Live Telemetry Gauges
         Rectangle {
-            Layout.preferredWidth: 340
+            Layout.preferredWidth: 336
             Layout.fillHeight: true
             radius: 20
-            color: Qt.rgba(TitanTheme.crust.r, TitanTheme.crust.g, TitanTheme.crust.b, 0.55)
+            color: Qt.rgba(TitanTheme.crust.r, TitanTheme.crust.g, TitanTheme.crust.b, 0.58)
             border.width: 1
-            border.color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.22)
+            border.color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.28)
 
             TitanReticle {
                 anchors.fill: parent
@@ -65,19 +65,18 @@ Item {
 
             ColumnLayout {
                 anchors.fill: parent
-                anchors.margins: 20
-                spacing: 14
+                anchors.margins: 18
+                spacing: 12
 
-                // Top Reactor Header
                 RowLayout {
                     Layout.fillWidth: true
                     Text {
-                        text: "CORE REACTOR // TDL 2.0"
+                        text: "LIQUID GLASS ENGINE // TDL 2.0"
                         color: TitanTheme.info
                         font.family: TitanTheme.monoFamily
                         font.pixelSize: 10
                         font.weight: Font.Bold
-                        font.letterSpacing: 1.2
+                        font.letterSpacing: 1.1
                     }
                     Item { Layout.fillWidth: true }
                     Rectangle {
@@ -85,7 +84,7 @@ Item {
                         color: TitanTheme.success
                     }
                     Text {
-                        text: "ONLINE"
+                        text: "ACTIVE"
                         color: TitanTheme.success
                         font.family: TitanTheme.monoFamily
                         font.pixelSize: 10
@@ -96,77 +95,71 @@ Item {
                 // Center Triple-Concentric GPU Arc Reactor
                 Item {
                     Layout.alignment: Qt.AlignHCenter
-                    width: 210
-                    height: 210
+                    width: 204
+                    height: 204
 
-                    // Ambient Radial Glow
                     Rectangle {
                         anchors.centerIn: parent
-                        width: 180; height: 180; radius: 90
+                        width: 176; height: 176; radius: 88
                         color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.08)
                         border.width: 1
-                        border.color: Qt.rgba(TitanTheme.info.r, TitanTheme.info.g, TitanTheme.info.b, 0.16)
+                        border.color: Qt.rgba(TitanTheme.info.r, TitanTheme.info.g, TitanTheme.info.b, 0.18)
                     }
 
-                    // Outer Rotating Arc
                     TitanArcItem {
                         anchors.fill: parent
                         rotation: root.spinAngle1
                         color: TitanTheme.accent
-                        trackColor: Qt.rgba(1, 1, 1, 0.05)
-                        lineWidth: 3.5
+                        trackColor: Qt.rgba(1, 1, 1, 0.06)
+                        lineWidth: 4
                         startAngle: -90.0
                         sweepAngle: 260.0
                         showTrack: true
                         roundCaps: true
                     }
 
-                    // Middle Counter-Rotating Cyan Arc
                     TitanArcItem {
                         anchors.centerIn: parent
-                        width: 174
-                        height: 174
+                        width: 168
+                        height: 168
                         rotation: root.spinAngle2
                         color: TitanTheme.info
-                        trackColor: Qt.rgba(1, 1, 1, 0.04)
-                        lineWidth: 3.0
+                        trackColor: Qt.rgba(1, 1, 1, 0.05)
+                        lineWidth: 3
                         startAngle: 0.0
                         sweepAngle: 210.0
                         showTrack: true
                         roundCaps: true
                     }
 
-                    // Inner Live CPU Load Ring
                     TitanArcItem {
                         anchors.centerIn: parent
-                        width: 140
-                        height: 140
+                        width: 134
+                        height: 134
                         color: TitanTheme.success
                         trackColor: Qt.rgba(1, 1, 1, 0.06)
-                        lineWidth: 4.5
+                        lineWidth: 5
                         startAngle: -90.0
                         sweepAngle: 360.0 * Math.max(0.12, tourCtrl.cpuUsage)
                         showTrack: true
                         roundCaps: true
                     }
 
-                    // Inner Core Emblem
                     Rectangle {
                         anchors.centerIn: parent
-                        width: 98
-                        height: 98
-                        radius: 49
-                        color: Qt.rgba(TitanTheme.mantle.r, TitanTheme.mantle.g, TitanTheme.mantle.b, 0.92)
+                        width: 94
+                        height: 94
+                        radius: 47
+                        color: Qt.rgba(TitanTheme.mantle.r, TitanTheme.mantle.g, TitanTheme.mantle.b, 0.94)
                         border.width: 1
-                        border.color: Qt.rgba(1, 1, 1, 0.14)
+                        border.color: Qt.rgba(1, 1, 1, 0.16)
 
                         Image {
                             anchors.centerIn: parent
-                            width: 64
-                            height: 64
+                            width: 62
+                            height: 62
                             source: tourCtrl.logoUrl
                             fillMode: Image.PreserveAspectFit
-                            mipmap: true
                         }
                     }
                 }
@@ -178,19 +171,19 @@ Item {
 
                     Repeater {
                         model: [
-                            { label: "CPU LOAD", value: Math.round(tourCtrl.cpuUsage * 100) + "%", prog: tourCtrl.cpuUsage, col: TitanTheme.accent },
-                            { label: "RAM USED", value: Math.round(tourCtrl.ramUsage * 100) + "%", prog: tourCtrl.ramUsage, col: TitanTheme.info },
-                            { label: "THERMAL",  value: tourCtrl.cpuTemp + "°C", prog: Math.min(1.0, tourCtrl.cpuTemp / 100.0), col: TitanTheme.success }
+                            { label: "CPU LOAD", value: Math.round(tourCtrl.cpuUsage * 100) + "%", col: TitanTheme.accent },
+                            { label: "MEMORY",   value: Math.round(tourCtrl.ramUsage * 100) + "%", col: TitanTheme.info },
+                            { label: "THERMAL",  value: tourCtrl.cpuTemp + "°C", col: TitanTheme.success }
                         ]
 
                         delegate: Rectangle {
                             required property var modelData
                             Layout.fillWidth: true
-                            height: 68
+                            height: 62
                             radius: 12
                             color: Qt.rgba(1, 1, 1, 0.03)
                             border.width: 1
-                            border.color: Qt.rgba(1, 1, 1, 0.07)
+                            border.color: Qt.rgba(1, 1, 1, 0.08)
 
                             ColumnLayout {
                                 anchors.centerIn: parent
@@ -218,11 +211,10 @@ Item {
                     }
                 }
 
-                // Interactive Diagnostic Trigger Button
                 TitanButton {
                     Layout.fillWidth: true
                     implicitHeight: 38
-                    text: root.sweepRunning ? "Scanning Subsystems..." : "Run Subsystem Diagnostic"
+                    text: root.sweepRunning ? "Verifying Daemons..." : "Verify Native Daemons"
                     glyph: "\uf0e7"
                     variant: "secondary"
                     onClicked: root.runDiagnosticSweep()
@@ -230,27 +222,26 @@ Item {
             }
         }
 
-        // Right Column: Hero Mission Briefing + Hardware Bento Grid + Subsystem Matrix
+        // Right Column: ArchTitan OS Architecture & Live Subsystem Matrix
         ColumnLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            spacing: 14
+            spacing: 12
 
-            // Act Eyebrow Pill
             RowLayout {
                 spacing: 10
                 Rectangle {
                     height: 24
                     width: actTag.implicitWidth + 16
                     radius: 12
-                    color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.16)
+                    color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.18)
                     border.width: 1
                     border.color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.45)
 
                     Text {
                         id: actTag
                         anchors.centerIn: parent
-                        text: "ACT 01 // GENESIS ARCHITECTURE"
+                        text: "ACT 01 // ARCHTITAN GENESIS"
                         color: TitanTheme.accent
                         font.family: TitanTheme.monoFamily
                         font.pixelSize: 10
@@ -260,27 +251,26 @@ Item {
                 }
 
                 Text {
-                    text: "Notice the live spatial HUD beacons around your screen edges"
+                    text: "Click any peripheral beacon at your screen edges to test live!"
                     color: TitanTheme.info
                     font.family: TitanTheme.monoFamily
                     font.pixelSize: 11
                 }
             }
 
-            // Title & Description
             Text {
                 Layout.fillWidth: true
-                text: "Precision-Engineered Wayland Workstation"
+                text: "Native C++20 Liquid Glass Workstation"
                 color: TitanTheme.textHigh
                 font.family: TitanTheme.fontFamily
-                font.pixelSize: 28
+                font.pixelSize: 27
                 font.weight: Font.Black
                 wrapMode: Text.WordWrap
             }
 
             Text {
                 Layout.fillWidth: true
-                text: "ArchTitan replaces bloated web-wrapped shells with a zero-compromise C++20 & Qt6 QML desktop ecosystem. Every panel, HUD overlay, and hardware governor runs natively on Wayland LayerShell."
+                text: "ArchTitan combines Hyprland's Lua compositor engine (>= 0.55) with a custom suite of zero-overhead C++20 & Qt6 LayerShell subsystems, Dual-Kawase frosted blur, and sandboxing via titan-sandboxd."
                 color: TitanTheme.textMid
                 font.family: TitanTheme.fontFamily
                 font.pixelSize: 13
@@ -299,25 +289,24 @@ Item {
                     model: [
                         { icon: "\uf2db", label: "PROCESSOR",      value: tourCtrl.cpuName,       accent: TitanTheme.accent },
                         { icon: "\uf108", label: "GRAPHICS STACK", value: tourCtrl.gpuName,       accent: TitanTheme.info },
-                        { icon: "\uf538", label: "SYSTEM MEMORY",  value: tourCtrl.ramTotal + " LPDDR/DDR", accent: TitanTheme.mauve },
+                        { icon: "\uf538", label: "SYSTEM MEMORY",  value: tourCtrl.ramTotal + " RAM", accent: TitanTheme.mauve },
                         { icon: "\uf17c", label: "KERNEL ENGINE",  value: "Linux " + tourCtrl.kernelVersion, accent: TitanTheme.success }
                     ]
 
                     delegate: Rectangle {
                         required property var modelData
                         Layout.fillWidth: true
-                        height: 62
+                        height: 58
                         radius: 14
-                        color: Qt.rgba(TitanTheme.surface0.r, TitanTheme.surface0.g, TitanTheme.surface0.b, 0.55)
+                        color: Qt.rgba(TitanTheme.surface0.r, TitanTheme.surface0.g, TitanTheme.surface0.b, 0.58)
                         border.width: 1
                         border.color: Qt.rgba(1, 1, 1, 0.08)
 
-                        // Left accent rim
                         Rectangle {
                             anchors.left: parent.left
                             anchors.verticalCenter: parent.verticalCenter
                             width: 3
-                            height: 28
+                            height: 26
                             radius: 1.5
                             color: modelData.accent
                         }
@@ -329,23 +318,23 @@ Item {
                             spacing: 12
 
                             Rectangle {
-                                width: 36; height: 36; radius: 10
-                                color: Qt.rgba(modelData.accent.r, modelData.accent.g, modelData.accent.b, 0.14)
+                                width: 34; height: 34; radius: 10
+                                color: Qt.rgba(modelData.accent.r, modelData.accent.g, modelData.accent.b, 0.15)
                                 border.width: 1
-                                border.color: Qt.rgba(modelData.accent.r, modelData.accent.g, modelData.accent.b, 0.35)
+                                border.color: Qt.rgba(modelData.accent.r, modelData.accent.g, modelData.accent.b, 0.38)
 
                                 Text {
                                     anchors.centerIn: parent
                                     text: modelData.icon
                                     color: modelData.accent
                                     font.family: TitanTheme.monoFamily
-                                    font.pixelSize: 15
+                                    font.pixelSize: 14
                                 }
                             }
 
                             ColumnLayout {
                                 Layout.fillWidth: true
-                                spacing: 2
+                                spacing: 1
 
                                 Text {
                                     text: modelData.label
@@ -371,12 +360,12 @@ Item {
                 }
             }
 
-            // Native Subsystem Diagnostic Strip (6 C++20 Daemons)
+            // Native Subsystem Diagnostic Strip (Click any daemon card to trigger it!)
             Rectangle {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 radius: 16
-                color: Qt.rgba(TitanTheme.crust.r, TitanTheme.crust.g, TitanTheme.crust.b, 0.6)
+                color: Qt.rgba(TitanTheme.crust.r, TitanTheme.crust.g, TitanTheme.crust.b, 0.62)
                 border.width: 1
                 border.color: Qt.rgba(1, 1, 1, 0.08)
 
@@ -388,16 +377,16 @@ Item {
                     RowLayout {
                         Layout.fillWidth: true
                         Text {
-                            text: "NATIVE C++20 / QT6 LAYER-SHELL SUBSYSTEMS"
+                            text: "ARCHTITAN LAYER-SHELL DAEMON SUITE (CLICK ANY CARD TO LAUNCH)"
                             color: TitanTheme.textLow
                             font.family: TitanTheme.monoFamily
                             font.pixelSize: 10
                             font.weight: Font.Bold
-                            font.letterSpacing: 1.0
+                            font.letterSpacing: 0.8
                         }
                         Item { Layout.fillWidth: true }
                         Text {
-                            text: (root.diagnosticIndex + 1) + "/6 VERIFIED"
+                            text: (root.diagnosticIndex + 1) + "/6 ONLINE"
                             color: TitanTheme.success
                             font.family: TitanTheme.monoFamily
                             font.pixelSize: 10
@@ -414,12 +403,12 @@ Item {
 
                         Repeater {
                             model: [
-                                { name: "titan-shell",         role: "Top Bar & Island",     icon: "\uf2d0" },
-                                { name: "titan-quicksettings", role: "Stepped Bento CC",     icon: "\uf1de" },
-                                { name: "titan-spotlight",     role: "Fuzzy App Launcher",   icon: "\uf002" },
-                                { name: "titan-sysmon",        role: "Telemetry HUD",        icon: "\uf080" },
-                                { name: "titan-nc",            role: "Notification Daemon",  icon: "\uf0f3" },
-                                { name: "titan-thm",           role: "Thermal/PSI Governor", icon: "\uf0e7" }
+                                { name: "titan-spotlight",     role: "Super Tap • Fuzzy & Clip", icon: "\uf002", act: function() { tourCtrl.toggleSpotlight(); } },
+                                { name: "titan-quicksettings", role: "Super+N • Stepped Bento",  icon: "\uf1de", act: function() { tourCtrl.toggleControlCenter(); } },
+                                { name: "titan-menu",          role: "Super+/ • Command Grid",   icon: "\uf009", act: function() { tourCtrl.toggleMenu(); } },
+                                { name: "titan-sysmon",        role: "Left-Edge • PSI Telemetry",icon: "\uf080", act: function() { tourCtrl.toggleSysmon(); } },
+                                { name: "titan-workspace-hud", role: "Super+Tab • 10-WS Matrix", icon: "\uf2d0", act: function() { tourCtrl.toggleWorkspaceHud(); } },
+                                { name: "titan-media-hud",     role: "Super+M • Dynamic Island", icon: "\uf001", act: function() { tourCtrl.toggleMediaHud(); } }
                             ]
 
                             delegate: Rectangle {
@@ -430,13 +419,17 @@ Item {
                                 Layout.fillWidth: true
                                 Layout.fillHeight: true
                                 radius: 10
-                                color: verified
-                                    ? Qt.rgba(TitanTheme.success.r, TitanTheme.success.g, TitanTheme.success.b, 0.09)
-                                    : Qt.rgba(1, 1, 1, 0.02)
+                                color: dMouse.containsMouse
+                                    ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.22)
+                                    : (verified
+                                        ? Qt.rgba(TitanTheme.success.r, TitanTheme.success.g, TitanTheme.success.b, 0.09)
+                                        : Qt.rgba(1, 1, 1, 0.02))
                                 border.width: 1
-                                border.color: verified
-                                    ? Qt.rgba(TitanTheme.success.r, TitanTheme.success.g, TitanTheme.success.b, 0.35)
-                                    : Qt.rgba(1, 1, 1, 0.06)
+                                border.color: dMouse.containsMouse
+                                    ? TitanTheme.accent
+                                    : (verified
+                                        ? Qt.rgba(TitanTheme.success.r, TitanTheme.success.g, TitanTheme.success.b, 0.35)
+                                        : Qt.rgba(1, 1, 1, 0.06))
 
                                 RowLayout {
                                     anchors.fill: parent
@@ -445,7 +438,7 @@ Item {
 
                                     Text {
                                         text: verified ? "\uf00c" : modelData.icon
-                                        color: verified ? TitanTheme.success : TitanTheme.textLow
+                                        color: dMouse.containsMouse ? TitanTheme.accent : (verified ? TitanTheme.success : TitanTheme.textLow)
                                         font.family: TitanTheme.monoFamily
                                         font.pixelSize: 12
                                     }
@@ -471,6 +464,14 @@ Item {
                                             elide: Text.ElideRight
                                         }
                                     }
+                                }
+
+                                MouseArea {
+                                    id: dMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: modelData.act()
                                 }
                             }
                         }
