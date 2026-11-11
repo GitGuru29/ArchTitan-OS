@@ -14,7 +14,9 @@ import "../style"
 Item {
     id: sectionCardRoot
     Layout.fillWidth: true
-    implicitHeight: sectionLoader.implicitHeight
+    implicitHeight: (sectionLoader.item && sectionLoader.item.implicitHeight > 0)
+                    ? sectionLoader.item.implicitHeight
+                    : sectionLoader.implicitHeight
 
     property string sectionKey: ""
     property int orderIndex: -1

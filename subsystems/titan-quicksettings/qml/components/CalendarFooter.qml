@@ -48,11 +48,11 @@ Rectangle {
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.leftMargin: 14
-        anchors.rightMargin: 12
-        anchors.topMargin: 8
-        anchors.bottomMargin: 12
-        spacing: 8
+        anchors.leftMargin: 11
+        anchors.rightMargin: 11
+        anchors.topMargin: 6
+        anchors.bottomMargin: 8
+        spacing: 6
 
         // ── Header row (always visible, click to toggle) ─────────────────────
         Item {
@@ -61,12 +61,12 @@ Rectangle {
 
             RowLayout {
                 anchors.fill: parent
-                spacing: 8
+                spacing: 7
 
                 Text {
                     text: "\uf133" // calendar
                     font.family: TitanTheme.monoFamily
-                    font.pixelSize: 13
+                    font.pixelSize: 12
                     color: TitanTheme.accentBlue
                 }
 
@@ -76,7 +76,7 @@ Rectangle {
                           ? systemCtrl.currentDateString
                           : today.toLocaleDateString(Qt.locale(), "dddd, MMMM d") + " • 0 tasks"
                     font.family: TitanTheme.fontFamily
-                    font.pixelSize: 11
+                    font.pixelSize: 10
                     font.weight: Font.DemiBold
                     color: TitanTheme.textSecondary
                     elide: Text.ElideRight

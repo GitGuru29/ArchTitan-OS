@@ -18,6 +18,16 @@ Item {
     property bool inPlaceEditMode: (typeof rootWindow !== "undefined" && rootWindow) ? rootWindow.inPlaceEditMode : false
     readonly property int batteryPct: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.batteryPercent > 0)
                                       ? systemCtrl.batteryPercent : 94
+    readonly property bool isCharging: (typeof systemCtrl !== "undefined" && systemCtrl)
+                                       ? systemCtrl.batteryCharging : false
+
+    readonly property string batteryGlyph: {
+        if (batteryPct >= 85) return "\uf240"; // battery-full
+        if (batteryPct >= 60) return "\uf241"; // battery-three-quarters
+        if (batteryPct >= 35) return "\uf242"; // battery-half
+        if (batteryPct >= 15) return "\uf243"; // battery-quarter
+        return "\uf244";                       // battery-empty
+    }
 
     signal editRequested()
     signal settingsRequested()
@@ -29,15 +39,15 @@ Item {
         anchors.rightMargin: 4
         spacing: 8
 
-        // ── Left: Battery Icon + Percentage + Bolt ──────────────────────────
+        // ── Left: Battery Icon + Percentage + Bolt (only when charging!) ────
         RowLayout {
-            spacing: 6
+            spacing: 5
 
             Text {
-                text: "\uf240" // battery-full
+                text: footerRoot.batteryGlyph
                 font.family: TitanTheme.monoFamily
                 font.pixelSize: 13
-                color: TitanTheme.textSecondary
+                color: footerRoot.isCharging ? TitanTheme.green : (footerRoot.batteryPct <= 20 ? TitanTheme.red : TitanTheme.textSecondary)
             }
 
             Text {
@@ -49,10 +59,11 @@ Item {
             }
 
             Text {
-                text: "\uf0e7" // bolt
+                visible: footerRoot.isCharging
+                text: "\uf0e7" // bolt — hidden immediately when charger is unplugged!
                 font.family: TitanTheme.monoFamily
                 font.pixelSize: 10
-                color: TitanTheme.textSecondary
+                color: TitanTheme.green
             }
         }
 

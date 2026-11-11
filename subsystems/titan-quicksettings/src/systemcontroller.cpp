@@ -542,9 +542,9 @@ QStringList SystemController::getActionOrder() const
     QString cfgDir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
     QSettings settings(cfgDir + "/archtitan/settings.ini", QSettings::IniFormat);
     const QStringList defaultOrder = {
-        "focus", "dark", "night", "mic",
-        "caffeine", "capture", "record", "colorPick",
-        "gameMode", "clipboard", "virtualInput", "airplane"
+        "region", "capture", "record", "colorPick", "caffeine",
+        "mic", "gameMode", "clipboard", "virtualInput", "airplane",
+        "focus", "dark", "night"
     };
     QVariant val = settings.value("quicksettings/actionOrder");
     if (!val.isValid()) {
@@ -749,15 +749,30 @@ void SystemController::updateStats()
                 changed = true;
             }
         }
+        QString st;
         QFile statusFile(batPath + "/status");
         if (statusFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
-            QString st = QString::fromUtf8(statusFile.readAll()).trimmed();
+            st = QString::fromUtf8(statusFile.readAll()).trimmed();
             statusFile.close();
-            bool charging = (st == "Charging");
-            if (charging != m_batteryCharging) {
-                m_batteryCharging = charging;
-                changed = true;
+        }
+
+        // Check AC/ADP adapter online status as well
+        bool acOnline = false;
+        QStringList adapters = powerDir.entryList({"ADP*", "AC*", "ACAD*", "ucsi*"}, QDir::Dirs | QDir::NoDotAndDotDot);
+        for (const QString &adp : adapters) {
+            QFile onlineFile(powerDir.absoluteFilePath(adp) + "/online");
+            if (onlineFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+                if (onlineFile.readAll().trimmed() == "1") {
+                    acOnline = true;
+                }
+                onlineFile.close();
             }
+        }
+
+        bool charging = (st == "Charging") || (acOnline && st != "Discharging");
+        if (charging != m_batteryCharging) {
+            m_batteryCharging = charging;
+            changed = true;
         }
     } else {
         if (m_hasBattery) {
