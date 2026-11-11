@@ -73,6 +73,7 @@ file_permissions=(
   ["/usr/local/bin/titan-waybar-theme"]="0:0:755"
   ["/usr/local/bin/titan-theme"]="0:0:755"
   ["/usr/local/bin/titan-quicksettings"]="0:0:755"
+  ["/usr/bin/titan-quicksettings"]="0:0:755"
   ["/usr/local/bin/titan-quicksettings-toggle"]="0:0:755"
   ["/usr/local/bin/titan-screenshot"]="0:0:755"
   ["/usr/local/bin/titan-recorder"]="0:0:755"
