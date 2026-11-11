@@ -9,11 +9,12 @@
 #include <csignal>
 #include <iostream>
 
+#include <LayerShellQt/Window>
+
 #include "tourcontroller.h"
 
 int main(int argc, char *argv[])
 {
-    // Force Wayland by default under Wayland compositors
     if (qEnvironmentVariableIsEmpty("QT_QPA_PLATFORM")) {
         if (!qEnvironmentVariableIsEmpty("WAYLAND_DISPLAY")) {
             qputenv("QT_QPA_PLATFORM", "wayland");
@@ -42,7 +43,6 @@ int main(int argc, char *argv[])
     bool isAutostart = parser.isSet(autostartOption);
     bool isForce = parser.isSet(forceOption);
 
-    // If running in autostart mode on an installed system and already marked done, exit early
     if (isAutostart && !isForce) {
         bool isLive = QFile::exists("/run/archiso");
         if (!isLive) {
@@ -58,6 +58,7 @@ int main(int argc, char *argv[])
     QQmlApplicationEngine engine;
     engine.addImportPath(QStringLiteral("/usr/lib/qt6/qml"));
     engine.addImportPath(QDir::currentPath() + QStringLiteral("/airootfs/usr/lib/qt6/qml"));
+    engine.addImportPath(QDir::currentPath() + QStringLiteral("/titan-ui/build/qml"));
     engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/../../../airootfs/usr/lib/qt6/qml"));
     engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/../../airootfs/usr/lib/qt6/qml"));
 
@@ -74,6 +75,28 @@ int main(int argc, char *argv[])
 
     engine.load(url);
 
+    if (engine.rootObjects().isEmpty()) {
+        return -1;
+    }
+
+    auto *window = qobject_cast<QQuickWindow *>(engine.rootObjects().first());
+    if (window) {
+        if (QGuiApplication::platformName().contains("wayland", Qt::CaseInsensitive)) {
+            if (auto *layerWindow = LayerShellQt::Window::get(window)) {
+                layerWindow->setLayer(LayerShellQt::Window::LayerOverlay);
+                layerWindow->setAnchors(LayerShellQt::Window::Anchors(
+                    LayerShellQt::Window::AnchorTop |
+                    LayerShellQt::Window::AnchorBottom |
+                    LayerShellQt::Window::AnchorLeft |
+                    LayerShellQt::Window::AnchorRight));
+                layerWindow->setExclusiveZone(-1);
+                layerWindow->setKeyboardInteractivity(
+                    LayerShellQt::Window::KeyboardInteractivityExclusive);
+                layerWindow->setScope("titan-tour");
+            }
+        }
+        window->show();
+    }
+
     return app.exec();
 }
-

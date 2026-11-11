@@ -2,10 +2,8 @@
 <RCC version="1.0">
     <qresource prefix="/">
         <file>qml/TourWindow.qml</file>
-        <file>qml/components/TourHeader.qml</file>
-        <file>qml/components/TourFooter.qml</file>
-        <file>qml/components/GlowingCard.qml</file>
-        <file>qml/components/KeycapItem.qml</file>
+        <file>qml/TourHeader.qml</file>
+        <file>qml/TourFooter.qml</file>
         <file>qml/slides/SlideWelcome.qml</file>
         <file>qml/slides/SlideKeybinds.qml</file>
         <file>qml/slides/SlideControlCenter.qml</file>
@@ -14,4 +12,3 @@
         <file>qml/slides/SlideLaunch.qml</file>
     </qresource>
 </RCC>
-

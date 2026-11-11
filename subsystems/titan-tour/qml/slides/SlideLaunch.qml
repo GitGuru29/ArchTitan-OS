@@ -1,266 +1,359 @@
 import QtQuick
 import QtQuick.Layouts
-import "../components"
+import ArchTitan.TitanUI
 
 Item {
-    id: slideRoot
+    id: root
 
-    ColumnLayout {
+    signal finishTourRequested()
+
+    RowLayout {
         anchors.fill: parent
-        anchors.leftMargin: 36
-        anchors.rightMargin: 36
-        anchors.topMargin: 10
-        anchors.bottomMargin: 10
-        spacing: 16
+        anchors.margins: 28
+        spacing: 26
 
-        // Header Title
-        ColumnLayout {
-            spacing: 2
-            Text {
-                text: (typeof tourCtrl !== "undefined" && tourCtrl.isLiveMode) ? "READY FOR INSTALLATION" : "READY FOR LAUNCH"
-                font.pixelSize: 18
-                font.weight: Font.Black
-                font.letterSpacing: 1.5
-                color: "#F8FAFC"
-                font.family: "Inter, sans-serif"
-            }
-            Text {
-                text: (typeof tourCtrl !== "undefined" && tourCtrl.isLiveMode)
-                      ? "You are currently running in the Live USB environment. You can test features freely or install ArchTitan to your disk."
-                      : "Your system is fully tuned and ready. Explore custom settings, change wallpapers, or dive right into your terminal."
-                font.pixelSize: 11
-                color: "#94A3B8"
-            }
-        }
+        // Left Column: Live Desktop Wallpaper Studio
+        Rectangle {
+            Layout.preferredWidth: 450
+            Layout.fillHeight: true
+            radius: 20
+            color: Qt.rgba(TitanTheme.crust.r, TitanTheme.crust.g, TitanTheme.crust.b, 0.72)
+            border.width: 1
+            border.color: Qt.rgba(TitanTheme.warning.r, TitanTheme.warning.g, TitanTheme.warning.b, 0.3)
 
-        // ── Main Hero CTA Card ──────────────────────────────────────────────
-        GlowingCard {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 120
-            color: (typeof tourCtrl !== "undefined" && tourCtrl.isLiveMode)
-                   ? Qt.rgba(0.95, 0.55, 0.05, 0.20)
-                   : Qt.rgba(0.05, 0.65, 1.0, 0.20)
-            border.color: (typeof tourCtrl !== "undefined" && tourCtrl.isLiveMode)
-                          ? "#F59E0B"
-                          : "#0EA5E9"
-
-            RowLayout {
+            TitanReticle {
                 anchors.fill: parent
-                anchors.margins: 20
-                spacing: 20
+                anchors.margins: 10
+                color: TitanTheme.warning
+                bracketLength: 14
+                bracketThickness: 2
+                opacity: 0.45
+            }
 
-                // Big Icon Squircle
-                Rectangle {
-                    width: 64
-                    height: 64
-                    radius: 18
-                    color: (typeof tourCtrl !== "undefined" && tourCtrl.isLiveMode)
-                           ? "#D97706"
-                           : "#0284C7"
-                    border.color: "#FFFFFF"
-                    border.width: 1
+            ColumnLayout {
+                anchors.fill: parent
+                anchors.margins: 18
+                spacing: 12
 
-                    Text {
-                        anchors.centerIn: parent
-                        text: (typeof tourCtrl !== "undefined" && tourCtrl.isLiveMode) ? "🚀" : "⚡"
-                        font.pixelSize: 28
-                    }
-                }
-
-                ColumnLayout {
-                    spacing: 4
+                RowLayout {
                     Layout.fillWidth: true
-
                     Text {
-                        text: (typeof tourCtrl !== "undefined" && tourCtrl.isLiveMode) ? "Install ArchTitan to NVMe / SSD" : "Enter ArchTitan Workstation"
-                        font.pixelSize: 15
+                        text: "LIVE ATMOSPHERE STUDIO // SWWW ENGINE"
+                        color: TitanTheme.warning
+                        font.family: TitanTheme.monoFamily
+                        font.pixelSize: 10
                         font.weight: Font.Bold
-                        color: "#FFFFFF"
-                        font.family: "Inter, sans-serif"
+                        font.letterSpacing: 1.0
                     }
-
+                    Item { Layout.fillWidth: true }
                     Text {
-                        text: (typeof tourCtrl !== "undefined" && tourCtrl.isLiveMode)
-                              ? "Launch Calamares graphical installer with automatic Btrfs snapshots, Zram swap, and bootloader setup."
-                              : "You are running on bare-metal hardware. All systems are online, optimized, and ready."
-                        font.pixelSize: 11
-                        color: "#CBD5E1"
-                        wrapMode: Text.WordWrap
-                        Layout.fillWidth: true
+                        text: "CLICK TO APPLY LIVE"
+                        color: TitanTheme.info
+                        font.family: TitanTheme.monoFamily
+                        font.pixelSize: 9
+                        font.weight: Font.Bold
                     }
                 }
 
-                Rectangle {
-                    implicitWidth: 140
-                    implicitHeight: 42
-                    radius: 10
-                    color: primaryHover.containsMouse ? "#FFFFFF" : "#F8FAFC"
+                // 2x3 Interactive Wallpaper Thumbnail Grid
+                GridLayout {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    columns: 3
+                    rowSpacing: 10
+                    columnSpacing: 10
 
-                    Text {
-                        anchors.centerIn: parent
-                        text: (typeof tourCtrl !== "undefined" && tourCtrl.isLiveMode) ? "Launch Installer ❯" : "Get Started ❯"
-                        font.pixelSize: 12
-                        font.weight: Font.Black
-                        color: (typeof tourCtrl !== "undefined" && tourCtrl.isLiveMode) ? "#B45309" : "#0369A1"
-                    }
+                    Repeater {
+                        model: tourCtrl.wallpapers
 
-                    MouseArea {
-                        id: primaryHover
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            if (typeof tourCtrl !== "undefined") {
-                                if (tourCtrl.isLiveMode) {
-                                    tourCtrl.launchInstaller()
-                                } else {
-                                    tourCtrl.finishTour(!tourCtrl.showOnStartup)
+                        delegate: Rectangle {
+                            required property var modelData
+                            readonly property bool isActive: tourCtrl.selectedWallpaper === modelData.path
+
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            radius: 12
+                            color: Qt.rgba(TitanTheme.surface0.r, TitanTheme.surface0.g, TitanTheme.surface0.b, 0.8)
+                            border.width: isActive ? 2 : 1
+                            border.color: isActive ? TitanTheme.info : Qt.rgba(1, 1, 1, 0.14)
+                            clip: true
+
+                            Image {
+                                anchors.fill: parent
+                                anchors.margins: 2
+                                source: modelData.url
+                                fillMode: Image.PreserveAspectCrop
+                                asynchronous: true
+                                sourceSize.width: 260
+                                sourceSize.height: 160
+                            }
+
+                            // Bottom Label Scrim
+                            Rectangle {
+                                anchors.left: parent.left
+                                anchors.right: parent.right
+                                anchors.bottom: parent.bottom
+                                height: 26
+                                color: Qt.rgba(0.02, 0.03, 0.06, 0.84)
+
+                                RowLayout {
+                                    anchors.fill: parent
+                                    anchors.leftMargin: 8
+                                    anchors.rightMargin: 8
+                                    spacing: 4
+
+                                    Text {
+                                        Layout.fillWidth: true
+                                        text: modelData.name
+                                        color: isActive ? TitanTheme.info : TitanTheme.textHigh
+                                        font.family: TitanTheme.monoFamily
+                                        font.pixelSize: 9
+                                        font.weight: Font.Bold
+                                        elide: Text.ElideRight
+                                    }
+
+                                    Text {
+                                        visible: isActive
+                                        text: "\uf00c"
+                                        color: TitanTheme.info
+                                        font.family: TitanTheme.monoFamily
+                                        font.pixelSize: 10
+                                    }
+                                }
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    tourCtrl.applyWallpaper(modelData.path);
                                 }
                             }
                         }
                     }
                 }
+
+                TitanButton {
+                    Layout.fillWidth: true
+                    implicitHeight: 38
+                    text: "Open Full Wallpaper Picker Studio (Super+W)"
+                    glyph: "\uf03e"
+                    variant: "secondary"
+                    onClicked: tourCtrl.launchWallpaperPicker()
+                }
             }
         }
 
-        // ── 3 Quick Action Cards ────────────────────────────────────────────
-        RowLayout {
+        // Right Column: Dual-Mode Ignition Launchpad
+        ColumnLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            spacing: 14
+            spacing: 12
 
-            // Action 1: Speaker Audio Test
-            GlowingCard {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-
-                ColumnLayout {
-                    anchors.fill: parent
-                    anchors.margins: 14
-                    spacing: 6
-
-                    RowLayout {
-                        Text { text: "🔊 Audio Check"; font.pixelSize: 11; font.weight: Font.Bold; color: "#38BDF8"; Layout.fillWidth: true }
-                        Text { text: "PipeWire"; font.pixelSize: 9; color: "#64748B" }
-                    }
+            RowLayout {
+                spacing: 10
+                Rectangle {
+                    height: 24
+                    width: ignTag.implicitWidth + 16
+                    radius: 12
+                    color: Qt.rgba(TitanTheme.warning.r, TitanTheme.warning.g, TitanTheme.warning.b, 0.16)
+                    border.width: 1
+                    border.color: Qt.rgba(TitanTheme.warning.r, TitanTheme.warning.g, TitanTheme.warning.b, 0.45)
 
                     Text {
-                        text: "Play spatial audio test chime to verify speaker balance and volume levels."
+                        id: ignTag
+                        anchors.centerIn: parent
+                        text: tourCtrl.isLiveMode ? "ACT 06 // LIVE ISO DEPLOYMENT" : "ACT 06 // WORKSTATION IGNITION"
+                        color: TitanTheme.warning
+                        font.family: TitanTheme.monoFamily
                         font.pixelSize: 10
-                        color: "#94A3B8"
-                        Layout.fillWidth: true
-                        wrapMode: Text.WordWrap
+                        font.weight: Font.Bold
+                        font.letterSpacing: 1.0
                     }
+                }
+            }
 
-                    Item { Layout.fillHeight: true }
+            Text {
+                Layout.fillWidth: true
+                text: tourCtrl.isLiveMode
+                    ? "Ready to Install ArchTitan to Disk?"
+                    : "Your ArchTitan Workstation Is Armed"
+                color: TitanTheme.textHigh
+                font.family: TitanTheme.fontFamily
+                font.pixelSize: 26
+                font.weight: Font.Black
+                wrapMode: Text.WordWrap
+            }
 
-                    Rectangle {
+            Text {
+                Layout.fillWidth: true
+                text: tourCtrl.isLiveMode
+                    ? "You are currently running in the Live ISO environment. Test your audio, explore the tiling desktop, or launch the Calamares installer to deploy ArchTitan onto NVMe/SSD."
+                    : "Customize your live desktop atmosphere on the left or launch directly into your core tools below. You can recall this spatial tour anytime via Titan Spotlight."
+                color: TitanTheme.textMid
+                font.family: TitanTheme.fontFamily
+                font.pixelSize: 12
+                lineHeight: 1.35
+                wrapMode: Text.WordWrap
+            }
+
+            // 2x2 Quick Action Launchpad Bento Grid
+            GridLayout {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                columns: 2
+                rowSpacing: 10
+                columnSpacing: 10
+
+                Repeater {
+                    model: [
+                        {
+                            icon: "\uf002",
+                            title: "Titan Spotlight",
+                            sub: "Super + Space // Fuzzy App Bar",
+                            color: TitanTheme.accent,
+                            act: function() { tourCtrl.toggleSpotlight(); }
+                        },
+                        {
+                            icon: "\uf1de",
+                            title: "Control Center",
+                            sub: "Super + N // Stepped Bento HUD",
+                            color: TitanTheme.info,
+                            act: function() { tourCtrl.toggleControlCenter(); }
+                        },
+                        {
+                            icon: "\uf013",
+                            title: "Titan Settings",
+                            sub: "Display, Audio, Network & Theme",
+                            color: TitanTheme.mauve,
+                            act: function() { tourCtrl.launchSettings(); }
+                        },
+                        {
+                            icon: "\uf120",
+                            title: "Foot Terminal",
+                            sub: "Super + T // Wayland GPU Shell",
+                            color: TitanTheme.success,
+                            act: function() { tourCtrl.launchTerminal(); }
+                        }
+                    ]
+
+                    delegate: Rectangle {
+                        required property var modelData
                         Layout.fillWidth: true
-                        height: 28
-                        radius: 6
-                        color: testSndHover.containsMouse ? "#0284C7" : Qt.rgba(0.05, 0.65, 1.0, 0.25)
-                        border.color: "#38BDF8"
+                        Layout.fillHeight: true
+                        radius: 14
+                        color: tileMouse.containsMouse
+                            ? Qt.rgba(modelData.color.r, modelData.color.g, modelData.color.b, 0.16)
+                            : Qt.rgba(TitanTheme.surface0.r, TitanTheme.surface0.g, TitanTheme.surface0.b, 0.55)
+                        border.width: 1
+                        border.color: tileMouse.containsMouse ? modelData.color : Qt.rgba(1, 1, 1, 0.08)
 
-                        Text { anchors.centerIn: parent; text: "Play Audio Chime ❯"; font.pixelSize: 10; font.weight: Font.Bold; color: "#FFFFFF" }
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.margins: 14
+                            spacing: 12
+
+                            Rectangle {
+                                width: 40; height: 40; radius: 12
+                                color: Qt.rgba(modelData.color.r, modelData.color.g, modelData.color.b, 0.16)
+                                border.width: 1
+                                border.color: modelData.color
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: modelData.icon
+                                    color: modelData.color
+                                    font.family: TitanTheme.monoFamily
+                                    font.pixelSize: 16
+                                }
+                            }
+
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 2
+                                Text {
+                                    text: modelData.title
+                                    color: TitanTheme.textHigh
+                                    font.family: TitanTheme.fontFamily
+                                    font.pixelSize: 14
+                                    font.weight: Font.Bold
+                                }
+                                Text {
+                                    Layout.fillWidth: true
+                                    text: modelData.sub
+                                    color: TitanTheme.textMid
+                                    font.family: TitanTheme.monoFamily
+                                    font.pixelSize: 10
+                                    elide: Text.ElideRight
+                                }
+                            }
+                        }
+
                         MouseArea {
-                            id: testSndHover
+                            id: tileMouse
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                if (typeof tourCtrl !== "undefined") tourCtrl.testAudio()
-                            }
+                            onClicked: modelData.act()
                         }
                     }
                 }
             }
 
-            // Action 2: Settings
-            GlowingCard {
+            // Hero Primary Ignition CTA Card
+            Rectangle {
                 Layout.fillWidth: true
-                Layout.fillHeight: true
+                height: 76
+                radius: 18
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop { position: 0.0; color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.28) }
+                    GradientStop { position: 1.0; color: Qt.rgba(TitanTheme.info.r, TitanTheme.info.g, TitanTheme.info.b, 0.22) }
+                }
+                border.width: 1.5
+                border.color: TitanTheme.info
 
-                ColumnLayout {
+                RowLayout {
                     anchors.fill: parent
-                    anchors.margins: 14
-                    spacing: 6
+                    anchors.leftMargin: 20
+                    anchors.rightMargin: 20
+                    spacing: 16
 
-                    RowLayout {
-                        Text { text: "⚙️ System Settings"; font.pixelSize: 11; font.weight: Font.Bold; color: "#818CF8"; Layout.fillWidth: true }
-                        Text { text: "Preferences"; font.pixelSize: 9; color: "#64748B" }
-                    }
-
-                    Text {
-                        text: "Configure displays, scaling, keyboard layouts, and Waybar themes."
-                        font.pixelSize: 10
-                        color: "#94A3B8"
+                    ColumnLayout {
                         Layout.fillWidth: true
-                        wrapMode: Text.WordWrap
-                    }
-
-                    Item { Layout.fillHeight: true }
-
-                    Rectangle {
-                        Layout.fillWidth: true
-                        height: 28
-                        radius: 6
-                        color: cfgHover.containsMouse ? "#4338CA" : Qt.rgba(0.4, 0.2, 0.9, 0.25)
-                        border.color: "#818CF8"
-
-                        Text { anchors.centerIn: parent; text: "Open Settings ❯"; font.pixelSize: 10; font.weight: Font.Bold; color: "#FFFFFF" }
-                        MouseArea {
-                            id: cfgHover
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                if (typeof tourCtrl !== "undefined") tourCtrl.launchSettings()
-                            }
+                        spacing: 2
+                        Text {
+                            text: tourCtrl.isLiveMode
+                                ? "CALAMARES SYSTEM INSTALLER"
+                                : "COMPLETE SPATIAL ONBOARDING"
+                            color: TitanTheme.info
+                            font.family: TitanTheme.monoFamily
+                            font.pixelSize: 10
+                            font.weight: Font.Bold
+                            font.letterSpacing: 1.0
+                        }
+                        Text {
+                            text: tourCtrl.isLiveMode
+                                ? "Partition disk, configure encryption & install ArchTitan"
+                                : "Dismiss overlay and enter your Hyprland workspace"
+                            color: TitanTheme.textHigh
+                            font.family: TitanTheme.fontFamily
+                            font.pixelSize: 14
+                            font.weight: Font.Bold
                         }
                     }
-                }
-            }
 
-            // Action 3: Terminal
-            GlowingCard {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-
-                ColumnLayout {
-                    anchors.fill: parent
-                    anchors.margins: 14
-                    spacing: 6
-
-                    RowLayout {
-                        Text { text: "⚡ Open Terminal"; font.pixelSize: 11; font.weight: Font.Bold; color: "#34D399"; Layout.fillWidth: true }
-                        Text { text: "Kitty"; font.pixelSize: 9; color: "#64748B" }
-                    }
-
-                    Text {
-                        text: "Launch GPU-accelerated terminal with fish shell and pacman package manager."
-                        font.pixelSize: 10
-                        color: "#94A3B8"
-                        Layout.fillWidth: true
-                        wrapMode: Text.WordWrap
-                    }
-
-                    Item { Layout.fillHeight: true }
-
-                    Rectangle {
-                        Layout.fillWidth: true
-                        height: 28
-                        radius: 6
-                        color: termHover.containsMouse ? "#059669" : Qt.rgba(0.1, 0.8, 0.4, 0.25)
-                        border.color: "#34D399"
-
-                        Text { anchors.centerIn: parent; text: "Launch Terminal ❯"; font.pixelSize: 10; font.weight: Font.Bold; color: "#FFFFFF" }
-                        MouseArea {
-                            id: termHover
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                if (typeof tourCtrl !== "undefined") tourCtrl.launchTerminal()
+                    TitanButton {
+                        implicitWidth: 210
+                        implicitHeight: 44
+                        text: tourCtrl.isLiveMode ? "Install ArchTitan Now" : "Launch Into Desktop"
+                        glyph: tourCtrl.isLiveMode ? "\uf019" : "\uf135"
+                        variant: "primary"
+                        onClicked: {
+                            if (tourCtrl.isLiveMode) {
+                                tourCtrl.launchInstaller();
+                            } else {
+                                root.finishTourRequested();
                             }
                         }
                     }
@@ -269,4 +362,3 @@ Item {
         }
     }
 }
-
