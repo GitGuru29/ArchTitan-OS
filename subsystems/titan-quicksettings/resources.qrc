@@ -38,5 +38,8 @@
         <file>qml/components/TitanActionTile.qml</file>
         <file>qml/components/TitanActionGrid.qml</file>
         <file>qml/components/TitanPulseModule.qml</file>
+        <file>qml/components/BentoSectionCard.qml</file>
+        <file>qml/components/MacFocusClusterModule.qml</file>
+        <file>qml/components/TitanFooterBar.qml</file>
     </qresource>
 </RCC>

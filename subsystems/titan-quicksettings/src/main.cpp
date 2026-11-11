@@ -40,7 +40,7 @@ static void ensureDefaultConfig()
         cfg.setValue("right_margin",       8);
         cfg.setValue("panel_width",      450);
         cfg.setValue("panel_height",     720);
-        cfg.setValue("stretch_to_bottom", false);
+        cfg.setValue("stretch_to_bottom", true);
         cfg.endGroup();
         cfg.sync();
         std::cout << "[titan-qs] Created default config: "
@@ -67,7 +67,7 @@ static LayoutConfig readConfig()
     lc.rightMargin      = cfg.value("right_margin",       8).toInt();
     lc.panelWidth       = cfg.value("panel_width",      450).toInt();
     lc.panelHeight      = cfg.value("panel_height",     720).toInt();
-    lc.stretchToBottom  = cfg.value("stretch_to_bottom", false).toBool();
+    lc.stretchToBottom  = cfg.value("stretch_to_bottom", true).toBool();
     cfg.endGroup();
     return lc;
 }

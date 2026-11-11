@@ -77,8 +77,8 @@ Rectangle {
 
             // 1. Customize / Edit Mode Button
             Rectangle {
-                width: headerRoot.inPlaceEditMode ? 62 : 28
-                height: 28
+                Layout.preferredWidth: headerRoot.inPlaceEditMode ? 64 : 28
+                Layout.preferredHeight: 28
                 radius: 14
                 color: headerRoot.inPlaceEditMode ? TitanTheme.accent : (editMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgOneUIPill)
                 border.color: headerRoot.inPlaceEditMode ? TitanTheme.accent : (editMa.containsMouse ? TitanTheme.borderHover : TitanTheme.borderHairline)
@@ -86,7 +86,7 @@ Rectangle {
 
                 scale: editMa.pressed ? 0.92 : 1.0
                 Behavior on scale { NumberAnimation { duration: 110 } }
-                Behavior on width { NumberAnimation { duration: 150; easing.type: Easing.OutQuad } }
+                Behavior on Layout.preferredWidth { NumberAnimation { duration: 150; easing.type: Easing.OutQuad } }
 
                 RowLayout {
                     anchors.centerIn: parent
@@ -96,7 +96,7 @@ Rectangle {
                         text: headerRoot.inPlaceEditMode ? "\uf00c" : "\uf044" // check : edit
                         font.family: TitanTheme.monoFamily
                         font.pixelSize: 11
-                        color: headerRoot.inPlaceEditMode ? "#0D1017" : (editMa.containsMouse ? TitanTheme.accent : TitanTheme.textMuted)
+                        color: headerRoot.inPlaceEditMode ? "#FFFFFF" : (editMa.containsMouse ? TitanTheme.accent : TitanTheme.textMuted)
                     }
 
                     Text {
@@ -105,7 +105,7 @@ Rectangle {
                         font.family: TitanTheme.fontFamily
                         font.pixelSize: 10
                         font.weight: Font.Bold
-                        color: "#0D1017"
+                        color: "#FFFFFF"
                     }
                 }
 
@@ -120,8 +120,8 @@ Rectangle {
 
             // 2. Settings Button
             Rectangle {
-                width: 28
-                height: 28
+                Layout.preferredWidth: 28
+                Layout.preferredHeight: 28
                 radius: 14
                 color: settMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgOneUIPill
                 border.color: settMa.containsMouse ? TitanTheme.borderHover : TitanTheme.borderHairline
@@ -149,8 +149,8 @@ Rectangle {
 
             // 3. Power Menu Button
             Rectangle {
-                width: 28
-                height: 28
+                Layout.preferredWidth: 28
+                Layout.preferredHeight: 28
                 radius: 14
                 color: powerMa.containsMouse ? Qt.rgba(0.94, 0.27, 0.27, 0.20) : TitanTheme.bgOneUIPill
                 border.color: powerMa.containsMouse ? TitanTheme.red : TitanTheme.borderHairline

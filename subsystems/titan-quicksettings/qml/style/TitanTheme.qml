@@ -21,33 +21,33 @@ QtObject {
     readonly property string fontFamily: TDL.TitanTheme.fontFamily
     readonly property string monoFamily: TDL.TitanTheme.monoFamily
 
-    // ── Window / bento surfaces (ArchTitan Obsidian & Titanium) ─────────
-    readonly property color bgObsidian:        Qt.rgba(0.05, 0.066, 0.09, Math.min(0.96, 0.88 * glassFactor))
-    readonly property color bgTitanium:        Qt.rgba(0.086, 0.105, 0.135, 0.82)
-    readonly property color bgTitaniumCard:    Qt.rgba(0.095, 0.115, 0.148, 0.85)
-    readonly property color bgTitaniumHover:   Qt.rgba(0.135, 0.16, 0.20, 0.90)
+    // ── Window / bento surfaces (macOS Sonoma/Sequoia Obsidian Glass) ──────
+    readonly property color bgObsidian:        Qt.rgba(0.055, 0.072, 0.105, Math.max(0.86, Math.min(0.96, 0.92 * glassFactor)))
+    readonly property color bgTitanium:        Qt.rgba(0.12, 0.15, 0.20, 0.78)
+    readonly property color bgTitaniumCard:    Qt.rgba(0.14, 0.17, 0.23, 0.82)
+    readonly property color bgTitaniumHover:   Qt.rgba(0.19, 0.23, 0.30, 0.88)
 
     readonly property color bgWindow:          bgObsidian
     readonly property color bgSurface:         bgTitanium
     readonly property color bgSurfaceAlt:      bgTitaniumCard
-    readonly property color bgInset:           Qt.rgba(0, 0, 0, 0.35)
-    readonly property color bgHover:           Qt.rgba(1, 1, 1, 0.08)
-    readonly property color bgPressed:         Qt.rgba(1, 1, 1, 0.12)
+    readonly property color bgInset:           Qt.rgba(1, 1, 1, 0.07)
+    readonly property color bgHover:           Qt.rgba(1, 1, 1, 0.12)
+    readonly property color bgPressed:         Qt.rgba(1, 1, 1, 0.18)
     readonly property color bgActive:          accent
 
     readonly property color bgOneUICard:       bgTitaniumCard
     readonly property color bgOneUICardAlt:    bgTitanium
-    readonly property color bgOneUITrack:      Qt.rgba(0, 0, 0, 0.40)
-    readonly property color bgOneUIPill:       Qt.rgba(1, 1, 1, 0.07)
-    readonly property color bgMenu:            Qt.rgba(0.07, 0.085, 0.11, 0.94)
+    readonly property color bgOneUITrack:      Qt.rgba(0, 0, 0, 0.36)
+    readonly property color bgOneUIPill:       Qt.rgba(1, 1, 1, 0.09)
+    readonly property color bgMenu:            Qt.rgba(0.07, 0.085, 0.11, 0.95)
 
     // ── Borders & metallic contours ────────────────────────────────────────
-    readonly property color borderHairline:    Qt.rgba(1, 1, 1, 0.08)
-    readonly property color borderSubtle:      Qt.rgba(1, 1, 1, 0.08)
-    readonly property color borderHover:       Qt.rgba(1, 1, 1, 0.18)
-    readonly property color borderActive:      Qt.rgba(0.04, 0.52, 1.0, 0.65)
-    readonly property color borderGlass:       Qt.rgba(1, 1, 1, 0.08)
-    readonly property color borderOneUIGlass:  Qt.rgba(1, 1, 1, 0.08)
+    readonly property color borderHairline:    Qt.rgba(1, 1, 1, 0.11)
+    readonly property color borderSubtle:      Qt.rgba(1, 1, 1, 0.09)
+    readonly property color borderHover:       Qt.rgba(1, 1, 1, 0.22)
+    readonly property color borderActive:      Qt.rgba(0.04, 0.52, 1.0, 0.75)
+    readonly property color borderGlass:       Qt.rgba(1, 1, 1, 0.14)
+    readonly property color borderOneUIGlass:  Qt.rgba(1, 1, 1, 0.12)
 
     // ── Titan Signature Accents (macOS Electric Sapphire Blue & Cyan) ──────
     readonly property color titanBlue:         "#0A84FF"
@@ -83,11 +83,11 @@ QtObject {
     readonly property int sizeCaption:  9
 
     // ── macOS-Inspired Refined Bento Geometry & Radii ──────────────────────
-    readonly property int radiusWindow:     20
+    readonly property int radiusWindow:     22
     readonly property int radiusBento:      16
-    readonly property int radiusCard:       14
-    readonly property int radiusModule:     14
-    readonly property int radiusTile:       12
+    readonly property int radiusCard:       16
+    readonly property int radiusModule:     16
+    readonly property int radiusTile:       13
     readonly property int radiusControl:    12
     readonly property int radiusSlider:     12
     readonly property int radiusCircle:     24

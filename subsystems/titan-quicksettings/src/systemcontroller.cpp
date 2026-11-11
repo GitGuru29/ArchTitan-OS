@@ -776,7 +776,7 @@ QStringList SystemController::getSectionOrder() const
     QString cfgDir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
     QSettings settings(cfgDir + "/archtitan/settings.ini", QSettings::IniFormat);
     const QStringList defaultOrder = {
-        "topSplit", "nowPlaying", "actions", "pulse"
+        "connectivity", "focusCluster", "sliders", "liquidGlass", "media", "pulse", "actions", "calendar"
     };
     QVariant val = settings.value("quicksettings/sectionOrder");
     if (!val.isValid()) {
@@ -797,13 +797,23 @@ QStringList SystemController::getSectionOrder() const
     }
 
     QStringList result;
-    const QStringList validSections = {
-        "topSplit", "nowPlaying", "actions", "pulse",
-        "topRow", "connectivity", "music", "sliders", "liquidGlass", "performance", "battery"
-    };
     for (QString s : rawList) {
         s = s.remove('"').remove('\'').trimmed();
-        if (validSections.contains(s) && !result.contains(s)) {
+        if (s == "nowPlaying" || s == "music") s = "media";
+        if (s == "performance") s = "pulse";
+        if (s == "topSplit" || s == "topRow") {
+            if (!result.contains("connectivity")) result.append("connectivity");
+            if (!result.contains("focusCluster")) result.append("focusCluster");
+            continue;
+        }
+        if (defaultOrder.contains(s) && !result.contains(s)) {
+            result.append(s);
+        }
+    }
+
+    // Ensure all core sections are present so nothing is ever omitted
+    for (const QString &s : defaultOrder) {
+        if (!result.contains(s)) {
             result.append(s);
         }
     }
@@ -894,6 +904,17 @@ void SystemController::setWidgetSize(const QString &widgetKey, const QString &si
 
 void SystemController::toggleWidgetSize(const QString &widgetKey)
 {
-    QString cur = getWidgetSize(widgetKey, "compact");
-    setWidgetSize(widgetKey, (cur == "compact") ? "expanded" : "compact");
+    if (widgetKey == "actions" || widgetKey == "actionGrid") {
+        QString cur = getWidgetSize(widgetKey, "compact");
+        setWidgetSize(widgetKey, (cur == "compact") ? "wide" : "compact");
+    } else if (widgetKey == "calendar") {
+        QString cur = getWidgetSize(widgetKey, "compact");
+        setWidgetSize(widgetKey, (cur == "compact") ? "expanded" : "compact");
+    } else if (widgetKey == "sliders" || widgetKey == "liquidGlass") {
+        QString cur = getWidgetSize(widgetKey, "full");
+        setWidgetSize(widgetKey, (cur == "full") ? "half" : "full");
+    } else {
+        QString cur = getWidgetSize(widgetKey, "half");
+        setWidgetSize(widgetKey, (cur == "half") ? "full" : "half");
+    }
 }

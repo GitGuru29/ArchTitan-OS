@@ -126,110 +126,243 @@ Window {
             spacing: 12
 
             // ═════════════════════════════════════════════════════════════════
-            //  PANEL 1: Quick Settings (Left) — Liquid Frosted Glass
+            //  PANEL 1: macOS Control Center Popover — Liquid Frosted Glass
             // ═════════════════════════════════════════════════════════════════
-            Rectangle {
-                id: leftCard
-                Layout.preferredWidth: showNotificationPanel ? 450 : 450
+            Item {
+                Layout.preferredWidth: showNotificationPanel ? 430 : 430
                 Layout.fillWidth: !showNotificationPanel
                 Layout.fillHeight: true
-                radius: TitanTheme.radiusWindow
-                border.color: TitanTheme.borderHairline
-                border.width: 1
-                clip: true
 
-                // Obsidian deep graphite surface
-                color: TitanTheme.bgWindow
-
-                ColumnLayout {
+                // Click-away area below the floating popover
+                MouseArea {
                     anchors.fill: parent
-                    anchors.margins: 10
-                    spacing: 8
+                    onClicked: rootWindow.closeDrawer()
+                }
 
-                    // Titan Control Center Top Header
-                    TitanHeader {
-                        inPlaceEditMode: rootWindow.inPlaceEditMode
-                        onEditRequested: {
-                            rootWindow.inPlaceEditMode = !rootWindow.inPlaceEditMode;
-                            if (rootWindow.inPlaceEditMode) rootWindow.showPowerMenu = false;
-                        }
-                        onSettingsRequested: {
-                            if (typeof systemCtrl !== "undefined" && systemCtrl)
-                                systemCtrl.openSettings();
-                        }
-                        onPowerRequested: {
-                            rootWindow.showPowerMenu = !rootWindow.showPowerMenu;
-                            if (rootWindow.showPowerMenu) rootWindow.inPlaceEditMode = false;
+                Item {
+                    id: leftCard
+                    anchors.top: parent.top
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    height: (rootWindow.showWifiPage || rootWindow.showPowerMenu)
+                            ? Math.min(parent.height, 560)
+                            : Math.min(parent.height, bentoContent.implicitHeight + bottleneckDock.implicitHeight + 36)
+                    Behavior on height { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+
+                    readonly property int revision: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.tileVisibilityRevision : 0
+                    readonly property string actionGridMode: {
+                        var rev = revision;
+                        return (typeof systemCtrl !== "undefined" && systemCtrl)
+                               ? systemCtrl.getWidgetSize("actionGrid", "compact")
+                               : "compact";
+                    }
+
+                    // Stepped Bottleneck Geometry (matches archtitan_control_center_mockup)
+                    readonly property bool bottleneckActive: !rootWindow.showWifiPage && !rootWindow.showPowerMenu && (actionGridMode === "compact")
+                    readonly property real stepX: bottleneckActive ? 114 : 0
+                    readonly property real stepY: Math.max(120, height - bottleneckDock.implicitHeight - 18)
+
+                    onWidthChanged: glassSilhouetteCanvas.requestPaint()
+                    onHeightChanged: glassSilhouetteCanvas.requestPaint()
+                    onStepXChanged: glassSilhouetteCanvas.requestPaint()
+                    onStepYChanged: glassSilhouetteCanvas.requestPaint()
+
+                    // ── Stepped Bottleneck Frosted Glass Silhouette (Canvas) ──
+                    Canvas {
+                        id: glassSilhouetteCanvas
+                        anchors.fill: parent
+                        antialiasing: true
+
+                        property color bgCol: TitanTheme.bgWindow
+                        property color borderCol: TitanTheme.borderGlass
+                        onBgColChanged: requestPaint()
+                        onBorderColChanged: requestPaint()
+
+                        onPaint: {
+                            var ctx = getContext("2d");
+                            ctx.reset();
+
+                            var W = width - 1;
+                            var H = height - 1;
+                            var x0 = 0.5;
+                            var y0 = 0.5;
+                            var r = TitanTheme.radiusWindow;
+                            var sx = leftCard.stepX;
+                            var sy = Math.min(H - 40, Math.max(80, leftCard.stepY));
+                            var rBot = 18;
+                            var rInner = 16;
+
+                            ctx.beginPath();
+                            if (sx <= 1) {
+                                // Standard Full Rounded Rectangle (when Wi-Fi, Power, or Wide Grid active)
+                                ctx.moveTo(x0 + r, y0);
+                                ctx.lineTo(W - r, y0);
+                                ctx.arcTo(W, y0, W, y0 + r, r);
+                                ctx.lineTo(W, H - r);
+                                ctx.arcTo(W, H, W - r, H, r);
+                                ctx.lineTo(x0 + r, H);
+                                ctx.arcTo(x0, H, x0, H - r, r);
+                                ctx.lineTo(x0, y0 + r);
+                                ctx.arcTo(x0, y0, x0 + r, y0, r);
+                            } else {
+                                // Asymmetric Stepped "Bottleneck" Silhouette with Concave Fillet at (sx, sy)
+                                ctx.moveTo(x0 + r, y0);
+                                // Top edge -> Top-Right corner
+                                ctx.lineTo(W - r, y0);
+                                ctx.arcTo(W, y0, W, y0 + r, r);
+                                // Right edge -> Bottom-Right corner
+                                ctx.lineTo(W, H - r);
+                                ctx.arcTo(W, H, W - r, H, r);
+                                // Bottleneck bottom edge -> Bottleneck Bottom-Left corner (sx, H)
+                                ctx.lineTo(sx + rBot, H);
+                                ctx.arcTo(sx, H, sx, H - rBot, rBot);
+                                // Bottleneck left vertical wall up to Concave Inner Fillet (sx, sy)
+                                ctx.lineTo(sx, sy + rInner);
+                                ctx.arcTo(sx, sy, sx - rInner, sy, rInner);
+                                // Upper body bottom-left overhang -> Upper Body Bottom-Left corner (x0, sy)
+                                ctx.lineTo(x0 + r, sy);
+                                ctx.arcTo(x0, sy, x0, sy - r, r);
+                                // Left edge back up to Top-Left corner
+                                ctx.lineTo(x0, y0 + r);
+                                ctx.arcTo(x0, y0, x0 + r, y0, r);
+                            }
+                            ctx.closePath();
+
+                            ctx.fillStyle = bgCol;
+                            ctx.fill();
+
+                            ctx.lineWidth = 1.2;
+                            ctx.strokeStyle = borderCol;
+                            ctx.stroke();
                         }
                     }
 
-                    // Scrollable Bento Controls (In-Place Customization on Same UI!)
-                    Flickable {
-                        id: bentoFlick
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        contentWidth: width
-                        contentHeight: Math.max(height, bentoContent.implicitHeight)
-                        clip: true
-                        boundsBehavior: Flickable.StopAtBounds
-                        visible: !rootWindow.showWifiPage && !rootWindow.showPowerMenu
+                    // Absorb clicks inside the upper body
+                    MouseArea {
+                        x: 0
+                        y: 0
+                        width: parent.width
+                        height: leftCard.stepY
+                    }
 
-                        /**
-                         * Keyboard focus follow: Tab / arrow focus can land on a
-                         * control below the fold, so scroll it into view.
-                         */
-                        function revealFocus() {
-                            var item = rootWindow.activeFocusItem;
-                            if (!item) return;
+                    // Absorb clicks inside the right-aligned bottleneck dock
+                    MouseArea {
+                        x: leftCard.stepX
+                        y: leftCard.stepY
+                        width: parent.width - leftCard.stepX
+                        height: parent.height - leftCard.stepY
+                    }
 
-                            var node = item;
-                            while (node && node !== contentItem) node = node.parent;
-                            if (node !== contentItem) return;
+                    // Main Upper Body + Stepped Bottleneck Layout
+                    ColumnLayout {
+                        anchors.fill: parent
+                        anchors.margins: 12
+                        spacing: 10
 
-                            var pad = 12;
-                            var y = item.mapToItem(contentItem, 0, 0).y;
-                            var h = item.height;
-                            var target = contentY;
-                            if (y - pad < contentY)
-                                target = y - pad;
-                            else if (y + h + pad > contentY + height)
-                                target = y + h + pad - height;
-                            var maxY = Math.max(0, contentHeight - height);
-                            contentY = Math.max(0, Math.min(maxY, target));
+                        // 1. Upper 2-Column Bento Body (Connectivity, Focus, Sliders, Media, Pulse)
+                        Flickable {
+                            id: bentoFlick
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            contentWidth: width
+                            contentHeight: Math.max(height, bentoContent.implicitHeight)
+                            clip: true
+                            interactive: !rootWindow.inPlaceEditMode
+                            boundsBehavior: Flickable.StopAtBounds
+                            visible: !rootWindow.showWifiPage && !rootWindow.showPowerMenu
+
+                            function revealFocus() {
+                                var item = rootWindow.activeFocusItem;
+                                if (!item) return;
+
+                                var node = item;
+                                while (node && node !== contentItem) node = node.parent;
+                                if (node !== contentItem) return;
+
+                                var pad = 12;
+                                var y = item.mapToItem(contentItem, 0, 0).y;
+                                var h = item.height;
+                                var target = contentY;
+                                if (y - pad < contentY)
+                                    target = y - pad;
+                                else if (y + h + pad > contentY + height)
+                                    target = y + h + pad - height;
+                                var maxY = Math.max(0, contentHeight - height);
+                                contentY = Math.max(0, Math.min(maxY, target));
+                            }
+
+                            Connections {
+                                target: rootWindow
+                                function onActiveFocusItemChanged() { bentoFlick.revealFocus() }
+                            }
+
+                            ColumnLayout {
+                                id: bentoContent
+                                width: parent.width
+                                spacing: 8
+
+                                QuickToggleGrid {}
+                            }
                         }
 
-                        Connections {
-                            target: rootWindow
-                            function onActiveFocusItemChanged() { bentoFlick.revealFocus() }
-                        }
-
-                        // Normal Bento Quick Settings & In-Place Customizer on Same Screen
+                        // 2. Stepped Bottom-Right Bottleneck Dock (5 Icon Squircles + Thin Separator + Status Footer)
                         ColumnLayout {
-                            id: bentoContent
-                            width: parent.width
+                            id: bottleneckDock
+                            visible: !rootWindow.showWifiPage && !rootWindow.showPowerMenu
+                            Layout.fillWidth: true
+                            Layout.leftMargin: leftCard.bottleneckActive ? leftCard.stepX : 0
                             spacing: 8
 
-                            QuickToggleGrid {}
+                            // Utility Squircles Row inside the Bottleneck
+                            TitanActionGrid {
+                                Layout.fillWidth: true
+                            }
+
+                            // Subtle 1px Glass Separator Line inside the Bottleneck
+                            Rectangle {
+                                Layout.fillWidth: true
+                                height: 1
+                                color: Qt.rgba(1, 1, 1, 0.08)
+                            }
+
+                            // macOS Bottom Status & Controls Strip (Battery | Edit Controls | Settings & Power)
+                            TitanFooterBar {
+                                id: footerBar
+                                Layout.fillWidth: true
+                                inPlaceEditMode: rootWindow.inPlaceEditMode
+                                onEditRequested: {
+                                    rootWindow.inPlaceEditMode = !rootWindow.inPlaceEditMode;
+                                    if (rootWindow.inPlaceEditMode) rootWindow.showPowerMenu = false;
+                                }
+                                onSettingsRequested: {
+                                    if (typeof systemCtrl !== "undefined" && systemCtrl)
+                                        systemCtrl.openSettings();
+                                }
+                                onPowerRequested: {
+                                    rootWindow.showPowerMenu = !rootWindow.showPowerMenu;
+                                    if (rootWindow.showPowerMenu) rootWindow.inPlaceEditMode = false;
+                                }
+                            }
                         }
                     }
-                }
 
-                // ── One UI Wi-Fi Selection Overlay ───────────────────────
-                OneUIWifiPage {
-                    id: wifiPageOverlay
-                    anchors.fill: parent
-                    visible: rootWindow.showWifiPage
-                    z: 98
-                    onCloseRequested: rootWindow.showWifiPage = false
-                }
+                    // ── Inline Wi-Fi Network Picker Overlay ──────────────────
+                    OneUIWifiPage {
+                        id: wifiPageOverlay
+                        anchors.fill: parent
+                        visible: rootWindow.showWifiPage
+                        z: 98
+                        onCloseRequested: rootWindow.showWifiPage = false
+                    }
 
-                // ── One UI Power & Session Overlay ───────────────────────
-                OneUIPowerMenu {
-                    id: powerMenuOverlay
-                    anchors.fill: parent
-                    visible: rootWindow.showPowerMenu
-                    z: 99
-                    onCloseRequested: rootWindow.showPowerMenu = false
+                    // ── Inline Power & Session Overlay ───────────────────────
+                    OneUIPowerMenu {
+                        id: powerMenuOverlay
+                        anchors.fill: parent
+                        visible: rootWindow.showPowerMenu
+                        z: 99
+                        onCloseRequested: rootWindow.showPowerMenu = false
+                    }
                 }
             }
 

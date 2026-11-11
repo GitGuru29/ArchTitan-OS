@@ -3,74 +3,46 @@ import QtQuick.Layouts
 import "../style"
 
 /**
- * NowPlayingModule — ArchTitan macOS-style Media Player Bento Module.
+ * NowPlayingModule — macOS Control Center "Now Playing" Bento Card.
  *
- * Implements the ArchTitan media card with:
- * - Header: "Media Player" with options badge
- * - Solaris album art badge with neon depth
- * - Dynamic animated Sapphire Cyan soundwave / equalizer visualizer
- * - Tactile media controls (Prev, Play/Pause, Next)
+ * Matches the macOS Control Center media widget:
+ * - Header: "Now Playing"
+ * - 52x52 vibrant multi-hue aurora album art square
+ * - Track title ("Solaris Drift") + Artist subtitle
+ * - Tactile media transport controls (Prev, Play/Pause, Next)
  */
 Rectangle {
     id: mediaRoot
     Layout.fillWidth: true
-    implicitHeight: 110
+    implicitHeight: 108
     radius: TitanTheme.radiusCard
     color: TitanTheme.bgTitanium
     border.color: (typeof rootWindow !== "undefined" && rootWindow.inPlaceEditMode)
                   ? TitanTheme.accent
-                  : (mediaMa.containsMouse ? TitanTheme.borderHover : TitanTheme.borderHairline)
+                  : TitanTheme.borderHairline
     border.width: 1
 
     property bool isPlaying: true
-    property string title: "Solaris"
-    property string artist: "Solaris"
+    property string title: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.mediaTitle && systemCtrl.mediaTitle.length > 0)
+                           ? systemCtrl.mediaTitle : "Solaris Drift"
+    property string artist: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.mediaArtist && systemCtrl.mediaArtist.length > 0)
+                            ? systemCtrl.mediaArtist : "Artist · Solaris"
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: 10
+        anchors.leftMargin: 12
+        anchors.rightMargin: 12
+        anchors.topMargin: 8
+        anchors.bottomMargin: 10
         spacing: 6
 
         // ── Card Header ─────────────────────────────────────────────────────
-        RowLayout {
-            Layout.fillWidth: true
-
-            Text {
-                text: "Media Player"
-                font.family: TitanTheme.fontFamily
-                font.pixelSize: 11
-                font.weight: Font.DemiBold
-                color: TitanTheme.textPrimary
-            }
-
-            Item { Layout.fillWidth: true }
-
-            // Audio settings / mixer button
-            Rectangle {
-                width: 22
-                height: 22
-                radius: 11
-                color: mediaOptMa.containsMouse ? TitanTheme.bgHover : Qt.rgba(1, 1, 1, 0.06)
-
-                Text {
-                    anchors.centerIn: parent
-                    text: "\uf025" // headphones / audio settings
-                    font.family: TitanTheme.monoFamily
-                    font.pixelSize: 10
-                    color: mediaOptMa.containsMouse ? TitanTheme.accent : TitanTheme.textMuted
-                }
-
-                MouseArea {
-                    id: mediaOptMa
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        if (typeof systemCtrl !== "undefined" && systemCtrl)
-                            systemCtrl.openMediaWidget();
-                    }
-                }
-            }
+        Text {
+            text: "Now Playing"
+            font.family: TitanTheme.fontFamily
+            font.pixelSize: 11
+            font.weight: Font.Bold
+            color: TitanTheme.textPrimary
         }
 
         // ── Body Row ────────────────────────────────────────────────────────
@@ -79,208 +51,146 @@ Rectangle {
             Layout.fillHeight: true
             spacing: 10
 
-            // Album Art Medallion ("SOLARIS")
+            // Vibrant Multi-Hue Aurora Album Art Square (52x52)
             Rectangle {
-                width: 50
-                height: 50
+                width: 52
+                height: 52
                 radius: 10
-                color: "#121A28"
-                border.color: Qt.rgba(0.04, 0.52, 1.0, 0.35)
-                border.width: 1
                 clip: true
+                border.color: Qt.rgba(1, 1, 1, 0.22)
+                border.width: 1
 
-                // Deep sapphire nebula gradient
                 gradient: Gradient {
-                    GradientStop { position: 0.0; color: "#0B1528" }
-                    GradientStop { position: 0.6; color: "#162846" }
-                    GradientStop { position: 1.0; color: "#0E3A5F" }
+                    GradientStop { position: 0.0; color: "#0EA5E9" }
+                    GradientStop { position: 0.45; color: "#6366F1" }
+                    GradientStop { position: 0.78; color: "#EC4899" }
+                    GradientStop { position: 1.0; color: "#0F172A" }
                 }
 
-                // Album Art Label
+                // Inner diagonal shimmer accent
+                Rectangle {
+                    width: 36
+                    height: 36
+                    radius: 18
+                    x: -6
+                    y: 22
+                    color: Qt.rgba(0.0, 0.95, 0.85, 0.35)
+                }
+
                 Text {
                     anchors.centerIn: parent
-                    text: "SOLARIS"
-                    font.family: TitanTheme.fontFamily
-                    font.pixelSize: 7
-                    font.weight: Font.Black
-                    font.letterSpacing: 1.2
-                    color: Qt.rgba(1, 1, 1, 0.85)
-                }
-
-                // Tiny glowing starburst dot
-                Rectangle {
-                    width: 3
-                    height: 3
-                    radius: 1.5
-                    color: "#FFFFFF"
-                    anchors.top: parent.top
-                    anchors.left: parent.left
-                    anchors.margins: 6
+                    text: "\uf001" // music note
+                    font.family: TitanTheme.monoFamily
+                    font.pixelSize: 16
+                    color: Qt.rgba(1, 1, 1, 0.90)
                 }
             }
 
-            // Track Metadata + Dynamic Waveform + Controls
+            // Track Metadata + Transport Controls
             ColumnLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 spacing: 2
 
-                // Track & Artist Title
-                ColumnLayout {
+                Text {
+                    text: mediaRoot.title
+                    font.family: TitanTheme.fontFamily
+                    font.pixelSize: 12
+                    font.weight: Font.Bold
+                    color: TitanTheme.textPrimary
+                    elide: Text.ElideRight
                     Layout.fillWidth: true
-                    spacing: 0
-
-                    Text {
-                        text: mediaRoot.title
-                        font.family: TitanTheme.fontFamily
-                        font.pixelSize: 11
-                        font.weight: Font.Bold
-                        color: TitanTheme.textPrimary
-                        elide: Text.ElideRight
-                        Layout.fillWidth: true
-                    }
-
-                    Text {
-                        text: mediaRoot.artist
-                        font.family: TitanTheme.fontFamily
-                        font.pixelSize: 9
-                        color: TitanTheme.textMuted
-                        elide: Text.ElideRight
-                        Layout.fillWidth: true
-                    }
                 }
 
-                // Animated Soundwave / Waveform Visualizer
+                Text {
+                    text: mediaRoot.artist
+                    font.family: TitanTheme.fontFamily
+                    font.pixelSize: 10
+                    color: TitanTheme.textMuted
+                    elide: Text.ElideRight
+                    Layout.fillWidth: true
+                }
+
+                Item { Layout.fillHeight: true }
+
+                // Transport Controls Row (Prev, Play/Pause, Next)
                 RowLayout {
                     Layout.fillWidth: true
-                    height: 14
-                    spacing: 2
-
-                    Repeater {
-                        model: [6, 12, 5, 14, 9, 13, 6, 11, 4, 13, 8, 12, 6, 10]
-                        Rectangle {
-                            id: waveBar
-                            width: 2
-                            radius: 1
-                            color: TitanTheme.accent
-                            Layout.alignment: Qt.AlignVCenter
-                            height: modelData
-
-                            SequentialAnimation on height {
-                                running: mediaRoot.isPlaying
-                                loops: Animation.Infinite
-                                NumberAnimation {
-                                    to: Math.max(3, (modelData * (0.4 + (index % 5) * 0.15)))
-                                    duration: 200 + (index * 45)
-                                    easing.type: Easing.InOutQuad
-                                }
-                                NumberAnimation {
-                                    to: Math.min(14, (modelData * (0.8 + ((index + 2) % 4) * 0.2)))
-                                    duration: 220 + (index * 40)
-                                    easing.type: Easing.InOutQuad
-                                }
-                            }
-                        }
-                    }
+                    spacing: 14
 
                     Item { Layout.fillWidth: true }
-                }
-
-                // Playback Controls Row
-                RowLayout {
-                    Layout.alignment: Qt.AlignRight
-                    spacing: 8
 
                     // Previous Track
-                    Rectangle {
-                        width: 20
-                        height: 20
-                        radius: 10
-                        color: prevMa.containsMouse ? TitanTheme.bgHover : "transparent"
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: "\uf048" // step-backward
-                            font.family: TitanTheme.monoFamily
-                            font.pixelSize: 10
-                            color: TitanTheme.textSecondary
-                        }
+                    Text {
+                        text: "\uf04a" // backward
+                        font.family: TitanTheme.monoFamily
+                        font.pixelSize: 12
+                        color: prevMa.containsMouse ? "#FFFFFF" : TitanTheme.textSecondary
+                        scale: prevMa.pressed ? 0.85 : 1.0
+                        Behavior on scale { NumberAnimation { duration: 90 } }
 
                         MouseArea {
                             id: prevMa
                             anchors.fill: parent
+                            anchors.margins: -4
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
                             onClicked: {
-                                if (typeof audioCtrl !== "undefined" && audioCtrl) audioCtrl.previousTrack();
+                                if (typeof rootWindow !== "undefined" && rootWindow.inPlaceEditMode) return;
+                                if (typeof systemCtrl !== "undefined" && systemCtrl)
+                                    systemCtrl.mediaPrevious();
                             }
                         }
                     }
 
                     // Play / Pause
-                    Rectangle {
-                        width: 22
-                        height: 22
-                        radius: 11
-                        color: playMa.containsMouse ? TitanTheme.bgHover : Qt.rgba(1, 1, 1, 0.08)
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: mediaRoot.isPlaying ? "\uf04c" : "\uf04b" // pause : play
-                            font.family: TitanTheme.monoFamily
-                            font.pixelSize: 10
-                            color: TitanTheme.textPrimary
-                        }
+                    Text {
+                        text: mediaRoot.isPlaying ? "\uf04c" : "\uf04b" // pause : play
+                        font.family: TitanTheme.monoFamily
+                        font.pixelSize: 14
+                        color: "#FFFFFF"
+                        scale: playMa.pressed ? 0.85 : 1.0
+                        Behavior on scale { NumberAnimation { duration: 90 } }
 
                         MouseArea {
                             id: playMa
                             anchors.fill: parent
+                            anchors.margins: -4
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
                             onClicked: {
-                                if (typeof audioCtrl !== "undefined" && audioCtrl) {
-                                    audioCtrl.togglePlayPause();
-                                } else {
-                                    mediaRoot.isPlaying = !mediaRoot.isPlaying;
-                                }
+                                if (typeof rootWindow !== "undefined" && rootWindow.inPlaceEditMode) return;
+                                mediaRoot.isPlaying = !mediaRoot.isPlaying;
+                                if (typeof systemCtrl !== "undefined" && systemCtrl)
+                                    systemCtrl.mediaPlayPause();
                             }
                         }
                     }
 
                     // Next Track
-                    Rectangle {
-                        width: 20
-                        height: 20
-                        radius: 10
-                        color: nextMa.containsMouse ? TitanTheme.bgHover : "transparent"
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: "\uf051" // step-forward
-                            font.family: TitanTheme.monoFamily
-                            font.pixelSize: 10
-                            color: TitanTheme.textSecondary
-                        }
+                    Text {
+                        text: "\uf04e" // forward
+                        font.family: TitanTheme.monoFamily
+                        font.pixelSize: 12
+                        color: nextMa.containsMouse ? "#FFFFFF" : TitanTheme.textSecondary
+                        scale: nextMa.pressed ? 0.85 : 1.0
+                        Behavior on scale { NumberAnimation { duration: 90 } }
 
                         MouseArea {
                             id: nextMa
                             anchors.fill: parent
+                            anchors.margins: -4
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
                             onClicked: {
-                                if (typeof audioCtrl !== "undefined" && audioCtrl) audioCtrl.nextTrack();
+                                if (typeof rootWindow !== "undefined" && rootWindow.inPlaceEditMode) return;
+                                if (typeof systemCtrl !== "undefined" && systemCtrl)
+                                    systemCtrl.mediaNext();
                             }
                         }
                     }
                 }
             }
         }
-    }
-
-    MouseArea {
-        id: mediaMa
-        anchors.fill: parent
-        hoverEnabled: true
-        z: -1
     }
 }
