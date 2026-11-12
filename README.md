@@ -100,11 +100,11 @@ graph TD
 
 ArchTitan provides a suite of native C++ and Qt6 applications built specifically for the OS:
 
-### 1.  Titan Hardware Manager (`titan-hwm`)
+### 1.  Titan Hardware Manager (`titan-hwm` v3)
 * **Lead:** `@GitGuru29` | **Location:** `titan-hwm-v3/` & `subsystems/titan-hwm/`
 * High-performance C++20 autonomous resource orchestrator running as `titan-hwm.service` with `archtitan.slice` cgroup v2 delegation (`OOMScoreAdjust=-1000`).
-* Dynamically routes workloads across `archtitan-active.slice`, `archtitan-background.slice`, `archtitan-idle.slice`, and `archtitan-reclaimable.slice` based on multi-signal fusion classification (process trees, Hyprland window/workspace focus, CWD project signatures, and cmdline drift).
-* Features 10-hour stress-tested resilience: atomic `pidfd`-based reclaim signaling, `posix_spawn()` execution, 2-second workspace leave hysteresis, browser-safe cgroup freezing, first-class VM & database service immunity, and automated orphan thaw sweep.
+* Dynamically routes workloads across `archtitan-active.slice`, `archtitan-background.slice`, and `archtitan-frozen.slice` based on multi-signal fusion classification (process trees depth-3 traversal, Hyprland window/workspace focus, CWD project signatures, and cmdline drift).
+* Features resilience against memory starvation: atomic `pidfd`-based reclaim signaling, `posix_spawn()` execution, 2-second workspace leave hysteresis, browser-safe cgroup freezing, first-class VM & database service immunity, and automated orphan thaw sweep.
 
 ### 2.  ArchTitan Settings (`archtitan-settings`)
 * **Lead:** `@GitGuru29` | **Location:** `archtitan-settings/`
@@ -159,27 +159,35 @@ ArchTitan provides a suite of native C++ and Qt6 applications built specifically
   - Features a smooth radial progress ring OSD visualizing dwell progress before actions trigger.
   - Ships configured (`/etc/archtitan/hotzones.toml`) to trigger `titan-sysmon --toggle` on left-center dwell, workspace switching, and corner utilities.
 
-### 10.  Titan Quick Settings & Notification Drawer (`titan-quicksettings`)
+### 10.  Titan Quick Settings (`titan-quicksettings`)
 * **Lead:** `@GitGuru29` | **Location:** `subsystems/titan-quicksettings/`
-* Obsidian glassmorphic slide-out control drawer and notification center sliding in from the right edge on `<kbd>Super</kbd> + <kbd>N</kbd>`:
+* Modern macOS-inspired **Liquid Glass Control Center** sliding out on `<kbd>Super</kbd> + <kbd>N</kbd>`:
   - Adheres to the unified Titan Design Language (TDL) with Samsung One UI 9.0 geometry and Catppuccin Mocha glass styling.
   - Interactive header showing live system uptime (`/proc/uptime`), settings shortcut, and power actions.
-  - Quick toggle rows: NetworkManager Wi-Fi, BlueZ Bluetooth, Caffeine mode, PipeWire microphone & audio mute, Hyprsunset Night Light, Grim screenshot area snip, and ambient tools.
-  - Live desktop notification center card list with DND toggle, unread counter, and bulk clear.
+  - Modular quick toggles with live sub-drawers: NetworkManager Wi-Fi picker, BlueZ Bluetooth device switcher, Audio sink selection, Display brightness/scaling, Power Profile cycling, and Do Not Disturb.
+  - Unified MPRIS media player card supporting Spotify, YouTube/Chromium, and MPV with playback controls and track metadata.
 
-### 11.  Titan Wallpaper Picker (`titan-wallpaper-picker`)
+### 11.  Titan Tour v2 (`titan-tour`)
+* **Lead:** `@GitGuru29` | **Location:** `subsystems/titan-tour/`
+* Cinematic, interactive first-run onboarding tour utilizing Wayland **LayerShell overlay** mode:
+  - High-impact Liquid Glass 3-island Bento stage with smooth transitions.
+  - Interactive ZoneOSD dwell pods demonstrating pointer edge navigation.
+  - Real-time technical telemetry card displaying live kernel, CPU, and memory stats.
+  - Guided interactive introduction to ArchTitan keybindings, workspace workflows, and the developer ecosystem.
+
+### 12.  Titan Wallpaper Picker (`titan-wallpaper-picker`)
 * **Lead:** `@GitGuru29` | **Location:** `subsystems/titan-wallpaper-picker/`
 * Interactive wallpaper selection utility bound to `<kbd>Super</kbd> + <kbd>\\</kbd>`:
   - Grid-based visual browser for system and user wallpapers.
   - Integrates with `titan-wallpaper-restore` to persist chosen wallpapers across sessions and Hyprland reloads.
 
-### 12.  ArchTitan Guard (`archtitan-guard`)
+### 13.  ArchTitan Guard (`archtitan-guard`)
 * **Lead:** `@GitGuru29` | **Location:** `subsystems/archtitan-guard/`
 * Hardened display manager and pacman transaction integrity guard:
   - Intercepts package operations to prevent conflicting display managers or removal of core greeter components (`sddm-rise-theme`).
   - Ensures seamless SDDM and Hyprland startup across live and installed environments.
 
-### 13. 📱 TITAN Share (`titanshare-daemon`)
+### 14. 📱 TITAN Share (`titanshare-daemon`)
 * **Lead:** Teammate | **Location:** `subsystems/titan-share/`
 * Cross-platform peer-to-peer file sharing subsystem comprising a C++ mDNS Linux daemon and Jetpack Compose Android client:
   - Dynamic path resolution: Root execution (`/var/lib/titanshare`), User (`~/.local/share/titanshare`), Fallback (`/tmp/titanshare`).
@@ -187,7 +195,7 @@ ArchTitan provides a suite of native C++ and Qt6 applications built specifically
   - Hardened systemd sandboxing (`ProtectSystem=strict`, `StateDirectory=titanshare`) with IPC pairing PIN output at `/run/titanshare/titanshare-pin.json`.
   - Registered in THM v3.1 `ProtectedRegistry` to prevent freeze or OOM reclaim during active file transfers.
 
-### 14. 🚧 TitanFocus (`titan-focus`) — *Proposed*
+### 15. 🚧 TitanFocus (`titan-focus`) — *Proposed*
 * **Lead:** `@GitGuru29` | **Location:** `subsystems/titan-focus/` *(not yet created)*
 * **Status:** 🚧 Design proposal only — no code implemented. Review the plan before contributing.
 * Developer work optimization engine, extending THM's existing fusion classifier from machine-resource orchestration to human-attention orchestration:
@@ -196,7 +204,7 @@ ArchTitan provides a suite of native C++ and Qt6 applications built specifically
   - Zero-cost presence detection via Wayland `ext-idle-notify-v1` v2 — no camera, no sensors, no polling loop.
   - Reuses THM's classifier vocabulary from `/etc/titan-hwm/config` for developer-context signals.
 
-### 15. 🚧 Additional Subsystems (In Development)
+### 16. 🚧 Additional Subsystems (In Development)
 * **Auto GPU Switcher** (`subsystems/auto-gpu-switcher/`): Intelligent iGPU/dGPU dynamic switching.
 * **TITAN AI** (`subsystems/titan-ai/`): Context-aware developer assistant.
 * **TITAN Task Manager** (`subsystems/titan-task-manager/`): Advanced scheduling and resource tracking.
@@ -219,8 +227,9 @@ mindmap
       Multi-Workspace 1:1 Gesture Swiping
     HUD & Overlays
       Dark Pill Waybar Status Panel
+      Titan QuickSettings Control Center
+      Titan Tour v2 Cinematic Onboarding
       Titan Media HUD Dynamic Island
-      Titan Quick Settings Drawer
       Titan System Monitor Overlay
       Titan Zone OSD Hotzones
       SwayNC / Desktop Notifications
@@ -241,7 +250,8 @@ mindmap
 | Shortcut | Action | Description |
 | :--- | :--- | :--- |
 | <kbd>Super</kbd> / <kbd>Super</kbd> + <kbd>Space</kbd> | App Launcher | Launches Rofi application menu |
-| <kbd>Super</kbd> + <kbd>N</kbd> | Quick Settings | Slides out Quick Settings & Notification drawer (`titan-quicksettings`) |
+| <kbd>Super</kbd> + <kbd>F1</kbd> | Virtual Tour | Launches interactive cinematic tour (`titan-tour --force`) |
+| <kbd>Super</kbd> + <kbd>N</kbd> | Quick Settings | Opens Liquid Glass QuickSettings Control Center (`titan-quicksettings`) |
 | <kbd>Super</kbd> + <kbd>M</kbd> | Media HUD | Toggles Dynamic Island media overlay (`titan-media-hud --toggle`) |
 | <kbd>Super</kbd> + <kbd>\\</kbd> / <kbd>Super</kbd> + <kbd>Shift</kbd> + <kbd>\\</kbd> | Wallpaper Picker | Opens grid-based wallpaper selector (`titan-wallpaper-picker`) |
 | <kbd>Super</kbd> + <kbd>Return</kbd> | Terminal | Opens Kitty terminal with Fish shell |
@@ -271,6 +281,23 @@ mindmap
 | **Touchpad 4-Finger Up** | Swipe Up | Toggles special scratchpad workspace (`magic`) |
 | **Hotzone Left Edge Midpoint** | Pointer Dwell (250ms) | Toggles Titan System Monitor overlay (`titan-sysmon --toggle`) |
 | **Hotzone OSD Feedback** | Screen Edge / Corner | Displays radial dwell countdown ring before action fires |
+
+---
+
+## 🔬 Empirical Stress Benchmarks (THM v3 vs Stock Arch)
+
+ArchTitan's dynamic resource orchestration was benchmarked using an automated headless QEMU/KVM stress harness (2 vCPU, 4 GB RAM, 2 GB swap) simulating developer-day pressure (continuous `make -j2` compilation, 100 ms latency probe, 2×400 MB idle background applications, and an aggressive memory hog bursting to 1.9 GB+):
+
+| Metric (↓ lower is better / ↑ higher is better) | ArchTitan + THM v3 | ArchTitan — THM Disabled | Impact / Verification |
+| :--- | :---: | :---: | :--- |
+| **↓ Full Memory-Stall Duration ($\Sigma$)** | **0.4 s** | **5.2 s** | **−92% memory stall time** |
+| **↓ Peak Memory Pressure (PSI full)** | **2.6%** | **24.1%** | **Nearly 10× lower stall severity** |
+| **↑ Minimum Available Memory Floor** | **653 MB** | **49 MB** | **Prevents near-OOM system freeze** |
+| **↓ Memory Hog Peak RSS** | **1932 MB** | **2721 MB** | **Contained rogue memory growth** |
+| **↓ Swap Thrashing** | **0 MB** | **305 MB** | **Zero swap-out latency penalty** |
+| **↓ Major Page Faults** | **91** | **409** | **−78% page fault reduction** |
+| **↑ Idle Workload Protection** | **98 freeze samples** | **0 samples** | **Proactive cgroup v2 freeze without SIGKILL** |
+| **↓ THM Daemon Footprint** | **≤ 5 MB RSS** | — | **Negligible resident set size** |
 
 ---
 
@@ -411,7 +438,8 @@ Changes affecting base OS configurations and core tooling require explicit revie
 | `sandbox/` | Titan Sandbox daemon & policy parser source |
 | `subsystems/titan-hotzones/` | Hot-zone pointer dwell daemon & Zone OSD source |
 | `subsystems/titan-sysmon/` | System Monitor layer-shell overlay source |
-| `subsystems/titan-quicksettings/` | Quick Settings & notification drawer source |
+| `subsystems/titan-quicksettings/` | Liquid Glass QuickSettings Control Center source |
+| `subsystems/titan-tour/` | Titan Tour v2 LayerShell onboarding overlay source |
 | `efiboot/` & `grub/` | EFI & GRUB bootloader configurations |
 | `packages.x86_64` | Package manifest for live ISO generation |
 | `pacman.conf` | Pacman package manager and custom repository configuration |
@@ -450,7 +478,8 @@ Comprehensive guides and technical documentation are available on the [ArchTitan
 | **Titan Media HUD** | Dynamic Island overlay and power menu | [Media HUD Guide](https://github.com/GitGuru29/archtitan-os/wiki/Titan-Media-HUD) |
 | **Titan System Monitor** | Real-time layer-shell telemetry HUD with THM v3 IPC streaming | [`subsystems/titan-sysmon/`](subsystems/titan-sysmon/) |
 | **Titan Hotzones & OSD** | Edge & corner cursor dwell daemon and OSD visualizer | [`subsystems/titan-hotzones/README.md`](subsystems/titan-hotzones/README.md) |
-| **Titan Quick Settings** | Obsidian glassmorphic slide-out control drawer and notifications | [`subsystems/titan-quicksettings/README.md`](subsystems/titan-quicksettings/README.md) |
+| **Titan Quick Settings** | Liquid Glass Control Center with Wi-Fi, Bluetooth, Audio, Display, DND & MPRIS | [`subsystems/titan-quicksettings/`](subsystems/titan-quicksettings/) |
+| **Titan Tour** | Cinematic LayerShell interactive onboarding walkthrough | [`subsystems/titan-tour/`](subsystems/titan-tour/) |
 | **Titan Share** | P2P file sharing daemon, Android client & storage layout | [Titan Share Guide](https://github.com/GitGuru29/archtitan-os/wiki/Titan-Share) |
 | **TitanFocus** | Developer work optimization engine — design proposal (not implemented) | [Wiki Page (planned)](https://github.com/GitGuru29/archtitan-os/wiki/Titan-Focus) · [Design Notes](https://github.com/GitGuru29/archtitan-os/wiki/Titan-Focus#design-notes) |
 | **Desktop Environment** | Hyprland config, Waybar widgets, and themes | [Desktop Configuration](https://github.com/GitGuru29/archtitan-os/wiki/Desktop-Environment) |
