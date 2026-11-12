@@ -1,0 +1,6 @@
+name	pid	alive	final_state	oom_killed
+compile	1626	no	gone	no
+idle1	1627	yes	S	no
+idle2	1628	yes	S	no
+probe	1629	no	gone	no
+hog	2757	no	gone	no

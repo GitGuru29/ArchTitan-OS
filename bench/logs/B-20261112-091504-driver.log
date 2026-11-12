@@ -1,0 +1,91 @@
+[driver] qemu: qemu-system-x86_64 -enable-kvm -cpu host -m 4G -smp 2 -machine q35 -kernel /tmp/opencode/thm-bench/archtitan/vmlinuz -initrd /tmp/opencode/thm-bench/archtitan/initramfs -append archisobasedir=arch archisosearchuuid=2026-11-11-18-34-38-00 splash quiet loglevel=3 rd.udev.log_level=3 vt.global_cursor_default=0 plymouth.ignore-serial-consoles consoleblank=0 console=ttyS0,115200 systemd.unit=multi-user.target plymouth.enable=0 disablehooks=plymouth -drive if=none,id=iso,file=/home/msfvenom/custom-os-build/out/archtitan-2026.11.12-x86_64.iso,format=raw,readonly=on -device virtio-blk-pci,drive=iso -drive if=none,id=bench,file=/home/msfvenom/custom-os-build/bench/bench.img,format=raw -device virtio-blk-pci,drive=bench -netdev user,id=n0 -device virtio-net-pci,netdev=n0 -display none -vga none -serial unix:/tmp/opencode/thm-bench/B.sock,server=on,wait=off -monitor none -no-reboot
+[driver] arm B: booting (qemu pid 2723369)
+/init: line 7: memdiskfind: not found
+P+q6E616D65\[18t[!p]104\[0m[?7h[1G[0J]3008;start=3d638fb3333a4eb9a9d8a1282bf6fe39;user=root;hostname=archiso;machineid=46a0255c69064db08c9fdf514ac85519;bootid=96f5d91591cb4876915f70b972606ab4;pid=1;pidfdid=1;comm=systemd;type=boot\[!p]104\[0m[?7h[1G[0J7[32766;32766H[6n8[!p]104\[0m[?7h[1G[0J7[32766;32766H[6n8]3008;start=f9380b05f35e45adaee512f50bbf9d39;user=root;hostname=archiso;machineid=46a0255c69064db08c9fdf514ac85519;bootid=96f5d91591cb4876915f70b972606ab4;pid=556;pidfdid=4378;comm=(temd-firstboot);servicename=systemd-firstboot.service;invocationid=7c1bf96482004ca4aa8abdfe01f91ab3;type=service\[!p]104\[0m[?7h[1G[0J7[32766;32766H[6n8[!p]104\[0m[?7h[1G[0J7[32766;32766H[6n8]3008;start=133de962500a44aaaa996c5fc9786f6a;user=root;hostname=archiso;machineid=46a0255c69064db08c9fdf514ac85519;bootid=96f5d91591cb4876915f70b972606ab4;pid=719;pidfdid=362;comm=(agetty);servicename=serial-getty@ttyS0.service;invocationid=3db8407810844ca7b45a61ebee57b177;type=service\P+q6E616D65\
+033[1m033[38;2;137;180;250m  ArchTitan OS 033[0m — Linux 7.2.15-arch1-1 (archiso)
+033[2m033[38;2;166;173;200m  Titan shell · tty ttyS0 · 03:46:09033[0m
+archiso login: root
+To install [38;2;23;147;209mArch Linux[0m follow the installation guide:
+https://wiki.archlinux.org/title/Installation_guide
+
+For Wi-Fi, authenticate to the wireless network using the [35miwctl[0m utility.
+For mobile broadband (WWAN) modems, connect with the [35mmmcli[0m utility.
+Ethernet, WLAN and WWAN interfaces using DHCP should work automatically.
+
+After connecting to the internet, the installation guide can be accessed
+via the convenience script [35mInstallation_guide[0m.
+
+[41m [41m [41m [40m [44m [40m [41m [46m [45m [41m [46m [43m [41m [44m [45m [40m [44m [40m [41m [44m [41m [41m [46m [42m [41m [44m [43m [41m [45m [40m [40m [44m [40m [41m [44m [42m [41m [46m [44m [41m [46m [47m [0m
+]3008;start=181b9828b65a4d5a8654ee174447d977;user=root;hostname=archiso;machineid=46a0255c69064db08c9fdf514ac85519;bootid=96f5d91591cb4876915f70b972606ab4;pid=719;pidfdid=362;comm=login;targetuser=root;sessionid=3;type=session\fish: Unknown command: fastfetch
+~/.config/fish/config.fish (line 3): 
+    fastfetch
+    ^~~~~~~~^
+from sourcing file ~/.config/fish/config.fish
+	called during startup
+[?u[>0q]11;?\[?1049hP+q696e646e\P+q71756572792d6f732d6e616d65\[?1049l[0cWelcome to fish, the friendly interactive shell
+Type [32mhelp[m for instructions on how to use fish
+]7;file://archiso/root]0;~\[m]11;?\[6n[0c[?2004h[?2031h[>4;1m=[K]133;A;click_events=1\[J
+[K[38;2;0;210;255m[1;48;2;0;210;255;38;2;11;14;20m 󰣇 TITAN [0m[48;2;30;38;56;38;2;0;210;255m[1;38;2;205;214;244m  ~ [0m[48;2;17;22;34;38;2;30;38;56m[0m[38;2;17;22;34m[0m 
+[38;2;0;210;255m◆[0m  ]133;B\[K[3Ce[4Cx[5Ce[6Cc[7C [8Cb[9Ca[10Cs[11Ch[12C [13C-[14C-[15Cn[16Co[17Cp[18Cr[19Co[20Cf[21Ci[22Cl[23Ce[24C [25C-[26C-[27Cn[28Co[29Cr[30Cc[31C[?2004l[?2031l[>4;0m>[28Dexec bash [36m--noprofile[39m [36m--norc[39m[31C
+[m]133;C;cmdline_url=exec%20bash%20--noprofile%20--norc\]0;exec bash --noprofil ~\[m[?2004hbash-5.3# 
+[?2004l[?2004hbash-5.3# echo __LOGIN_OK__$((41+1))
+[?2004l__LOGIN_OK__42
+[?2004hbash-5.3# [driver] logged in as root
+mkdir -p /bench && mount /dev/disk/by-label/BENCHDISK /bench && chmod +x /bench/guest/tstress && echo MOUNTOK; echo __BENCHEDGE_1=$?
+[?2004lMOUNTOK
+__BENCHEDGE_1=0
+[?2004h[driver] rc(mount bench) = 0
+[driver] arm B: verifying environment
+bash-5.3# systemctl mask --now titan-hwm 2>&1 | head -2; echo __BENCHEDGE_2=$?
+[?2004lFailed to mask unit: File '/etc/systemd/system/titan-hwm.service' already exists
+__BENCHEDGE_2=0
+[?2004hbash-5.3# [driver] rc(thm mask) = 0
+pidof titan-hwm-daemon || echo NO_DAEMON; echo __BENCHEDGE_3=$?
+[?2004l611
+__BENCHEDGE_3=0
+[?2004hbash-5.3# [driver] rc(thm gone?) = 0
+nproc; free -m | head -2; uname -r; echo __BENCHEDGE_4=$?
+[?2004l2
+               total        used        free      shared  buff/cache   available
+Mem:            3906         404        2421           9        1305        3502
+7.2.15-arch1-1
+__BENCHEDGE_4=0
+[?2004hbash-5.3# [driver] rc(guest specs) = 0
+[driver] arm B: running scenario (rundir B-20261112-091504)
+bash /bench/guest/scenario.sh --arm B --dir /bench/results/B-20261112-091504 --quick; echo __BENCHEDGE_5=$?
+[?2004l=== [SCENARIO:B] environment recorded ===
+arm=B quick=1 date=2026-11-12T03:46:18+00:00
+kernel=7.2.15-arch1-1
+cmdline=archisobasedir=arch archisosearchuuid=2026-11-11-18-34-38-00 splash quiet loglevel=3 rd.udev.log_level=3 vt.global_cursor_default=0 plymouth.ignore-serial-consoles consoleblank=0 console=ttyS0,115200 systemd.unit=multi-user.target plymouth.enable=0 disablehooks=plymouth
+nproc=2
+               total        used        free      shared  buff/cache   available
+Mem:            3906         403        2421           9        1306        3503
+Swap:              0           0           0
+cgroup_v2=cgroup2fs
+thm_present=yes
+gcc 16.2.1+r23+gd564253eb6c8-1
+make 4.4.1-3
+=== [SCENARIO:B] ARM B: masking titan-hwm (isolates the THM variable) ===
+Failed to mask unit: File '/etc/systemd/system/titan-hwm.service' already exists
+=== [SCENARIO:B] daemon still alive — SIGKILL ===
+=== [SCENARIO:B] FATAL: could not disable THM — aborting arm B ===
+=== [SCENARIO:B] EXIT rc=3 at: exit 3 ===
+__BENCHEDGE_5=3
+[?2004hbash-5.3# [driver] rc(scenario) = 3
+ls -la /bench/results/B-20261112-091504/ | head -25; echo __BENCHEDGE_6=$?
+[?2004ltotal 20
+drwxr-xr-x 2 root      root      4096 Nov 12 03:46 .
+drwxr-xr-x 4 archtitan archtitan 4096 Nov 12 03:46 ..
+-rw-r--r-- 1 root      root         6 Nov 12 03:46 builds.count
+-rw-r--r-- 1 root      root       641 Nov 12 03:46 meta.txt
+-rw-r--r-- 1 root      root         5 Nov 12 03:46 phase
+__BENCHEDGE_6=0
+[?2004hbash-5.3# [driver] rc(results listing) = 0
+test -f /bench/results/B-20261112-091504/summary.json && echo SUMMARY_PRESENT; echo __BENCHEDGE_7=$?
+[?2004l__BENCHEDGE_7=1
+[?2004hbash-5.3# [driver] rc(summary.json present?) = 1
+sync && umount /bench && echo UMOUNTOK; echo __BENCHEDGE_8=$?
+[?2004lUMOUNTOK
+__BENCHEDGE_8=0
+[?2004hbash-5.3# [driver] rc(umount) = 0
+[driver] arm B: scenario rc=3 — powering off

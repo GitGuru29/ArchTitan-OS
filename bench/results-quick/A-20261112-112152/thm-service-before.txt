@@ -1,0 +1,14 @@
+● titan-hwm.service - Titan Hardware Manager v3 (ArchTitan Workload Daemon)
+     Loaded: loaded (/etc/systemd/system/titan-hwm.service; enabled; preset: disabled)
+     Active: active (running) since Thu 2026-11-12 05:52:56 UTC; 21s ago
+ Invocation: ba9a10432b4b4419abf9002daf0ece35
+       Docs: https://github.com/GitGuru29/archtitan-os/wiki/Titan-Hardware-Manager
+    Process: 600 ExecStartPre=/usr/bin/chattr +i /usr/local/bin/titan-hwm-daemon (code=exited, status=1/FAILURE)
+   Main PID: 604 (titan-hwm-daemo)
+      Tasks: 3 (limit: 4406)
+     Memory: 2.9M (peak: 4.4M)
+        CPU: 10.660s
+     CGroup: /archtitan.slice/titan-hwm.service
+             └─604 /usr/local/bin/titan-hwm-daemon
+
+Nov 12 05:52:56 archiso titan-hwm-daemon[604]: [Protected] Bootstrap complete: 23 protected process(es) registered.

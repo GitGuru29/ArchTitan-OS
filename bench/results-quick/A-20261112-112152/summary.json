@@ -1,0 +1,20 @@
+{
+  "arm": "A",
+  "min_memavail_mb": 653,
+  "min_memavail_ts": 1794462943391,
+  "peak_psi_mem_some": 6.42,
+  "peak_psi_mem_full": 2.57,
+  "psi_full_stall_seconds": 0.3,
+  "peak_swapused_mb": 0,
+  "pswpin_total": 0,
+  "pswpout_total": 0,
+  "pgmajfault_total": 2677353,
+  "hog_max_rss_mb": 1932,
+  "hog_frozen_samples": 0,
+  "idle_frozen_samples": 98,
+  "collector_tick_ms_max": 680,
+  "thm_daemon_avg_cpu": 32.19,
+  "thm_daemon_max_rss_mb": 5,
+  "thm_alive": 1,
+  "oom_kills": 0
+}

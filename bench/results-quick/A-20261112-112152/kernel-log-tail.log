@@ -1,0 +1,744 @@
+Nov 12 05:52:35 archiso kernel: Linux version 7.2.15-arch1-1 (linux@archlinux) (gcc (GCC) 16.2.1 20260810, GNU ld (GNU Binutils) 2.47) #1 SMP PREEMPT_DYNAMIC Tue, 03 Nov 2026 12:37:21 +0000
+Nov 12 05:52:35 archiso kernel: Command line: archisobasedir=arch archisosearchuuid=2026-11-11-18-34-38-00 splash quiet loglevel=3 rd.udev.log_level=3 vt.global_cursor_default=0 plymouth.ignore-serial-consoles consoleblank=0 console=ttyS0,115200 systemd.unit=multi-user.target plymouth.enable=0 disablehooks=plymouth
+Nov 12 05:52:35 archiso kernel: x86/CPU: Model not found in latest microcode list
+Nov 12 05:52:35 archiso kernel: BIOS-provided physical RAM map:
+Nov 12 05:52:35 archiso kernel: BIOS-e820: [mem 0x0000000000000000-0x000000000009fbff]  System RAM
+Nov 12 05:52:35 archiso kernel: BIOS-e820: [mem 0x000000000009fc00-0x000000000009ffff]  device reserved
+Nov 12 05:52:35 archiso kernel: BIOS-e820: [gap 0x00000000000a0000-0x00000000000effff]
+Nov 12 05:52:35 archiso kernel: BIOS-e820: [mem 0x00000000000f0000-0x00000000000fffff]  device reserved
+Nov 12 05:52:35 archiso kernel: BIOS-e820: [mem 0x0000000000100000-0x000000007ffd8fff]  System RAM
+Nov 12 05:52:35 archiso kernel: BIOS-e820: [mem 0x000000007ffd9000-0x000000007fffffff]  device reserved
+Nov 12 05:52:35 archiso kernel: BIOS-e820: [gap 0x0000000080000000-0x00000000afffffff]
+Nov 12 05:52:35 archiso kernel: BIOS-e820: [mem 0x00000000b0000000-0x00000000bfffffff]  device reserved
+Nov 12 05:52:35 archiso kernel: BIOS-e820: [gap 0x00000000c0000000-0x00000000fed1bfff]
+Nov 12 05:52:35 archiso kernel: BIOS-e820: [mem 0x00000000fed1c000-0x00000000fed1ffff]  device reserved
+Nov 12 05:52:35 archiso kernel: BIOS-e820: [gap 0x00000000fed20000-0x00000000feffbfff]
+Nov 12 05:52:35 archiso kernel: BIOS-e820: [mem 0x00000000feffc000-0x00000000feffffff]  device reserved
+Nov 12 05:52:35 archiso kernel: BIOS-e820: [gap 0x00000000ff000000-0x00000000fffbffff]
+Nov 12 05:52:35 archiso kernel: BIOS-e820: [mem 0x00000000fffc0000-0x00000000ffffffff]  device reserved
+Nov 12 05:52:35 archiso kernel: BIOS-e820: [mem 0x0000000100000000-0x000000017fffffff]  System RAM
+Nov 12 05:52:35 archiso kernel: NX (Execute Disable) protection: active
+Nov 12 05:52:35 archiso kernel: APIC: Static calls initialized
+Nov 12 05:52:35 archiso kernel: DMI: SMBIOS 2.8 present.
+Nov 12 05:52:35 archiso kernel: DMI: QEMU Standard PC (Q35 + ICH9, 2009), BIOS Arch Linux 1.17.0-2-2 04/01/2014
+Nov 12 05:52:35 archiso kernel: DMI: Memory slots populated: 1/1
+Nov 12 05:52:35 archiso kernel: Hypervisor detected: KVM
+Nov 12 05:52:35 archiso kernel: last_pfn = 0x7ffd9 max_arch_pfn = 0x400000000
+Nov 12 05:52:35 archiso kernel: kvm-clock: Using msrs 4b564d01 and 4b564d00
+Nov 12 05:52:35 archiso kernel: kvm-clock: using sched offset of 1396159135 cycles
+Nov 12 05:52:35 archiso kernel: clocksource: kvm-clock: mask: 0xffffffffffffffff max_cycles: 0x1cd42e4dffb, max_idle_ns: 881590591483 ns
+Nov 12 05:52:35 archiso kernel: tsc: Detected 2419.200 MHz processor
+Nov 12 05:52:35 archiso kernel: e820: update [mem 0x00000000-0x00000fff] System RAM ==> device reserved
+Nov 12 05:52:35 archiso kernel: e820: remove [mem 0x000a0000-0x000fffff] System RAM
+Nov 12 05:52:35 archiso kernel: last_pfn = 0x180000 max_arch_pfn = 0x400000000
+Nov 12 05:52:35 archiso kernel: MTRR map: 4 entries (3 fixed + 1 variable; max 19), built from 8 variable MTRRs
+Nov 12 05:52:35 archiso kernel: x86/PAT: Configuration [0-7]: WB  WC  UC- UC  WB  WP  UC- WT  
+Nov 12 05:52:35 archiso kernel: last_pfn = 0x7ffd9 max_arch_pfn = 0x400000000
+Nov 12 05:52:35 archiso kernel: found SMP MP-table at [mem 0x000f66b0-0x000f66bf]
+Nov 12 05:52:35 archiso kernel: Using GB pages for direct mapping
+Nov 12 05:52:35 archiso kernel: RAMDISK: [mem 0x71c32000-0x7ffcffff]
+Nov 12 05:52:35 archiso kernel: ACPI: Early table checksum verification disabled
+Nov 12 05:52:35 archiso kernel: ACPI: RSDP 0x00000000000F64D0 000014 (v00 BOCHS )
+Nov 12 05:52:35 archiso kernel: ACPI: RSDT 0x000000007FFE2396 000038 (v01 BOCHS  BXPC     00000001 BXPC 00000001)
+Nov 12 05:52:35 archiso kernel: ACPI: FACP 0x000000007FFE2186 0000F4 (v03 BOCHS  BXPC     00000001 BXPC 00000001)
+Nov 12 05:52:35 archiso kernel: ACPI: DSDT 0x000000007FFE0040 002146 (v01 BOCHS  BXPC     00000001 BXPC 00000001)
+Nov 12 05:52:35 archiso kernel: ACPI: FACS 0x000000007FFE0000 000040
+Nov 12 05:52:35 archiso kernel: ACPI: APIC 0x000000007FFE227A 000080 (v03 BOCHS  BXPC     00000001 BXPC 00000001)
+Nov 12 05:52:35 archiso kernel: ACPI: HPET 0x000000007FFE22FA 000038 (v01 BOCHS  BXPC     00000001 BXPC 00000001)
+Nov 12 05:52:35 archiso kernel: ACPI: MCFG 0x000000007FFE2332 00003C (v01 BOCHS  BXPC     00000001 BXPC 00000001)
+Nov 12 05:52:35 archiso kernel: ACPI: WAET 0x000000007FFE236E 000028 (v01 BOCHS  BXPC     00000001 BXPC 00000001)
+Nov 12 05:52:35 archiso kernel: ACPI: Reserving FACP table memory at [mem 0x7ffe2186-0x7ffe2279]
+Nov 12 05:52:35 archiso kernel: ACPI: Reserving DSDT table memory at [mem 0x7ffe0040-0x7ffe2185]
+Nov 12 05:52:35 archiso kernel: ACPI: Reserving FACS table memory at [mem 0x7ffe0000-0x7ffe003f]
+Nov 12 05:52:35 archiso kernel: ACPI: Reserving APIC table memory at [mem 0x7ffe227a-0x7ffe22f9]
+Nov 12 05:52:35 archiso kernel: ACPI: Reserving HPET table memory at [mem 0x7ffe22fa-0x7ffe2331]
+Nov 12 05:52:35 archiso kernel: ACPI: Reserving MCFG table memory at [mem 0x7ffe2332-0x7ffe236d]
+Nov 12 05:52:35 archiso kernel: ACPI: Reserving WAET table memory at [mem 0x7ffe236e-0x7ffe2395]
+Nov 12 05:52:35 archiso kernel: No NUMA configuration found
+Nov 12 05:52:35 archiso kernel: Faking a node at [mem 0x0000000000000000-0x000000017fffffff]
+Nov 12 05:52:35 archiso kernel: NODE_DATA(0) allocated [mem 0x17ffd4f80-0x17fffffff]
+Nov 12 05:52:35 archiso kernel: ACPI: PM-Timer IO Port: 0x608
+Nov 12 05:52:35 archiso kernel: ACPI: LAPIC_NMI (acpi_id[0xff] dfl dfl lint[0x1])
+Nov 12 05:52:35 archiso kernel: IOAPIC[0]: apic_id 0, version 17, address 0xfec00000, GSI 0-23
+Nov 12 05:52:35 archiso kernel: ACPI: INT_SRC_OVR (bus 0 bus_irq 0 global_irq 2 dfl dfl)
+Nov 12 05:52:35 archiso kernel: ACPI: INT_SRC_OVR (bus 0 bus_irq 5 global_irq 5 high level)
+Nov 12 05:52:35 archiso kernel: ACPI: INT_SRC_OVR (bus 0 bus_irq 9 global_irq 9 high level)
+Nov 12 05:52:35 archiso kernel: ACPI: INT_SRC_OVR (bus 0 bus_irq 10 global_irq 10 high level)
+Nov 12 05:52:35 archiso kernel: ACPI: INT_SRC_OVR (bus 0 bus_irq 11 global_irq 11 high level)
+Nov 12 05:52:35 archiso kernel: ACPI: Using ACPI (MADT) for SMP configuration information
+Nov 12 05:52:35 archiso kernel: ACPI: HPET id: 0x8086a201 base: 0xfed00000
+Nov 12 05:52:35 archiso kernel: TSC deadline timer available
+Nov 12 05:52:35 archiso kernel: CPU topo: Max. logical packages:   1
+Nov 12 05:52:35 archiso kernel: CPU topo: Max. logical nodes:      1
+Nov 12 05:52:35 archiso kernel: CPU topo: Num. nodes per package:  1
+Nov 12 05:52:35 archiso kernel: CPU topo: Max. logical dies:       1
+Nov 12 05:52:35 archiso kernel: CPU topo: Max. dies per package:   1
+Nov 12 05:52:35 archiso kernel: CPU topo: Max. threads per core:   1
+Nov 12 05:52:35 archiso kernel: CPU topo: Num. cores per package:     2
+Nov 12 05:52:35 archiso kernel: CPU topo: Num. threads per package:   2
+Nov 12 05:52:35 archiso kernel: CPU topo: Allowing 2 present CPUs plus 0 hotplug CPUs
+Nov 12 05:52:35 archiso kernel: kvm-guest: APIC: eoi() replaced with kvm_guest_apic_eoi_write()
+Nov 12 05:52:35 archiso kernel: kvm-guest: KVM setup pv remote TLB flush
+Nov 12 05:52:35 archiso kernel: kvm-guest: setup PV sched yield
+Nov 12 05:52:35 archiso kernel: PM: hibernation: Registered nosave memory: [mem 0x00000000-0x00000fff]
+Nov 12 05:52:35 archiso kernel: PM: hibernation: Registered nosave memory: [mem 0x0009f000-0x000fffff]
+Nov 12 05:52:35 archiso kernel: PM: hibernation: Registered nosave memory: [mem 0x7ffd9000-0xffffffff]
+Nov 12 05:52:35 archiso kernel: [gap 0xc0000000-0xfed1bfff] available for PCI devices
+Nov 12 05:52:35 archiso kernel: Booting paravirtualized kernel on KVM
+Nov 12 05:52:35 archiso kernel: clocksource: refined-jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 1910969940391419 ns
+Nov 12 05:52:35 archiso kernel: Zone ranges:
+Nov 12 05:52:35 archiso kernel:   DMA      [mem 0x0000000000001000-0x0000000000ffffff]
+Nov 12 05:52:35 archiso kernel:   DMA32    [mem 0x0000000001000000-0x00000000ffffffff]
+Nov 12 05:52:35 archiso kernel:   Normal   [mem 0x0000000100000000-0x000000017fffffff]
+Nov 12 05:52:35 archiso kernel:   Device   empty
+Nov 12 05:52:35 archiso kernel: Movable zone start for each node
+Nov 12 05:52:35 archiso kernel: Early memory node ranges
+Nov 12 05:52:35 archiso kernel:   node   0: [mem 0x0000000000001000-0x000000000009efff]
+Nov 12 05:52:35 archiso kernel:   node   0: [mem 0x0000000000100000-0x000000007ffd8fff]
+Nov 12 05:52:35 archiso kernel:   node   0: [mem 0x0000000100000000-0x000000017fffffff]
+Nov 12 05:52:35 archiso kernel: Initmem setup node 0 [mem 0x0000000000001000-0x000000017fffffff]
+Nov 12 05:52:35 archiso kernel: On node 0, zone DMA: 1 pages in unavailable ranges
+Nov 12 05:52:35 archiso kernel: On node 0, zone DMA: 97 pages in unavailable ranges
+Nov 12 05:52:35 archiso kernel: On node 0, zone Normal: 39 pages in unavailable ranges
+Nov 12 05:52:35 archiso kernel: setup_percpu: NR_CPUS:8192 nr_cpumask_bits:2 nr_cpu_ids:2 nr_node_ids:1
+Nov 12 05:52:35 archiso kernel: percpu: Embedded 63 pages/cpu s221184 r8192 d28672 u1048576
+Nov 12 05:52:35 archiso kernel: pcpu-alloc: s221184 r8192 d28672 u1048576 alloc=1*2097152
+Nov 12 05:52:35 archiso kernel: pcpu-alloc: [0] 0 1 
+Nov 12 05:52:35 archiso kernel: kvm-guest: PV spinlocks enabled
+Nov 12 05:52:35 archiso kernel: PV qspinlock hash table entries: 256 (order: 0, 4096 bytes, linear)
+Nov 12 05:52:35 archiso kernel: Kernel command line: archisobasedir=arch archisosearchuuid=2026-11-11-18-34-38-00 splash quiet loglevel=3 rd.udev.log_level=3 vt.global_cursor_default=0 plymouth.ignore-serial-consoles consoleblank=0 console=ttyS0,115200 systemd.unit=multi-user.target plymouth.enable=0 disablehooks=plymouth
+Nov 12 05:52:35 archiso kernel: Unknown kernel command line parameters "splash archisobasedir=arch archisosearchuuid=2026-11-11-18-34-38-00 disablehooks=plymouth", will be passed to user space.
+Nov 12 05:52:35 archiso kernel: random: crng init done
+Nov 12 05:52:35 archiso kernel: printk: log buffer data + meta data: 131072 + 557056 = 688128 bytes
+Nov 12 05:52:35 archiso kernel: Dentry cache hash table entries: 524288 (order: 10, 4194304 bytes, linear)
+Nov 12 05:52:35 archiso kernel: Inode-cache hash table entries: 262144 (order: 9, 2097152 bytes, linear)
+Nov 12 05:52:35 archiso kernel: software IO TLB: area num 2.
+Nov 12 05:52:35 archiso kernel: Fallback order for Node 0: 0 
+Nov 12 05:52:35 archiso kernel: Built 1 zonelists, mobility grouping on.  Total pages: 1048439
+Nov 12 05:52:35 archiso kernel: Policy zone: Normal
+Nov 12 05:52:35 archiso kernel: mem auto-init: stack:all(zero), heap alloc:on, heap free:off
+Nov 12 05:52:35 archiso kernel: SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=2, Nodes=1
+Nov 12 05:52:35 archiso kernel: ftrace: allocating 58796 entries in 232 pages
+Nov 12 05:52:35 archiso kernel: ftrace: allocated 232 pages with 4 groups
+Nov 12 05:52:35 archiso kernel: Dynamic Preempt: full
+Nov 12 05:52:35 archiso kernel: rcu: Preemptible hierarchical RCU implementation.
+Nov 12 05:52:35 archiso kernel: rcu:         RCU restricting CPUs from NR_CPUS=8192 to nr_cpu_ids=2.
+Nov 12 05:52:35 archiso kernel: rcu:         RCU priority boosting: priority 1 delay 500 ms.
+Nov 12 05:52:35 archiso kernel:         Trampoline variant of Tasks RCU enabled.
+Nov 12 05:52:35 archiso kernel:         Rude variant of Tasks RCU enabled.
+Nov 12 05:52:35 archiso kernel:         Tracing variant of Tasks RCU enabled.
+Nov 12 05:52:35 archiso kernel: rcu: RCU calculated value of scheduler-enlistment delay is 100 jiffies.
+Nov 12 05:52:35 archiso kernel: rcu: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=2
+Nov 12 05:52:35 archiso kernel: RCU Tasks: Setting shift to 1 and lim to 1 rcu_task_cb_adjust=1 rcu_task_cpu_ids=2.
+Nov 12 05:52:35 archiso kernel: RCU Tasks Rude: Setting shift to 1 and lim to 1 rcu_task_cb_adjust=1 rcu_task_cpu_ids=2.
+Nov 12 05:52:35 archiso kernel: NR_IRQS: 524544, nr_irqs: 440, preallocated irqs: 16
+Nov 12 05:52:35 archiso kernel: rcu: srcu_init: Setting srcu_struct sizes based on contention.
+Nov 12 05:52:35 archiso kernel: clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 1911260446275000 ns
+Nov 12 05:52:35 archiso kernel: kfence: initialized - using 2097152 bytes for 255 objects at 0x(____ptrval____)-0x(____ptrval____)
+Nov 12 05:52:35 archiso kernel: Console: colour *CGA 80x25
+Nov 12 05:52:35 archiso kernel: printk: legacy console [ttyS0] enabled
+Nov 12 05:52:35 archiso kernel: ACPI: Core revision 20260408
+Nov 12 05:52:35 archiso kernel: clocksource: hpet: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 19112604467 ns
+Nov 12 05:52:35 archiso kernel: APIC: Switch to symmetric I/O mode setup
+Nov 12 05:52:35 archiso kernel: x2apic enabled
+Nov 12 05:52:35 archiso kernel: APIC: Switched APIC routing to: physical x2apic
+Nov 12 05:52:35 archiso kernel: kvm-guest: APIC: send_IPI_mask() replaced with kvm_send_ipi_mask()
+Nov 12 05:52:35 archiso kernel: kvm-guest: APIC: send_IPI_mask_allbutself() replaced with kvm_send_ipi_mask_allbutself()
+Nov 12 05:52:35 archiso kernel: kvm-guest: setup PV IPIs
+Nov 12 05:52:35 archiso kernel: ..TIMER: vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1
+Nov 12 05:52:35 archiso kernel: clocksource: tsc-early: mask: 0xffffffffffffffff max_cycles: 0x22df1149949, max_idle_ns: 440795312789 ns
+Nov 12 05:52:35 archiso kernel: Calibrating delay loop (skipped) preset value.. 4838.40 BogoMIPS (lpj=2419200)
+Nov 12 05:52:35 archiso kernel: x86/cpu: User Mode Instruction Prevention (UMIP) activated
+Nov 12 05:52:35 archiso kernel: CET detected: Indirect Branch Tracking enabled
+Nov 12 05:52:35 archiso kernel: Last level iTLB entries: 4KB 0, 2MB 0, 4MB 0
+Nov 12 05:52:35 archiso kernel: Last level dTLB entries: 4KB 0, 2MB 0, 4MB 0, 1GB 0
+Nov 12 05:52:35 archiso kernel: mitigations: Enabled attack vectors: user_kernel, user_user, guest_host, guest_guest, SMT mitigations: auto
+Nov 12 05:52:35 archiso kernel: Speculative Store Bypass: Mitigation: Speculative Store Bypass disabled via prctl
+Nov 12 05:52:35 archiso kernel: Spectre V2 : Mitigation: Enhanced / Automatic IBRS
+Nov 12 05:52:35 archiso kernel: ITS: Mitigation: Aligned branch/return thunks
+Nov 12 05:52:35 archiso kernel: Spectre V1 : Mitigation: usercopy/swapgs barriers and __user pointer sanitization
+Nov 12 05:52:35 archiso kernel: Spectre V2 : Spectre v2 / PBRSB-eIBRS: Retire a single CALL on VMEXIT
+Nov 12 05:52:35 archiso kernel: Spectre V2 : Enabling IBPB for BPF
+Nov 12 05:52:35 archiso kernel: Spectre V2 : mitigation: Enabling conditional Indirect Branch Prediction Barrier
+Nov 12 05:52:35 archiso kernel: active return thunk: its_return_thunk
+Nov 12 05:52:35 archiso kernel: Spectre V2 : Spectre BHI mitigation: SW BHB clearing on syscall and VM exit
+Nov 12 05:52:35 archiso kernel: x86/fpu: Supporting XSAVE feature 0x001: 'x87 floating point registers'
+Nov 12 05:52:35 archiso kernel: x86/fpu: Supporting XSAVE feature 0x002: 'SSE registers'
+Nov 12 05:52:35 archiso kernel: x86/fpu: Supporting XSAVE feature 0x004: 'AVX registers'
+Nov 12 05:52:35 archiso kernel: x86/fpu: Supporting XSAVE feature 0x020: 'AVX-512 opmask'
+Nov 12 05:52:35 archiso kernel: x86/fpu: Supporting XSAVE feature 0x040: 'AVX-512 Hi256'
+Nov 12 05:52:35 archiso kernel: x86/fpu: Supporting XSAVE feature 0x080: 'AVX-512 ZMM_Hi256'
+Nov 12 05:52:35 archiso kernel: x86/fpu: Supporting XSAVE feature 0x200: 'Protection Keys User registers'
+Nov 12 05:52:35 archiso kernel: x86/fpu: Supporting XSAVE feature 0x800: 'Control-flow User registers'
+Nov 12 05:52:35 archiso kernel: x86/fpu: Supporting XSAVE feature 0x1000: 'Control-flow Kernel registers (KVM only)'
+Nov 12 05:52:35 archiso kernel: x86/fpu: xstate_offset[2]:  576, xstate_sizes[2]:  256
+Nov 12 05:52:35 archiso kernel: x86/fpu: xstate_offset[5]:  832, xstate_sizes[5]:   64
+Nov 12 05:52:35 archiso kernel: x86/fpu: xstate_offset[6]:  896, xstate_sizes[6]:  512
+Nov 12 05:52:35 archiso kernel: x86/fpu: xstate_offset[7]: 1408, xstate_sizes[7]: 1024
+Nov 12 05:52:35 archiso kernel: x86/fpu: xstate_offset[9]: 2432, xstate_sizes[9]:    8
+Nov 12 05:52:35 archiso kernel: x86/fpu: xstate_offset[11]: 2440, xstate_sizes[11]:   16
+Nov 12 05:52:35 archiso kernel: x86/fpu: xstate_offset[12]: 2456, xstate_sizes[12]:   24
+Nov 12 05:52:35 archiso kernel: x86/fpu: Enabled xstate features 0x1ae7, context size is 2480 bytes, using 'compacted' format.
+Nov 12 05:52:35 archiso kernel: pid_max: default: 32768 minimum: 301
+Nov 12 05:52:35 archiso kernel: landlock: Up and running.
+Nov 12 05:52:35 archiso kernel: Yama: becoming mindful.
+Nov 12 05:52:35 archiso kernel: LSM support for eBPF active
+Nov 12 05:52:35 archiso kernel: Mount-cache hash table entries: 8192 (order: 4, 65536 bytes, linear)
+Nov 12 05:52:35 archiso kernel: Mountpoint-cache hash table entries: 8192 (order: 4, 65536 bytes, linear)
+Nov 12 05:52:35 archiso kernel: VFS: Finished mounting rootfs on nullfs
+Nov 12 05:52:35 archiso kernel: smpboot: CPU0: 11th Gen Intel(R) Core(TM) i5-1135G7 @ 2.40GHz (family: 0x6, model: 0x8c, stepping: 0x1)
+Nov 12 05:52:35 archiso kernel: Performance Events: Icelake events, 
+Nov 12 05:52:35 archiso kernel: core: The event 0x400 is not supported as a normal event.
+Nov 12 05:52:35 archiso kernel: core: The event 0x8000 is not supported as a normal event.
+Nov 12 05:52:35 archiso kernel: core: The event 0x8100 is not supported as a normal event.
+Nov 12 05:52:35 archiso kernel: core: The event 0x8200 is not supported as a normal event.
+Nov 12 05:52:35 archiso kernel: core: The event 0x8300 is not supported as a normal event.
+Nov 12 05:52:35 archiso kernel: full-width counters, Intel PMU driver.
+Nov 12 05:52:35 archiso kernel: ... version:                   2
+Nov 12 05:52:35 archiso kernel: ... bit width:                 48
+Nov 12 05:52:35 archiso kernel: ... generic counters:          8
+Nov 12 05:52:35 archiso kernel: ... generic bitmap:            00000000000000ff
+Nov 12 05:52:35 archiso kernel: ... fixed-purpose counters:    3
+Nov 12 05:52:35 archiso kernel: ... fixed-purpose bitmap:      0000000000000007
+Nov 12 05:52:35 archiso kernel: ... value mask:                0000ffffffffffff
+Nov 12 05:52:35 archiso kernel: ... max period:                00007fffffffffff
+Nov 12 05:52:35 archiso kernel: ... global_ctrl mask:          00000007000000ff
+Nov 12 05:52:35 archiso kernel: signal: max sigframe size: 3632
+Nov 12 05:52:35 archiso kernel: rcu: Hierarchical SRCU implementation.
+Nov 12 05:52:35 archiso kernel: rcu:         Max phase no-delay instances is 400.
+Nov 12 05:52:35 archiso kernel: Timer migration: 1 hierarchy levels; 8 children per group; 1 crossnode level
+Nov 12 05:52:35 archiso kernel: smp: Bringing up secondary CPUs ...
+Nov 12 05:52:35 archiso kernel: smpboot: x86: Booting SMP configuration:
+Nov 12 05:52:35 archiso kernel: .... node  #0, CPUs:      #1
+Nov 12 05:52:35 archiso kernel: smp: Brought up 1 node, 2 CPUs
+Nov 12 05:52:35 archiso kernel: smpboot: Total of 2 processors activated (9676.80 BogoMIPS)
+Nov 12 05:52:35 archiso kernel: Memory: 3749676K/4193756K available (22246K kernel code, 3070K rwdata, 17596K rodata, 4940K init, 5004K bss, 434236K reserved, 0K cma-reserved)
+Nov 12 05:52:35 archiso kernel: devtmpfs: initialized
+Nov 12 05:52:35 archiso kernel: x86/mm: Memory block size: 128MB
+Nov 12 05:52:35 archiso kernel: posixtimers hash table entries: 1024 (order: 2, 16384 bytes, linear)
+Nov 12 05:52:35 archiso kernel: futex hash table entries: 512 (32768 bytes on 1 NUMA nodes, total 32 KiB, linear).
+Nov 12 05:52:35 archiso kernel: xor: automatically using best checksumming function   avx       
+Nov 12 05:52:35 archiso kernel: PM: RTC time: 05:51:55, date: 2026-11-12
+Nov 12 05:52:35 archiso kernel: NET: Registered PF_NETLINK/PF_ROUTE protocol family
+Nov 12 05:52:35 archiso kernel: DMA: preallocated 512 KiB GFP_KERNEL pool for atomic allocations
+Nov 12 05:52:35 archiso kernel: DMA: preallocated 512 KiB GFP_KERNEL|GFP_DMA pool for atomic allocations
+Nov 12 05:52:35 archiso kernel: DMA: preallocated 512 KiB GFP_KERNEL|GFP_DMA32 pool for atomic allocations
+Nov 12 05:52:35 archiso kernel: audit: initializing netlink subsys (disabled)
+Nov 12 05:52:35 archiso kernel: audit: type=2000 audit(1794462716.057:1): state=initialized audit_enabled=0 res=1
+Nov 12 05:52:35 archiso kernel: thermal_sys: Registered thermal governor 'fair_share'
+Nov 12 05:52:35 archiso kernel: thermal_sys: Registered thermal governor 'bang_bang'
+Nov 12 05:52:35 archiso kernel: thermal_sys: Registered thermal governor 'step_wise'
+Nov 12 05:52:35 archiso kernel: thermal_sys: Registered thermal governor 'user_space'
+Nov 12 05:52:35 archiso kernel: thermal_sys: Registered thermal governor 'power_allocator'
+Nov 12 05:52:35 archiso kernel: cpuidle: using governor ladder
+Nov 12 05:52:35 archiso kernel: cpuidle: using governor menu
+Nov 12 05:52:35 archiso kernel: Freeing SMP alternatives memory: 60K
+Nov 12 05:52:35 archiso kernel: acpiphp: ACPI Hot Plug PCI Controller Driver version: 0.5
+Nov 12 05:52:35 archiso kernel: PCI: ECAM [mem 0xb0000000-0xbfffffff] (base 0xb0000000) for domain 0000 [bus 00-ff]
+Nov 12 05:52:35 archiso kernel: PCI: ECAM [mem 0xb0000000-0xbfffffff] reserved as E820 entry
+Nov 12 05:52:35 archiso kernel: PCI: Using configuration type 1 for base access
+Nov 12 05:52:35 archiso kernel: virt/tdx: TDX not supported by the host platform
+Nov 12 05:52:35 archiso kernel: kprobes: kprobe jump-optimization is enabled. All kprobes are optimized if possible.
+Nov 12 05:52:35 archiso kernel: HugeTLB: registered 1.00 GiB page size, pre-allocated 0 pages
+Nov 12 05:52:35 archiso kernel: HugeTLB: 16380 KiB vmemmap can be freed for a 1.00 GiB page
+Nov 12 05:52:35 archiso kernel: HugeTLB: registered 2.00 MiB page size, pre-allocated 0 pages
+Nov 12 05:52:35 archiso kernel: HugeTLB: 28 KiB vmemmap can be freed for a 2.00 MiB page
+Nov 12 05:52:35 archiso kernel: raid6: using avx512x2 recovery algorithm
+Nov 12 05:52:35 archiso kernel: raid6: skipped pq benchmark and selected avx512x4
+Nov 12 05:52:35 archiso kernel: ACPI: Added _OSI(Module Device)
+Nov 12 05:52:35 archiso kernel: ACPI: Added _OSI(Processor Device)
+Nov 12 05:52:35 archiso kernel: ACPI: Added _OSI(Processor Aggregator Device)
+Nov 12 05:52:35 archiso kernel: ACPI: 1 ACPI AML tables successfully acquired and loaded
+Nov 12 05:52:35 archiso kernel: ACPI: \_SB_: platform _OSC: OS support mask [006e7eff]
+Nov 12 05:52:35 archiso kernel: ACPI: Interpreter enabled
+Nov 12 05:52:35 archiso kernel: ACPI: PM: (supports S0 S3 S4 S5)
+Nov 12 05:52:35 archiso kernel: ACPI: Using IOAPIC for interrupt routing
+Nov 12 05:52:35 archiso kernel: PCI: Using host bridge windows from ACPI; if necessary, use "pci=nocrs" and report a bug
+Nov 12 05:52:35 archiso kernel: PCI: Using E820 reservations for host bridge windows
+Nov 12 05:52:35 archiso kernel: ACPI: Enabled 2 GPEs in block 00 to 3F
+Nov 12 05:52:35 archiso kernel: ACPI: PCI Root Bridge [PCI0] (domain 0000 [bus 00-ff])
+Nov 12 05:52:35 archiso kernel: acpi PNP0A08:00: _OSC: OS supports [ExtendedConfig ASPM ClockPM Segments MSI EDR HPX-Type3]
+Nov 12 05:52:35 archiso kernel: acpi PNP0A08:00: _OSC: platform does not support [PCIeHotplug LTR DPC]
+Nov 12 05:52:35 archiso kernel: acpi PNP0A08:00: _OSC: OS now controls [SHPCHotplug PME AER PCIeCapability]
+Nov 12 05:52:35 archiso kernel: PCI host bridge to bus 0000:00
+Nov 12 05:52:35 archiso kernel: pci_bus 0000:00: root bus resource [io  0x0000-0x0cf7 window]
+Nov 12 05:52:35 archiso kernel: pci_bus 0000:00: root bus resource [io  0x0d00-0xffff window]
+Nov 12 05:52:35 archiso kernel: pci_bus 0000:00: root bus resource [mem 0x000a0000-0x000bffff window]
+Nov 12 05:52:35 archiso kernel: pci_bus 0000:00: root bus resource [mem 0x80000000-0xafffffff window]
+Nov 12 05:52:35 archiso kernel: pci_bus 0000:00: root bus resource [mem 0xc0000000-0xfebfffff window]
+Nov 12 05:52:35 archiso kernel: pci_bus 0000:00: root bus resource [mem 0x7000000000-0x77ffffffff window]
+Nov 12 05:52:35 archiso kernel: pci_bus 0000:00: root bus resource [bus 00-ff]
+Nov 12 05:52:35 archiso kernel: pci 0000:00:00.0: [8086:29c0] type 00 class 0x060000 conventional PCI endpoint
+Nov 12 05:52:35 archiso kernel: pci 0000:00:01.0: [1af4:1001] type 00 class 0x010000 conventional PCI endpoint
+Nov 12 05:52:35 archiso kernel: pci 0000:00:01.0: BAR 0 [io  0xc000-0xc07f]
+Nov 12 05:52:35 archiso kernel: pci 0000:00:01.0: BAR 1 [mem 0xfebc0000-0xfebc0fff]
+Nov 12 05:52:35 archiso kernel: pci 0000:00:01.0: BAR 4 [mem 0x7000000000-0x7000003fff 64bit pref]
+Nov 12 05:52:35 archiso kernel: pci 0000:00:02.0: [1af4:1001] type 00 class 0x010000 conventional PCI endpoint
+Nov 12 05:52:35 archiso kernel: pci 0000:00:02.0: BAR 0 [io  0xc080-0xc0ff]
+Nov 12 05:52:35 archiso kernel: pci 0000:00:02.0: BAR 1 [mem 0xfebc1000-0xfebc1fff]
+Nov 12 05:52:35 archiso kernel: pci 0000:00:02.0: BAR 4 [mem 0x7000004000-0x7000007fff 64bit pref]
+Nov 12 05:52:35 archiso kernel: pci 0000:00:03.0: [1af4:1000] type 00 class 0x020000 conventional PCI endpoint
+Nov 12 05:52:35 archiso kernel: pci 0000:00:03.0: BAR 0 [io  0xc140-0xc15f]
+Nov 12 05:52:35 archiso kernel: pci 0000:00:03.0: BAR 1 [mem 0xfebc2000-0xfebc2fff]
+Nov 12 05:52:35 archiso kernel: pci 0000:00:03.0: BAR 4 [mem 0x7000008000-0x700000bfff 64bit pref]
+Nov 12 05:52:35 archiso kernel: pci 0000:00:03.0: ROM [mem 0xfeb80000-0xfebbffff pref]
+Nov 12 05:52:35 archiso kernel: pci 0000:00:1f.0: [8086:2918] type 00 class 0x060100 conventional PCI endpoint
+Nov 12 05:52:35 archiso kernel: pci 0000:00:1f.0: quirk: [io  0x0600-0x067f] claimed by ICH6 ACPI/GPIO/TCO
+Nov 12 05:52:35 archiso kernel: pci 0000:00:1f.2: [8086:2922] type 00 class 0x010601 conventional PCI endpoint
+Nov 12 05:52:35 archiso kernel: pci 0000:00:1f.2: BAR 4 [io  0xc160-0xc17f]
+Nov 12 05:52:35 archiso kernel: pci 0000:00:1f.2: BAR 5 [mem 0xfebc3000-0xfebc3fff]
+Nov 12 05:52:35 archiso kernel: pci 0000:00:1f.3: [8086:2930] type 00 class 0x0c0500 conventional PCI endpoint
+Nov 12 05:52:35 archiso kernel: pci 0000:00:1f.3: BAR 4 [io  0x0700-0x073f]
+Nov 12 05:52:35 archiso kernel: ACPI: PCI: Interrupt link LNKA configured for IRQ 10
+Nov 12 05:52:35 archiso kernel: ACPI: PCI: Interrupt link LNKB configured for IRQ 10
+Nov 12 05:52:35 archiso kernel: ACPI: PCI: Interrupt link LNKC configured for IRQ 11
+Nov 12 05:52:35 archiso kernel: ACPI: PCI: Interrupt link LNKD configured for IRQ 11
+Nov 12 05:52:35 archiso kernel: ACPI: PCI: Interrupt link LNKE configured for IRQ 10
+Nov 12 05:52:35 archiso kernel: ACPI: PCI: Interrupt link LNKF configured for IRQ 10
+Nov 12 05:52:35 archiso kernel: ACPI: PCI: Interrupt link LNKG configured for IRQ 11
+Nov 12 05:52:35 archiso kernel: ACPI: PCI: Interrupt link LNKH configured for IRQ 11
+Nov 12 05:52:35 archiso kernel: ACPI: PCI: Interrupt link GSIA configured for IRQ 16
+Nov 12 05:52:35 archiso kernel: ACPI: PCI: Interrupt link GSIB configured for IRQ 17
+Nov 12 05:52:35 archiso kernel: ACPI: PCI: Interrupt link GSIC configured for IRQ 18
+Nov 12 05:52:35 archiso kernel: ACPI: PCI: Interrupt link GSID configured for IRQ 19
+Nov 12 05:52:35 archiso kernel: ACPI: PCI: Interrupt link GSIE configured for IRQ 20
+Nov 12 05:52:35 archiso kernel: ACPI: PCI: Interrupt link GSIF configured for IRQ 21
+Nov 12 05:52:35 archiso kernel: ACPI: PCI: Interrupt link GSIG configured for IRQ 22
+Nov 12 05:52:35 archiso kernel: ACPI: PCI: Interrupt link GSIH configured for IRQ 23
+Nov 12 05:52:35 archiso kernel: iommu: Default domain type: Translated
+Nov 12 05:52:35 archiso kernel: iommu: DMA domain TLB invalidation policy: lazy mode
+Nov 12 05:52:35 archiso kernel: SCSI subsystem initialized
+Nov 12 05:52:35 archiso kernel: libata version 3.00 loaded.
+Nov 12 05:52:35 archiso kernel: ACPI: bus type USB registered
+Nov 12 05:52:35 archiso kernel: usbcore: registered new interface driver usbfs
+Nov 12 05:52:35 archiso kernel: usbcore: registered new interface driver hub
+Nov 12 05:52:35 archiso kernel: usbcore: registered new device driver usb
+Nov 12 05:52:35 archiso kernel: EDAC MC: Ver: 3.0.0
+Nov 12 05:52:35 archiso kernel: NetLabel: Initializing
+Nov 12 05:52:35 archiso kernel: NetLabel:  domain hash size = 128
+Nov 12 05:52:35 archiso kernel: NetLabel:  protocols = UNLABELED CIPSOv4 CALIPSO
+Nov 12 05:52:35 archiso kernel: NetLabel:  unlabeled traffic allowed by default
+Nov 12 05:52:35 archiso kernel: mctp: management component transport protocol core
+Nov 12 05:52:35 archiso kernel: NET: Registered PF_MCTP protocol family
+Nov 12 05:52:35 archiso kernel: PCI: Using ACPI for IRQ routing
+Nov 12 05:52:35 archiso kernel: PCI: pci_cache_line_size set to 64 bytes
+Nov 12 05:52:35 archiso kernel: e820: register RAM buffer resource [mem 0x0009fc00-0x0009ffff]
+Nov 12 05:52:35 archiso kernel: e820: register RAM buffer resource [mem 0x7ffd9000-0x7fffffff]
+Nov 12 05:52:35 archiso kernel: vgaarb: loaded
+Nov 12 05:52:35 archiso kernel: hpet0: at MMIO 0xfed00000, IRQs 2, 8, 0
+Nov 12 05:52:35 archiso kernel: hpet0: 3 comparators, 64-bit 100.000000 MHz counter
+Nov 12 05:52:35 archiso kernel: clocksource: Switched to clocksource kvm-clock
+Nov 12 05:52:35 archiso kernel: VFS: Disk quotas dquot_6.6.0
+Nov 12 05:52:35 archiso kernel: VFS: Dquot-cache hash table entries: 512 (4096 bytes)
+Nov 12 05:52:35 archiso kernel: acpi PNP0C01:00: Reserved [mem 0xb0000000-0xbfffffff]
+Nov 12 05:52:35 archiso kernel: pnp: PnP ACPI init
+Nov 12 05:52:35 archiso kernel: ACPI: IRQ 4 override to edge(!), high(!)
+Nov 12 05:52:35 archiso kernel: pnp: PnP ACPI: found 4 devices
+Nov 12 05:52:35 archiso kernel: clocksource: acpi_pm: mask: 0xffffff max_cycles: 0xffffff, max_idle_ns: 2085701024 ns
+Nov 12 05:52:35 archiso kernel: NET: Registered PF_INET protocol family
+Nov 12 05:52:35 archiso kernel: IP idents hash table entries: 65536 (order: 7, 524288 bytes, linear)
+Nov 12 05:52:35 archiso kernel: tcp_listen_portaddr_hash hash table entries: 2048 (order: 3, 32768 bytes, linear)
+Nov 12 05:52:35 archiso kernel: Table-perturb hash table entries: 65536 (order: 6, 262144 bytes, linear)
+Nov 12 05:52:35 archiso kernel: TCP established hash table entries: 32768 (order: 6, 262144 bytes, linear)
+Nov 12 05:52:35 archiso kernel: TCP bind hash table entries: 32768 (order: 8, 1048576 bytes, linear)
+Nov 12 05:52:35 archiso kernel: TCP: Hash tables configured (established 32768 bind 32768)
+Nov 12 05:52:35 archiso kernel: MPTCP token hash table entries: 4096 (order: 5, 98304 bytes, linear)
+Nov 12 05:52:35 archiso kernel: UDP hash table entries: 2048 (order: 5, 131072 bytes, linear)
+Nov 12 05:52:35 archiso kernel: NET: Registered PF_UNIX/PF_LOCAL protocol family
+Nov 12 05:52:35 archiso kernel: NET: Registered PF_XDP protocol family
+Nov 12 05:52:35 archiso kernel: pci_bus 0000:00: resource 4 [io  0x0000-0x0cf7 window]
+Nov 12 05:52:35 archiso kernel: pci_bus 0000:00: resource 5 [io  0x0d00-0xffff window]
+Nov 12 05:52:35 archiso kernel: pci_bus 0000:00: resource 6 [mem 0x000a0000-0x000bffff window]
+Nov 12 05:52:35 archiso kernel: pci_bus 0000:00: resource 7 [mem 0x80000000-0xafffffff window]
+Nov 12 05:52:35 archiso kernel: pci_bus 0000:00: resource 8 [mem 0xc0000000-0xfebfffff window]
+Nov 12 05:52:35 archiso kernel: pci_bus 0000:00: resource 9 [mem 0x7000000000-0x77ffffffff window]
+Nov 12 05:52:35 archiso kernel: PCI: CLS 0 bytes, default 64
+Nov 12 05:52:35 archiso kernel: PCI-DMA: Using software bounce buffering for IO (SWIOTLB)
+Nov 12 05:52:35 archiso kernel: software IO TLB: mapped [mem 0x000000006dc32000-0x0000000071c32000] (64MB)
+Nov 12 05:52:35 archiso kernel: Trying to unpack rootfs image as initramfs...
+Nov 12 05:52:35 archiso kernel: clocksource: tsc: mask: 0xffffffffffffffff max_cycles: 0x22df1149949, max_idle_ns: 440795312789 ns
+Nov 12 05:52:35 archiso kernel: Initialise system trusted keyrings
+Nov 12 05:52:35 archiso kernel: Key type blacklist registered
+Nov 12 05:52:35 archiso kernel: workingset: timestamp_bits=36 (anon: 31) max_order=20 bucket_order=0 (anon: 0)
+Nov 12 05:52:35 archiso kernel: fuse: init (API version 7.45)
+Nov 12 05:52:35 archiso kernel: integrity: Platform Keyring initialized
+Nov 12 05:52:35 archiso kernel: integrity: Machine keyring initialized
+Nov 12 05:52:35 archiso kernel: Key type asymmetric registered
+Nov 12 05:52:35 archiso kernel: Asymmetric key parser 'x509' registered
+Nov 12 05:52:35 archiso kernel: Block layer SCSI generic (bsg) driver version 0.4 loaded (major 245)
+Nov 12 05:52:35 archiso kernel: io scheduler mq-deadline registered
+Nov 12 05:52:35 archiso kernel: io scheduler kyber registered
+Nov 12 05:52:35 archiso kernel: io scheduler bfq registered
+Nov 12 05:52:35 archiso kernel: ledtrig-cpu: registered to indicate activity on CPUs
+Nov 12 05:52:35 archiso kernel: input: Power Button as /devices/platform/LNXPWRBN:00/input/input0
+Nov 12 05:52:35 archiso kernel: ACPI: button: Power Button [PWRF]
+Nov 12 05:52:35 archiso kernel: ACPI: \_SB_.GSIF: Enabled at IRQ 21
+Nov 12 05:52:35 archiso kernel: ACPI: \_SB_.GSIG: Enabled at IRQ 22
+Nov 12 05:52:35 archiso kernel: ACPI: \_SB_.GSIH: Enabled at IRQ 23
+Nov 12 05:52:35 archiso kernel: Serial: 8250/16550 driver, 32 ports, IRQ sharing enabled
+Nov 12 05:52:35 archiso kernel: 00:03: ttyS0 at I/O 0x3f8 (irq = 4, base_baud = 115200) is a 16550A
+Nov 12 05:52:35 archiso kernel: Non-volatile memory driver v1.3
+Nov 12 05:52:35 archiso kernel: ACPI: bus type drm_connector registered
+Nov 12 05:52:35 archiso kernel: virtio_blk virtio0: 2/0/0 default/read/poll queues
+Nov 12 05:52:35 archiso kernel: virtio_blk virtio0: [vda] 5379036 512-byte logical blocks (2.75 GB/2.56 GiB)
+Nov 12 05:52:35 archiso kernel:  vda: vda1 vda2
+Nov 12 05:52:35 archiso kernel: virtio_blk virtio1: 2/0/0 default/read/poll queues
+Nov 12 05:52:35 archiso kernel: virtio_blk virtio1: [vdb] 10485760 512-byte logical blocks (5.37 GB/5.00 GiB)
+Nov 12 05:52:35 archiso kernel: ACPI: \_SB_.GSIA: Enabled at IRQ 16
+Nov 12 05:52:35 archiso kernel: ahci 0000:00:1f.2: AHCI vers 0001.0000, 32 command slots, 1.5 Gbps, SATA mode
+Nov 12 05:52:35 archiso kernel: ahci 0000:00:1f.2: 6/6 ports implemented (port mask 0x3f)
+Nov 12 05:52:35 archiso kernel: ahci 0000:00:1f.2: flags: 64bit ncq only 
+Nov 12 05:52:35 archiso kernel: scsi host0: ahci
+Nov 12 05:52:35 archiso kernel: scsi host1: ahci
+Nov 12 05:52:35 archiso kernel: scsi host2: ahci
+Nov 12 05:52:35 archiso kernel: scsi host3: ahci
+Nov 12 05:52:35 archiso kernel: scsi host4: ahci
+Nov 12 05:52:35 archiso kernel: scsi host5: ahci
+Nov 12 05:52:35 archiso kernel: ata1: SATA max UDMA/133 abar m4096@0xfebc3000 port 0xfebc3100 irq 30 lpm-pol 1
+Nov 12 05:52:35 archiso kernel: ata2: SATA max UDMA/133 abar m4096@0xfebc3000 port 0xfebc3180 irq 30 lpm-pol 1
+Nov 12 05:52:35 archiso kernel: ata3: SATA max UDMA/133 abar m4096@0xfebc3000 port 0xfebc3200 irq 30 lpm-pol 1
+Nov 12 05:52:35 archiso kernel: ata4: SATA max UDMA/133 abar m4096@0xfebc3000 port 0xfebc3280 irq 30 lpm-pol 1
+Nov 12 05:52:35 archiso kernel: ata5: SATA max UDMA/133 abar m4096@0xfebc3000 port 0xfebc3300 irq 30 lpm-pol 1
+Nov 12 05:52:35 archiso kernel: ata6: SATA max UDMA/133 abar m4096@0xfebc3000 port 0xfebc3380 irq 30 lpm-pol 1
+Nov 12 05:52:35 archiso kernel: usbcore: registered new interface driver usbserial_generic
+Nov 12 05:52:35 archiso kernel: usbserial: USB Serial support registered for generic
+Nov 12 05:52:35 archiso kernel: i8042: PNP: PS/2 Controller [PNP0303:KBD,PNP0f13:MOU] at 0x60,0x64 irq 1,12
+Nov 12 05:52:35 archiso kernel: serio: i8042 KBD port at 0x60,0x64 irq 1
+Nov 12 05:52:35 archiso kernel: serio: i8042 AUX port at 0x60,0x64 irq 12
+Nov 12 05:52:35 archiso kernel: input: AT Translated Set 2 keyboard as /devices/platform/i8042/serio0/input/input1
+Nov 12 05:52:35 archiso kernel: rtc_cmos PNP0B00:00: RTC can wake from S4
+Nov 12 05:52:35 archiso kernel: rtc_cmos PNP0B00:00: registered as rtc0
+Nov 12 05:52:35 archiso kernel: rtc_cmos PNP0B00:00: setting system clock to 2026-11-12T05:51:56 UTC (1794462716)
+Nov 12 05:52:35 archiso kernel: rtc_cmos PNP0B00:00: alarms up to one day, y3k, 242 bytes nvram, hpet irqs
+Nov 12 05:52:35 archiso kernel: intel_pstate: CPU model not supported
+Nov 12 05:52:35 archiso kernel: hid: raw HID events driver (C) Jiri Kosina
+Nov 12 05:52:35 archiso kernel: usbcore: registered new interface driver usbhid
+Nov 12 05:52:35 archiso kernel: usbhid: USB HID core driver
+Nov 12 05:52:35 archiso kernel: drop_monitor: Initializing network drop monitor service
+Nov 12 05:52:35 archiso kernel: NET: Registered PF_INET6 protocol family
+Nov 12 05:52:35 archiso kernel: Segment Routing with IPv6
+Nov 12 05:52:35 archiso kernel: RPL Segment Routing with IPv6
+Nov 12 05:52:35 archiso kernel: In-situ OAM (IOAM) with IPv6
+Nov 12 05:52:35 archiso kernel: NET: Registered PF_PACKET protocol family
+Nov 12 05:52:35 archiso kernel: IPI shorthand broadcast: enabled
+Nov 12 05:52:35 archiso kernel: sched_clock: Marking stable (2125011872, 14076146)->(2244342975, -105254957)
+Nov 12 05:52:35 archiso kernel: registered taskstats version 1
+Nov 12 05:52:35 archiso kernel: Loading compiled-in X.509 certificates
+Nov 12 05:52:35 archiso kernel: ata1: SATA link down (SStatus 0 SControl 300)
+Nov 12 05:52:35 archiso kernel: ata3: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
+Nov 12 05:52:35 archiso kernel: ata4: SATA link down (SStatus 0 SControl 300)
+Nov 12 05:52:35 archiso kernel: ata2: SATA link down (SStatus 0 SControl 300)
+Nov 12 05:52:35 archiso kernel: ata5: SATA link down (SStatus 0 SControl 300)
+Nov 12 05:52:35 archiso kernel: ata6: SATA link down (SStatus 0 SControl 300)
+Nov 12 05:52:35 archiso kernel: ata3.00: ATAPI: QEMU DVD-ROM, 2.5+, max UDMA/100
+Nov 12 05:52:35 archiso kernel: ata3.00: applying bridge limits
+Nov 12 05:52:35 archiso kernel: ata3.00: configured for UDMA/100
+Nov 12 05:52:35 archiso kernel: scsi 2:0:0:0: CD-ROM            QEMU     QEMU DVD-ROM     2.5+ PQ: 0 ANSI: 5
+Nov 12 05:52:35 archiso kernel: Freeing initrd memory: 233080K
+Nov 12 05:52:35 archiso kernel: Loaded X.509 cert 'Build time autogenerated kernel key: 2a8e5c5db20c7f098849f041d67caeb1c7a87614'
+Nov 12 05:52:35 archiso kernel: zswap: loaded using pool zstd
+Nov 12 05:52:35 archiso kernel: Demotion targets for Node 0: null
+Nov 12 05:52:35 archiso kernel: Key type .fscrypt registered
+Nov 12 05:52:35 archiso kernel: Key type fscrypt-provisioning registered
+Nov 12 05:52:35 archiso kernel: Btrfs loaded, zoned=yes, fsverity=yes
+Nov 12 05:52:35 archiso kernel: Key type big_key registered
+Nov 12 05:52:35 archiso kernel: PM:   Magic number: 2:799:870
+Nov 12 05:52:35 archiso kernel: RAS: Correctable Errors collector initialized.
+Nov 12 05:52:35 archiso kernel: clk: Disabling unused clocks
+Nov 12 05:52:35 archiso kernel: PM: genpd: Disabling unused power domains
+Nov 12 05:52:35 archiso kernel: Freeing unused decrypted memory: 2028K
+Nov 12 05:52:35 archiso kernel: Freeing unused kernel image (initmem) memory: 4940K
+Nov 12 05:52:35 archiso kernel: Write protecting the kernel read-only data: 40960k
+Nov 12 05:52:35 archiso kernel: Freeing unused kernel image (text/rodata gap) memory: 280K
+Nov 12 05:52:35 archiso kernel: Freeing unused kernel image (rodata/data gap) memory: 836K
+Nov 12 05:52:35 archiso kernel: x86/mm: Checked W+X mappings: passed, no W+X pages found.
+Nov 12 05:52:35 archiso kernel: rodata_test: all tests were successful
+Nov 12 05:52:35 archiso kernel: Run /init as init process
+Nov 12 05:52:35 archiso kernel:   with arguments:
+Nov 12 05:52:35 archiso kernel:     /init
+Nov 12 05:52:35 archiso kernel:     splash
+Nov 12 05:52:35 archiso kernel:   with environment:
+Nov 12 05:52:35 archiso kernel:     HOME=/
+Nov 12 05:52:35 archiso kernel:     TERM=linux
+Nov 12 05:52:35 archiso kernel:     archisobasedir=arch
+Nov 12 05:52:35 archiso kernel:     archisosearchuuid=2026-11-11-18-34-38-00
+Nov 12 05:52:35 archiso kernel:     disablehooks=plymouth
+Nov 12 05:52:35 archiso kernel: lpc_ich 0000:00:1f.0: I/O space for GPIO uninitialized
+Nov 12 05:52:35 archiso kernel: sr 2:0:0:0: [sr0] scsi3-mmc drive: 4x/4x cd/rw xa/form2 tray
+Nov 12 05:52:35 archiso kernel: cdrom: Uniform CD-ROM driver Revision: 3.20
+Nov 12 05:52:35 archiso kernel: sr 2:0:0:0: Attached scsi CD-ROM sr0
+Nov 12 05:52:35 archiso kernel: ISO 9660 Extensions: Microsoft Joliet Level 3
+Nov 12 05:52:35 archiso kernel: ISO 9660 Extensions: RRIP_1991A
+Nov 12 05:52:35 archiso kernel: loop: module loaded
+Nov 12 05:52:35 archiso kernel: loop0: detected capacity change from 0 to 4756080
+Nov 12 05:52:35 archiso kernel: squashfs: version 4.0 (2009/01/31) Phillip Lougher
+Nov 12 05:52:35 archiso kernel: overlayfs: "xino" feature enabled using 2 upper inode bits.
+Nov 12 05:52:35 archiso kernel: clocksource: Watchdog remote CPU 1 read timed out
+Nov 12 05:52:35 archiso kernel: NET: Registered PF_VSOCK protocol family
+Nov 12 05:52:35 archiso systemd[1]: systemd 262.2-1-arch running in system mode (+PAM +AUDIT -SELINUX +APPARMOR -IMA +IPE +SMACK +SECCOMP +GNUTLS +OPENSSL +ACL +BLKID +CURL +ELFUTILS +FIDO2 +IDN2 +KMOD +LIBCRYPTSETUP +LIBCRYPTSETUP_PLUGINS +LIBFDISK +PCRE2 +PWQUALITY +P11KIT +QRENCODE +TPM2 +BZIP2 +LZ4 +XZ +ZLIB +ZSTD +BPF_FRAMEWORK +BTF +XKBCOMMON +UTMP +LIBARCHIVE)
+Nov 12 05:52:35 archiso systemd[1]: Detected virtualization kvm.
+Nov 12 05:52:35 archiso systemd[1]: Detected architecture x86-64.
+Nov 12 05:52:35 archiso systemd[1]: Detected first boot.
+Nov 12 05:52:35 archiso systemd[1]: Initializing machine ID from random generator.
+Nov 12 05:52:35 archiso systemd[1]: Hostname set to <archiso>.
+Nov 12 05:52:35 archiso systemd[1]: bpf-restrict-fs: LSM BPF program attached
+Nov 12 05:52:35 archiso systemd[1]: Applying preset policy.
+Nov 12 05:52:35 archiso systemd[1]: Created symlink '/etc/systemd/system/multi-user.target.wants/machines.target' → '/usr/lib/systemd/system/machines.target'.
+Nov 12 05:52:35 archiso systemd[1]: Created symlink '/etc/systemd/system/ctrl-alt-del.target' → '/usr/lib/systemd/system/reboot.target'.
+Nov 12 05:52:35 archiso systemd[1]: Created symlink '/etc/systemd/system/multi-user.target.wants/remote-cryptsetup.target' → '/usr/lib/systemd/system/remote-cryptsetup.target'.
+Nov 12 05:52:35 archiso systemd[1]: Created symlink '/etc/systemd/system/multi-user.target.wants/remote-integritysetup.target' → '/usr/lib/systemd/system/remote-integritysetup.target'.
+Nov 12 05:52:35 archiso systemd[1]: Created symlink '/etc/systemd/system/multi-user.target.wants/remote-veritysetup.target' → '/usr/lib/systemd/system/remote-veritysetup.target'.
+Nov 12 05:52:35 archiso systemd[1]: Created symlink '/etc/systemd/system/sysinit.target.wants/systemd-boot-clear-sysfail.service' → '/usr/lib/systemd/system/systemd-boot-clear-sysfail.service'.
+Nov 12 05:52:35 archiso systemd[1]: Created symlink '/etc/systemd/system/sysinit.target.wants/systemd-boot-update.service' → '/usr/lib/systemd/system/systemd-boot-update.service'.
+Nov 12 05:52:35 archiso systemd[1]: Created symlink '/etc/systemd/system/sysinit.target.wants/systemd-confext.service' → '/usr/lib/systemd/system/systemd-confext.service'.
+Nov 12 05:52:35 archiso systemd[1]: Created symlink '/etc/systemd/system/sysinit.target.wants/systemd-coredumpd.service' → '/usr/lib/systemd/system/systemd-coredumpd.service'.
+Nov 12 05:52:35 archiso systemd[1]: Created symlink '/etc/systemd/system/systemd-homed.service.wants/systemd-homed-activate.service' → '/usr/lib/systemd/system/systemd-homed-activate.service'.
+Nov 12 05:52:35 archiso systemd[1]: Created symlink '/etc/systemd/system/dbus-org.freedesktop.home1.service' → '/usr/lib/systemd/system/systemd-homed.service'.
+Nov 12 05:52:35 archiso systemd[1]: Created symlink '/etc/systemd/system/multi-user.target.wants/systemd-homed.service' → '/usr/lib/systemd/system/systemd-homed.service'.
+Nov 12 05:52:35 archiso systemd[1]: Created symlink '/etc/systemd/system/sockets.target.wants/systemd-journalctl-metrics.socket' → '/usr/lib/systemd/system/systemd-journalctl-metrics.socket'.
+Nov 12 05:52:35 archiso systemd[1]: Created symlink '/etc/systemd/system/sockets.target.wants/systemd-journald-audit.socket' → '/usr/lib/systemd/system/systemd-journald-audit.socket'.
+Nov 12 05:52:35 archiso systemd[1]: Created symlink '/etc/systemd/system/systemd-journald.service.wants/systemd-journald-audit.socket' → '/usr/lib/systemd/system/systemd-journald-audit.socket'.
+Nov 12 05:52:35 archiso systemd[1]: Created symlink '/etc/systemd/system/sockets.target.wants/systemd-mountfsd.socket' → '/usr/lib/systemd/system/systemd-mountfsd.socket'.
+Nov 12 05:52:35 archiso systemd[1]: Created symlink '/etc/systemd/system/sysinit.target.wants/systemd-network-generator.service' → '/usr/lib/systemd/system/systemd-network-generator.service'.
+Nov 12 05:52:35 archiso systemd[1]: Created symlink '/etc/systemd/system/dbus-org.freedesktop.network1.service' → '/usr/lib/systemd/system/systemd-networkd.service'.
+Nov 12 05:52:35 archiso systemd[1]: Created symlink '/etc/systemd/system/multi-user.target.wants/systemd-networkd.service' → '/usr/lib/systemd/system/systemd-networkd.service'.
+Nov 12 05:52:35 archiso systemd[1]: Created symlink '/etc/systemd/system/sockets.target.wants/systemd-networkd-varlink.socket' → '/usr/lib/systemd/system/systemd-networkd-varlink.socket'.
+Nov 12 05:52:35 archiso systemd[1]: Created symlink '/etc/systemd/system/sockets.target.wants/systemd-networkd-varlink-metrics.socket' → '/usr/lib/systemd/system/systemd-networkd-varlink-metrics.socket'.
+Nov 12 05:52:35 archiso systemd[1]: Created symlink '/etc/systemd/system/sockets.target.wants/systemd-networkd-resolve-hook.socket' → '/usr/lib/systemd/system/systemd-networkd-resolve-hook.socket'.
+Nov 12 05:52:35 archiso systemd[1]: Created symlink '/etc/systemd/system/sockets.target.wants/systemd-nsresourced.socket' → '/usr/lib/systemd/system/systemd-nsresourced.socket'.
+Nov 12 05:52:35 archiso systemd[1]: Created symlink '/etc/systemd/system/sysinit.target.wants/systemd-pstore.service' → '/usr/lib/systemd/system/systemd-pstore.service'.
+Nov 12 05:52:35 archiso systemd[1]: Created symlink '/etc/systemd/system/sockets.target.wants/systemd-report-basic.socket' → '/usr/lib/systemd/system/systemd-report-basic.socket'.
+Nov 12 05:52:35 archiso systemd[1]: Created symlink '/etc/systemd/system/sockets.target.wants/systemd-report-cgroup.socket' → '/usr/lib/systemd/system/systemd-report-cgroup.socket'.
+Nov 12 05:52:35 archiso systemd[1]: Created symlink '/etc/systemd/system/sockets.target.wants/systemd-report-files.socket' → '/usr/lib/systemd/system/systemd-report-files.socket'.
+Nov 12 05:52:35 archiso systemd[1]: Created symlink '/etc/systemd/system/sockets.target.wants/systemd-report-sign-plain.socket' → '/usr/lib/systemd/system/systemd-report-sign-plain.socket'.
+Nov 12 05:52:35 archiso systemd[1]: Created symlink '/etc/systemd/system/sockets.target.wants/systemd-report-sign-tpm2.socket' → '/usr/lib/systemd/system/systemd-report-sign-tpm2.socket'.
+Nov 12 05:52:35 archiso systemd[1]: Created symlink '/etc/systemd/system/sockets.target.wants/systemd-report-sign-tsm.socket' → '/usr/lib/systemd/system/systemd-report-sign-tsm.socket'.
+Nov 12 05:52:35 archiso systemd[1]: Created symlink '/etc/systemd/system/sockets.target.wants/systemd-report.socket' → '/usr/lib/systemd/system/systemd-report.socket'.
+Nov 12 05:52:35 archiso systemd[1]: Created symlink '/etc/systemd/system/dbus-org.freedesktop.resolve1.service' → '/usr/lib/systemd/system/systemd-resolved.service'.
+Nov 12 05:52:35 archiso systemd[1]: Created symlink '/etc/systemd/system/sysinit.target.wants/systemd-resolved.service' → '/usr/lib/systemd/system/systemd-resolved.service'.
+Nov 12 05:52:35 archiso systemd[1]: Created symlink '/etc/systemd/system/sockets.target.wants/systemd-resolved-varlink.socket' → '/usr/lib/systemd/system/systemd-resolved-varlink.socket'.
+Nov 12 05:52:35 archiso systemd[1]: Created symlink '/etc/systemd/system/sockets.target.wants/systemd-resolved-monitor.socket' → '/usr/lib/systemd/system/systemd-resolved-monitor.socket'.
+Nov 12 05:52:35 archiso systemd[1]: Created symlink '/etc/systemd/system/sysinit.target.wants/systemd-sysext.service' → '/usr/lib/systemd/system/systemd-sysext.service'.
+Nov 12 05:52:35 archiso systemd[1]: Created symlink '/etc/systemd/system/sockets.target.wants/systemd-sysupdate-notify-bootctl.socket' → '/usr/lib/systemd/system/systemd-sysupdate-notify-bootctl.socket'.
+Nov 12 05:52:35 archiso systemd[1]: Created symlink '/etc/systemd/system/sockets.target.wants/systemd-sysupdate-notify-pcrlock.socket' → '/usr/lib/systemd/system/systemd-sysupdate-notify-pcrlock.socket'.
+Nov 12 05:52:35 archiso systemd[1]: Created symlink '/etc/systemd/system/sockets.target.wants/systemd-sysupdate-notify-sysext.socket' → '/usr/lib/systemd/system/systemd-sysupdate-notify-sysext.socket'.
+Nov 12 05:52:35 archiso systemd[1]: Created symlink '/etc/systemd/system/dbus-org.freedesktop.timesync1.service' → '/usr/lib/systemd/system/systemd-timesyncd.service'.
+Nov 12 05:52:35 archiso systemd[1]: Created symlink '/etc/systemd/system/factory-reset.target.wants/systemd-tpm2-clear.service' → '/usr/lib/systemd/system/systemd-tpm2-clear.service'.
+Nov 12 05:52:35 archiso systemd[1]: Populated /etc with preset unit settings.
+Nov 12 05:52:35 archiso systemd[1]: /etc/systemd/system/archtitan.slice:8: Support for option CPUAccounting= has been removed and it is ignored
+Nov 12 05:52:35 archiso systemd[1]: /etc/systemd/system/archtitan.slice:17: Delegate= setting not supported for this unit type, ignoring.
+Nov 12 05:52:35 archiso systemd[1]: Queued start job for default target Multi-User System.
+Nov 12 05:52:35 archiso systemd[1]: Created slice ArchTitan Workload Isolation Slice.
+Nov 12 05:52:35 archiso systemd[1]: Created slice Slice /system/dirmngr.
+Nov 12 05:52:35 archiso systemd[1]: Created slice Slice /system/getty.
+Nov 12 05:52:35 archiso systemd[1]: Created slice Slice /system/gpg-agent.
+Nov 12 05:52:35 archiso systemd[1]: Created slice Slice /system/gpg-agent-browser.
+Nov 12 05:52:35 archiso systemd[1]: Created slice Slice /system/gpg-agent-extra.
+Nov 12 05:52:35 archiso systemd[1]: Created slice Slice /system/gpg-agent-ssh.
+Nov 12 05:52:35 archiso systemd[1]: Created slice Slice /system/keyboxd.
+Nov 12 05:52:35 archiso systemd[1]: Created slice Slice /system/modprobe.
+Nov 12 05:52:35 archiso systemd[1]: Created slice Slice /system/serial-getty.
+Nov 12 05:52:35 archiso systemd[1]: Created slice User and Session Slice.
+Nov 12 05:52:35 archiso systemd[1]: Started Forward Password Requests to Wall Directory Watch.
+Nov 12 05:52:35 archiso systemd[1]: Set up automount Arbitrary Executable File Formats File System Automount Point.
+Nov 12 05:52:35 archiso systemd[1]: Expecting device /dev/ttyS0...
+Nov 12 05:52:35 archiso systemd[1]: Reached target Local dm-clone Devices.
+Nov 12 05:52:35 archiso systemd[1]: Reached target Image Downloads.
+Nov 12 05:52:35 archiso systemd[1]: Reached target Local Integrity Protected Volumes.
+Nov 12 05:52:35 archiso systemd[1]: Reached target Remote Encrypted Volumes.
+Nov 12 05:52:35 archiso systemd[1]: Reached target Remote File Systems.
+Nov 12 05:52:35 archiso systemd[1]: Reached target Remote Integrity Protected Volumes.
+Nov 12 05:52:35 archiso systemd[1]: Reached target Remote Verity Protected Volumes.
+Nov 12 05:52:35 archiso systemd[1]: Reached target Slice Units.
+Nov 12 05:52:35 archiso systemd[1]: Reached target Swaps.
+Nov 12 05:52:35 archiso systemd[1]: Reached target Local Verity Protected Volumes.
+Nov 12 05:52:35 archiso systemd[1]: Listening on Device-mapper event daemon FIFOs.
+Nov 12 05:52:35 archiso systemd[1]: Listening on LVM2 poll daemon socket.
+Nov 12 05:52:35 archiso systemd[1]: Listening on Query the User Interactively for a Password.
+Nov 12 05:52:35 archiso systemd[1]: Listening on Process Core Dump Socket.
+Nov 12 05:52:35 archiso systemd[1]: Listening on Credential Encryption/Decryption.
+Nov 12 05:52:35 archiso systemd[1]: Listening on Disk Encryption Enrollment Service Socket.
+Nov 12 05:52:35 archiso systemd[1]: Listening on Factory Reset Management.
+Nov 12 05:52:35 archiso systemd[1]: Listening on Hostname Service Socket.
+Nov 12 05:52:35 archiso systemd[1]: Listening on Journal Audit Socket.
+Nov 12 05:52:35 archiso systemd[1]: Listening on Journal Socket (/dev/log).
+Nov 12 05:52:35 archiso systemd[1]: Listening on Journal Sockets.
+Nov 12 05:52:35 archiso systemd[1]: Listening on DDI File System Mounter Socket.
+Nov 12 05:52:35 archiso systemd[1]: Listening on Console Output Muting Service Socket.
+Nov 12 05:52:35 archiso systemd[1]: Listening on Network Management Metrics Varlink Socket.
+Nov 12 05:52:35 archiso systemd[1]: Listening on Network Management Varlink Socket.
+Nov 12 05:52:35 archiso systemd[1]: Listening on Network Management Netlink Socket.
+Nov 12 05:52:35 archiso systemd[1]: Listening on Namespace Resource Manager Socket.
+Nov 12 05:52:35 archiso systemd[1]: TPM PCR Measurements skipped, unmet condition check ConditionSecurity=measured-os
+Nov 12 05:52:35 archiso systemd[1]: Make TPM PCR Policy skipped, unmet condition check ConditionSecurity=measured-uki
+Nov 12 05:52:35 archiso systemd[1]: Listening on Disk Repartitioning Service Socket.
+Nov 12 05:52:35 archiso systemd[1]: Listening on Report System Basic Metrics Socket.
+Nov 12 05:52:35 archiso systemd[1]: Listening on CGroup Report Varlink Socket.
+Nov 12 05:52:35 archiso systemd[1]: Listening on Report Files Metrics Socket.
+Nov 12 05:52:35 archiso systemd[1]: Listening on Report Signing Socket (Local Software Key).
+Nov 12 05:52:35 archiso systemd[1]: Report Signing Socket (TPM2) skipped, unmet condition check ConditionSecurity=measured-uki
+Nov 12 05:52:35 archiso systemd[1]: Report Signing Socket (configfs-tsm) skipped, unmet condition check ConditionSecurity=cvm
+Nov 12 05:52:35 archiso systemd[1]: Listening on System Report Socket.
+Nov 12 05:52:35 archiso systemd[1]: Listening on Resolve Monitor Varlink Socket.
+Nov 12 05:52:35 archiso systemd[1]: Listening on Resolve Service Varlink Socket.
+Nov 12 05:52:35 archiso systemd[1]: Listening on Simple Block Device Backed Storage Provider.
+Nov 12 05:52:35 archiso systemd[1]: Listening on Simple File System Backed Storage Provider.
+Nov 12 05:52:35 archiso systemd[1]: Listening on System Install Tool.
+Nov 12 05:52:35 archiso systemd[1]: Recompute TPM PCR Policy on Completed System Update skipped, unmet condition check ConditionSecurity=measured-uki
+Nov 12 05:52:35 archiso systemd[1]: Listening on System Updates.
+Nov 12 05:52:35 archiso systemd[1]: Listening on udev Kernel Socket.
+Nov 12 05:52:35 archiso systemd[1]: Listening on udev Varlink Socket.
+Nov 12 05:52:35 archiso systemd[1]: Listening on User Database Manager Socket.
+Nov 12 05:52:35 archiso systemd[1]: Mounting Huge Pages File System...
+Nov 12 05:52:35 archiso systemd[1]: Mounting POSIX Message Queue File System...
+Nov 12 05:52:35 archiso systemd[1]: Mounting Kernel Debug File System...
+Nov 12 05:52:35 archiso systemd[1]: Mounting Kernel Trace File System...
+Nov 12 05:52:35 archiso systemd[1]: Mounting Temporary Directory /tmp...
+Nov 12 05:52:35 archiso systemd[1]: Starting ArchTitan Immutable Guard...
+Nov 12 05:52:35 archiso systemd[1]: Starting Create List of Static Device Nodes...
+Nov 12 05:52:35 archiso systemd[1]: Starting Monitoring of LVM2 mirrors, snapshots etc. using dmeventd or progress polling...
+Nov 12 05:52:35 archiso systemd[1]: Load Kernel Module configfs skipped, unmet condition check ConditionKernelModuleLoaded=!configfs
+Nov 12 05:52:35 archiso systemd[1]: Mounting Kernel Configuration File System...
+Nov 12 05:52:35 archiso systemd[1]: Load Kernel Module drm skipped, unmet condition check ConditionKernelModuleLoaded=!drm
+Nov 12 05:52:35 archiso systemd[1]: Load Kernel Module efi_pstore skipped, unmet condition check ConditionKernelModuleLoaded=!efi_pstore
+Nov 12 05:52:35 archiso systemd[1]: Load Kernel Module fuse skipped, unmet condition check ConditionKernelModuleLoaded=!fuse
+Nov 12 05:52:35 archiso systemd[1]: Mounting FUSE Control File System...
+Nov 12 05:52:35 archiso systemd[1]: Clear SysFail Entry If The Boot Is Successful skipped, unmet condition check ConditionPathExists=/sys/firmware/efi/efivars/LoaderEntrySysFail-4a67b082-0a4c-41cf-b6c7-440b29bb8c4f
+Nov 12 05:52:35 archiso systemd[1]: Clear Stale Hibernate Storage Info skipped, unmet condition check ConditionPathExists=/sys/firmware/efi/efivars/HibernateLocation-8cf2644b-4b0b-428f-9387-6d876050dc67
+Nov 12 05:52:35 archiso systemd[1]: Starting Load Kernel Modules...
+Nov 12 05:52:35 archiso systemd[1]: Starting Generate Network Units from Kernel Command Line...
+Nov 12 05:52:35 archiso systemd[1]: TPM PCR Machine ID Measurement skipped, unmet condition check ConditionSecurity=measured-os
+Nov 12 05:52:35 archiso systemd[1]: TPM PCR OS Separator skipped, unmet condition check ConditionSecurity=measured-os
+Nov 12 05:52:35 archiso systemd[1]: Starting Remount Root and Kernel File Systems...
+Nov 12 05:52:35 archiso systemd[1]: Early TPM SRK Setup skipped, unmet condition check ConditionSecurity=measured-os
+Nov 12 05:52:35 archiso systemd[1]: TPM PCR NvPCR Initialization Separator skipped, unmet condition check ConditionPathExists=/etc/initrd-release
+Nov 12 05:52:35 archiso systemd[1]: TPM NvPCR Product ID Measurement skipped, unmet condition check ConditionSecurity=measured-os
+Nov 12 05:52:35 archiso systemd[1]: Starting Load udev Rules from Credentials...
+Nov 12 05:52:35 archiso systemd[1]: Starting Coldplug All udev Devices...
+Nov 12 05:52:35 archiso systemd[1]: Starting Virtual Console Setup...
+Nov 12 05:52:35 archiso systemd[1]: Mounted Huge Pages File System.
+Nov 12 05:52:35 archiso systemd[1]: Mounted POSIX Message Queue File System.
+Nov 12 05:52:35 archiso systemd[1]: Mounted Kernel Debug File System.
+Nov 12 05:52:35 archiso systemd[1]: Mounted Kernel Trace File System.
+Nov 12 05:52:35 archiso systemd[1]: Mounted Kernel Configuration File System.
+Nov 12 05:52:35 archiso systemd[1]: Mounted FUSE Control File System.
+Nov 12 05:52:35 archiso systemd[1]: Finished Create List of Static Device Nodes.
+Nov 12 05:52:35 archiso systemd[1]: Starting Create Static Device Nodes in /dev gracefully...
+Nov 12 05:52:35 archiso systemd[1]: Finished Remount Root and Kernel File Systems.
+Nov 12 05:52:35 archiso systemd[1]: Rebuild Hardware Database skipped, no trigger condition checks were met.
+Nov 12 05:52:35 archiso systemd[1]: Platform Persistent Storage Archival skipped, unmet condition check ConditionDirectoryNotEmpty=/sys/fs/pstore
+Nov 12 05:52:35 archiso systemd[1]: Starting Load/Save OS Random Seed...
+Nov 12 05:52:35 archiso systemd[1]: TPM SRK Setup skipped, unmet condition check ConditionSecurity=measured-os
+Nov 12 05:52:35 archiso systemd[1]: Mounted Temporary Directory /tmp.
+Nov 12 05:52:35 archiso systemd[1]: Finished ArchTitan Immutable Guard.
+Nov 12 05:52:35 archiso systemd[1]: Finished Load udev Rules from Credentials.
+Nov 12 05:52:35 archiso systemd[1]: Finished Load/Save OS Random Seed.
+Nov 12 05:52:35 archiso systemd[1]: Finished Generate Network Units from Kernel Command Line.
+Nov 12 05:52:35 archiso systemd[1]: Reached target Preparation for Network.
+Nov 12 05:52:35 archiso systemd[1]: Listening on Network Management Resolve Hook Socket.
+Nov 12 05:52:35 archiso kernel: Asymmetric key parser 'pkcs8' registered
+Nov 12 05:52:35 archiso systemd[1]: Finished Load Kernel Modules.
+Nov 12 05:52:35 archiso systemd[1]: Starting Apply Kernel Variables...
+Nov 12 05:52:35 archiso kernel: device-mapper: uevent: version 1.0.3
+Nov 12 05:52:35 archiso kernel: device-mapper: ioctl: 4.50.0-ioctl (2025-04-28) initialised: dm-devel@lists.linux.dev
+Nov 12 05:52:35 archiso systemd[1]: Finished Apply Kernel Variables.
+Nov 12 05:52:35 archiso systemd[1]: Finished Monitoring of LVM2 mirrors, snapshots etc. using dmeventd or progress polling.
+Nov 12 05:52:35 archiso systemd[1]: Finished Virtual Console Setup.
+Nov 12 05:52:35 archiso systemd[1]: Starting User Database Manager...
+Nov 12 05:52:35 archiso systemd[1]: Started User Database Manager.
+Nov 12 05:52:35 archiso systemd[1]: Load Kernel Module overlay skipped, unmet condition check ConditionKernelModuleLoaded=!overlay
+Nov 12 05:52:35 archiso systemd[1]: Starting Load Kernel Module tun...
+Nov 12 05:52:35 archiso systemd[1]: Finished Coldplug All udev Devices.
+Nov 12 05:52:35 archiso kernel: tun: Universal TUN/TAP device driver, 1.6
+Nov 12 05:52:35 archiso systemd[1]: modprobe@tun.service: Deactivated successfully.
+Nov 12 05:52:35 archiso systemd[1]: Finished Load Kernel Module tun.
+Nov 12 05:52:35 archiso systemd[1]: Starting Namespace Resource Manager...
+Nov 12 05:52:35 archiso systemd[1]: Started Namespace Resource Manager.
+Nov 12 05:52:35 archiso systemd[1]: Finished Create Static Device Nodes in /dev gracefully.
+Nov 12 05:52:35 archiso systemd[1]: Starting Create System Users...
+Nov 12 05:52:35 archiso systemd[1]: Finished Create System Users.
+Nov 12 05:52:35 archiso systemd[1]: Starting Journal Metrics Report Socket...
+Nov 12 05:52:35 archiso systemd[1]: Starting Journal Log Access Socket...
+Nov 12 05:52:35 archiso systemd[1]: Starting Network Name Resolution...
+Nov 12 05:52:35 archiso systemd[1]: Starting Create Static Device Nodes in /dev...
+Nov 12 05:52:35 archiso systemd[1]: Listening on Journal Log Access Socket.
+Nov 12 05:52:35 archiso systemd[1]: Listening on Journal Metrics Report Socket.
+Nov 12 05:52:35 archiso systemd[1]: Finished Create Static Device Nodes in /dev.
+Nov 12 05:52:35 archiso systemd[1]: Reached target Preparation for Local File Systems.
+Nov 12 05:52:35 archiso systemd[1]: Entropy Daemon based on the HAVEGE algorithm skipped, unmet condition check ConditionVersion=<5.6
+Nov 12 05:52:35 archiso systemd[1]: Starting Journal Service...
+Nov 12 05:52:35 archiso systemd[1]: Repartition Root Disk skipped, no trigger condition checks were met.
+Nov 12 05:52:35 archiso systemd[1]: Starting Rule-based Manager for Device Events and Files...
+Nov 12 05:52:35 archiso systemd[1]: Started Network Name Resolution.
+Nov 12 05:52:35 archiso systemd[1]: Reached target Host and Network Name Lookups.
+Nov 12 05:52:35 archiso systemd[1]: Starting Network Time Synchronization...
+Nov 12 05:52:35 archiso systemd-journald[477]: Collecting audit messages is enabled.
+Nov 12 05:52:35 archiso systemd[1]: Started Journal Service.
+Nov 12 05:52:35 archiso kernel: audit: type=1130 audit(1794462755.264:2): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=systemd-journald comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+Nov 12 05:52:35 archiso systemd-journald[477]: Received client request to flush runtime journal.
+Nov 12 05:52:35 archiso kernel: audit: type=1334 audit(1794462755.646:3): prog-id=50 op=LOAD
+Nov 12 05:52:35 archiso kernel: audit: type=1334 audit(1794462755.647:4): prog-id=51 op=LOAD
+Nov 12 05:52:35 archiso kernel: audit: type=1334 audit(1794462755.648:5): prog-id=52 op=LOAD
+Nov 12 05:52:35 archiso kernel: audit: type=1130 audit(1794462755.665:6): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=systemd-journal-flush comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+Nov 12 05:52:35 archiso kernel: audit: type=1130 audit(1794462755.992:7): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=archtitan-firstboot-plymouth comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+Nov 12 05:52:36 archiso kernel: audit: type=1130 audit(1794462756.017:8): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=systemd-userdb-load-credentials comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+Nov 12 05:52:36 archiso kernel: audit: type=1130 audit(1794462756.132:9): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=plymouth-read-write comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+Nov 12 05:52:36 archiso kernel: audit: type=1130 audit(1794462756.133:10): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=systemd-timesyncd comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+Nov 12 05:52:36 archiso kernel: audit: type=1130 audit(1794462756.439:11): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=systemd-udevd comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+Nov 12 05:52:37 archiso kernel: virtio_net virtio2 enp0s3: renamed from eth0
+Nov 12 05:52:38 archiso kernel: cfg80211: Loading compiled-in X.509 certificates for regulatory database
+Nov 12 05:52:39 archiso kernel: Loaded X.509 cert 'sforshee: 00b28ddf47aef9cea7'
+Nov 12 05:52:39 archiso kernel: Loaded X.509 cert 'wens: 61c038651aabdcf94bd0ac7ff06c7248db18c600'
+Nov 12 05:52:39 archiso kernel: parport_pc 00:02: reported by Plug and Play ACPI
+Nov 12 05:52:39 archiso kernel: parport0: PC-style at 0x378, irq 7 [PCSPP,TRISTATE]
+Nov 12 05:52:39 archiso kernel: iTCO_wdt iTCO_wdt.1.auto: Found a ICH9 TCO device (Version=2, TCOBASE=0x0660)
+Nov 12 05:52:39 archiso kernel: input: VirtualPS/2 VMware VMMouse as /devices/platform/i8042/serio1/input/input4
+Nov 12 05:52:39 archiso kernel: input: VirtualPS/2 VMware VMMouse as /devices/platform/i8042/serio1/input/input3
+Nov 12 05:52:39 archiso kernel: input: PC Speaker as /devices/platform/pcspkr/input/input5
+Nov 12 05:52:39 archiso kernel: iTCO_wdt iTCO_wdt.1.auto: initialized. heartbeat=30 sec (nowayout=0)
+Nov 12 05:52:40 archiso kernel: ppdev: user-space parallel port driver
+Nov 12 05:52:40 archiso kernel: mousedev: PS/2 mouse device common for all mice
+Nov 12 05:52:40 archiso kernel: i801_smbus 0000:00:1f.3: SMBus using PCI interrupt
+Nov 12 05:52:40 archiso kernel: i2c i2c-0: Memory type 0x07 not supported yet, not instantiating SPD
+Nov 12 05:52:40 archiso kernel: kauditd_printk_skb: 6 callbacks suppressed
+Nov 12 05:52:40 archiso kernel: audit: type=1130 audit(1794462760.269:18): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=systemd-machine-id-commit comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+Nov 12 05:52:40 archiso kernel: audit: type=1130 audit(1794462760.495:19): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=systemd-vconsole-setup comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+Nov 12 05:52:40 archiso kernel: RAPL PMU: API unit is 2^-32 Joules, 0 fixed counters, 10737418240 ms ovfl timer
+Nov 12 05:52:41 archiso kernel: audit: type=1130 audit(1794462761.208:20): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=systemd-journal-catalog-update comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+Nov 12 05:52:41 archiso kernel: audit: type=1334 audit(1794462761.324:21): prog-id=54 op=LOAD
+Nov 12 05:52:41 archiso kernel: audit: type=1300 audit(1794462761.324:21): arch=c000003e syscall=321 success=yes exit=25 a0=5 a1=7ffe3ecc7d70 a2=94 a3=7f042e48a69e items=0 ppid=1 pid=526 auid=4294967295 uid=976 gid=976 euid=976 suid=976 fsuid=976 egid=976 sgid=976 fsgid=976 tty=(none) ses=4294967295 comm="systemd-network" exe="/usr/lib/systemd/systemd-networkd" key=(null)
+Nov 12 05:52:41 archiso kernel: audit: type=1327 audit(1794462761.324:21): proctitle="/usr/lib/systemd/systemd-networkd"
+Nov 12 05:52:41 archiso kernel: audit: type=1334 audit(1794462761.328:22): prog-id=54 op=UNLOAD
+Nov 12 05:52:41 archiso kernel: audit: type=1300 audit(1794462761.328:22): arch=c000003e syscall=3 success=yes exit=0 a0=19 a1=0 a2=0 a3=0 items=0 ppid=1 pid=526 auid=4294967295 uid=976 gid=976 euid=976 suid=976 fsuid=976 egid=976 sgid=976 fsgid=976 tty=(none) ses=4294967295 comm="systemd-network" exe="/usr/lib/systemd/systemd-networkd" key=(null)
+Nov 12 05:52:41 archiso kernel: audit: type=1327 audit(1794462761.328:22): proctitle="/usr/lib/systemd/systemd-networkd"
+Nov 12 05:52:41 archiso kernel: audit: type=1334 audit(1794462761.328:23): prog-id=55 op=LOAD
+Nov 12 05:52:43 archiso kernel: intel_rapl_msr: PL4 support detected (updated).
+Nov 12 05:52:56 archiso kernel: kauditd_printk_skb: 36 callbacks suppressed
+Nov 12 05:52:56 archiso kernel: audit: type=1130 audit(1794462776.140:38): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=ldconfig comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+Nov 12 05:52:56 archiso kernel: audit: type=1130 audit(1794462776.236:39): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=systemd-update-done comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+Nov 12 05:52:56 archiso kernel: audit: type=1334 audit(1794462776.285:40): prog-id=61 op=LOAD
+Nov 12 05:52:56 archiso kernel: audit: type=1130 audit(1794462776.521:41): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=dbus-broker comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+Nov 12 05:52:56 archiso kernel: audit: type=1334 audit(1794462776.570:42): prog-id=62 op=LOAD
+Nov 12 05:52:56 archiso kernel: audit: type=1334 audit(1794462776.598:43): prog-id=63 op=LOAD
+Nov 12 05:52:56 archiso kernel: audit: type=1334 audit(1794462776.600:44): prog-id=64 op=LOAD
+Nov 12 05:52:56 archiso kernel: audit: type=1334 audit(1794462776.600:45): prog-id=65 op=LOAD
+Nov 12 05:52:56 archiso kernel: audit: type=1130 audit(1794462776.736:46): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=titan-hwm comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+Nov 12 05:52:57 archiso kernel: audit: type=1130 audit(1794462777.632:47): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=archtitan-liveuser comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+Nov 12 05:53:05 archiso kernel: kauditd_printk_skb: 19 callbacks suppressed
+Nov 12 05:53:05 archiso kernel: audit: type=1101 audit(1794462785.236:65): pid=767 uid=0 auid=4294967295 ses=4294967295 msg='op=PAM:accounting grantors=pam_access,pam_unix,pam_permit,pam_time acct="root" exe="/usr/bin/login" hostname=archiso addr=? terminal=/dev/tty1 res=success'
+Nov 12 05:53:05 archiso kernel: audit: type=1103 audit(1794462785.274:66): pid=767 uid=0 auid=4294967295 ses=4294967295 msg='op=PAM:setcred grantors=pam_shells,pam_faillock,pam_permit,pam_env,pam_faillock acct="root" exe="/usr/bin/login" hostname=archiso addr=? terminal=/dev/tty1 res=success'
+Nov 12 05:53:05 archiso kernel: audit: type=1006 audit(1794462785.275:67): pid=767 uid=0 old-auid=4294967295 auid=0 tty=tty1 old-ses=4294967295 ses=1 res=1
+Nov 12 05:53:05 archiso kernel: audit: type=1300 audit(1794462785.275:67): arch=c000003e syscall=1 success=yes exit=1 a0=4 a1=7ffeb9578200 a2=1 a3=0 items=0 ppid=1 pid=767 auid=0 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=tty1 ses=1 comm="login" exe="/usr/bin/login" key=(null)
+Nov 12 05:53:05 archiso kernel: audit: type=1327 audit(1794462785.275:67): proctitle=2F62696E2F6C6F67696E002D66002D2D
+Nov 12 05:53:05 archiso kernel: audit: type=1130 audit(1794462785.601:68): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=user-runtime-dir@0 comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+Nov 12 05:53:05 archiso kernel: audit: type=1101 audit(1794462785.790:69): pid=786 uid=0 auid=4294967295 ses=4294967295 msg='op=PAM:accounting grantors=pam_access,pam_unix,pam_permit,pam_time acct="root" exe="/usr/lib/systemd/systemd-executor" hostname=? addr=? terminal=? res=success'
+Nov 12 05:53:05 archiso kernel: audit: type=1103 audit(1794462785.790:70): pid=786 uid=0 auid=4294967295 ses=4294967295 msg='op=PAM:setcred grantors=? acct="root" exe="/usr/lib/systemd/systemd-executor" hostname=? addr=? terminal=? res=failed'
+Nov 12 05:53:05 archiso kernel: audit: type=1006 audit(1794462785.791:71): pid=786 uid=0 old-auid=4294967295 auid=0 tty=(none) old-ses=4294967295 ses=2 res=1
+Nov 12 05:53:05 archiso kernel: audit: type=1300 audit(1794462785.791:71): arch=c000003e syscall=1 success=yes exit=1 a0=8 a1=7ffe2c415000 a2=1 a3=0 items=0 ppid=1 pid=786 auid=0 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=2 comm="(systemd)" exe="/usr/lib/systemd/systemd-executor" key=(null)
+Nov 12 05:53:14 archiso kernel: EXT4-fs (vdb): mounted filesystem ca6c415c-e300-4bef-acf7-db3a5c2d5ca2 r/w with ordered data mode. Quota mode: none.
+Nov 12 05:53:19 archiso kernel: Adding 2097148k swap on /bench/swapfile.  Priority:5 extents:6 across:2326524k 
+Nov 12 05:53:28 archiso kernel: kauditd_printk_skb: 103 callbacks suppressed
+Nov 12 05:53:28 archiso kernel: audit: type=1131 audit(1794462808.818:112): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=systemd-hostnamed comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+Nov 12 05:53:28 archiso kernel: audit: type=1334 audit(1794462808.844:113): prog-id=66 op=UNLOAD
+Nov 12 05:54:03 archiso kernel: audit: type=1131 audit(1794462843.247:114): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=gpg-agent@etc-pacman.d-gnupg comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+Nov 12 05:54:14 archiso kernel: audit: type=1130 audit(1794462854.703:115): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=pacman-init comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'

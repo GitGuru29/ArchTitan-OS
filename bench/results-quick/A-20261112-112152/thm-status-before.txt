@@ -1,0 +1,7 @@
+Titan Hardware Manager v3.1.0
+  Uptime:          21s
+  Pressure:        NORMAL  (PSI some 0% / full 0%)
+  Memory used:     10.4825%  (3497 MB free of 3906 MB)
+  CPU governor:    powersave
+  Workloads:       0 active / 0 tracked
+  Last action:     none

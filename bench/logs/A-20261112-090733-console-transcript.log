@@ -1,0 +1,167 @@
+/init: line 7: memdiskfind: not found
+P+q6E616D65\[18t[!p]104\[0m[?7h[1G[0J]3008;start=2b4fefc8e8484810b8465ddb968c258f;user=root;hostname=archiso;machineid=39788e7cf5e043ba9ffa16197770989f;bootid=6ddadd0ffd754a958fd308cd484f2316;pid=1;pidfdid=1;comm=systemd;type=boot\[!p]104\[0m[?7h[1G[0J7[32766;32766H[6n8[!p]104\[0m[?7h[1G[0J7[32766;32766H[6n8]3008;start=3c1d173e40c24e50bfb03f6aa0a1f834;user=root;hostname=archiso;machineid=39788e7cf5e043ba9ffa16197770989f;bootid=6ddadd0ffd754a958fd308cd484f2316;pid=562;pidfdid=4354;comm=(temd-firstboot);servicename=systemd-firstboot.service;invocationid=91fdcf0a5eb943ff955ea63b5e11821a;type=service\[!p]104\[0m[?7h[1G[0J7[32766;32766H[6n8[!p]104\[0m[?7h[1G[0J7[32766;32766H[6n8]3008;start=b129311c5b184ffab4db1d225761f4ba;user=root;hostname=archiso;machineid=39788e7cf5e043ba9ffa16197770989f;bootid=6ddadd0ffd754a958fd308cd484f2316;pid=712;pidfdid=377;comm=(agetty);servicename=serial-getty@ttyS0.service;invocationid=f4985822d4254b2ebbc44de0720ca5cd;type=service\P+q6E616D65\
+033[1m033[38;2;137;180;250m  ArchTitan OS 033[0m — Linux 7.2.15-arch1-1 (archiso)
+033[2m033[38;2;166;173;200m  Titan shell · tty ttyS0 · 03:38:40033[0m
+archiso login: root
+To install [38;2;23;147;209mArch Linux[0m follow the installation guide:
+https://wiki.archlinux.org/title/Installation_guide
+
+For Wi-Fi, authenticate to the wireless network using the [35miwctl[0m utility.
+For mobile broadband (WWAN) modems, connect with the [35mmmcli[0m utility.
+Ethernet, WLAN and WWAN interfaces using DHCP should work automatically.
+
+After connecting to the internet, the installation guide can be accessed
+via the convenience script [35mInstallation_guide[0m.
+
+[41m [41m [41m [40m [44m [40m [41m [46m [45m [41m [46m [43m [41m [44m [45m [40m [44m [40m [41m [44m [41m [41m [46m [42m [41m [44m [43m [41m [45m [40m [40m [44m [40m [41m [44m [42m [41m [46m [44m [41m [46m [47m [0m
+]3008;start=36a3a41837754e6580ca4689741d6a9d;user=root;hostname=archiso;machineid=39788e7cf5e043ba9ffa16197770989f;bootid=6ddadd0ffd754a958fd308cd484f2316;pid=712;pidfdid=377;comm=login;targetuser=root;sessionid=3;type=session\fish: Unknown command: fastfetch
+~/.config/fish/config.fish (line 3): 
+    fastfetch
+    ^~~~~~~~^
+from sourcing file ~/.config/fish/config.fish
+	called during startup
+[?u[>0q]11;?\[?1049hP+q696e646e\P+q71756572792d6f732d6e616d65\[?1049l[0cWelcome to fish, the friendly interactive shell
+Type [32mhelp[m for instructions on how to use fish
+]7;file://archiso/root]0;~\[m]11;?\[6n[0c[?2004h[?2031h[>4;1m=[K]133;A;click_events=1\[J
+[K[38;2;0;210;255m[1;48;2;0;210;255;38;2;11;14;20m 󰣇 TITAN [0m[48;2;30;38;56;38;2;0;210;255m[1;38;2;205;214;244m  ~ [0m[48;2;17;22;34;38;2;30;38;56m[0m[38;2;17;22;34m[0m 
+[38;2;0;210;255m◆[0m  ]133;B\[K[3Ce[4Cx[5Ce[6Cc[7C [8Cb[9Ca[10Cs[11Ch[12C [13C-[14C-[15Cn[16Co[17Cp[18Cr[19Co[20Cf[21Ci[22Cl[23Ce[24C [25C-[26C-[27Cn[28Co[29Cr[30Cc[31C[?2004l[?2031l[>4;0m>[28Dexec bash [36m--noprofile[39m [36m--norc[39m[31C
+[m]133;C;cmdline_url=exec%20bash%20--noprofile%20--norc\]0;exec bash --noprofil ~\[m[?2004hbash-5.3# 
+[?2004l[?2004hbash-5.3# echo __LOGIN_OK__$((41+1))
+[?2004l__LOGIN_OK__42
+[?2004hbash-5.3# mkdir -p /bench && mount /dev/disk/by-label/BENCHDISK /bench && chmod +x /bench/guest/tstress && echo MOUNTOK; echo __BENCHEDGE_1=$?
+[?2004lMOUNTOK
+__BENCHEDGE_1=0
+[?2004hbash-5.3# systemctl is-active titan-hwm; echo __BENCHEDGE_2=$?
+[?2004lactive
+__BENCHEDGE_2=0
+[?2004hbash-5.3# ls /sys/fs/cgroup/archtitan.slice/ 2>/dev/null; echo __BENCHEDGE_3=$?
+[?2004larchtitan-active.slice	    cpu.stat		 memory.numa_stat
+archtitan-background.slice  cpu.stat.local	 memory.oom.group
+archtitan-frozen.slice	    cpu.uclamp.max	 memory.peak
+archtitan-protected.slice   cpu.uclamp.min	 memory.pressure
+cgroup.controllers	    cpu.weight		 memory.reclaim
+cgroup.events		    cpu.weight.nice	 memory.stat
+cgroup.freeze		    io.bfq.weight	 memory.swap.current
+cgroup.kill		    io.latency		 memory.swap.events
+cgroup.max.depth	    io.max		 memory.swap.high
+cgroup.max.descendants	    io.pressure		 memory.swap.max
+cgroup.pressure		    io.prio.class	 memory.swap.peak
+cgroup.procs		    io.stat		 memory.zswap.current
+cgroup.stat		    io.weight		 memory.zswap.max
+cgroup.stat.local	    irq.pressure	 memory.zswap.writeback
+cgroup.subtree_control	    memory.current	 pids.current
+cgroup.threads		    memory.events	 pids.events
+cgroup.type		    memory.events.local  pids.events.local
+cpu.idle		    memory.high		 pids.max
+cpu.max			    memory.low		 pids.peak
+cpu.max.burst		    memory.max		 titan-hwm.service
+cpu.pressure		    memory.min
+__BENCHEDGE_3=0
+[?2004hbash-5.3# ps -o pid,%cpu,rss,etime,comm -p $(systemctl show -p MainPID --value titan-hwm); echo __BENCHEDGE_4=$?
+[?2004l    PID %CPU   RSS     ELAPSED COMMAND
+    601 25.7  5424       00:20 titan-hwm-daemo
+__BENCHEDGE_4=0
+[?2004hbash-5.3# nproc; free -m | head -2; uname -r; echo __BENCHEDGE_5=$?
+[?2004l2
+               total        used        free      shared  buff/cache   available
+Mem:            3906         417        2376          10        1338        3489
+7.2.15-arch1-1
+__BENCHEDGE_5=0
+[?2004hbash-5.3# bash /bench/guest/scenario.sh --arm A --dir /bench/results/A-20261112-090733 --quick; echo __BENCHEDGE_6=$?
+[?2004l=== [SCENARIO:A] environment recorded ===
+arm=A quick=1 date=2026-11-12T03:38:50+00:00
+kernel=7.2.15-arch1-1
+cmdline=archisobasedir=arch archisosearchuuid=2026-11-11-18-34-38-00 splash quiet loglevel=3 rd.udev.log_level=3 vt.global_cursor_default=0 plymouth.ignore-serial-consoles consoleblank=0 console=ttyS0,115200 systemd.unit=multi-user.target plymouth.enable=0 disablehooks=plymouth
+nproc=2
+               total        used        free      shared  buff/cache   available
+Mem:            3906         417        2376          10        1338        3489
+Swap:              0           0           0
+cgroup_v2=cgroup2fs
+thm_present=yes
+gcc 16.2.1+r23+gd564253eb6c8-1
+make 4.4.1-3
+=== [SCENARIO:A] ARM A: THM v3 ACTIVE (systemctl: active) ===
+=== [SCENARIO:A] 2G swap enabled on bench disk ===
+=== [SCENARIO:A] calibrating one TU (gcc RSS/time evidence) ===
+=== [SCENARIO:A] calibration: calib_tu_ms=25855 calib_tu_rss_mb=87 calib_exit=0 ===
+=== [SCENARIO:A] compile loop started (make -j2, continuous rounds) ===
+=== [SCENARIO:A] probe + 2 idle apps (400MB each) started ===
+=== [SCENARIO:A] collector started (pid 1588, 200s budget) ===
+=== [SCENARIO:A] PHASE baseline (20s) — reference metrics ===
+=== [SCENARIO:A] PHASE ramp — hog growing to 3000MB (500MB/4s) ===
+=== [SCENARIO:A] PHASE hold (30s) — pressure window (free: 48.1%) ===
+=== [SCENARIO:A] PHASE release — SIGTERM hog (simulates user closing the app) ===
+=== [SCENARIO:A] post-release free: 68.2% ===
+=== [SCENARIO:A] PHASE audit — stopping compile loop ===
+AUDIT step=1 journal-follower-stopped
+AUDIT step=2 compile-stop (waited 30s)
+AUDIT step=3 compilers-killed
+=== [SCENARIO:A] stopping probe + collector ===
+AUDIT step=4 probe-collector-stopped
+=== [SCENARIO:A] survival audit: ===
+name	pid	alive	final_state	oom_killed
+compile	1561	no	gone	no
+probe	1562	no	gone	no
+idle1	1582	yes	S	no
+idle2	1583	yes	S	no
+hog	2167	no	gone	no
+=== [SCENARIO:A] kernel OOM kill events: 0
+0 ===
+=== [SCENARIO:A] === GUEST SUMMARY (arm A) === ===
+{
+  "arm": "A",
+  "min_memavail_mb": 1326,
+  "min_memavail_ts": 1794454876523,
+  "peak_psi_mem_some": 1.95,
+  "peak_psi_mem_full": 0.84,
+  "psi_full_stall_seconds": 0.1,
+  "peak_swapused_mb": 0,
+  "pswpin_total": 0,
+  "pswpout_total": 0,
+  "pgmajfault_total": 2307794,
+  "hog_max_rss_mb": 1297,
+  "hog_frozen_samples": 0,
+  "idle_frozen_samples": 0,
+  "collector_tick_ms_max": 1392,
+  "thm_daemon_avg_cpu": 0.30,
+  "thm_daemon_max_rss_mb": 5,
+  "thm_alive": 1,
+  "oom_kills": 0
+}
+SCENARIO_COMPLETE arm=A
+=== [SCENARIO:A] EXIT rc=0 at: exit 0 ===
+__BENCHEDGE_6=0
+[?2004hbash-5.3# ls -la /bench/results/A-20261112-090733/ | head -25; echo __BENCHEDGE_7=$?
+[?2004ltotal 328
+drwxr-xr-x 2 root      root       4096 Nov 12 03:42 .
+drwxr-xr-x 3 archtitan archtitan  4096 Nov 12 03:38 ..
+-rw-r--r-- 1 root      root          0 Nov 12 03:41 STOP_COMPILE
+-rw-r--r-- 1 root      root          6 Nov 12 03:41 builds.count
+-rw-r--r-- 1 root      root         16 Nov 12 03:41 builds.tsv
+-rw-r--r-- 1 root      root         50 Nov 12 03:39 calibration.txt
+-rw-r--r-- 1 root      root         40 Nov 12 03:42 collector.done
+-rwxr-xr-x 1 root      root        615 Nov 12 03:39 compile-loop.sh
+-rw-r--r-- 1 root      root        125 Nov 12 03:41 hog-stdout.log
+-rw-r--r-- 1 root      root         37 Nov 12 03:39 idle1-stdout.log
+-rw-r--r-- 1 root      root         37 Nov 12 03:39 idle2-stdout.log
+-rw-r--r-- 1 root      root      51926 Nov 12 03:41 journal-tail-audit.log
+-rw-r--r-- 1 root      root      73269 Nov 12 03:42 kernel-log-tail.log
+-rw-r--r-- 1 root      root        493 Nov 12 03:42 last-build.log
+-rw-r--r-- 1 root      root        747 Nov 12 03:38 meta.txt
+-rw-r--r-- 1 root      root      38498 Nov 12 03:42 metrics.csv
+-rw-r--r-- 1 root      root          0 Nov 12 03:42 oom-events.log
+-rw-r--r-- 1 root      root          6 Nov 12 03:41 phase
+-rw-r--r-- 1 root      root        122 Nov 12 03:41 phase-timeline.tsv
+-rw-r--r-- 1 root      root         68 Nov 12 03:39 pidmap
+-rw-r--r-- 1 root      root         53 Nov 12 03:39 probe-stdout.log
+-rw-r--r-- 1 root      root      49791 Nov 12 03:42 probe.csv
+-rw-r--r-- 1 root      root         60 Nov 12 03:38 project-info.txt
+-rw-r--r-- 1 root      root        480 Nov 12 03:42 summary.json
+__BENCHEDGE_7=0
+[?2004hbash-5.3# test -f /bench/results/A-20261112-090733/summary.json && echo SUMMARY_PRESENT; echo __BENCHEDGE_8=$?
+[?2004lSUMMARY_PRESENT
+__BENCHEDGE_8=0
+[?2004hbash-5.3# sync && umount /bench && echo UMOUNTOK; echo __BENCHEDGE_9=$?
+[?2004lumount: /bench: target is busy.
+__BENCHEDGE_9=32
+[?2004hbash-5.3# 

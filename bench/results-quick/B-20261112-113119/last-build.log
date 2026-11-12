@@ -1,0 +1,9 @@
+make: Entering directory '/bench/proj'
+g++ -O1 -c -std=c++20 -w tu0.cpp -o build/tu0.o
+g++ -O1 -c -std=c++20 -w tu1.cpp -o build/tu1.o
+g++ -O1 -c -std=c++20 -w tu2.cpp -o build/tu2.o
+g++ -O1 -c -std=c++20 -w tu3.cpp -o build/tu3.o
+g++ -O1 -c -std=c++20 -w tu4.cpp -o build/tu4.o
+g++ -O1 -c -std=c++20 -w tu5.cpp -o build/tu5.o
+make: *** [Makefile:13: build/tu4.o] Terminated
+make: *** [Makefile:13: build/tu5.o] Terminated

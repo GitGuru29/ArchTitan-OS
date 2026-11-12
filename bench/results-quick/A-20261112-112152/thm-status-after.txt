@@ -1,0 +1,7 @@
+Titan Hardware Manager v3.1.0
+  Uptime:          251s
+  Pressure:        NORMAL  (PSI some 0% / full 0%)
+  Memory used:     31.0312%  (2694 MB free of 3906 MB)
+  CPU governor:    powersave
+  Workloads:       0 active / 2 tracked
+  Last action:     FREEZE (g++) pid=4626
