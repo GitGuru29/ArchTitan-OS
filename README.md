@@ -187,7 +187,7 @@ ArchTitan provides a suite of native C++ and Qt6 applications built specifically
   - Intercepts package operations to prevent conflicting display managers or removal of core greeter components (`sddm-rise-theme`).
   - Ensures seamless SDDM and Hyprland startup across live and installed environments.
 
-### 14. 📱 TITAN Share (`titanshare-daemon`)
+### 14. TITAN Share (`titanshare-daemon`)
 * **Lead:** Teammate | **Location:** `subsystems/titan-share/`
 * Cross-platform peer-to-peer file sharing subsystem comprising a C++ mDNS Linux daemon and Jetpack Compose Android client:
   - Dynamic path resolution: Root execution (`/var/lib/titanshare`), User (`~/.local/share/titanshare`), Fallback (`/tmp/titanshare`).
