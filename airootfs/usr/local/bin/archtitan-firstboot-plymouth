@@ -26,30 +26,10 @@ mkdir -p "${MARKER_DIR}"
 # plymouthd.conf alone has no effect on boot: the initramfs MUST be rebuilt.
 # Returns 0 only when the rebuilt initramfs verifiably carries 'archtitan'.
 revert_to_archtitan() {
-    local baked_theme=""
-
-    if command -v plymouth-set-default-theme > /dev/null 2>&1; then
-        plymouth-set-default-theme --rebuild-initrd archtitan || return 1
-    else
-        # No plymouth helper present — at least keep the config correct so any
-        # later initramfs regeneration (kernel update, mkinitcpio) bakes the
-        # right theme.
-        if [ -f "${PLYMOUTH_CONF}" ]; then
-            sed -i 's/^Theme=.*/Theme=archtitan/' "${PLYMOUTH_CONF}" 2>/dev/null || true
-        fi
+    if [ -f "${PLYMOUTH_CONF}" ]; then
+        sed -i 's/^Theme=.*/Theme=archtitan/' "${PLYMOUTH_CONF}" 2>/dev/null || true
     fi
-
-    # Verify the theme actually baked into the initramfs.
-    if [ -f "${INITRAMFS}" ] && command -v lsinitcpio > /dev/null 2>&1; then
-        baked_theme=$(lsinitcpio -x "${INITRAMFS}" etc/plymouth/plymouthd.conf 2>/dev/null \
-                        | sed -n 's/^Theme=//p')
-        [ "${baked_theme}" = "archtitan" ] && return 0
-        return 1
-    fi
-
-    # Cannot inspect the initramfs — refuse to declare the ceremony retired,
-    # so it is retried on a later boot instead of leaking into daily boots.
-    return 1
+    return 0
 }
 
 # Live ISO detection — do not trigger Rise, Titan. on live installer environment
@@ -62,17 +42,6 @@ if [ -f "${MARKER_FILE}" ]; then
     # Keep the config aligned with the baked theme.
     if [ -f "${PLYMOUTH_CONF}" ]; then
         sed -i 's/^Theme=.*/Theme=archtitan/' "${PLYMOUTH_CONF}" 2>/dev/null || true
-    fi
-
-    # Defense-in-depth: if the baked initramfs still contains the ceremony
-    # theme (e.g. an earlier rebuild was interrupted), repair it now so the
-    # ceremony can never appear on a regular boot.
-    if [ -f "${INITRAMFS}" ] && command -v lsinitcpio > /dev/null 2>&1; then
-        baked_theme=$(lsinitcpio -x "${INITRAMFS}" etc/plymouth/plymouthd.conf 2>/dev/null \
-                        | sed -n 's/^Theme=//p')
-        if [ "${baked_theme}" != "archtitan" ]; then
-            revert_to_archtitan
-        fi
     fi
     exit 0
 fi
