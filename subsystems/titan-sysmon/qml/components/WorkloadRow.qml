@@ -11,7 +11,14 @@ Item {
 
     property var workload: ({})
 
-    implicitHeight: 42
+    implicitWidth: 0
+    implicitHeight: 46
+    Layout.fillWidth: true
+    Layout.minimumWidth: 0
+
+    readonly property int wsNum: (root.workload.workspace !== undefined) ? root.workload.workspace : -2
+    readonly property int procCount: root.workload.pids || 0
+    readonly property string wsText: wsNum > 0 ? ("ws " + wsNum) : (wsNum === 0 ? "special" : "headless")
 
     readonly property string typeLabel: {
         var t = (root.workload.type || "").toString();
@@ -22,7 +29,8 @@ Item {
         if (t === "SERVICE")     return "Service";
         if (t === "VM")          return "VM";
         if (t === "CASUAL")      return "Casual";
-        return "—";
+        if (t === "NEUTRAL" || root.workload.observed) return "Observed";
+        return "Tracked";
     }
     readonly property color typeColor: {
         var t = (root.workload.type || "").toString();
@@ -38,10 +46,10 @@ Item {
         var s = (root.workload.state || "").toString();
         if (s === "ACTIVE")               return TitanTheme.success;
         if (s === "BACKGROUND_EXECUTING") return TitanTheme.info;
-        if (s === "IDLE")                 return TitanTheme.textLow;
+        if (s === "IDLE")                 return TitanTheme.textMid;
         if (s === "AGING")                return TitanTheme.warning;
         if (s === "RECLAIMABLE")          return TitanTheme.danger;
-        return TitanTheme.textLow;
+        return TitanTheme.textMid;
     }
 
     Rectangle {
@@ -50,6 +58,7 @@ Item {
         color: TitanTheme.bgInset
         border.width: 1
         border.color: TitanTheme.borderSubtle
+        clip: true
 
         RowLayout {
             anchors.fill: parent
@@ -59,7 +68,7 @@ Item {
 
             Rectangle {
                 Layout.alignment: Qt.AlignVCenter
-                implicitWidth: typeText.implicitWidth + 14
+                implicitWidth: Math.min(76, typeText.implicitWidth + 14)
                 implicitHeight: 20
                 radius: 7
                 color: Qt.rgba(root.typeColor.r, root.typeColor.g, root.typeColor.b, 0.16)
@@ -71,48 +80,56 @@ Item {
                     text: root.typeLabel
                     color: root.typeColor
                     font.family: TitanTheme.fontFamily
-                    font.pixelSize: 9
+                    font.pixelSize: 10
                     font.weight: TitanTheme.weightSemiBold
                 }
             }
 
             ColumnLayout {
                 Layout.fillWidth: true
-                spacing: 0
+                Layout.minimumWidth: 0
+                spacing: 1
                 Text {
                     Layout.fillWidth: true
+                    Layout.minimumWidth: 0
                     text: (root.workload.name || "").toString()
                     color: TitanTheme.textHigh
                     elide: Text.ElideMiddle
                     font.family: TitanTheme.monoFamily
                     font.pixelSize: TitanTheme.sizeLabel
+                    font.weight: TitanTheme.weightMedium
                 }
                 Text {
+                    Layout.fillWidth: true
+                    Layout.minimumWidth: 0
                     text: "PID " + (root.workload.pid || 0)
-                          + " · " + (root.workload.pids || 0) + " procs"
-                          + " · ws " + (root.workload.workspace || 0)
-                    color: TitanTheme.textLow
+                          + " · " + root.procCount + (root.procCount === 1 ? " proc" : " procs")
+                          + " · " + root.wsText
+                    color: TitanTheme.textMid
+                    elide: Text.ElideRight
                     font.family: TitanTheme.fontFamily
-                    font.pixelSize: 9
+                    font.pixelSize: 10
                 }
             }
 
             ColumnLayout {
                 Layout.alignment: Qt.AlignVCenter
-                spacing: 0
+                Layout.minimumWidth: 48
+                spacing: 1
                 Text {
                     Layout.alignment: Qt.AlignRight
                     text: (root.workload.memMb || 0) + " MB"
-                    color: TitanTheme.textMid
+                    color: TitanTheme.textHigh
                     font.family: TitanTheme.monoFamily
                     font.pixelSize: 10
+                    font.weight: TitanTheme.weightMedium
                 }
                 Text {
                     Layout.alignment: Qt.AlignRight
                     text: (root.workload.state || "").toString().replace(/_/g, " ").toLowerCase()
                     color: root.stateColor
                     font.family: TitanTheme.fontFamily
-                    font.pixelSize: 9
+                    font.pixelSize: 10
                     font.weight: TitanTheme.weightMedium
                 }
             }

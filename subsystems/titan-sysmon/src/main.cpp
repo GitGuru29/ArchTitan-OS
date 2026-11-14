@@ -37,9 +37,9 @@ void ensureDefaultConfig()
 
     QSettings cfg(path, QSettings::IniFormat);
     cfg.beginGroup(QStringLiteral("layout"));
-    cfg.setValue(QStringLiteral("width"),        420);
-    cfg.setValue(QStringLiteral("margin_top"),     0);
-    cfg.setValue(QStringLiteral("margin_bottom"),  0);
+    cfg.setValue(QStringLiteral("width"),        450);
+    cfg.setValue(QStringLiteral("margin_top"),     6);
+    cfg.setValue(QStringLiteral("margin_bottom"),  6);
     cfg.endGroup();
     cfg.sync();
     std::cout << "[titan-sysmon] Created default config: " << path.toStdString() << "\n";
@@ -52,9 +52,9 @@ LayoutConfig readConfig()
     QSettings cfg(configPath(), QSettings::IniFormat);
     cfg.beginGroup(QStringLiteral("layout"));
     LayoutConfig lc;
-    lc.width        = cfg.value(QStringLiteral("width"),        420).toInt();
-    lc.marginTop    = cfg.value(QStringLiteral("margin_top"),     0).toInt();
-    lc.marginBottom = cfg.value(QStringLiteral("margin_bottom"),  0).toInt();
+    lc.width        = qMax(420, cfg.value(QStringLiteral("width"),        450).toInt());
+    lc.marginTop    = cfg.value(QStringLiteral("margin_top"),     6).toInt();
+    lc.marginBottom = cfg.value(QStringLiteral("margin_bottom"),  6).toInt();
     cfg.endGroup();
     return lc;
 }
