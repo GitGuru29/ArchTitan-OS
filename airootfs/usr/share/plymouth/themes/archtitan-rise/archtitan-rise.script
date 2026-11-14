@@ -26,18 +26,14 @@ horizon_sprite.SetY(center_y - 1.5);
 horizon_sprite.SetZ(3);
 horizon_sprite.SetOpacity(0.0);
 
-# ── Typography (prototype: clamp(48, 6vw, 86)) ──
+# ── Typography (uniform scale + true typographic baseline) ──
 font = screen_width * 0.06;
 if (font < 48) font = 48;
 if (font > 86) font = 86;
 
-gap = 0.04 * font;
-space_gap = 0.34 * font;   # word space after the comma
-
-# Per-character typographic weight: letters .58em, i .22em, comma .20em
-char_w[0] = 0.58; char_w[1] = 0.22; char_w[2] = 0.58; char_w[3] = 0.58;
-char_w[4] = 0.20; char_w[5] = 0.58; char_w[6] = 0.22; char_w[7] = 0.58;
-char_w[8] = 0.58; char_w[9] = 0.58;
+scale = font / 220.0;
+gap = 0.06 * font;
+space_gap = 0.32 * font;   # word space after the comma (i == 4)
 
 # Measured ink widths of the source glyphs (visible letterforms, px)
 ink_w[0] = 206; ink_w[1] = 60; ink_w[2] = 150; ink_w[3] = 182; ink_w[4] = 70;
@@ -46,6 +42,10 @@ ink_w[5] = 195; ink_w[6] = 60; ink_w[7] = 138; ink_w[8] = 177; ink_w[9] = 183;
 # Source canvas widths (letters/i are 400 wide, comma 180 wide)
 canvas_w[0] = 400; canvas_w[1] = 400; canvas_w[2] = 400; canvas_w[3] = 400; canvas_w[4] = 180;
 canvas_w[5] = 400; canvas_w[6] = 400; canvas_w[7] = 400; canvas_w[8] = 400; canvas_w[9] = 400;
+
+# Exact baseline Y offset inside each 512px source canvas so all letters sit flat on one baseline
+ink_bottom[0] = 384; ink_bottom[1] = 393; ink_bottom[2] = 355; ink_bottom[3] = 355; ink_bottom[4] = 265;
+ink_bottom[5] = 385; ink_bottom[6] = 393; ink_bottom[7] = 375; ink_bottom[8] = 355; ink_bottom[9] = 356;
 
 # Pre-coloured per-slot glyphs (palette baked in, plymouth cannot tint at runtime)
 glyph_files[0] = "assets/glyph_c0.png";
@@ -62,35 +62,33 @@ glyph_files[9] = "assets/glyph_c9.png";
 # Phrase width, then centred slot centres
 total = 0.0;
 for (i = 0; i < 10; i++) {
-    total = total + char_w[i] * font;
+    total = total + ink_w[i] * scale;
     if (i < 9) {
-        if (i == 3) total = total + space_gap;
+        if (i == 4) total = total + space_gap;
         else total = total + gap;
     }
 }
 
 cursor = center_x - total / 2.0;
 for (i = 0; i < 10; i++) {
-    slot_w = char_w[i] * font;
+    slot_w = ink_w[i] * scale;
     slot_x[i] = cursor + slot_w / 2.0;
     cursor = cursor + slot_w;
     if (i < 9) {
-        if (i == 3) cursor = cursor + space_gap;
+        if (i == 4) cursor = cursor + space_gap;
         else cursor = cursor + gap;
     }
 }
 slot_y = center_y + Math.Min(150.0, screen_height * 0.145);
 
-# The 10 coloured characters, anchored on their slots.
-# All glyphs share a baseline at 75% of the canvas height, so the whole
-# phrase sits on one typographic baseline (ink is already centred sideways).
+# The 10 coloured characters, anchored on their slots and aligned to slot_y baseline.
 for (i = 0; i < 10; i++) {
-    scale_i = (char_w[i] * font) / ink_w[i];
-    glyph_w = canvas_w[i] * scale_i;
-    glyph_h[i] = 512 * scale_i;
-    char_y[i] = slot_y - glyph_h[i] * 0.75;
+    glyph_w = canvas_w[i] * scale;
+    char_x[i] = slot_x[i] - glyph_w / 2.0;
+    glyph_h[i] = 512 * scale;
+    char_y[i] = slot_y - ink_bottom[i] * scale;
     chars[i] = Sprite(Image(glyph_files[i]).Scale(glyph_w, glyph_h[i]));
-    chars[i].SetX(slot_x[i]);
+    chars[i].SetX(char_x[i]);
     chars[i].SetY(char_y[i]);
     chars[i].SetZ(2);
     chars[i].SetOpacity(0.0);
@@ -138,15 +136,15 @@ logo_total = 110;
 logo_fade_in = 35;
 logo_fade_out_start = 85;
 
-line_t = 48;      # dots rise into the line
-circle_t = 58;    # line curls into the circle
-orbit_t = 250;    # two eased full rotations
-settle_t = 12;    # held circle before the drops
+line_t = 30;      # dots rise into the line
+circle_t = 35;    # line curls into the circle
+orbit_t = 80;     # smooth eased rotation
+settle_t = 10;    # pause before the drops
 base = line_t + circle_t + orbit_t + settle_t;
-step = 21;        # stagger between successive drops
-drop_t = 36;      # per-dot fall + morph
+step = 12;        # stagger between successive drops
+drop_t = 22;      # per-dot fall + morph
 drop_end = base + 9 * step + drop_t;
-hold_t = 280;     # pause on the finished phrase
+hold_t = 80;      # clean pause on the finished phrase (~1.5s)
 auto_end = drop_end + hold_t;
 four_pi = 12.566370614359172;
 pi = 3.141592653589793;
@@ -198,16 +196,14 @@ fun refresh_callback() {
     # Skip: fade everything out and hand over to SDDM
     if (user_clicked == 1) {
         fade_out_frame++;
-        alpha = 1.0 - fade_out_frame / 40.0;
+        alpha = 1.0 - fade_out_frame / 20.0;
         if (alpha < 0.0) alpha = 0.0;
         for (i = 0; i < 10; i++) {
             dots[i].SetOpacity(alpha);
             chars[i].SetOpacity(alpha);
         }
         horizon_sprite.SetOpacity(alpha);
-        if (fade_out_frame >= 40) {
-            Plymouth.Quit();
-        }
+        bg_sprite.SetOpacity(alpha);
         return;
     }
 
@@ -299,7 +295,7 @@ fun refresh_callback() {
                 if (dot_phase > 1.0) dot_phase = 1.0;
 
                 dots[i].SetOpacity(1.0 - dot_phase * 0.95);
-                chars[i].SetX(slot_x[i]);
+                chars[i].SetX(char_x[i]);
                 chars[i].SetY(char_y[i] - (1.0 - dot_phase) * 5.0);
                 chars[i].SetOpacity(dot_phase);
             }
@@ -311,7 +307,7 @@ fun refresh_callback() {
     horizon_sprite.SetOpacity(0.0);
     for (i = 0; i < 10; i++) {
         dots[i].SetOpacity(0.0);
-        chars[i].SetX(slot_x[i]);
+        chars[i].SetX(char_x[i]);
         chars[i].SetY(char_y[i]);
         chars[i].SetOpacity(1.0);
     }
