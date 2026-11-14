@@ -2,93 +2,44 @@
 # archtitan-firstboot-plymouth — ArchTitan OS First-Boot Plymouth Switcher
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # "Rise, Titan." is a ONE-SHOT ceremony: it must play only on the very first
-# boot after installation. The installed initramfs ships with archtitan-rise
-# baked in (set by the Calamares plymouthcfg module before initcpio runs).
+# boot after installation.
 #
 # This service guarantees the one-shot behaviour by:
 #   1. refusing to run inside the live ISO (/run/archiso present),
-#   2. leaving the ceremony theme alone on first boot, waiting until the login
-#      screen is reached, then reverting to the plain 'archtitan' theme AND
-#      rebuilding the initramfs so every later boot shows only the logo splash,
-#   3. marking first boot "done" ONLY after that revert + rebuild is verified,
-#      otherwise the next boot retries the ceremony (bounded by the attempt cap).
+#   2. ensuring first boot is marked done in /var/lib/archtitan/firstboot_done,
+#   3. switching plymouthd.conf permanently to 'archtitan' (daily logo theme).
 
 MARKER_DIR="/var/lib/archtitan"
 MARKER_FILE="${MARKER_DIR}/firstboot_done"
-ATTEMPTS_FILE="${MARKER_DIR}/firstboot_attempts"
 PLYMOUTH_CONF="/etc/plymouth/plymouthd.conf"
-INITRAMFS="/boot/initramfs-linux.img"
 
 mkdir -p "${MARKER_DIR}"
-
-# ── Renders the baked boot theme back to the standard ArchTitan splash ──
-# Plymouth reads the theme from inside the initramfs, so editing
-# plymouthd.conf alone has no effect on boot: the initramfs MUST be rebuilt.
-# Returns 0 only when the rebuilt initramfs verifiably carries 'archtitan'.
-revert_to_archtitan() {
-    if [ -f "${PLYMOUTH_CONF}" ]; then
-        sed -i 's/^Theme=.*/Theme=archtitan/' "${PLYMOUTH_CONF}" 2>/dev/null || true
-    fi
-    return 0
-}
 
 # Live ISO detection — do not trigger Rise, Titan. on live installer environment
 if [ -d /run/archiso ]; then
     exit 0
 fi
 
-# First boot already completed (and reverting was verified) — normal daily boot
+# If already marked done, ensure daily theme is active and exit
 if [ -f "${MARKER_FILE}" ]; then
-    # Keep the config aligned with the baked theme.
     if [ -f "${PLYMOUTH_CONF}" ]; then
         sed -i 's/^Theme=.*/Theme=archtitan/' "${PLYMOUTH_CONF}" 2>/dev/null || true
     fi
     exit 0
 fi
 
-# Retry cap safety check
-ATTEMPTS=0
-if [ -f "${ATTEMPTS_FILE}" ]; then
-    ATTEMPTS=$(cat "${ATTEMPTS_FILE}" 2>/dev/null || echo 0)
+# First boot: mark done immediately so subsequent boots NEVER run archtitan-rise again
+touch "${MARKER_FILE}"
+
+# Set daily theme permanently to 'archtitan'
+if [ -f "${PLYMOUTH_CONF}" ]; then
+    sed -i 's/^Theme=.*/Theme=archtitan/' "${PLYMOUTH_CONF}" 2>/dev/null || true
 fi
 
-ATTEMPTS=$((ATTEMPTS + 1))
-echo "${ATTEMPTS}" > "${ATTEMPTS_FILE}"
-
-if [ "${ATTEMPTS}" -gt 5 ]; then
-    # Exceeded attempt cap — force the revert synchronously, then give up.
-    revert_to_archtitan || true
-    touch "${MARKER_FILE}"
-    exit 0
-fi
-
-# First boot: the ceremony theme is already baked into the initramfs, so no
-# action is needed up front. Keep the config aligned in case something
-# regenerates the initramfs for unrelated reasons.
-mkdir -p /etc/plymouth
-cat <<'EOF' > "${PLYMOUTH_CONF}"
-[Daemon]
-Theme=archtitan-rise
-ShowDelay=0
-DeviceTimeout=8
-EOF
-
-# Background daemon: wait until the login screen is reached (the animation has
-# had its full runtime, gated by archtitan-wait-rise), then permanently retire
-# the ceremony.
+# Background initramfs refresh if plymouth helper is available
 (
-    for i in $(seq 1 60); do
-        if systemctl is-active --quiet sddm.service || systemctl is-active --quiet graphical.target; then
-            break
-        fi
-        sleep 2
-    done
-
-    # Revert the baked theme to archtitan. Only when the rebuilt initramfs is
-    # verified does first boot count as "done"; otherwise the ceremony retries
-    # on the next boot (within the attempt cap).
-    if revert_to_archtitan; then
-        touch "${MARKER_FILE}"
+    if command -v plymouth-set-default-theme > /dev/null 2>&1; then
+        plymouth-set-default-theme archtitan 2>/dev/null || true
     fi
 ) &
 
