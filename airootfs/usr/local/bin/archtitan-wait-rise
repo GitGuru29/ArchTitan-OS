@@ -1,22 +1,20 @@
 #!/bin/bash
 # archtitan-wait-rise
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# Called as ExecStartPre in plymouth-quit.service (via drop-in).
-# On first boot: blocks until plymouthd exits naturally (the Rise, Titan.
-# animation called Plymouth.Quit() itself) OR the 90-second safety timeout
-# is reached, then lets plymouth-quit proceed.
+# Called as ExecStartPre in plymouth-quit.service.
+# On first boot: blocks until plymouthd exits naturally after the Rise, Titan.
+# ceremony plays, then marks firstboot_done so it NEVER runs on daily boots.
 # On subsequent boots: exits immediately (no-op).
 
 MARKER="/var/lib/archtitan/firstboot_done"
-TIMEOUT=8
+TIMEOUT=16
 
 # Not first boot — nothing to wait for
 if [ -f "${MARKER}" ]; then
     exit 0
 fi
 
-# First boot — wait for plymouthd to exit on its own (animation + user click)
-# Maximum wait is 8 seconds (animation finishes in ~5-6s)
+# First boot — wait for plymouthd to exit on its own
 elapsed=0
 while [ "${elapsed}" -lt "${TIMEOUT}" ]; do
     if ! pgrep -x plymouthd > /dev/null 2>&1; then
@@ -28,7 +26,7 @@ while [ "${elapsed}" -lt "${TIMEOUT}" ]; do
     elapsed=$((elapsed + 1))
 done
 
-# Safety fallback — timed out, let plymouth-quit force-quit Plymouth
+# Timeout fallback: mark firstboot_done so it never runs again
 mkdir -p "$(dirname "${MARKER}")" 2>/dev/null || true
 touch "${MARKER}" 2>/dev/null || true
 exit 0
