@@ -17,9 +17,15 @@ graph TD
     end
 
     subgraph L3["System Services & Overlays"]
-        THM[Titan Hardware Manager]
+        THM[Titan Hardware Manager v3.1]
         TS[Titan Sandbox]
         HUD[Titan Media HUD Dynamic Island]
+        TSM[Titan System Monitor]
+        TQ[Titan Quick Settings]
+        TM[Titan Menu]
+        THZ[Titan Hotzones & Zone OSD]
+        TWP[Titan Wallpaper Picker]
+        TT[Titan Tour v2]
         Slices[archtitan.slice cgroups]
     end
 
@@ -46,7 +52,7 @@ graph TD
 | :--- | :--- | :--- |
 | **Base** | Bootable rootfs, kernel, firmware, networking | archiso, pacstrap, mkinitcpio, systemd |
 | **Desktop** | Wayland session, input, visuals, session management | Hyprland, Waybar, Rofi, SDDM, PipeWire |
-| **Services & Overlays** | Workload-aware resource control, app isolation, media overlays | C++17 daemons, cgroups v2, PSI, seccomp, QML Dynamic Island |
+| **Services & Overlays** | Workload-aware resource control, app isolation, LayerShell overlays & sidebars | C++20 daemons, cgroups v2, PSI, seccomp, Qt6 LayerShell overlays |
 | **Application** | User-facing tools, browser, settings GUI, and installer | TitanBrowser (Qt6 WebEngine), ArchTitan Settings (Qt6), TitanFetch (Qt6), Calamares |
 
 ---
@@ -81,12 +87,13 @@ sequenceDiagram
 | `pacman.conf` | Mirror and repo configuration for the build |
 | `airootfs/` | Overlay copied onto the rootfs (configs, systemd units, binaries) |
 | `grub/` / `efiboot/` | Bootloader configuration & unicode font resources |
-| `subsystems/` | Dedicated directories for all 9 group subsystems (THM v3.1, Sandbox, Media HUD, etc.) |
+| `subsystems/` | Dedicated directories for group subsystems (THM v3.1, Sandbox, Media HUD, Quick Settings, Menu, Sysmon, Hotzones, Wallpaper Picker, Tour) |
 | `titan-browser-source/` | First-party TitanBrowser Qt6 WebEngine source |
 | `archtitan-settings/` | ArchTitan Settings C++/Qt6 control center source |
 | `titan-hwm-v3/` | Titan Hardware Manager v3.1 C++20 autonomous resource orchestrator source |
 | `titanfetch-src/` | TitanFetch C++/Qt6 application source |
 | `sandbox/` | Titan Sandbox C++ daemon & policy loader source |
+| `airootfs/usr/share/plymouth/themes/` | Plymouth boot splash themes (including "Rise, Titan." ceremony) |
 | `.github/` | GitHub Actions CI workflows, CODEOWNERS, and PR template |
 
 ---
