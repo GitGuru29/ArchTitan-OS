@@ -146,7 +146,13 @@ Window {
 
                 Item {
                     id: leftCard
-                    anchors.fill: parent
+                    anchors.top: parent.top
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    height: (rootWindow.showWifiPage || rootWindow.showPowerMenu)
+                            ? Math.min(parent.height, 560)
+                            : Math.min(parent.height, Math.max(400, bentoContent.implicitHeight) + bottleneckDock.implicitHeight + 36)
+                    Behavior on height { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
 
                     readonly property int revision: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.tileVisibilityRevision : 0
                     readonly property string actionGridMode: {
