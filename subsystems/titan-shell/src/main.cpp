@@ -240,6 +240,14 @@ int main(int argc, char *argv[])
     ctx->setContextProperty(QStringLiteral("audioCtrl"),      &audioCtrl);
     ctx->setContextProperty(QStringLiteral("nightLightCtrl"),  &nightLightCtrl);
     ctx->setContextProperty(QStringLiteral("mprisCtrl"),       &mprisCtrl);
+    ctx->setContextProperty(QStringLiteral("notifServer"),     &notifServer);
+    ctx->setContextProperty(QStringLiteral("notifModel"),      notifServer.model());
+
+    QObject::connect(&engine, &QQmlApplicationEngine::warnings, [](const QList<QQmlError> &warnings) {
+        for (const auto &w : warnings) {
+            std::cerr << "[titan-shell-qml] " << w.toString().toStdString() << "\n";
+        }
+    });
 
     const QUrl url(QStringLiteral("qrc:/qml/ShellRoot.qml"));
     engine.load(url);

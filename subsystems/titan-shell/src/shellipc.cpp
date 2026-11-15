@@ -38,7 +38,22 @@ bool ShellIpc::startServer()
                   << ": " << m_server.errorString().toStdString() << "\n";
         return false;
     }
-    std::cout << "[titan-shell] Listening on " << path.toStdString() << "\n";
+    std::cout << "[titan-shell] Listening on " << path.toStdString() << std::endl;
+
+    // Create legacy socket symlinks so any process connecting to old socket names forwards to titan-shell
+    const QString runtimeDir = QFileInfo(path).absolutePath();
+    const QStringList legacySockets = {
+        runtimeDir + QStringLiteral("/titan-spotlight.sock"),
+        runtimeDir + QStringLiteral("/titan-quicksettings.sock"),
+        runtimeDir + QStringLiteral("/titan-sysmon.sock"),
+        runtimeDir + QStringLiteral("/titan-menu.sock"),
+        runtimeDir + QStringLiteral("/titan-workspace-hud.sock")
+    };
+    for (const QString &legacyPath : legacySockets) {
+        QFile::remove(legacyPath);
+        QFile::link(path, legacyPath);
+    }
+
     return true;
 }
 
@@ -46,13 +61,14 @@ bool ShellIpc::sendCommand(const QString &command)
 {
     QLocalSocket socket;
     socket.connectToServer(socketPath());
-    if (!socket.waitForConnected(300)) {
+    if (!socket.waitForConnected(400)) {
         return false;
     }
 
     const QByteArray payload = command.toUtf8() + "\n";
     socket.write(payload);
-    socket.waitForBytesWritten(300);
+    socket.flush();
+    socket.waitForBytesWritten(400);
     socket.disconnectFromServer();
     return true;
 }
@@ -64,10 +80,13 @@ void ShellIpc::handleNewConnection()
         if (!client) continue;
 
         connect(client, &QLocalSocket::readyRead, this, [this, client]() {
-            while (client->canReadLine()) {
-                const QString line = QString::fromUtf8(client->readLine()).trimmed();
-                if (!line.isEmpty()) {
-                    dispatchCommand(line);
+            const QByteArray raw = client->readAll();
+            const QString text = QString::fromUtf8(raw);
+            const QStringList lines = text.split('\n', Qt::SkipEmptyParts);
+            for (const QString &line : lines) {
+                const QString trimmed = line.trimmed();
+                if (!trimmed.isEmpty()) {
+                    dispatchCommand(trimmed);
                 }
             }
         });

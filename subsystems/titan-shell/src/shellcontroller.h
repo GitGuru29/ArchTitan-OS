@@ -12,6 +12,10 @@ class ShellController : public QObject
     Q_PROPERTY(bool menuActive READ menuActive WRITE setMenuActive NOTIFY menuActiveChanged)
     Q_PROPERTY(bool workspaceHudActive READ workspaceHudActive WRITE setWorkspaceHudActive NOTIFY workspaceHudActiveChanged)
 
+    Q_PROPERTY(bool pendingClipboard READ pendingClipboard WRITE setPendingClipboard NOTIFY pendingClipboardChanged)
+    Q_PROPERTY(bool pendingQsNotifs READ pendingQsNotifs WRITE setPendingQsNotifs NOTIFY pendingQsNotifsChanged)
+    Q_PROPERTY(bool pendingQsWifi READ pendingQsWifi WRITE setPendingQsWifi NOTIFY pendingQsWifiChanged)
+
 public:
     explicit ShellController(QObject *parent = nullptr);
 
@@ -20,6 +24,15 @@ public:
     bool sysmonActive() const { return m_sysmonActive; }
     bool menuActive() const { return m_menuActive; }
     bool workspaceHudActive() const { return m_workspaceHudActive; }
+
+    bool pendingClipboard() const { return m_pendingClipboard; }
+    void setPendingClipboard(bool v) { if (m_pendingClipboard != v) { m_pendingClipboard = v; emit pendingClipboardChanged(); } }
+
+    bool pendingQsNotifs() const { return m_pendingQsNotifs; }
+    void setPendingQsNotifs(bool v) { if (m_pendingQsNotifs != v) { m_pendingQsNotifs = v; emit pendingQsNotifsChanged(); } }
+
+    bool pendingQsWifi() const { return m_pendingQsWifi; }
+    void setPendingQsWifi(bool v) { if (m_pendingQsWifi != v) { m_pendingQsWifi = v; emit pendingQsWifiChanged(); } }
 
     void setSpotlightActive(bool active);
     void setQuicksettingsActive(bool active);
@@ -66,6 +79,10 @@ signals:
     void menuActiveChanged();
     void workspaceHudActiveChanged();
 
+    void pendingClipboardChanged();
+    void pendingQsNotifsChanged();
+    void pendingQsWifiChanged();
+
     // Direct event signals for open instances
     void reqSpotlightToggle();
     void reqSpotlightShow();
@@ -96,4 +113,8 @@ private:
     bool m_sysmonActive = false;
     bool m_menuActive = false;
     bool m_workspaceHudActive = false;
+
+    bool m_pendingClipboard = false;
+    bool m_pendingQsNotifs = false;
+    bool m_pendingQsWifi = false;
 };

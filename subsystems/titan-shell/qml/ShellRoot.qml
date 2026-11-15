@@ -15,6 +15,14 @@ Item {
         onLoaded: {
             if (item) {
                 shell.registerSpotlightWindow(item)
+                if (shell.pendingClipboard) {
+                    shell.pendingClipboard = false
+                    spotlight.reset()
+                    spotlight.isClipboardMode = true
+                } else {
+                    spotlight.reset()
+                    spotlight.isClipboardMode = false
+                }
                 item.openSpotlight()
             }
         }
@@ -38,7 +46,9 @@ Item {
             }
             function onReqSpotlightClipboard() {
                 if (spotlightLoader.item) {
-                    spotlightLoader.item.openClipboard()
+                    spotlight.reset()
+                    spotlight.isClipboardMode = true
+                    spotlightLoader.item.openSpotlight()
                 }
             }
         }
@@ -74,6 +84,13 @@ Item {
         onLoaded: {
             if (item) {
                 shell.registerQuicksettingsWindow(item)
+                if (shell.pendingQsWifi) {
+                    shell.pendingQsWifi = false
+                    item.showWifiPage = true
+                } else if (shell.pendingQsNotifs) {
+                    shell.pendingQsNotifs = false
+                    item.showNotificationPanel = true
+                }
                 item.openDrawer()
             }
         }

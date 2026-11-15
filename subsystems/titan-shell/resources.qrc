@@ -2,6 +2,7 @@
 <RCC version="1.0">
     <qresource prefix="/">
         <file>qml/ShellRoot.qml</file>
+        <file alias="assets/noise.png">../titan-sysmon/assets/noise.png</file>
     </qresource>
 
     <!-- Sysmon -->

@@ -59,130 +59,162 @@ void ShellController::setWorkspaceHudActive(bool active)
 void ShellController::toggleSpotlight()
 {
     if (!m_spotlightActive) {
+        setPendingClipboard(false);
         setSpotlightActive(true);
+    } else {
+        emit reqSpotlightToggle();
     }
-    emit reqSpotlightToggle();
 }
 
 void ShellController::showSpotlight()
 {
     if (!m_spotlightActive) {
+        setPendingClipboard(false);
         setSpotlightActive(true);
+    } else {
+        emit reqSpotlightShow();
     }
-    emit reqSpotlightShow();
 }
 
 void ShellController::hideSpotlight()
 {
-    emit reqSpotlightHide();
+    if (m_spotlightActive) {
+        emit reqSpotlightHide();
+    }
 }
 
 void ShellController::showSpotlightClipboard()
 {
+    setPendingClipboard(true);
     if (!m_spotlightActive) {
         setSpotlightActive(true);
+    } else {
+        emit reqSpotlightClipboard();
     }
-    emit reqSpotlightClipboard();
 }
 
 void ShellController::toggleQuicksettings()
 {
     if (!m_quicksettingsActive) {
+        setPendingQsNotifs(false);
+        setPendingQsWifi(false);
         setQuicksettingsActive(true);
+    } else {
+        emit reqQuicksettingsToggle();
     }
-    emit reqQuicksettingsToggle();
 }
 
 void ShellController::showQuicksettings()
 {
     if (!m_quicksettingsActive) {
+        setPendingQsNotifs(false);
+        setPendingQsWifi(false);
         setQuicksettingsActive(true);
+    } else {
+        emit reqQuicksettingsShow();
     }
-    emit reqQuicksettingsShow();
 }
 
 void ShellController::hideQuicksettings()
 {
-    emit reqQuicksettingsHide();
+    if (m_quicksettingsActive) {
+        emit reqQuicksettingsHide();
+    }
 }
 
 void ShellController::showQuicksettingsWifi()
 {
+    setPendingQsWifi(true);
     if (!m_quicksettingsActive) {
         setQuicksettingsActive(true);
+    } else {
+        emit reqQuicksettingsWifi();
     }
-    emit reqQuicksettingsWifi();
 }
 
 void ShellController::showQuicksettingsNotifs()
 {
+    setPendingQsNotifs(true);
     if (!m_quicksettingsActive) {
         setQuicksettingsActive(true);
+    } else {
+        emit reqQuicksettingsNotifs();
     }
-    emit reqQuicksettingsNotifs();
 }
 
 void ShellController::toggleSysmon()
 {
     if (!m_sysmonActive) {
         setSysmonActive(true);
+    } else {
+        emit reqSysmonToggle();
     }
-    emit reqSysmonToggle();
 }
 
 void ShellController::showSysmon()
 {
     if (!m_sysmonActive) {
         setSysmonActive(true);
+    } else {
+        emit reqSysmonShow();
     }
-    emit reqSysmonShow();
 }
 
 void ShellController::hideSysmon()
 {
-    emit reqSysmonHide();
+    if (m_sysmonActive) {
+        emit reqSysmonHide();
+    }
 }
 
 void ShellController::toggleMenu()
 {
     if (!m_menuActive) {
         setMenuActive(true);
+    } else {
+        emit reqMenuToggle();
     }
-    emit reqMenuToggle();
 }
 
 void ShellController::showMenu()
 {
     if (!m_menuActive) {
         setMenuActive(true);
+    } else {
+        emit reqMenuShow();
     }
-    emit reqMenuShow();
 }
 
 void ShellController::hideMenu()
 {
-    emit reqMenuHide();
+    if (m_menuActive) {
+        emit reqMenuHide();
+    }
 }
 
 void ShellController::toggleWorkspaceHud()
 {
     if (!m_workspaceHudActive) {
         setWorkspaceHudActive(true);
+    } else {
+        emit reqWorkspaceHudToggle();
     }
-    emit reqWorkspaceHudToggle();
 }
 
 void ShellController::showWorkspaceHud()
 {
     if (!m_workspaceHudActive) {
         setWorkspaceHudActive(true);
+    } else {
+        emit reqWorkspaceHudShow();
     }
-    emit reqWorkspaceHudShow();
 }
 
 void ShellController::hideWorkspaceHud()
 {
-    emit reqWorkspaceHudHide();
+    if (m_workspaceHudActive) {
+        emit reqWorkspaceHudHide();
+    }
 }
 
 void ShellController::registerSpotlightWindow(QObject *obj)
