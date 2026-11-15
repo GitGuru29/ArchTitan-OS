@@ -36,6 +36,8 @@ hl.env("QT_QPA_PLATFORMTHEME", "qt5ct")
 hl.env("WLR_NO_HARDWARE_CURSORS", "1")
 hl.env("WLR_RENDERER_ALLOW_SOFTWARE", "1")
 hl.env("AQ_NO_MODIFIERS", "1")
+hl.env("QSG_RENDER_LOOP", "basic")
+hl.env("QML_DISABLE_DISK_CACHE", "1")
 
 -------------------
 ---- AUTOSTART ----
@@ -47,15 +49,12 @@ hl.on("hyprland.start", function()
     -- "attempt to call a nil value" and aborts this whole handler.
 
     hl.exec_cmd("bash -c 'sleep 2 && waybar'")
-    hl.exec_cmd("bash -c 'sleep 3 && titan-media-hud'")
     hl.exec_cmd("titan-wallpaper-restore")
     hl.exec_cmd("bash -c 'sleep 2 && titan-shell --daemon'")
     hl.exec_cmd("titan-hotzones")
-    hl.exec_cmd("titan-zone-osd")
     hl.exec_cmd("swayosd-server")
     hl.exec_cmd("/usr/lib/polkit-kde-authentication-agent-1")
     hl.exec_cmd("xdg-user-dirs-update")
-    hl.exec_cmd("bash -c 'sleep 4 && titan-tour --autostart'")
 
     -- Disable screen timeout / DPMS blanking on live ISO
     -- No hypridle daemon is launched -- no idle daemon = no blanking

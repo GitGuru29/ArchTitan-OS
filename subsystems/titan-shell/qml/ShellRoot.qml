@@ -69,7 +69,10 @@ QtObject {
         interval: 500
         onTriggered: {
             const w = root.spotlightInst.object
-            if (w && !w.visible) shell.spotlightActive = false
+            if (w && !w.visible) {
+                shell.spotlightActive = false
+                shell.trimMemory()
+            }
         }
     }
 
@@ -137,7 +140,10 @@ QtObject {
         interval: 500
         onTriggered: {
             const w = root.qsInst.object
-            if (w && !w.drawerOpen) shell.quicksettingsActive = false
+            if (w && !w.drawerOpen) {
+                shell.quicksettingsActive = false
+                shell.trimMemory()
+            }
         }
     }
 
@@ -182,7 +188,10 @@ QtObject {
         interval: 500
         onTriggered: {
             const w = root.sysmonInst.object
-            if (w && !w.panelOpen) shell.sysmonActive = false
+            if (w && !w.panelOpen) {
+                shell.sysmonActive = false
+                shell.trimMemory()
+            }
         }
     }
 
@@ -227,7 +236,10 @@ QtObject {
         interval: 500
         onTriggered: {
             const w = root.menuInst.object
-            if (w && !w.visible) shell.menuActive = false
+            if (w && !w.visible) {
+                shell.menuActive = false
+                shell.trimMemory()
+            }
         }
     }
 
@@ -272,7 +284,10 @@ QtObject {
         interval: 500
         onTriggered: {
             const w = root.wsInst.object
-            if (w && !w.visible) shell.workspaceHudActive = false
+            if (w && !w.visible) {
+                shell.workspaceHudActive = false
+                shell.trimMemory()
+            }
         }
     }
 }
