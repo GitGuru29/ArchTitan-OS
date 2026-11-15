@@ -1,287 +1,278 @@
 import QtQuick
 import QtQuick.Window
+import QtQml
 
-Item {
+// ShellRoot — lazy host for every titan-shell overlay window.
+//
+// IMPORTANT: overlays are created with `Instantiator`, NOT `Loader`.
+// Since Qt 6.7 a `Window` whose QObject parent is an Item (e.g. a Loader) treats
+// that Item as its *visual parent* and refuses to become visible until the Item
+// itself lives inside a shown window. Our root has no window, so with Loader
+// every overlay stayed hidden forever (shortcuts + hot-zones appeared dead).
+// Instantiator is a plain QObject, so the created Window is a real top-level
+// surface and LayerShellQt can map it as a layer-shell overlay.
+//
+// `active: false` destroys the window, freeing its QML scene graph -> low idle RAM.
+QtObject {
     id: root
-    visible: false
 
     // ── 1. Spotlight ──────────────────────────────────────────────────────────
-    Loader {
-        id: spotlightLoader
+    property Instantiator spotlightInst: Instantiator {
         active: shell.spotlightActive
-        asynchronous: false
-        source: "qrc:/spotlight/qml/SpotlightWindow.qml"
+        model: 1
+        delegate: Qt.createComponent("qrc:/spotlight/qml/SpotlightWindow.qml")
 
-        onLoaded: {
-            if (item) {
-                shell.registerSpotlightWindow(item)
-                if (shell.pendingClipboard) {
-                    shell.pendingClipboard = false
-                    spotlight.reset()
-                    spotlight.isClipboardMode = true
-                } else {
-                    spotlight.reset()
-                    spotlight.isClipboardMode = false
-                }
-                item.openSpotlight()
+        onObjectAdded: (index, item) => {
+            shell.registerSpotlightWindow(item)
+            spotlight.reset()
+            spotlight.isClipboardMode = shell.pendingClipboard
+            shell.pendingClipboard = false
+            item.openSpotlight()
+        }
+    }
+
+    property Connections spotlightReq: Connections {
+        target: shell
+        function onReqSpotlightToggle() {
+            const w = root.spotlightInst.object
+            if (w) w.toggleSpotlight()
+        }
+        function onReqSpotlightShow() {
+            const w = root.spotlightInst.object
+            if (w) w.openSpotlight()
+        }
+        function onReqSpotlightHide() {
+            const w = root.spotlightInst.object
+            if (w) w.closeSpotlight()
+        }
+        function onReqSpotlightClipboard() {
+            const w = root.spotlightInst.object
+            if (w) {
+                spotlight.reset()
+                spotlight.isClipboardMode = true
+                shell.pendingClipboard = false
+                w.openSpotlight()
             }
         }
+    }
 
-        Connections {
-            target: shell
-            function onReqSpotlightToggle() {
-                if (spotlightLoader.item) {
-                    spotlightLoader.item.toggleSpotlight()
-                }
-            }
-            function onReqSpotlightShow() {
-                if (spotlightLoader.item) {
-                    spotlightLoader.item.openSpotlight()
-                }
-            }
-            function onReqSpotlightHide() {
-                if (spotlightLoader.item) {
-                    spotlightLoader.item.closeSpotlight()
-                }
-            }
-            function onReqSpotlightClipboard() {
-                if (spotlightLoader.item) {
-                    spotlight.reset()
-                    spotlight.isClipboardMode = true
-                    spotlightLoader.item.openSpotlight()
-                }
-            }
+    property Connections spotlightVis: Connections {
+        target: root.spotlightInst.object
+        ignoreUnknownSignals: true
+        function onVisibleChanged() {
+            const w = root.spotlightInst.object
+            if (w && !w.visible) root.spotlightUnload.restart()
         }
+    }
 
-        Connections {
-            target: spotlightLoader.item
-            function onVisibleChanged() {
-                if (spotlightLoader.item && !spotlightLoader.item.visible) {
-                    spotlightUnloadTimer.start()
-                }
-            }
-        }
-
-        Timer {
-            id: spotlightUnloadTimer
-            interval: 500
-            repeat: false
-            onTriggered: {
-                if (spotlightLoader.item && !spotlightLoader.item.visible) {
-                    shell.spotlightActive = false
-                }
-            }
+    property Timer spotlightUnload: Timer {
+        interval: 500
+        onTriggered: {
+            const w = root.spotlightInst.object
+            if (w && !w.visible) shell.spotlightActive = false
         }
     }
 
     // ── 2. Quick Settings ─────────────────────────────────────────────────────
-    Loader {
-        id: qsLoader
+    property Instantiator qsInst: Instantiator {
         active: shell.quicksettingsActive
-        asynchronous: false
-        source: "qrc:/quicksettings/qml/QuickSettingsWindow.qml"
+        model: 1
+        delegate: Qt.createComponent("qrc:/quicksettings/qml/QuickSettingsWindow.qml")
 
-        onLoaded: {
-            if (item) {
-                shell.registerQuicksettingsWindow(item)
-                if (shell.pendingQsWifi) {
-                    shell.pendingQsWifi = false
-                    item.showWifiPage = true
-                } else if (shell.pendingQsNotifs) {
-                    shell.pendingQsNotifs = false
-                    item.showNotificationPanel = true
-                }
-                item.openDrawer()
+        onObjectAdded: (index, item) => {
+            shell.registerQuicksettingsWindow(item)
+            if (shell.pendingQsWifi) {
+                item.showWifiPage = true
+            } else if (shell.pendingQsNotifs) {
+                item.showNotificationPanel = true
+            }
+            shell.pendingQsWifi = false
+            shell.pendingQsNotifs = false
+            item.openDrawer()
+        }
+    }
+
+    property Connections qsReq: Connections {
+        target: shell
+        function onReqQuicksettingsToggle() {
+            const w = root.qsInst.object
+            if (w) w.toggleDrawer()
+        }
+        function onReqQuicksettingsShow() {
+            const w = root.qsInst.object
+            if (w) w.openDrawer()
+        }
+        function onReqQuicksettingsHide() {
+            const w = root.qsInst.object
+            if (w) w.closeDrawer()
+        }
+        function onReqQuicksettingsWifi() {
+            const w = root.qsInst.object
+            if (w) {
+                shell.pendingQsWifi = false
+                w.showWifiPage = true
+                w.openDrawer()
             }
         }
-
-        Connections {
-            target: shell
-            function onReqQuicksettingsToggle() {
-                if (qsLoader.item) qsLoader.item.toggleDrawer()
-            }
-            function onReqQuicksettingsShow() {
-                if (qsLoader.item) qsLoader.item.openDrawer()
-            }
-            function onReqQuicksettingsHide() {
-                if (qsLoader.item) qsLoader.item.closeDrawer()
-            }
-            function onReqQuicksettingsWifi() {
-                if (qsLoader.item) {
-                    qsLoader.item.showWifiPage = true
-                    qsLoader.item.openDrawer()
-                }
-            }
-            function onReqQuicksettingsNotifs() {
-                if (qsLoader.item) {
-                    qsLoader.item.showNotificationPanel = true
-                    qsLoader.item.openDrawer()
-                }
+        function onReqQuicksettingsNotifs() {
+            const w = root.qsInst.object
+            if (w) {
+                shell.pendingQsNotifs = false
+                w.showNotificationPanel = true
+                w.openDrawer()
             }
         }
+    }
 
-        Connections {
-            target: qsLoader.item
-            function onDrawerOpenChanged() {
-                if (qsLoader.item && !qsLoader.item.drawerOpen) {
-                    qsUnloadTimer.start()
-                }
-            }
+    property Connections qsVis: Connections {
+        target: root.qsInst.object
+        ignoreUnknownSignals: true
+        function onDrawerOpenChanged() {
+            const w = root.qsInst.object
+            if (w && !w.drawerOpen) root.qsUnload.restart()
         }
+    }
 
-        Timer {
-            id: qsUnloadTimer
-            interval: 500
-            repeat: false
-            onTriggered: {
-                if (qsLoader.item && !qsLoader.item.drawerOpen) {
-                    shell.quicksettingsActive = false
-                }
-            }
+    property Timer qsUnload: Timer {
+        interval: 500
+        onTriggered: {
+            const w = root.qsInst.object
+            if (w && !w.drawerOpen) shell.quicksettingsActive = false
         }
     }
 
     // ── 3. System Monitor ─────────────────────────────────────────────────────
-    Loader {
-        id: sysmonLoader
+    property Instantiator sysmonInst: Instantiator {
         active: shell.sysmonActive
-        asynchronous: false
-        source: "qrc:/sysmon/qml/SystemMonitorWindow.qml"
+        model: 1
+        delegate: Qt.createComponent("qrc:/sysmon/qml/SystemMonitorWindow.qml")
 
-        onLoaded: {
-            if (item) {
-                shell.registerSysmonWindow(item)
-                item.openPanel()
-            }
+        onObjectAdded: (index, item) => {
+            shell.registerSysmonWindow(item)
+            item.openPanel()
         }
+    }
 
-        Connections {
-            target: shell
-            function onReqSysmonToggle() {
-                if (sysmonLoader.item) sysmonLoader.item.togglePanel()
-            }
-            function onReqSysmonShow() {
-                if (sysmonLoader.item) sysmonLoader.item.openPanel()
-            }
-            function onReqSysmonHide() {
-                if (sysmonLoader.item) sysmonLoader.item.closePanel()
-            }
+    property Connections sysmonReq: Connections {
+        target: shell
+        function onReqSysmonToggle() {
+            const w = root.sysmonInst.object
+            if (w) w.togglePanel()
         }
-
-        Connections {
-            target: sysmonLoader.item
-            function onPanelOpenChanged() {
-                if (sysmonLoader.item && !sysmonLoader.item.panelOpen) {
-                    sysmonUnloadTimer.start()
-                }
-            }
+        function onReqSysmonShow() {
+            const w = root.sysmonInst.object
+            if (w) w.openPanel()
         }
+        function onReqSysmonHide() {
+            const w = root.sysmonInst.object
+            if (w) w.closePanel()
+        }
+    }
 
-        Timer {
-            id: sysmonUnloadTimer
-            interval: 500
-            repeat: false
-            onTriggered: {
-                if (sysmonLoader.item && !sysmonLoader.item.panelOpen) {
-                    shell.sysmonActive = false
-                }
-            }
+    property Connections sysmonVis: Connections {
+        target: root.sysmonInst.object
+        ignoreUnknownSignals: true
+        function onPanelOpenChanged() {
+            const w = root.sysmonInst.object
+            if (w && !w.panelOpen) root.sysmonUnload.restart()
+        }
+    }
+
+    property Timer sysmonUnload: Timer {
+        interval: 500
+        onTriggered: {
+            const w = root.sysmonInst.object
+            if (w && !w.panelOpen) shell.sysmonActive = false
         }
     }
 
     // ── 4. Menu ───────────────────────────────────────────────────────────────
-    Loader {
-        id: menuLoader
+    property Instantiator menuInst: Instantiator {
         active: shell.menuActive
-        asynchronous: false
-        source: "qrc:/menu/qml/MenuWindow.qml"
+        model: 1
+        delegate: Qt.createComponent("qrc:/menu/qml/MenuWindow.qml")
 
-        onLoaded: {
-            if (item) {
-                shell.registerMenuWindow(item)
-                item.openMenu()
-            }
+        onObjectAdded: (index, item) => {
+            shell.registerMenuWindow(item)
+            item.openMenu()
         }
+    }
 
-        Connections {
-            target: shell
-            function onReqMenuToggle() {
-                if (menuLoader.item) menuLoader.item.toggleMenu()
-            }
-            function onReqMenuShow() {
-                if (menuLoader.item) menuLoader.item.openMenu()
-            }
-            function onReqMenuHide() {
-                if (menuLoader.item) menuLoader.item.closeMenu()
-            }
+    property Connections menuReq: Connections {
+        target: shell
+        function onReqMenuToggle() {
+            const w = root.menuInst.object
+            if (w) w.toggleMenu()
         }
-
-        Connections {
-            target: menuLoader.item
-            function onVisibleChanged() {
-                if (menuLoader.item && !menuLoader.item.visible) {
-                    menuUnloadTimer.start()
-                }
-            }
+        function onReqMenuShow() {
+            const w = root.menuInst.object
+            if (w) w.openMenu()
         }
+        function onReqMenuHide() {
+            const w = root.menuInst.object
+            if (w) w.closeMenu()
+        }
+    }
 
-        Timer {
-            id: menuUnloadTimer
-            interval: 500
-            repeat: false
-            onTriggered: {
-                if (menuLoader.item && !menuLoader.item.visible) {
-                    shell.menuActive = false
-                }
-            }
+    property Connections menuVis: Connections {
+        target: root.menuInst.object
+        ignoreUnknownSignals: true
+        function onVisibleChanged() {
+            const w = root.menuInst.object
+            if (w && !w.visible) root.menuUnload.restart()
+        }
+    }
+
+    property Timer menuUnload: Timer {
+        interval: 500
+        onTriggered: {
+            const w = root.menuInst.object
+            if (w && !w.visible) shell.menuActive = false
         }
     }
 
     // ── 5. Workspace HUD ──────────────────────────────────────────────────────
-    Loader {
-        id: wsLoader
+    property Instantiator wsInst: Instantiator {
         active: shell.workspaceHudActive
-        asynchronous: false
-        source: "qrc:/workspacehud/qml/WorkspaceHudWindow.qml"
+        model: 1
+        delegate: Qt.createComponent("qrc:/workspacehud/qml/WorkspaceHudWindow.qml")
 
-        onLoaded: {
-            if (item) {
-                shell.registerWorkspaceHudWindow(item)
-                item.openHud()
-            }
+        onObjectAdded: (index, item) => {
+            shell.registerWorkspaceHudWindow(item)
+            item.openHud()
         }
+    }
 
-        Connections {
-            target: shell
-            function onReqWorkspaceHudToggle() {
-                if (wsLoader.item) wsLoader.item.toggleHud()
-            }
-            function onReqWorkspaceHudShow() {
-                if (wsLoader.item) wsLoader.item.openHud()
-            }
-            function onReqWorkspaceHudHide() {
-                if (wsLoader.item) wsLoader.item.closeHud()
-            }
+    property Connections wsReq: Connections {
+        target: shell
+        function onReqWorkspaceHudToggle() {
+            const w = root.wsInst.object
+            if (w) w.toggleHud()
         }
-
-        Connections {
-            target: wsLoader.item
-            function onVisibleChanged() {
-                if (wsLoader.item && !wsLoader.item.visible) {
-                    wsUnloadTimer.start()
-                }
-            }
+        function onReqWorkspaceHudShow() {
+            const w = root.wsInst.object
+            if (w) w.openHud()
         }
+        function onReqWorkspaceHudHide() {
+            const w = root.wsInst.object
+            if (w) w.closeHud()
+        }
+    }
 
-        Timer {
-            id: wsUnloadTimer
-            interval: 500
-            repeat: false
-            onTriggered: {
-                if (wsLoader.item && !wsLoader.item.visible) {
-                    shell.workspaceHudActive = false
-                }
-            }
+    property Connections wsVis: Connections {
+        target: root.wsInst.object
+        ignoreUnknownSignals: true
+        function onVisibleChanged() {
+            const w = root.wsInst.object
+            if (w && !w.visible) root.wsUnload.restart()
+        }
+    }
+
+    property Timer wsUnload: Timer {
+        interval: 500
+        onTriggered: {
+            const w = root.wsInst.object
+            if (w && !w.visible) shell.workspaceHudActive = false
         }
     }
 }
