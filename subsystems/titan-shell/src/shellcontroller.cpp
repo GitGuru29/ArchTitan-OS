@@ -239,16 +239,12 @@ void ShellController::registerQuicksettingsWindow(QObject *obj)
     if (!window) return;
     auto *layer = LayerShellQt::Window::get(window);
     if (layer) {
-        int screenHeight = QGuiApplication::primaryScreen()
-                               ? QGuiApplication::primaryScreen()->geometry().height()
-                               : 1080;
-        int availHeight = QGuiApplication::primaryScreen()
-                              ? QGuiApplication::primaryScreen()->availableGeometry().height()
-                              : screenHeight;
+        auto *screen = window->screen() ? window->screen() : QGuiApplication::primaryScreen();
+        int availHeight = screen ? screen->availableGeometry().height() : 1080;
 
-        int topMargin = 40;
-        int bottomMargin = 12;
-        int rightMargin = 12;
+        int topMargin = 8;
+        int bottomMargin = 8;
+        int rightMargin = 8;
         int panelWidth = 450;
         int targetHeight = qMax(480, availHeight - topMargin - bottomMargin);
 
@@ -274,16 +270,26 @@ void ShellController::registerSysmonWindow(QObject *obj)
     if (!window) return;
     auto *layer = LayerShellQt::Window::get(window);
     if (layer) {
+        auto *screen = window->screen() ? window->screen() : QGuiApplication::primaryScreen();
+        int availHeight = screen ? screen->availableGeometry().height() : 1080;
+
+        int topMargin = 8;
+        int bottomMargin = 8;
+        int leftMargin = 8;
+        int panelWidth = 450;
+        int targetHeight = qMax(480, availHeight - topMargin - bottomMargin);
+
         layer->setAnchors(LayerShellQt::Window::Anchors(
             LayerShellQt::Window::AnchorLeft |
             LayerShellQt::Window::AnchorTop |
             LayerShellQt::Window::AnchorBottom));
-        layer->setMargins(QMargins(0, 48, 0, 16));
+        layer->setMargins(QMargins(leftMargin, topMargin, 0, bottomMargin));
         layer->setLayer(LayerShellQt::Window::LayerOverlay);
         layer->setExclusiveZone(0);
         layer->setKeyboardInteractivity(LayerShellQt::Window::KeyboardInteractivityOnDemand);
         layer->setScope(QStringLiteral("titan-sysmon"));
-        window->setWidth(420);
+        window->setWidth(panelWidth);
+        window->setHeight(targetHeight);
     }
 }
 
