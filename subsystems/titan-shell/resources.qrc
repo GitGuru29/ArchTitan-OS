@@ -1,0 +1,89 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/">
+        <file>qml/ShellRoot.qml</file>
+    </qresource>
+
+    <!-- Sysmon -->
+    <qresource prefix="/sysmon">
+        <file alias="qml/SystemMonitorWindow.qml">../titan-sysmon/qml/SystemMonitorWindow.qml</file>
+        <file alias="qml/components/GaugeRing.qml">../titan-sysmon/qml/components/GaugeRing.qml</file>
+        <file alias="qml/components/Sparkline.qml">../titan-sysmon/qml/components/Sparkline.qml</file>
+        <file alias="qml/components/MeterRow.qml">../titan-sysmon/qml/components/MeterRow.qml</file>
+        <file alias="qml/components/Section.qml">../titan-sysmon/qml/components/Section.qml</file>
+        <file alias="qml/components/WorkloadRow.qml">../titan-sysmon/qml/components/WorkloadRow.qml</file>
+        <file alias="assets/noise.png">../titan-sysmon/assets/noise.png</file>
+    </qresource>
+
+    <!-- Spotlight -->
+    <qresource prefix="/spotlight">
+        <file alias="qml/SpotlightWindow.qml">../titan-spotlight/qml/SpotlightWindow.qml</file>
+        <file alias="qml/SpotlightCard.qml">../titan-spotlight/qml/SpotlightCard.qml</file>
+        <file alias="qml/SpotlightInput.qml">../titan-spotlight/qml/SpotlightInput.qml</file>
+        <file alias="qml/SpotlightResultRow.qml">../titan-spotlight/qml/SpotlightResultRow.qml</file>
+        <file alias="qml/SpotlightPreviewPane.qml">../titan-spotlight/qml/SpotlightPreviewPane.qml</file>
+        <file alias="qml/SpotlightGridTile.qml">../titan-spotlight/qml/SpotlightGridTile.qml</file>
+        <file alias="qml/SpotlightBentoTile.qml">../titan-spotlight/qml/SpotlightBentoTile.qml</file>
+        <file alias="qml/SpotlightCalcPreview.qml">../titan-spotlight/qml/SpotlightCalcPreview.qml</file>
+        <file alias="qml/SpotlightFooter.qml">../titan-spotlight/qml/SpotlightFooter.qml</file>
+    </qresource>
+
+    <!-- Menu -->
+    <qresource prefix="/menu">
+        <file alias="qml/MenuWindow.qml">../titan-menu/qml/MenuWindow.qml</file>
+        <file alias="qml/components/MenuRow.qml">../titan-menu/qml/components/MenuRow.qml</file>
+        <file alias="data/menu.json">../titan-menu/data/menu.json</file>
+    </qresource>
+
+    <!-- Workspace HUD -->
+    <qresource prefix="/workspacehud">
+        <file alias="qml/WorkspaceHudWindow.qml">../titan-workspace-hud/qml/WorkspaceHudWindow.qml</file>
+        <file alias="qml/WorkspaceGrid.qml">../titan-workspace-hud/qml/WorkspaceGrid.qml</file>
+        <file alias="qml/WorkspaceCard.qml">../titan-workspace-hud/qml/WorkspaceCard.qml</file>
+        <file alias="qml/WindowTile.qml">../titan-workspace-hud/qml/WindowTile.qml</file>
+    </qresource>
+
+    <!-- Quick Settings -->
+    <qresource prefix="/quicksettings">
+        <file alias="qml/QuickSettingsWindow.qml">../titan-quicksettings/qml/QuickSettingsWindow.qml</file>
+        <file alias="qml/style/TitanTheme.qml">../titan-quicksettings/qml/style/TitanTheme.qml</file>
+        <file alias="qml/style/qmldir">../titan-quicksettings/qml/style/qmldir</file>
+        <file alias="qml/components/HavenIcon.qml">../titan-quicksettings/qml/components/HavenIcon.qml</file>
+        <file alias="qml/components/FocusRing.qml">../titan-quicksettings/qml/components/FocusRing.qml</file>
+        <file alias="qml/components/IconButton.qml">../titan-quicksettings/qml/components/IconButton.qml</file>
+        <file alias="qml/components/GridTile.qml">../titan-quicksettings/qml/components/GridTile.qml</file>
+        <file alias="qml/components/LevelSlider.qml">../titan-quicksettings/qml/components/LevelSlider.qml</file>
+        <file alias="qml/components/VolumeCard.qml">../titan-quicksettings/qml/components/VolumeCard.qml</file>
+        <file alias="qml/components/HeaderBar.qml">../titan-quicksettings/qml/components/HeaderBar.qml</file>
+        <file alias="qml/components/LargeToggleTile.qml">../titan-quicksettings/qml/components/LargeToggleTile.qml</file>
+        <file alias="qml/components/QuickToggleGrid.qml">../titan-quicksettings/qml/components/QuickToggleGrid.qml</file>
+        <file alias="qml/components/NotificationCard.qml">../titan-quicksettings/qml/components/NotificationCard.qml</file>
+        <file alias="qml/components/NotificationList.qml">../titan-quicksettings/qml/components/NotificationList.qml</file>
+        <file alias="qml/components/NotificationFooter.qml">../titan-quicksettings/qml/components/NotificationFooter.qml</file>
+        <file alias="qml/components/CalendarFooter.qml">../titan-quicksettings/qml/components/CalendarFooter.qml</file>
+        <file alias="qml/components/OneUISlider.qml">../titan-quicksettings/qml/components/OneUISlider.qml</file>
+        <file alias="qml/components/OneUIConnectivityTile.qml">../titan-quicksettings/qml/components/OneUIConnectivityTile.qml</file>
+        <file alias="qml/components/OneUICircleButton.qml">../titan-quicksettings/qml/components/OneUICircleButton.qml</file>
+        <file alias="qml/components/OneUISegmentTab.qml">../titan-quicksettings/qml/components/OneUISegmentTab.qml</file>
+        <file alias="qml/components/OneUINotificationCard.qml">../titan-quicksettings/qml/components/OneUINotificationCard.qml</file>
+        <file alias="qml/components/QuickSettingsCustomizer.qml">../titan-quicksettings/qml/components/QuickSettingsCustomizer.qml</file>
+        <file alias="qml/components/OneUIPowerMenu.qml">../titan-quicksettings/qml/components/OneUIPowerMenu.qml</file>
+        <file alias="qml/components/OneUIWifiPage.qml">../titan-quicksettings/qml/components/OneUIWifiPage.qml</file>
+        <file alias="qml/components/SquareMusicWidget.qml">../titan-quicksettings/qml/components/SquareMusicWidget.qml</file>
+        <file alias="qml/components/SquareConnectivityWidget.qml">../titan-quicksettings/qml/components/SquareConnectivityWidget.qml</file>
+        <file alias="qml/components/CircularActionGrid.qml">../titan-quicksettings/qml/components/CircularActionGrid.qml</file>
+        <file alias="qml/components/PerformanceWidget.qml">../titan-quicksettings/qml/components/PerformanceWidget.qml</file>
+        <file alias="qml/components/BatteryWidget.qml">../titan-quicksettings/qml/components/BatteryWidget.qml</file>
+        <file alias="qml/components/BannerMusicWidget.qml">../titan-quicksettings/qml/components/BannerMusicWidget.qml</file>
+        <file alias="qml/components/TitanHeader.qml">../titan-quicksettings/qml/components/TitanHeader.qml</file>
+        <file alias="qml/components/UnifiedConnectivityModule.qml">../titan-quicksettings/qml/components/UnifiedConnectivityModule.qml</file>
+        <file alias="qml/components/TitanSliderModule.qml">../titan-quicksettings/qml/components/TitanSliderModule.qml</file>
+        <file alias="qml/components/NowPlayingModule.qml">../titan-quicksettings/qml/components/NowPlayingModule.qml</file>
+        <file alias="qml/components/TitanActionTile.qml">../titan-quicksettings/qml/components/TitanActionTile.qml</file>
+        <file alias="qml/components/TitanActionGrid.qml">../titan-quicksettings/qml/components/TitanActionGrid.qml</file>
+        <file alias="qml/components/TitanPulseModule.qml">../titan-quicksettings/qml/components/TitanPulseModule.qml</file>
+        <file alias="qml/components/BentoSectionCard.qml">../titan-quicksettings/qml/components/BentoSectionCard.qml</file>
+        <file alias="qml/components/MacFocusClusterModule.qml">../titan-quicksettings/qml/components/MacFocusClusterModule.qml</file>
+        <file alias="qml/components/TitanFooterBar.qml">../titan-quicksettings/qml/components/TitanFooterBar.qml</file>
+    </qresource>
+</RCC>
