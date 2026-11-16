@@ -158,6 +158,7 @@ int main(int argc, char *argv[])
     GpuModel gpuModel;
     SysmonController sysmonCtrl(&gpuModel);
     MenuController menuCtrl;
+    menuCtrl.loadDefault();
     HyprlandController hyprlandCtrl;
 
     SystemController systemCtrl;
