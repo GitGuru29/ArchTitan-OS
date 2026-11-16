@@ -82,7 +82,6 @@ Window {
         Rectangle {
             id: glassCard
             anchors.fill: parent
-            anchors.margins: 10
             radius: TitanTheme.radiusWindow
             color: "transparent"
             border.width: 1
@@ -161,7 +160,6 @@ Window {
         Flickable {
             id: flick
             anchors.fill: parent
-            anchors.margins: 10
             contentWidth: width
             contentHeight: contentColumn.implicitHeight + 28
             clip: true
