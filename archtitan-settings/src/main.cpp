@@ -5,6 +5,7 @@
 #include <QFontDatabase>
 #include <QIcon>
 #include <QFile>
+#include <QDir>
 #include <QSurfaceFormat>
 
 #include "settingsbackend.h"
@@ -26,8 +27,7 @@ int main(int argc, char *argv[]) {
     app.setApplicationVersion("1.0.0");
     app.setOrganizationName("ArchTitan");
     app.setOrganizationDomain("archtitan.os");
-    // Icon is optional, skip if resource missing
-    // app.setWindowIcon(QIcon(":/assets/icons/LOGO.png"));
+    app.setDesktopFileName(QStringLiteral("archtitan-settings"));
 
     QQuickStyle::setStyle("Basic");
 
@@ -67,6 +67,10 @@ int main(int argc, char *argv[]) {
 
     // ── QML URL: filesystem (dev) or embedded resource ────────────
     using namespace Qt::StringLiterals;
+
+    engine.addImportPath(QStringLiteral("/usr/lib/qt6/qml"));
+    engine.addImportPath(QStringLiteral("/usr/local/lib/qt6/qml"));
+    engine.addImportPath(QDir::homePath() + QStringLiteral("/.local/lib/qt6/qml"));
 
     // Check for dev-mode override via QML_SOURCE_DIR env variable
     QString qmlSourceDir = qEnvironmentVariable("QML_SOURCE_DIR");

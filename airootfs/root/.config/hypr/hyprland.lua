@@ -143,8 +143,8 @@ superBind(mainMod .. " + C", hl.dsp.exec_cmd(sandboxed .. " code"))             
 superBind(mainMod .. " + X", hl.dsp.exec_cmd(sandboxed .. " " .. terminal .. " -e nano"))  -- Text editor
 hl.bind("CTRL + " .. mainMod .. " + V", hl.dsp.exec_cmd(sandboxed .. " pavucontrol"))  -- Volume mixer
 hl.bind("CTRL + SHIFT + Escape", hl.dsp.exec_cmd(sandboxed .. " " .. terminal .. " -e btop"))  -- Task manager
-superBind(mainMod .. " + comma", hl.dsp.exec_cmd(sandboxed .. " archtitan-settings"))     -- Settings panel shortcut
-superBind(mainMod .. " + I", hl.dsp.exec_cmd("bash -c 'if [ -d /run/archiso ]; then launch-installer; else titan-exec-hook archtitan-settings; fi'"))  -- Installer on Live ISO / Settings on Installed OS
+superBind(mainMod .. " + comma", hl.dsp.exec_cmd("archtitan-settings"))     -- Settings panel shortcut
+superBind(mainMod .. " + I", hl.dsp.exec_cmd("bash -c 'if [ -d /run/archiso ]; then launch-installer; else archtitan-settings; fi'"))  -- Installer on Live ISO / Settings on Installed OS
 superBind(mainMod .. " + F1", hl.dsp.exec_cmd("titan-tour --force"))  -- Interactive Virtual Tour
 
 -- Window Management
