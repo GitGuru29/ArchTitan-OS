@@ -237,6 +237,7 @@ int main(int argc, char *argv[])
     ctx->setContextProperty(QStringLiteral("systemCtrl"),     &systemCtrl);
     ctx->setContextProperty(QStringLiteral("networkCtrl"),    &networkCtrl);
     ctx->setContextProperty(QStringLiteral("bluetoothCtrl"),  &bluetoothCtrl);
+    ctx->setContextProperty(QStringLiteral("btCtrl"),         &bluetoothCtrl);
     ctx->setContextProperty(QStringLiteral("audioCtrl"),      &audioCtrl);
     ctx->setContextProperty(QStringLiteral("nightLightCtrl"),  &nightLightCtrl);
     ctx->setContextProperty(QStringLiteral("mprisCtrl"),       &mprisCtrl);
