@@ -7,9 +7,9 @@ import ArchTitanSettings
 
 ApplicationWindow {
     id: root
-    width: 1160
-    height: 740
-    minimumWidth: 920
+    width: 1100
+    height: 750
+    minimumWidth: 820
     minimumHeight: 580
     visible: true
     title: "ArchTitan Settings"
@@ -47,279 +47,295 @@ ApplicationWindow {
     readonly property color globalBorder0: TitanTheme.border
     readonly property color globalBorder1: TitanTheme.borderSubtle
 
-    readonly property int sidebarW: 220
+    // Material-3-ish surface roles used by the host desktop's settings panel:
+    // dark canvas + one lifted, rounded surface container for the content.
+    readonly property color m3Background: TitanTheme.crust
+    readonly property color m3Surface:    TitanTheme.bg1
+    readonly property color m3Outline:    TitanTheme.border
+
+    property bool railExpanded: true
     property int currentPage: 0
 
     readonly property var pages: [
-        { name: "Appearance",  icon: "appearance", label: "Appearance"  },
-        { name: "Display",     icon: "display",    label: "Display"      },
-        { name: "Network",     icon: "network",    label: "Network"      },
-        { name: "Audio",       icon: "audio",      label: "Audio"        },
-        { name: "Power",       icon: "power",      label: "Power"        },
-        { name: "Security",    icon: "security",   label: "Security"     },
-        { name: "System",      icon: "system",     label: "System"       },
-        { name: "About",       icon: "about",      label: "About"        }
+        { name: "Appearance", icon: "appearance", source: "qrc:/ArchTitanSettings/qml/pages/AppearancePage.qml" },
+        { name: "Display",    icon: "display",    source: "qrc:/ArchTitanSettings/qml/pages/DisplayPage.qml"    },
+        { name: "Network",    icon: "network",    source: "qrc:/ArchTitanSettings/qml/pages/NetworkPage.qml"    },
+        { name: "Audio",      icon: "audio",      source: "qrc:/ArchTitanSettings/qml/pages/AudioPage.qml"      },
+        { name: "Power",      icon: "power",      source: "qrc:/ArchTitanSettings/qml/pages/PowerPage.qml"      },
+        { name: "Security",   icon: "security",   source: "qrc:/ArchTitanSettings/qml/pages/SecurityPage.qml"   },
+        { name: "System",     icon: "system",     source: "qrc:/ArchTitanSettings/qml/pages/SystemPage.qml"     },
+        { name: "About",      icon: "about",      source: "qrc:/ArchTitanSettings/qml/pages/AboutPage.qml"      }
     ]
-
-    // ── Window drag ────────────────────────────────────────────────
-    MouseArea {
-        anchors { top: parent.top; left: parent.left; right: parent.right }
-        height: 52
-        property point clickPos
-        onPressed:  (mouse) => { clickPos = Qt.point(mouse.x, mouse.y) }
-        onPositionChanged: (mouse) => {
-            root.x += mouse.x - clickPos.x
-            root.y += mouse.y - clickPos.y
-        }
-        z: -1
-    }
 
     // ── Window shell ───────────────────────────────────────────────
     Rectangle {
         anchors.fill: parent
-        radius: 12
-        color: root.bg1
+        radius: 18
+        color: root.m3Background
+        border.width: 1
+        border.color: root.m3Outline
         clip: true
 
-        // Outer border
-        Rectangle {
-            anchors.fill: parent
-            radius: parent.radius
-            color: "transparent"
-            border.width: 1
-            border.color: root.border0
-        }
-
-        RowLayout {
+        ColumnLayout {
             anchors.fill: parent
             spacing: 0
 
-            // ── Sidebar ───────────────────────────────────────────
-            Rectangle {
-                Layout.preferredWidth: root.sidebarW
-                Layout.fillHeight: true
-                color: TitanTheme.bg0
-                radius: 12
+            // ── Title bar (also the drag handle) ──────────────────
+            Item {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 46
 
-                // Square off right corners
-                Rectangle {
-                    anchors { top: parent.top; bottom: parent.bottom; right: parent.right }
-                    width: 12
-                    color: parent.color
-                }
-
-                // Right border
-                Rectangle {
-                    anchors { top: parent.top; bottom: parent.bottom; right: parent.right }
-                    width: 1
-                    color: TitanTheme.accentEdge
-                }
-
-                ColumnLayout {
+                MouseArea {
+                    id: titleDrag
                     anchors.fill: parent
-                    spacing: 0
+                    property point dragStart
+                    onPressed: (mouse) => { dragStart = Qt.point(mouse.x, mouse.y) }
+                    onPositionChanged: (mouse) => {
+                        root.x += mouse.x - dragStart.x
+                        root.y += mouse.y - dragStart.y
+                    }
+                    onDoubleClicked: {
+                        if (root.visibility === ApplicationWindow.Maximized)
+                            root.showNormal()
+                        else
+                            root.showMaximized()
+                    }
+                }
 
-                    // ── Logo / Header ────────────────────────────
-                    Item {
-                        Layout.fillWidth: true
-                        implicitHeight: logoHeaderCol.implicitHeight + 20
+                Text {
+                    anchors {
+                        left: parent.left
+                        leftMargin: 22
+                        verticalCenter: parent.verticalCenter
+                    }
+                    text: "Settings"
+                    font { pixelSize: 13; family: "Inter"; weight: Font.DemiBold }
+                    color: root.textMid
+                }
 
-                        ColumnLayout {
-                            id: logoHeaderCol
-                            anchors {
-                                top: parent.top
-                                topMargin: 20
-                                horizontalCenter: parent.horizontalCenter
-                            }
-                            spacing: 6
+                Text {
+                    anchors {
+                        left: parent.left
+                        leftMargin: 84
+                        verticalCenter: parent.verticalCenter
+                    }
+                    text: root.pages[root.currentPage].name
+                    font { pixelSize: 13; family: "Inter"; weight: Font.Medium }
+                    color: root.textHigh
+                }
 
-                            // Logo icon badge
+                RowLayout {
+                    anchors {
+                        right: parent.right
+                        rightMargin: 14
+                        verticalCenter: parent.verticalCenter
+                    }
+                    spacing: 4
+
+                    Repeater {
+                        model: [
+                            { act: "minimize", sym: "−", tip: "Minimize" },
+                            { act: "maximize", sym: "□", tip: "Maximize" },
+                            { act: "close",    sym: "×", tip: "Close"    }
+                        ]
+                        delegate: Item {
+                            width: 30; height: 30
                             Rectangle {
-                                Layout.alignment: Qt.AlignHCenter
-                                width: 34; height: 34
-                                radius: 8
-                                color: TitanTheme.accentSoft
-                                border.width: 1
-                                border.color: TitanTheme.accentEdge
-
-                                Image {
-                                    anchors.centerIn: parent
-                                    width: 22; height: 22
-                                    source: "qrc:/ArchTitanSettings/assets/icons/LOGO.png"
-                                    fillMode: Image.PreserveAspectFit
-                                    smooth: true
-                                }
+                                anchors.fill: parent
+                                radius: 15
+                                color: winHover.containsMouse
+                                       ? (modelData.act === "close" ? TitanTheme.danger : root.bg4)
+                                       : "transparent"
+                                Behavior on color { ColorAnimation { duration: TitanTheme.durFast } }
                             }
-
-                            // Wordmark
                             Text {
-                                Layout.alignment: Qt.AlignHCenter
-                                text: "ArchTitan Settings"
-                                font { pixelSize: 13; family: "Inter" }
-                                font.weight: Font.Bold
-                                color: TitanTheme.textHigh
+                                anchors.centerIn: parent
+                                text: modelData.sym
+                                font { pixelSize: 15; family: "Inter"; weight: Font.Medium }
+                                color: winHover.containsMouse ? root.textHigh : root.textMid
                             }
-                        }
-                    }
-
-                    Item { height: 26 }
-
-                    // ── Nav items ─────────────────────────────────
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        spacing: 2
-
-                        Repeater {
-                            model: root.pages
-                            delegate: SidebarItem {
-                                Layout.fillWidth: true
-                                iconSource: "qrc:/ArchTitanSettings/assets/icons/" + modelData.icon + ".svg"
-                                label: modelData.label
-                                active: root.currentPage === index
-                                onClicked: root.currentPage = index
-                            }
-                        }
-                    }
-
-                    // Pin footer to bottom regardless of nav item count
-                    Item { Layout.fillHeight: true }
-
-                    // ── Footer Status Block ───────────────────────
-                    Rectangle {
-                        Layout.fillWidth: true
-                        height: 1
-                        color: Qt.rgba(1, 1, 1, 0.06)
-                    }
-
-                    Item {
-                        Layout.fillWidth: true
-                        implicitHeight: 56
-
-                        RowLayout {
-                            anchors {
-                                left: parent.left; leftMargin: 18
-                                right: parent.right; rightMargin: 16
-                                top: parent.top; topMargin: 16
-                            }
-                            spacing: 10
-
-                            Rectangle {
-                                width: 8; height: 8; radius: 4
-                                color: TitanTheme.success
-                                Layout.alignment: Qt.AlignVCenter
-                            }
-
-                            ColumnLayout {
-                                spacing: 1
-                                Layout.fillWidth: true
-
-                                Text {
-                                    text: "ArchTitan OS"
-                                    font { pixelSize: 11; family: "Inter" }
-                                    font.weight: Font.Medium
-                                    color: TitanTheme.textHigh
-                                }
-                                Text {
-                                    text: "Settings v1.0"
-                                    font { pixelSize: 10; family: "Inter" }
-                                    color: TitanTheme.textMid
+                            MouseArea {
+                                id: winHover
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    if (modelData.act === "close")    root.close()
+                                    else if (modelData.act === "minimize") root.showMinimized()
+                                    else {
+                                        if (root.visibility === ApplicationWindow.Maximized) root.showNormal()
+                                        else root.showMaximized()
+                                    }
                                 }
                             }
+                            ToolTip { visible: winHover.containsMouse; text: modelData.tip; delay: 500 }
                         }
                     }
                 }
             }
 
-            // ── Content area ──────────────────────────────────────
-            Item {
+            // ── Body: navigation rail + content surface ───────────
+            RowLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
+                spacing: 8
 
-                // ── Title bar ─────────────────────────────────────
-                Rectangle {
-                    id: titleBar
-                    anchors { top: parent.top; left: parent.left; right: parent.right }
-                    height: 52
-                    color: "transparent"
+                // Navigation rail
+                Item {
+                    Layout.preferredWidth: root.railExpanded ? 154 : 72
+                    Layout.fillHeight: true
+                    Layout.leftMargin: 8
+                    Layout.bottomMargin: 8
 
-                    RowLayout {
-                        anchors { fill: parent; leftMargin: 28; rightMargin: 18 }
+                    ColumnLayout {
+                        anchors.fill: parent
+                        spacing: 2
 
-                        Column {
-                            spacing: 2
-                            Text {
-                                text: root.pages[root.currentPage].label
-                                font { pixelSize: 17; family: "Inter" }
-                                font.weight: Font.DemiBold
-                                color: root.textHigh
+                        // Brand FAB — tapping it jumps to About
+                        Rectangle {
+                            Layout.alignment: Qt.AlignHCenter
+                            Layout.topMargin: 4
+                            Layout.bottomMargin: 6
+                            width: 46; height: 46
+                            radius: 23
+                            color: brandHover.containsMouse ? TitanTheme.accentHover : TitanTheme.accent
+                            border.width: 1
+                            border.color: TitanTheme.accentEdge
+                            Behavior on color { ColorAnimation { duration: TitanTheme.durFast } }
+
+                            Image {
+                                anchors.centerIn: parent
+                                width: 27; height: 27
+                                source: "qrc:/ArchTitanSettings/assets/icons/LOGO.png"
+                                fillMode: Image.PreserveAspectFit
+                                smooth: true
                             }
+                            MouseArea {
+                                id: brandHover
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.currentPage = root.pages.length - 1
+                            }
+                            ToolTip { visible: brandHover.containsMouse; text: "About ArchTitan"; delay: 500 }
                         }
 
-                        Item { Layout.fillWidth: true }
-
-                        // Window controls
-                        RowLayout {
-                            spacing: 8
-
-                            Repeater {
-                                model: [
-                                    { col: "#ED6A5E", hov: "#C9504A", act: "close",    sym: "×" }, // tdl-allow: macOS-style window control
-                                    { col: "#F5BF4F", hov: "#D4A030", act: "minimize", sym: "−" }, // tdl-allow: macOS-style window control
-                                    { col: "#61C554", hov: "#48A83D", act: "maximize", sym: "+" }  // tdl-allow: macOS-style window control
-                                ]
-                                delegate: Item {
-                                    width: 13; height: 13
-                                    Rectangle {
-                                        anchors.fill: parent; radius: 7
-                                        color: wc.containsMouse ? modelData.hov : modelData.col
-                                        Behavior on color { ColorAnimation { duration: 80 } }
-                                    }
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: modelData.sym
-                                        font.pixelSize: 9
-                                        font.weight: Font.Bold
-                                        color: "#70000000"
-                                        visible: wc.containsMouse
-                                    }
-                                    MouseArea {
-                                        id: wc; anchors.fill: parent; hoverEnabled: true
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: {
-                                            if (modelData.act === "close")    root.close()
-                                            else if (modelData.act === "minimize") root.showMinimized()
-                                            else root.showMaximized()
-                                        }
-                                    }
+                        // Rail expand / collapse toggle
+                        Item {
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 34
+                            Rectangle {
+                                anchors.centerIn: parent
+                                width: 30; height: 30
+                                radius: 15
+                                color: railHover.containsMouse ? root.bg4 : "transparent"
+                                Behavior on color { ColorAnimation { duration: TitanTheme.durFast } }
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: root.railExpanded ? "‹" : "›"
+                                    font { pixelSize: 17; family: "Inter" }
+                                    color: root.textMid
                                 }
                             }
+                            MouseArea {
+                                id: railHover
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.railExpanded = !root.railExpanded
+                            }
+                            ToolTip {
+                                visible: railHover.containsMouse
+                                text: root.railExpanded ? "Collapse rail" : "Expand rail"
+                                delay: 500
+                            }
                         }
-                    }
 
-                    Rectangle {
-                        anchors { bottom: parent.bottom; left: parent.left; right: parent.right }
-                        height: 1
-                        color: root.border1
+                        // Nav destinations
+                        Repeater {
+                            model: root.pages
+                            delegate: NavRailItem {
+                                Layout.fillWidth: true
+                                iconSource: "qrc:/ArchTitanSettings/assets/icons/" + modelData.icon + ".svg"
+                                label: modelData.name
+                                active: root.currentPage === index
+                                expanded: root.railExpanded
+                                onClicked: root.currentPage = index
+                            }
+                        }
+
+                        Item { Layout.fillHeight: true }
                     }
                 }
 
-                // ── Page stack ────────────────────────────────────
-                Item {
-                    anchors { top: titleBar.bottom; bottom: parent.bottom; left: parent.left; right: parent.right }
+                // Rounded content surface
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    Layout.rightMargin: 8
+                    Layout.bottomMargin: 8
+                    radius: 12
+                    color: root.m3Surface
+                    border.width: 1
+                    border.color: root.border1
                     clip: true
 
-                    StackLayout {
+                    Loader {
+                        id: pageLoader
                         anchors.fill: parent
-                        currentIndex: root.currentPage
+                        anchors.topMargin: 8
+                        opacity: 1
+                        source: root.pages[0].source
 
-                        AppearancePage { id: appearancePage }
-                        DisplayPage    { id: displayPage    }
-                        NetworkPage    { id: networkPage    }
-                        AudioPage      { id: audioPage      }
-                        PowerPage      { id: powerPage      }
-                        SecurityPage   { id: securityPage   }
-                        SystemPage     { id: systemPage     }
-                        AboutPage      { id: aboutPage      }
+                        onLoaded: {
+                            if (item)
+                                item.anchors.fill = pageLoader
+                        }
+                    }
+
+                    // Fade + slide, matching the host settings panel
+                    SequentialAnimation {
+                        id: switchAnim
+
+                        NumberAnimation {
+                            target: pageLoader
+                            property: "opacity"
+                            from: 1
+                            to: 0
+                            duration: 100
+                            easing.type: Easing.InQuad
+                        }
+                        PropertyAction {
+                            target: pageLoader
+                            property: "source"
+                            value: root.pages[root.currentPage].source
+                        }
+                        ParallelAnimation {
+                            NumberAnimation {
+                                target: pageLoader
+                                property: "opacity"
+                                from: 0
+                                to: 1
+                                duration: 200
+                                easing.type: Easing.OutQuad
+                            }
+                            NumberAnimation {
+                                target: pageLoader
+                                property: "anchors.topMargin"
+                                from: 20
+                                to: 8
+                                duration: 200
+                                easing.type: Easing.OutQuad
+                            }
+                        }
+                    }
+
+                    Connections {
+                        target: root
+                        function onCurrentPageChanged() {
+                            switchAnim.stop()
+                            switchAnim.start()
+                        }
                     }
                 }
             }
@@ -350,7 +366,7 @@ ApplicationWindow {
         Rectangle {
             anchors.fill: parent
             color: Qt.rgba(0, 0, 0, 0.53)
-            radius: 12
+            radius: 18
         }
 
         // Central card
@@ -467,4 +483,3 @@ ApplicationWindow {
         }
     }
 }
-

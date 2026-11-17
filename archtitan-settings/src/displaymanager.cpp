@@ -84,7 +84,7 @@ void DisplayManager::setNightLightTemp(int v) {
     if (m_nightLightTemp == v) return;
     m_nightLightTemp = v;
     if (m_nightLightEnabled)
-        QProcess::startDetached("wlsunset", {"-T", QString::number(v)});
+        applyNightLight();
     emit nightLightTempChanged();
 }
 
@@ -92,9 +92,21 @@ bool DisplayManager::nightLightEnabled() const { return m_nightLightEnabled; }
 void DisplayManager::setNightLightEnabled(bool v) {
     if (m_nightLightEnabled == v) return;
     m_nightLightEnabled = v;
-    if (v) QProcess::startDetached("wlsunset", {"-T", QString::number(m_nightLightTemp)});
-    else   QProcess::startDetached("pkill", {"wlsunset"});
+    applyNightLight();
     emit nightLightEnabledChanged();
+}
+
+void DisplayManager::applyNightLight() {
+    // ArchTitan ships hyprsunset (not wlsunset). hyprsunset is a long-running
+    // daemon, so stop any previous instance before starting with the new
+    // temperature — otherwise temperature changes stack multiple instances.
+    if (!m_nightLightEnabled) {
+        QProcess::startDetached("bash", {"-c", "pkill -x hyprsunset 2>/dev/null || true"});
+        return;
+    }
+    QProcess::startDetached("bash", {"-c",
+        QStringLiteral("pkill -x hyprsunset 2>/dev/null; exec hyprsunset -t %1")
+            .arg(m_nightLightTemp)});
 }
 
 QString DisplayManager::resolution() const { return m_resolution; }

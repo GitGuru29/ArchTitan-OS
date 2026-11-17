@@ -208,20 +208,12 @@ ScrollView {
                 Item { Layout.fillWidth: true }
 
                 TitanButton {
-                    text: "Browse Image..."
+                    text: "Change Wallpaper..."
                     primary: false
-                    width: 120
+                    width: 150
                     height: 28
-                    onClicked: WallpaperManager.openFilePicker()
-                }
-
-                Item { width: 4 }
-
-                TitanButton {
-                    text: "Wallpaper Gallery"
-                    primary: false
-                    width: 130
-                    height: 28
+                    // The shipped picker supports both the system gallery and
+                    // importing custom images from disk.
                     onClicked: WallpaperManager.launchPicker()
                 }
             }

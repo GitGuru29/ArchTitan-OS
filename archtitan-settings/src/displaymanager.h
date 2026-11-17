@@ -44,4 +44,5 @@ private:
 
     QString findBacklightPath() const;
     int maxBrightness() const;
+    void applyNightLight();
 };

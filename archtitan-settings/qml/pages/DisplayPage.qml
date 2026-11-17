@@ -91,7 +91,7 @@ ScrollView {
                         color: root.textHigh
                     }
                     Text {
-                        text: "Reduces blue light via wlsunset"
+                        text: "Reduces blue light via hyprsunset"
                         font { pixelSize: 12; family: "Inter" }
                         color: root.textLow
                     }

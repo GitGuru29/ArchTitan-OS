@@ -1,5 +1,8 @@
+#include <cstdio>
+
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
+#include <QQmlError>
 #include <QQmlContext>
 #include <QQuickStyle>
 #include <QFontDatabase>
@@ -77,14 +80,31 @@ int main(int argc, char *argv[]) {
         engine.addImportPath(qmlSourceDir);
         engine.addImportPath(qmlSourceDir + "/..");
     } else {
-        engine.addImportPath(u"qrc:/ArchTitanSettings"_s);
+        // The module's qmldir lives at qrc:/ArchTitanSettings/qmldir, so the
+        // import path must be the resource root. Adding "qrc:/ArchTitanSettings"
+        // here makes QML look for qrc:/ArchTitanSettings/ArchTitanSettings/qmldir,
+        // which does not exist; the module then resolves via its auto-registration
+        // stub (which registers no QML-only types) and pages fail with
+        // "X is not a type" on startup.
+        engine.addImportPath(u"qrc:/"_s);
         url = QUrl(u"qrc:/ArchTitanSettings/qml/Main.qml"_s);
     }
 
+    // Keep QML diagnostics around so a startup failure is actionable. Many Qt
+    // builds ship with warning output compiled out, so print explicitly.
+    QList<QQmlError> qmlDiagnostics;
+    QObject::connect(&engine, &QQmlEngine::warnings, &app,
+                     [&qmlDiagnostics](const QList<QQmlError> &warnings) {
+        qmlDiagnostics.append(warnings);
+    });
+
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
-                     &app, [url](QObject *obj, const QUrl &objUrl) {
+                     &app, [url, &qmlDiagnostics](QObject *obj, const QUrl &objUrl) {
         if (!obj && url == objUrl) {
-            qCritical() << "[archtitan-settings] FATAL: QML failed to load root object for" << objUrl;
+            for (const QQmlError &e : qmlDiagnostics)
+                fprintf(stderr, "[archtitan-settings] QML: %s\n", qPrintable(e.toString()));
+            fprintf(stderr, "[archtitan-settings] FATAL: QML failed to load root object for %s\n",
+                    qPrintable(objUrl.toString()));
             QCoreApplication::exit(-1);
         }
     }, Qt::QueuedConnection);
