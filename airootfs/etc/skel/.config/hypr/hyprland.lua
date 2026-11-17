@@ -48,9 +48,12 @@ hl.on("hyprland.start", function()
     -- There is no hl.spawn() in Hyprland's Lua API -- calling it throws
     -- "attempt to call a nil value" and aborts this whole handler.
 
-    hl.exec_cmd("bash -c 'sleep 2 && waybar'")
+    hl.exec_cmd("dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP")
+    hl.exec_cmd("systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP")
+    hl.exec_cmd("systemctl --user restart xdg-desktop-portal-hyprland 2>/dev/null || true")
+    hl.exec_cmd("titan-shell --daemon")
+    hl.exec_cmd("bash -c 'sleep 1 && waybar'")
     hl.exec_cmd("titan-wallpaper-restore")
-    hl.exec_cmd("bash -c 'sleep 2 && titan-shell --daemon'")
     hl.exec_cmd("titan-hotzones")
     hl.exec_cmd("swayosd-server")
     hl.exec_cmd("/usr/lib/polkit-kde-authentication-agent-1")

@@ -48,9 +48,6 @@ int main(int argc, char *argv[]) {
 
     QQmlApplicationEngine engine;
 
-    // ── Instantiate singletons and expose via context ─────────────
-    // Using setContextProperty is the reliable Qt6 way when
-    // QML_SINGLETON macros conflict with module-based registration.
     SettingsBackend settingsBackend;
     SystemInfo      systemInfo;
     NetworkManager  networkManager;
@@ -86,8 +83,10 @@ int main(int argc, char *argv[]) {
 
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
                      &app, [url](QObject *obj, const QUrl &objUrl) {
-        if (!obj && url == objUrl)
+        if (!obj && url == objUrl) {
+            qCritical() << "[archtitan-settings] FATAL: QML failed to load root object for" << objUrl;
             QCoreApplication::exit(-1);
+        }
     }, Qt::QueuedConnection);
 
     engine.load(url);

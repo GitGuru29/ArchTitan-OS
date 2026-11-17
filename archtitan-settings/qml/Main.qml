@@ -1,8 +1,8 @@
 import QtQuick
 import QtQuick.Controls.Basic
 import QtQuick.Layouts
-import ArchTitanSettings
 import ArchTitan.TitanUI
+import ArchTitanSettings
 
 
 ApplicationWindow {
