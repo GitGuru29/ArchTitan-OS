@@ -109,6 +109,24 @@ All keybindings use the **Super** key (Windows/Cmd key) as the primary modifier:
 | <kbd>Ctrl</kbd> + <kbd>Super</kbd> + <kbd>V</kbd> | Audio Mixer | `pavucontrol` |
 | <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Esc</kbd> | Task Manager | `kitty -e btop` |
 
+#### Terminal profile
+
+The shipped Kitty setup mirrors the host system's terminal: JetBrains Mono at
+11pt, beam cursor with trail, `window_margin_width 21.75`, Fish + Starship, and
+the split-pane `search.py` kitten. The default `archtitan` theme carries
+`"terminalProfile": "host"`, so `titan-theme` regenerates the exact host
+palette (including the extended `color232`–`color255` slots used by Starship).
+Switching to any other theme keeps those prompt slots while deriving the base
+colours from the new palette.
+
+| Keybinding | Action |
+| :--- | :--- |
+| <kbd>Ctrl</kbd> + <kbd>C</kbd> | Copy, or interrupt when a command is running |
+| <kbd>Ctrl</kbd> + <kbd>F</kbd> / <kbd>Super</kbd> + <kbd>F</kbd> | Open the split-pane search kitten |
+| <kbd>F3</kbd> / <kbd>Shift</kbd> + <kbd>F3</kbd> | Previous / next search match (inside search) |
+| <kbd>Page Up</kbd> / <kbd>Page Down</kbd> | Scroll one screen |
+| <kbd>Ctrl</kbd> + <kbd>+</kbd> / <kbd>-</kbd> / <kbd>0</kbd> | Increase / decrease / reset font size |
+
 ### 3. Screen Capture & Tools
 
 | Keybinding | Action | Command |

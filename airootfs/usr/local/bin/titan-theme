@@ -78,6 +78,89 @@ CONF_END = "# titan-theme:end"
 
 DEFAULT_THEME = "archtitan"
 
+# Host-terminal profile. When a theme state carries `"terminalProfile": "host"`
+# (the shipped default), kitty's generated fragment is the exact palette used
+# by the host system's kitty — including the extended colour slots that the
+# Starship prompt relies on. Switching to any other theme keeps the normal
+# palette-driven fragment, with those prompt slots still emitted.
+HOST_TERMINAL_FRAGMENT = """background            #171A26
+
+color0                #171A26
+color1                #8E80FF
+color2                #62E0C8
+color3                #84FDCB
+color4                #78B3C4
+color5                #99A6EF
+color6                #80D8D6
+color7                #CDDBD2
+color8                #B2BCB4
+color9                #C1B7FF
+color10               #F5FFFB
+color11               #FFFFFF
+color12               #BEE3E7
+color13               #D5D7FF
+color14               #EAFFFD
+color15               #DEE0FF
+
+cursor                #CDDBD2
+
+foreground            #CDDBD2
+
+selection_background  #BCE9FF
+selection_foreground  #03617C
+
+# Override obscure colors for starship prompt (these are greys at the end)
+color255              #63D3FF
+color254              #004D63
+color253              #8AD0EF
+color252              #03617C
+color251              #B9C3FF
+color250              #838DC8
+color249              #FFB4AB
+color248              #93000A
+
+color232              #003545
+color233              #BCE9FF
+color234              #003545
+color235              #BCE9FF
+color236              #212C61
+color237              #000000
+color238              #690005
+color239              #FFDAD6
+color240              #003545
+# Somehow 232 doesn't work so i gotta use another number
+
+# Some stuff should specifically use the colors in the middle so they look acceptable in both unthemed light/dark
+color243              #63D3FF
+color244              #FFB4AB
+color245              #434659
+"""
+
+# Extended slots used by the host Starship prompt. Emitted for every theme so
+# switching palettes never breaks the prompt's `fg:24x` / `bg:25x` styles.
+STARSHIP_SLOTS = [
+    ("color255", "#63D3FF"),
+    ("color254", "#004D63"),
+    ("color253", "#8AD0EF"),
+    ("color252", "#03617C"),
+    ("color251", "#B9C3FF"),
+    ("color250", "#838DC8"),
+    ("color249", "#FFB4AB"),
+    ("color248", "#93000A"),
+    ("color232", "#003545"),
+    ("color233", "#BCE9FF"),
+    ("color234", "#003545"),
+    ("color235", "#BCE9FF"),
+    ("color236", "#212C61"),
+    ("color237", "#000000"),
+    ("color238", "#690005"),
+    ("color239", "#FFDAD6"),
+    ("color240", "#003545"),
+    ("color243", "#63D3FF"),
+    ("color244", "#FFB4AB"),
+    ("color245", "#434659"),
+]
+
 
 def log(msg: str) -> None:
     print(f"titan-theme: {msg}", file=sys.stderr)
@@ -415,6 +498,8 @@ def hyprlock_body(t: dict) -> str:
 
 
 def kitty_fragment(t: dict) -> str:
+    if t.get("terminalProfile") == "host":
+        return HOST_TERMINAL_FRAGMENT
     p = t["palette"]
     acc = t["accent"]
     rows = [
@@ -446,6 +531,7 @@ def kitty_fragment(t: dict) -> str:
         ("color14", p["teal"]),
         ("color15", p["textMid"]),
     ]
+    rows += STARSHIP_SLOTS
     lines = [
         f"# titan-theme — generated from {t['id']}.json; do not edit.",
         "# Rewritten by `titan-theme set/apply`; kitty picks it up live",
