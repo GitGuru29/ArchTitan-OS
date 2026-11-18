@@ -15,6 +15,7 @@
 #include <QVBoxLayout>
 #include <QScrollArea>
 #include <QMouseEvent>
+#include <QKeyEvent>
 #include <QProgressBar>
 #include <QShortcut>
 #include <QKeySequence>
@@ -54,6 +55,12 @@ QMainWindow, QWidget#CentralContainer {
 QWidget#TopChrome {
     background: @crust;
     border-bottom: 1px solid rgba(@accentRGB, 0.16);
+}
+
+/* Reveal strip shown only while the startpage chrome is auto-hidden */
+QWidget#TopHoverSensor {
+    background: rgba(@accentRGB, 0.28);
+    border-bottom: 1px solid rgba(@accentRGB, 0.4);
 }
 
 QToolTip {
@@ -369,6 +376,7 @@ Browser::Browser(AdBlocker *adBlocker, QWidget *parent)
 
     loadPersistentUserData();
     setupUi();
+    refreshAddressSuggestions();
     newTab(QUrl(QString::fromUtf8(kHomeUrl)));
 
     connect(&ProfileManager::instance(), &ProfileManager::activeProfileChanged, this, [this](const UserProfile &) {
@@ -389,18 +397,11 @@ Browser::Browser(AdBlocker *adBlocker, QWidget *parent)
         });
         m_statsTimer->start();
 
-        // Guardian heartbeat timer for instant ad skip across YouTube & Spotify SPA routes
-        auto *guardianTimer = new QTimer(this);
-        guardianTimer->setInterval(350);
-        connect(guardianTimer, &QTimer::timeout, this, [this] {
-            if (auto *v = currentView()) {
-                const QString host = v->url().host().toLower();
-                if (host.contains(QStringLiteral("youtube.com")) || host.contains(QStringLiteral("spotify.com"))) {
-                    m_adBlocker->injectContentScriptIntoView(v);
-                }
-            }
-        });
-        guardianTimer->start();
+        // NOTE: there is intentionally no periodic "guardian" re-injection of
+        // the content script. It is installed once per document by the
+        // QWebEngineScript in main.cpp; re-injecting every 350ms stacked up
+        // unlimited setInterval/MutationObserver instances inside the page and
+        // pinned the CPU (and grew RSS) the longer a tab stayed open.
     }
 
     // Tab Memory Saver background checker (every 60s)
@@ -569,6 +570,16 @@ void Browser::setupUi()
     mainVLayout->setContentsMargins(0, 0, 0, 0);
     mainVLayout->setSpacing(0);
     setCentralWidget(centralContainer);
+
+    // Thin strip at the very top, visible only while the chrome is hidden.
+    // Hovering it restores the toolbar, so the auto-hide is discoverable.
+    m_topHoverSensor = new QWidget(centralContainer);
+    m_topHoverSensor->setObjectName(QStringLiteral("TopHoverSensor"));
+    m_topHoverSensor->setFixedHeight(4);
+    m_topHoverSensor->setToolTip(QStringLiteral("Hover to show the toolbar"));
+    m_topHoverSensor->installEventFilter(this);
+    m_topHoverSensor->hide();
+    mainVLayout->addWidget(m_topHoverSensor);
 
     m_tabs = new TabWidget(this);
 
@@ -855,57 +866,16 @@ void Browser::setupUi()
     new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_Minus), this, [this]{ zoomOut(); });
     new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_0), this, [this]{ zoomReset(); });
 
-    // Keyboard Shortcuts
-    new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_T), this, [this]{ newTab(); });
-    new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_W), this, [this]{ closeCurrentTab(); });
-    new QShortcut(QKeySequence::Refresh, this, [this]{ reloadOrStop(); });
-    new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_L), this, [this]{
-        if (m_topChrome) m_topChrome->show();
-        m_addressBar->setFocus();
-        m_addressBar->selectAll();
-    });
+    // Display shortcuts — registered once. Ctrl+K belongs to the command
+    // palette above; the AI panel moved to Ctrl+Shift+K to avoid the clash.
     new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_Backslash), this, [this]{
         if (m_topChrome) m_topChrome->setVisible(!m_topChrome->isVisible());
     });
     new QShortcut(QKeySequence(Qt::Key_F11), this, [this]{
-        if (m_topChrome) m_topChrome->setVisible(!m_topChrome->isVisible());
+        if (isFullScreen()) showNormal(); else showFullScreen();
     });
-    new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_K), this, [this]{ onAICoreClicked(); });
-    new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_F), this, [this]{ toggleFindInPage(); });
-    new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_B), this, [this]{ onBookmarksClicked(); });
-    new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_H), this, [this]{ onHistoryClicked(); });
-    new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_J), this, [this]{ onDownloadsClicked(); });
-    new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_Comma), this, [this]{ onSettingsClicked(); });
-    new QShortcut(QKeySequence(Qt::ALT | Qt::Key_Left), this, [this]{ navigateBack(); });
-    new QShortcut(QKeySequence(Qt::ALT | Qt::Key_Right), this, [this]{ navigateForward(); });
-    new QShortcut(QKeySequence(Qt::ALT | Qt::Key_H), this, [this]{ onHomeClicked(); });
-    new QShortcut(QKeySequence(Qt::ALT | Qt::Key_S), this, [this]{ onSpacesClicked(); });
-
-    // Tab Switching Shortcuts (Ctrl+Tab, Ctrl+Shift+Tab, Ctrl+Shift+A, Ctrl+1..9)
-    new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_Tab), this, [this]{
-        if (m_tabs && m_tabs->count() > 1) {
-            m_tabs->setCurrentIndex((m_tabs->currentIndex() + 1) % m_tabs->count());
-        }
-    });
-    new QShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_Backtab), this, [this]{
-        if (m_tabs && m_tabs->count() > 1) {
-            m_tabs->setCurrentIndex((m_tabs->currentIndex() - 1 + m_tabs->count()) % m_tabs->count());
-        }
-    });
-    new QShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_A), this, [this]{ onTabSearchClicked(); });
-    for (int i = 1; i <= 8; ++i) {
-        new QShortcut(QKeySequence(QStringLiteral("Ctrl+%1").arg(i)), this, [this, i]{
-            if (m_tabs && (i - 1) < m_tabs->count()) m_tabs->setCurrentIndex(i - 1);
-        });
-    }
-    new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_9), this, [this]{
-        if (m_tabs && m_tabs->count() > 0) m_tabs->setCurrentIndex(m_tabs->count() - 1);
-    });
-
-    new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_Plus), this, [this]{ zoomIn(); });
-    new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_Equal), this, [this]{ zoomIn(); });
-    new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_Minus), this, [this]{ zoomOut(); });
-    new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_0), this, [this]{ zoomReset(); });
+    new QShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_K), this, [this]{ onAICoreClicked(); });
+    new QShortcut(QKeySequence(QStringLiteral("Ctrl+/")), this, [this]{ showShortcutHelp(); });
 }
 
 /* ─── Find in Page ─────────────────────────────────────────────────────── */
@@ -921,6 +891,7 @@ void Browser::setupFindBar(QVBoxLayout *layout)
     m_findEdit->setObjectName(QStringLiteral("FindEdit"));
     m_findEdit->setPlaceholderText(QStringLiteral("Find in page..."));
     m_findEdit->setClearButtonEnabled(true);
+    m_findEdit->installEventFilter(this); // Esc closes the bar (see eventFilter)
     connect(m_findEdit, &QLineEdit::textChanged, this, &Browser::onFindTextChanged);
     connect(m_findEdit, &QLineEdit::returnPressed, this, &Browser::findNext);
     findLayout->addWidget(m_findEdit);
@@ -1138,11 +1109,23 @@ bool Browser::isBookmarked(const QUrl &url) const
     return false;
 }
 
+void Browser::refreshAddressSuggestions()
+{
+    if (!m_addressBar) return;
+    QStringList bookmarks, history;
+    for (const auto &b : m_bookmarks)
+        if (!b.url.isEmpty()) bookmarks << b.url.toString();
+    for (const auto &h : m_history)
+        if (!h.url.isEmpty()) history << h.url.toString();
+    m_addressBar->setSuggestions(history, bookmarks);
+}
+
 void Browser::addBookmark(const QString &title, const QUrl &url)
 {
     if (isBookmarked(url)) return;
     m_bookmarks.append({title.isEmpty() ? url.toString() : title, url, QDateTime::currentDateTime()});
     savePersistentUserData();
+    refreshAddressSuggestions();
 }
 
 void Browser::removeBookmark(const QUrl &url)
@@ -1154,6 +1137,7 @@ void Browser::removeBookmark(const QUrl &url)
         }
     }
     savePersistentUserData();
+    refreshAddressSuggestions();
 }
 
 void Browser::addHistoryRecord(const QString &title, const QUrl &url)
@@ -1161,6 +1145,7 @@ void Browser::addHistoryRecord(const QString &title, const QUrl &url)
     if (url.scheme() == QStringLiteral("qrc") || url.isEmpty()) return;
     m_history.prepend({title.isEmpty() ? url.toString() : title, url, QDateTime::currentDateTime()});
     if (m_history.size() > 500) m_history.removeLast();
+    refreshAddressSuggestions();
 }
 
 void Browser::onBookmarkClicked(const QUrl &url)
@@ -1258,13 +1243,27 @@ void Browser::updateChromeVisibility()
     // Auto-hide top chrome ONLY when on a single home tab
     if (isHome && tabCount <= 1) {
         m_topChrome->hide();
+        if (m_topHoverSensor) m_topHoverSensor->show();
     } else {
         m_topChrome->show();
+        if (m_topHoverSensor) m_topHoverSensor->hide();
     }
 }
 
 bool Browser::eventFilter(QObject *watched, QEvent *event)
 {
+    if (watched == m_findEdit && event->type() == QEvent::KeyPress) {
+        auto *keyEvent = static_cast<QKeyEvent *>(event);
+        if (keyEvent->key() == Qt::Key_Escape) {
+            closeFindBar();
+            return true;
+        }
+    }
+    if (watched == m_topHoverSensor &&
+        (event->type() == QEvent::Enter || event->type() == QEvent::MouseButtonPress)) {
+        if (m_topChrome && !m_topChrome->isVisible()) m_topChrome->show();
+        return false;
+    }
     if (event->type() == QEvent::MouseMove) {
         auto *mouseEvent = static_cast<QMouseEvent *>(event);
         if (mouseEvent->pos().y() <= 6 && m_topChrome && !m_topChrome->isVisible()) {
@@ -1276,6 +1275,28 @@ bool Browser::eventFilter(QObject *watched, QEvent *event)
         }
     }
     return QMainWindow::eventFilter(watched, event);
+}
+
+void Browser::keyPressEvent(QKeyEvent *event)
+{
+    if (event->key() == Qt::Key_Escape) {
+        // Close Find first (its tooltip already promises Esc), then drop focus
+        // from the omnibox, then leave fullscreen — in that order.
+        if (m_findBar && m_findBar->isVisible()) {
+            closeFindBar();
+            return;
+        }
+        if (m_addressBar && m_addressBar->hasFocus()) {
+            m_addressBar->clearFocus();
+            updateChromeVisibility();
+            return;
+        }
+        if (isFullScreen()) {
+            showNormal();
+            return;
+        }
+    }
+    QMainWindow::keyPressEvent(event);
 }
 
 /* ─── Rail & Chrome Actions ────────────────────────────────────────────── */
@@ -1981,6 +2002,60 @@ void Browser::onLoadFinished(bool ok)
             showLoadError(v->url());
     }
     updateNavigationButtons();
+}
+
+void Browser::showShortcutHelp()
+{
+    auto *dlg = new QDialog(this);
+    dlg->setWindowTitle(QStringLiteral("Titan Browser — Keyboard Shortcuts"));
+    dlg->setModal(false);
+    dlg->setAttribute(Qt::WA_DeleteOnClose);
+
+    auto *layout = new QVBoxLayout(dlg);
+    auto *label = new QLabel(dlg);
+    label->setTextFormat(Qt::RichText);
+    label->setText(QStringLiteral(
+        "<h3>Navigation</h3>"
+        "<table cellpadding='3'>"
+        "<tr><td><b>Ctrl+L</b></td><td>Focus address bar</td></tr>"
+        "<tr><td><b>Alt+← / Alt+→</b></td><td>Back / Forward</td></tr>"
+        "<tr><td><b>Alt+H</b></td><td>Home</td></tr>"
+        "<tr><td><b>Ctrl+R</b></td><td>Reload / Stop</td></tr>"
+        "</table>"
+        "<h3>Tabs</h3>"
+        "<table cellpadding='3'>"
+        "<tr><td><b>Ctrl+T</b></td><td>New tab</td></tr>"
+        "<tr><td><b>Ctrl+W</b></td><td>Close tab</td></tr>"
+        "<tr><td><b>Ctrl+Tab</b></td><td>Next tab</td></tr>"
+        "<tr><td><b>Ctrl+Shift+Tab</b></td><td>Previous tab</td></tr>"
+        "<tr><td><b>Ctrl+1…9</b></td><td>Jump to tab</td></tr>"
+        "<tr><td><b>Ctrl+Shift+A</b></td><td>Search open tabs</td></tr>"
+        "</table>"
+        "<h3>Tools</h3>"
+        "<table cellpadding='3'>"
+        "<tr><td><b>Ctrl+F</b></td><td>Find in page (Esc to close)</td></tr>"
+        "<tr><td><b>Ctrl+K</b></td><td>Command palette</td></tr>"
+        "<tr><td><b>Ctrl+Shift+K</b></td><td>AI panel</td></tr>"
+        "<tr><td><b>Ctrl+B / H / J</b></td><td>Bookmarks / History / Downloads</td></tr>"
+        "<tr><td><b>Ctrl+,</b></td><td>Settings</td></tr>"
+        "<tr><td><b>F12</b></td><td>Developer tools</td></tr>"
+        "<tr><td><b>Ctrl+ + / - / 0</b></td><td>Zoom in / out / reset</td></tr>"
+        "<tr><td><b>F11</b></td><td>Fullscreen</td></tr>"
+        "<tr><td><b>Ctrl+\\</b></td><td>Toggle toolbar</td></tr>"
+        "<tr><td><b>Ctrl+/</b></td><td>This cheat sheet</td></tr>"
+        "</table>"));
+    label->setStyleSheet(TitanPalette::qss(QStringLiteral(
+        "QLabel { color: @textHigh; font-family: 'Inter', sans-serif; font-size: 12px; }"
+        "h3 { color: @accent; font-size: 13px; margin-top: 10px; }"
+        "td { padding-right: 14px; }")));
+    layout->addWidget(label);
+
+    auto *closeBtn = new QPushButton(QStringLiteral("Close"), dlg);
+    connect(closeBtn, &QPushButton::clicked, dlg, &QDialog::close);
+    layout->addWidget(closeBtn, 0, Qt::AlignRight);
+
+    dlg->resize(420, 560);
+    dlg->show();
 }
 
 void Browser::showLoadError(const QUrl &url)

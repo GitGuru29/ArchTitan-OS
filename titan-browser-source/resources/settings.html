@@ -5,11 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Settings — Titan Browser</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
-        rel="stylesheet">
+    <!-- System fonts only — see homepage.html for rationale. -->
     <style>
         /* ═══════════════════════════════════════════════════════════════════════
            TITAN BROWSER — CINEMATIC OBSIDIAN GLOW SETTINGS DASHBOARD
@@ -58,7 +54,7 @@
             background-image:
                 radial-gradient(ellipse at 50% 20%, rgba(14, 165, 233, 0.15) 0%, transparent 60%),
                 radial-gradient(circle at 85% 90%, rgba(2, 6, 23, 0.85) 0%, transparent 60%),
-                url('background.png');
+                url('background.jpg');
             background-size: cover;
             background-position: center center;
             background-repeat: no-repeat;
@@ -1293,6 +1289,28 @@
                     </div>
                     <div class="setting-row">
                         <div class="setting-info">
+                            <div class="setting-label">WebGL (software / SwiftShader)</div>
+                            <div class="setting-desc">Off by default to avoid allocating GPU-backed buffers while the
+                                GPU is disabled. Re-enable if a site needs WebGL. Takes effect immediately.
+                            </div>
+                        </div>
+                        <div class="setting-control">
+                            <div class="toggle" id="toggle-webgl" onclick="toggleFeature('webgl', this)"></div>
+                        </div>
+                    </div>
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <div class="setting-label">Built-in PDF Viewer</div>
+                            <div class="setting-desc">Off by default — PDFs open in your configured external viewer
+                                instead of loading Chromium's PDF plugin into the renderer.
+                            </div>
+                        </div>
+                        <div class="setting-control">
+                            <div class="toggle" id="toggle-pdf" onclick="toggleFeature('pdf', this)"></div>
+                        </div>
+                    </div>
+                    <div class="setting-row">
+                        <div class="setting-info">
                             <div class="setting-label">Smooth Scrolling Acceleration</div>
                             <div class="setting-desc">Enable fluid subpixel interpolation when scrolling long webpages
                             </div>
@@ -1501,7 +1519,22 @@
             el.classList.toggle('on');
             const state = el.classList.contains('on');
             localStorage.setItem('titan_' + key, state ? 'true' : 'false');
+            if (key === 'memory_saver') {
+                window.location.href = 'titan://action/set-memory-saver/' + (state ? '1' : '0');
+            }
         }
+
+        function toggleFeature(name, el) {
+            const on = !el.classList.contains('on');
+            el.classList.toggle('on', on);
+            localStorage.setItem('titan_feature_' + name, on ? 'true' : 'false');
+            window.location.href = 'titan://action/set-feature/' + name + '/' + (on ? '1' : '0');
+        }
+
+        window.setFeatureState = function (name, on) {
+            const el = document.getElementById('toggle-' + name);
+            if (el) el.classList.toggle('on', !!on);
+        };
 
         function saveSetting(key, val) {
             localStorage.setItem('titan_' + key, val);

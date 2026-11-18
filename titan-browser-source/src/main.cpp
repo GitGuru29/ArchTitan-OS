@@ -12,6 +12,7 @@
 #include <QStandardPaths>
 #include <QDir>
 #include <QFile>
+#include <QSettings>
 
 int main(int argc, char *argv[])
 {
@@ -24,18 +25,25 @@ int main(int argc, char *argv[])
     if (qgetenv("QT_QPA_PLATFORM").isEmpty())
         qputenv("QT_QPA_PLATFORM", "xcb");
 
-    // Performance-optimized Chromium flags:
-    // Enables smooth scrolling, disk cache optimization, font antialiasing, and CPU fallback
-    qputenv("QTWEBENGINE_CHROMIUM_FLAGS",
-            "--no-sandbox "
-            "--disable-gpu "
-            "--disable-gpu-sandbox "
-            "--disable-dev-shm-usage "
-            "--lang=en-US "
-            "--autoplay-policy=no-user-gesture-required "
-            "--enable-smooth-scrolling "
-            "--disk-cache-size=536870912 "
-            "--disable-features=VaapiVideoDecoder,UseChromeOSDirectVideoDecoder");
+    // Respect an explicit override so users on non-NVIDIA machines can opt back
+    // into GPU acceleration. The default keeps the SwiftShader fallback that
+    // avoids the NVIDIA+Wayland GBM/Vulkan SIGSEGV (see f76ae21). Note that
+    // --disable-gpu means all page compositing happens on the CPU, which is why
+    // the startpage avoids backdrop blur / per-shape canvas shadowBlur.
+    if (qgetenv("QTWEBENGINE_CHROMIUM_FLAGS").isEmpty()) {
+        qputenv("QTWEBENGINE_CHROMIUM_FLAGS",
+                "--no-sandbox "
+                "--disable-gpu "
+                "--disable-gpu-sandbox "
+                "--disable-dev-shm-usage "
+                "--lang=en-US "
+                "--autoplay-policy=no-user-gesture-required "
+                "--enable-smooth-scrolling "
+                "--renderer-process-limit=2 "
+                "--disk-cache-size=134217728 "
+                "--disable-features=VaapiVideoDecoder,UseChromeOSDirectVideoDecoder,"
+                "IsolateOrigins,site-per-process,Translate");
+    }
 
     QApplication app(argc, argv);
 
@@ -67,7 +75,7 @@ int main(int argc, char *argv[])
     auto *profile = QWebEngineProfile::defaultProfile();
     profile->setHttpAcceptLanguage(QStringLiteral("en-US,en;q=0.9"));
     profile->setHttpCacheType(QWebEngineProfile::DiskHttpCache);
-    profile->setHttpCacheMaximumSize(512 * 1024 * 1024); // 512 MB disk cache
+    profile->setHttpCacheMaximumSize(128 * 1024 * 1024); // 128 MB disk cache — smaller mapped-file footprint
     profile->setPersistentCookiesPolicy(QWebEngineProfile::AllowPersistentCookies);
 
     // Set storage locations in user config directory
@@ -75,15 +83,21 @@ int main(int argc, char *argv[])
     QDir().mkpath(dataPath);
     profile->setPersistentStoragePath(dataPath);
 
-    // Profile-level WebEngine Settings for smoothness and responsiveness
+    // Profile-level WebEngine Settings. WebGL and the built-in PDF viewer are
+    // off by default: GPU is disabled (SwiftShader) and both allocate memory
+    // that most sessions never use. Settings → Performance can re-enable them.
+    QSettings features(QStringLiteral("ArchTitan"), QStringLiteral("TitanBrowserFeatures"));
+    const bool webglEnabled   = features.value(QStringLiteral("webgl"), false).toBool();
+    const bool pdfEnabled     = features.value(QStringLiteral("pdf"),   false).toBool();
+
     auto *settings = profile->settings();
     settings->setAttribute(QWebEngineSettings::ScrollAnimatorEnabled, true);
     settings->setAttribute(QWebEngineSettings::Accelerated2dCanvasEnabled, true);
-    settings->setAttribute(QWebEngineSettings::WebGLEnabled, true);
+    settings->setAttribute(QWebEngineSettings::WebGLEnabled, webglEnabled);
     settings->setAttribute(QWebEngineSettings::DnsPrefetchEnabled, true);
     settings->setAttribute(QWebEngineSettings::FullScreenSupportEnabled, true);
     settings->setAttribute(QWebEngineSettings::FocusOnNavigationEnabled, true);
-    settings->setAttribute(QWebEngineSettings::PdfViewerEnabled, true);
+    settings->setAttribute(QWebEngineSettings::PdfViewerEnabled, pdfEnabled);
     settings->setAttribute(QWebEngineSettings::LocalContentCanAccessRemoteUrls, true);
     settings->setAttribute(QWebEngineSettings::LocalContentCanAccessFileUrls, true);
     settings->setAttribute(QWebEngineSettings::PlaybackRequiresUserGesture, false);
