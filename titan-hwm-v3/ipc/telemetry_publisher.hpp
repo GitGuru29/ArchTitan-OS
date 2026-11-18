@@ -54,7 +54,7 @@ struct UnmanagedProc {
 // TelemetrySnapshot — full daemon state for one tick.
 // ─────────────────────────────────────────────────────────────────────────────
 struct TelemetrySnapshot {
-    std::string version     = "3.1.0";
+    std::string version     = "3.2.0";
     long long   timestamp_ms = 0;     // wall clock (epoch ms)
     long long   uptime_seconds = 0;
 
@@ -66,7 +66,9 @@ struct TelemetrySnapshot {
     long        mem_total_kb     = 0;
     long        mem_available_kb = 0;
 
-    // CPU pressure — telemetry only (HC-CPU-1: never drives a kill decision)
+    // CPU pressure & asymmetric scheduling (HC-CPU-1: scheduling/headroom only, never kills)
+    std::string cpu_pressure_level       = "NORMAL";
+    std::string composite_pressure_level = "NORMAL";
     bool        cpu_psi_valid    = false;
     float       cpu_psi_avg10    = 0.0f;
     float       cpu_psi_avg60    = 0.0f;
@@ -74,8 +76,17 @@ struct TelemetrySnapshot {
     float       load1            = 0.0f;
     float       load5            = 0.0f;
     float       load15           = 0.0f;
+    float       load_ratio       = 0.0f;
+    int         online_cpus      = 1;
     int         runnable_procs   = 0;
     int         total_procs      = 0;
+    int         protected_cpu_weight   = 2000;
+    int         active_cpu_weight      = 500;
+    int         background_cpu_weight  = 50;
+    float       background_cpu_max_pct = 100.0f;
+    bool        cpu_headroom_engaged   = false;
+    bool        unattended_lift        = false;
+    float       cpu_temp_c             = 0.0f;
 
     // Orchestration
     std::string governor = "schedutil";      // powersave|schedutil|performance

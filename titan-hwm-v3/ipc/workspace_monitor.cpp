@@ -20,6 +20,32 @@ namespace fs = std::filesystem;
 
 namespace thm {
 
+namespace {
+
+long long now_steady_ms() {
+    using namespace std::chrono;
+    return duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
+}
+
+// Check /run/systemd/sessions/* for IDLE_HINT=1 or IDLE_HINT=yes
+bool systemd_session_idle_hint() {
+    std::error_code ec;
+    for (const auto& entry : fs::directory_iterator("/run/systemd/sessions", ec)) {
+        if (!entry.is_regular_file(ec)) continue;
+        const std::string fname = entry.path().filename().string();
+        if (fname.find(".ref") != std::string::npos) continue;
+        std::ifstream f(entry.path());
+        std::string line;
+        while (std::getline(f, line)) {
+            if (line == "IDLE_HINT=1" || line == "IDLE_HINT=yes")
+                return true;
+        }
+    }
+    return false;
+}
+
+} // namespace
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Hyprland IPC socket discovery.
 //
@@ -88,11 +114,31 @@ std::string WorkspaceMonitor::discover_socket_path() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// start / stop
+// start / stop / user presence
 // ─────────────────────────────────────────────────────────────────────────────
+void WorkspaceMonitor::mark_activity() {
+    last_activity_ms_.store(now_steady_ms(), std::memory_order_relaxed);
+}
+
+long long WorkspaceMonitor::seconds_since_last_activity() const {
+    const long long last = last_activity_ms_.load(std::memory_order_relaxed);
+    if (last <= 0) return 0;
+    const long long delta = now_steady_ms() - last;
+    return delta > 0 ? (delta / 1000) : 0;
+}
+
+bool WorkspaceMonitor::user_unattended(long idle_threshold_s) const {
+    if (systemd_session_idle_hint()) return true;
+    // Conservative: if Hyprland IPC is disconnected, assume user is PRESENT
+    // unless systemd explicitly reports idle hint above.
+    if (!connected_.load(std::memory_order_relaxed)) return false;
+    return seconds_since_last_activity() >= idle_threshold_s;
+}
+
 bool WorkspaceMonitor::start() {
     if (running_.exchange(true))
         return true; // already started
+    mark_activity();
     listener_thread_ = std::thread(&WorkspaceMonitor::listen_loop, this);
     return true;
 }
@@ -228,6 +274,14 @@ void WorkspaceMonitor::handle_event(const std::string& line) {
     std::string event   = line.substr(0, split);
     std::string payload = line.substr(split + 2);
 
+    if (event == "workspace" || event == "workspacev2" ||
+        event == "focusedmon" || event == "activewindow" ||
+        event == "activewindowv2" || event == "openwindow" ||
+        event == "closewindow" || event == "movewindow" ||
+        event == "fullscreen") {
+        mark_activity();
+    }
+
     if (event == "workspace") {
         int ws_id = 0;
         try { ws_id = std::stoi(payload); } catch (...) { return; }
@@ -348,8 +402,11 @@ void WorkspaceMonitor::refresh_visibility() {
 GovernorHint WorkspaceMonitor::compute_governor(
         const std::unordered_map<uint32_t, Workload>& workloads,
         PressureLevel pressure,
-        GovernorHint current) {
+        GovernorHint current,
+        PressureLevel cpu_pressure,
+        bool thermally_constrained) {
 
+    bool any_active     = false;
     bool any_building   = false;
     bool any_latency    = false;
     bool all_idle       = true;
@@ -359,8 +416,10 @@ GovernorHint WorkspaceMonitor::compute_governor(
         // always present in large numbers and would pin the governor above
         // POWERSAVE even when nothing classified is running.
         if (wl.observed) continue;
-        if (wl.state == WorkloadState::ACTIVE ||
-            wl.state == WorkloadState::BACKGROUND_EXECUTING) {
+        if (wl.state == WorkloadState::ACTIVE) {
+            any_active = true;
+            all_idle   = false;
+        } else if (wl.state == WorkloadState::BACKGROUND_EXECUTING) {
             all_idle = false;
         }
         if (wl.state == WorkloadState::BACKGROUND_EXECUTING && wl.is_building)
@@ -369,7 +428,13 @@ GovernorHint WorkspaceMonitor::compute_governor(
             any_latency = true;
     }
 
-    if (any_building || any_latency) {
+    const bool cpu_contended_active =
+        (cpu_pressure >= PressureLevel::MODERATE) && any_active;
+
+    if (any_building || any_latency || cpu_contended_active) {
+        if (thermally_constrained)
+            return GovernorHint::SCHEDUTIL;
+
         const bool may_hold_performance =
             (current == GovernorHint::PERFORMANCE)
                 ? (pressure <= PressureLevel::MODERATE)
@@ -378,7 +443,10 @@ GovernorHint WorkspaceMonitor::compute_governor(
         return GovernorHint::SCHEDUTIL;
     }
 
-    if (all_idle && pressure == PressureLevel::NORMAL) return GovernorHint::POWERSAVE;
+    if (all_idle && pressure == PressureLevel::NORMAL &&
+        cpu_pressure == PressureLevel::NORMAL) {
+        return GovernorHint::POWERSAVE;
+    }
     return GovernorHint::SCHEDUTIL;
 }
 

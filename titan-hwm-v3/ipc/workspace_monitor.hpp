@@ -64,6 +64,17 @@ public:
     // ── State queries ────────────────────────────────────────────────────────
     int  focused_workspace() const { return focused_ws_.load(); }
 
+    // ── User presence ────────────────────────────────────────────────────────
+    // Best-effort "is anyone at the machine" signal for the unattended-build
+    // auto-lift. Hyprland exposes no keystroke events, so this tracks the user-
+    // driven compositor events (workspace / focus / window open-close-move /
+    // fullscreen). It is deliberately conservative: when the compositor is not
+    // connected the user is assumed PRESENT, because wrongly lifting the CPU cap
+    // costs interactivity while wrongly keeping it only costs build speed.
+    void      mark_activity();
+    long long seconds_since_last_activity() const;
+    bool      user_unattended(long idle_threshold_s) const;
+
     // Get current WorkspaceState map (thread-safe snapshot)
     std::unordered_map<int, WorkspaceState> snapshot_workspaces() const;
 
@@ -74,10 +85,18 @@ public:
     // Compute from aggregate system demand. Called each tick.
     // `current` is the hint currently applied; it selects the hysteresis band so
     // the governor cannot flap when demand and pressure sit on a boundary.
+    //
+    // `pressure` is the MEMORY channel (HC-CPU-1). `cpu_pressure` is the CPU
+    // channel: when the CPU is contended (>= MODERATE) and a foreground workload
+    // is actively executing, the governor is boosted to PERFORMANCE so the
+    // foreground gets full clocks, unless the machine is thermally constrained
+    // or memory is HIGH/CRITICAL (a cooler, lower-clocked machine wins there).
     static GovernorHint compute_governor(
         const std::unordered_map<uint32_t, Workload>& workloads,
         PressureLevel pressure,
-        GovernorHint current = GovernorHint::SCHEDUTIL);
+        GovernorHint current = GovernorHint::SCHEDUTIL,
+        PressureLevel cpu_pressure = PressureLevel::NORMAL,
+        bool thermally_constrained = false);
 
     // Apply governor hint to /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
     static bool apply_governor(GovernorHint hint);
@@ -92,6 +111,9 @@ private:
     std::atomic<bool> running_{false};
     std::atomic<bool> connected_{false};
     std::thread       listener_thread_;
+
+    // steady_clock milliseconds of the last user-driven compositor event.
+    std::atomic<long long> last_activity_ms_{0};
 
     mutable std::mutex ws_mtx_;
     std::unordered_map<int, WorkspaceState> workspaces_;

@@ -32,6 +32,7 @@
 #include "../ipc/workspace_monitor.hpp"
 #include "../ipc/telemetry_publisher.hpp"
 
+#include <cmath>
 #include <iostream>
 #include <iomanip>
 #include <fstream>
@@ -1010,7 +1011,11 @@ void test_tc11_governor_pressure_authority() {
     wl_i.state = thm::WorkloadState::IDLE;
     idle[502] = wl_i;
 
-    const auto G = thm::WorkspaceMonitor::compute_governor;
+    const auto G = [](const std::unordered_map<uint32_t, thm::Workload>& w,
+                      thm::PressureLevel p,
+                      thm::GovernorHint c) {
+        return thm::WorkspaceMonitor::compute_governor(w, p, c);
+    };
     using H = thm::GovernorHint;
     using P = thm::PressureLevel;
 
@@ -1744,6 +1749,259 @@ void test_tc18_hyprland_late_start_reconnect() {
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
+// TC-19: HC-CPU-1 Invariant Proof (CPU Pressure Never Kills/Freezes)
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc19_hc_cpu_1_invariant() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(19, "HC-CPU-1 Invariant Proof",
+                    "CRITICAL CPU pressure with NORMAL RAM never triggers FREEZE or RECLAIM");
+
+    thm::CpuPressureController ctrl(3);
+    thm::MemInfo mem;
+    mem.total_kb     = 32L * 1024 * 1024;
+    mem.available_kb = 25L * 1024 * 1024; // ~78% free -> NORMAL
+    thm::PSIStats mem_psi{true, 0.0f, 0.0f};
+    thm::CpuPSIStats cpu_psi{true, 80.0f, 65.0f, 40.0f};
+    thm::LoadAverage load{32.0f, 20.0f, 12.0f, 16, 400};
+
+    const thm::SystemPressure sp = ctrl.evaluate(mem, mem_psi, cpu_psi, load, 8);
+    const thm::PressureLevel mem_chan = thm::memory_plane_pressure(sp);
+
+    pid_t build_pid = fork_cpu_burner("cargo build --release -j16");
+    thm::ProtectedRegistry registry;
+    thm::PolicyEngine policy;
+
+    thm::Workload wl;
+    wl.id           = 919;
+    wl.type         = thm::WorkloadType::SYSTEM_DEV;
+    wl.state        = thm::WorkloadState::BACKGROUND_EXECUTING;
+    wl.is_building  = true;
+    wl.root_pid     = build_pid;
+    wl.pids         = {build_pid};
+
+    thm::WorkspaceState ws;
+    ws.id         = 2;
+    ws.is_focused = false;
+    ws.is_visible = false;
+
+    const auto dec = policy.evaluate(wl, ws, thm::ActivityState::EXECUTING, mem_chan, registry);
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    const char st = read_proc_state(build_pid);
+    safe_reap(build_pid);
+
+    const bool cpu_crit  = (sp.cpu == thm::PressureLevel::CRITICAL);
+    const bool mem_norm  = (mem_chan == thm::PressureLevel::NORMAL);
+    const bool keep_bg   = (dec == thm::PolicyDecision::KEEP_BACKGROUND);
+    const bool alive_run = (st == 'R' || st == 'S');
+    const bool passed    = cpu_crit && mem_norm && keep_bg && alive_run;
+
+    std::cout << "[HC-CPU-1] cpu=" << thm::to_string(sp.cpu)
+              << " mem_chan=" << thm::to_string(mem_chan)
+              << " decision=" << thm::to_string(dec)
+              << " build_state=" << st << "\n";
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-19: HC-CPU-1 Invariant",
+                         "CRITICAL CPU pressure never kills/freezes",
+                         passed,
+                         std::string("cpu=CRITICAL, mem=NORMAL, dec=") + thm::to_string(dec) + ", state=" + st,
+                         ms});
+    std::cout << (passed ? ">>> PASS: HC-CPU-1 invariant upheld.\n" : ">>> FAIL!\n");
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-20: Dual-Window CPU Hysteresis
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc20_cpu_dual_window_hysteresis() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(20, "Dual-Window CPU Hysteresis",
+                    "Immediate climb to HIGH; requires 3 consecutive cool ticks <15% to release");
+
+    thm::CpuPressureController ctrl(3);
+    thm::MemInfo mem{16L * 1024 * 1024, 12L * 1024 * 1024, 0, 0};
+    thm::PSIStats mem_psi{true, 0.0f, 0.0f};
+
+    thm::CpuPSIStats high_psi{true, 35.0f, 20.0f, 10.0f};
+    thm::LoadAverage high_la{16.0f, 10.0f, 6.0f, 8, 200}; // load_ratio=2.0 on 8 CPUs
+    const auto s1 = ctrl.evaluate(mem, mem_psi, high_psi, high_la, 8);
+    const bool escalated = (s1.cpu == thm::PressureLevel::HIGH);
+
+    thm::CpuPSIStats cool_psi{true, 10.0f, 12.0f, 10.0f};
+    thm::LoadAverage cool_la{2.0f, 4.0f, 4.0f, 1, 200}; // load_ratio=0.25 -> raw NORMAL
+    const auto c1 = ctrl.evaluate(mem, mem_psi, cool_psi, cool_la, 8);
+    const auto c2 = ctrl.evaluate(mem, mem_psi, cool_psi, cool_la, 8);
+    const bool held_two = (c1.cpu == thm::PressureLevel::HIGH &&
+                           c2.cpu == thm::PressureLevel::HIGH);
+
+    const auto c3 = ctrl.evaluate(mem, mem_psi, cool_psi, cool_la, 8);
+    const bool released_three = (c3.cpu == thm::PressureLevel::NORMAL);
+
+    // Spike only (high PSI, low load ratio < 1.0) must NOT escalate
+    thm::CpuPressureController ctrl2(3);
+    thm::LoadAverage low_ratio_la{2.0f, 2.0f, 2.0f, 1, 200}; // ratio 0.25
+    const auto spike = ctrl2.evaluate(mem, mem_psi, high_psi, low_ratio_la, 8);
+    const bool spike_ignored = (spike.cpu == thm::PressureLevel::NORMAL);
+
+    const bool passed = escalated && held_two && released_three && spike_ignored;
+    std::cout << "[Hysteresis] climb=" << thm::to_string(s1.cpu)
+              << " cool1=" << thm::to_string(c1.cpu)
+              << " cool2=" << thm::to_string(c2.cpu)
+              << " cool3=" << thm::to_string(c3.cpu)
+              << " single_thread_spike=" << thm::to_string(spike.cpu) << "\n";
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-20: CPU Dual-Window Hysteresis",
+                         "Immediate climb + 3-tick release hold + LoadRatio gate",
+                         passed,
+                         "climb=HIGH, hold(2)=HIGH, release(3)=NORMAL, spike=NORMAL",
+                         ms});
+    std::cout << (passed ? ">>> PASS: CPU hysteresis verified.\n" : ">>> FAIL!\n");
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-21: Dynamic Weights & 25 ms CFS cpu.max Math
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc21_cpu_slice_policy_math() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(21, "Dynamic Weights & 25ms cpu.max Math",
+                    "Asymmetric weights and (N-1) 25ms headroom match spec across core counts");
+
+    const auto p_norm = thm::compute_cpu_slice_policy(thm::PressureLevel::NORMAL, 16, false);
+    const auto p_mod  = thm::compute_cpu_slice_policy(thm::PressureLevel::MODERATE, 16, false);
+    const auto p_h16  = thm::compute_cpu_slice_policy(thm::PressureLevel::HIGH, 16, false);
+    const auto p_c8   = thm::compute_cpu_slice_policy(thm::PressureLevel::CRITICAL, 8, false);
+    const auto p_h2   = thm::compute_cpu_slice_policy(thm::PressureLevel::HIGH, 2, false);
+    const auto p_h1   = thm::compute_cpu_slice_policy(thm::PressureLevel::HIGH, 1, false);
+
+    const bool norm_ok = (p_norm.active_weight == 500 && p_norm.background_weight == 50 &&
+                          p_norm.background_quota_us == 0 && !p_norm.headroom_engaged);
+    const bool mod_ok  = (p_mod.active_weight == 800 && p_mod.background_weight == 25 &&
+                          p_mod.background_quota_us == 0);
+    const bool h16_ok  = (p_h16.protected_weight == 2000 && p_h16.active_weight == 1000 &&
+                          p_h16.background_weight == 10 && p_h16.period_us == 25000 &&
+                          p_h16.background_quota_us == 375000 &&
+                          std::fabs(p_h16.background_max_pct - 93.75f) < 0.05f &&
+                          p_h16.headroom_engaged);
+    const bool c8_ok   = (p_c8.protected_weight == 5000 && p_c8.background_quota_us == 175000 &&
+                          std::fabs(p_c8.background_max_pct - 87.5f) < 0.05f);
+    const bool h2_ok   = (p_h2.background_quota_us == 25000 &&
+                          std::fabs(p_h2.background_max_pct - 50.0f) < 0.05f);
+    const bool h1_ok   = (p_h1.background_quota_us == 18750 &&
+                          std::fabs(p_h1.background_max_pct - 75.0f) < 0.05f);
+
+    const bool passed = norm_ok && mod_ok && h16_ok && c8_ok && h2_ok && h1_ok;
+    std::cout << "[Policy] N=16 HIGH: quota=" << p_h16.background_quota_us << "/" << p_h16.period_us
+              << " (" << p_h16.background_max_pct << "%) "
+              << " N=8 CRIT: quota=" << p_c8.background_quota_us
+              << " N=2: " << p_h2.background_quota_us
+              << " N=1: " << p_h1.background_quota_us << "\n";
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-21: cgroup cpu.max & Weights Math",
+                         "Asymmetric bias + (N-1)*25ms quota exact across 1..16 CPUs",
+                         passed,
+                         "16c=375000(93.75%), 8c=175000(87.5%), 2c=25000, 1c=18750",
+                         ms});
+    std::cout << (passed ? ">>> PASS: cpu.max and weight policy verified.\n" : ">>> FAIL!\n");
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-22: Unattended Idle Auto-Lift
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc22_unattended_idle_autolift() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(22, "Unattended Idle Auto-Lift",
+                    "Away-from-desk idle >=60s lifts cpu.max to 100% while keeping weights biased");
+
+    const auto away = thm::compute_cpu_slice_policy(thm::PressureLevel::HIGH, 16, true);
+    const auto back = thm::compute_cpu_slice_policy(thm::PressureLevel::HIGH, 16, false);
+
+    const bool lifted_ok = (away.background_quota_us == 0 && away.unattended_lift &&
+                            !away.headroom_engaged &&
+                            away.active_weight == 1000 && away.background_weight == 10 &&
+                            std::fabs(away.background_max_pct - 100.0f) < 0.01f);
+    const bool reengaged = (back.background_quota_us == 375000 && !back.unattended_lift &&
+                            back.headroom_engaged);
+    const bool passed = lifted_ok && reengaged;
+
+    std::cout << "[AutoLift] idle->quota=" << away.background_quota_us
+              << " lift=" << away.unattended_lift
+              << " active_wt=" << away.active_weight
+              << " | return->quota=" << back.background_quota_us
+              << " engaged=" << back.headroom_engaged << "\n";
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-22: Unattended Idle Auto-Lift",
+                         "cpu.max lifts at idle and re-engages immediately on return",
+                         passed,
+                         "idle->max (100%, 1000:10), active->375000 (engaged)",
+                         ms});
+    std::cout << (passed ? ">>> PASS: unattended idle auto-lift verified.\n" : ">>> FAIL!\n");
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-23: Telemetry Contract v3.2 (CPU Pressure & Headroom Fields)
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc23_cpu_telemetry_contract_v32() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(23, "Telemetry Contract v3.2",
+                    "Telemetry JSON emits CPU pressure, load_ratio, weights, and headroom state");
+
+    thm::TelemetrySnapshot s;
+    s.version                  = "3.2.0";
+    s.pressure_level           = "NORMAL";
+    s.cpu_pressure_level       = "HIGH";
+    s.composite_pressure_level = "HIGH";
+    s.cpu_psi_valid            = true;
+    s.cpu_psi_avg10            = 38.5f;
+    s.load1                    = 16.0f;
+    s.load_ratio               = 2.0f;
+    s.online_cpus              = 8;
+    s.protected_cpu_weight     = 2000;
+    s.active_cpu_weight        = 1000;
+    s.background_cpu_weight    = 10;
+    s.background_cpu_max_pct   = 87.5f;
+    s.cpu_headroom_engaged     = true;
+    s.unattended_lift          = false;
+
+    const std::string json = thm::serialize_snapshot(s);
+    const char* needles[] = {
+        "\"version\":\"3.2.0\"",
+        "\"pressure\":\"HIGH\"",
+        "\"composite_pressure\":\"HIGH\"",
+        "\"load_ratio\":2.0",
+        "\"online_cpus\":8",
+        "\"protected_weight\":2000",
+        "\"active_weight\":1000",
+        "\"background_weight\":10",
+        "\"background_cpu_max_pct\":87.5",
+        "\"headroom_engaged\":true",
+        "\"unattended_lift\":false",
+    };
+
+    bool passed = true;
+    for (const char* n : needles) {
+        if (json.find(n) == std::string::npos) {
+            std::cout << "[JSON] MISS " << n << "\n";
+            passed = false;
+        }
+    }
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-23: Telemetry Contract v3.2",
+                         "v3.2 CPU pressure and headroom fields serialized cleanly",
+                         passed,
+                         std::string("checked 11 v3.2 fields, bytes=") + std::to_string(json.size()),
+                         ms});
+    std::cout << (passed ? ">>> PASS: v3.2 telemetry contract verified.\n" : ">>> FAIL!\n");
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
 // Main Test Harness Entry Point
 // ═════════════════════════════════════════════════════════════════════════════
 int main() {
@@ -1770,6 +2028,11 @@ int main() {
     test_tc16_telemetry_contract();
     test_tc17_measured_cpu_percent();
     test_tc18_hyprland_late_start_reconnect();
+    test_tc19_hc_cpu_1_invariant();
+    test_tc20_cpu_dual_window_hysteresis();
+    test_tc21_cpu_slice_policy_math();
+    test_tc22_unattended_idle_autolift();
+    test_tc23_cpu_telemetry_contract_v32();
 
     // Summary Table
     std::cout << "\n════════════════════════════════════════════════════════════════════════════════\n";

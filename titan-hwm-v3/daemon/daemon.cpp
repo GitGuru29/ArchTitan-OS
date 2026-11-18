@@ -211,11 +211,27 @@ static std::string wall_clock_hms() {
 // ─────────────────────────────────────────────────────────────────────────────
 static std::string format_status(const thm::TelemetrySnapshot& s) {
     std::ostringstream o;
+    o << std::fixed << std::setprecision(1);
     o << "Titan Hardware Manager v" << s.version << "\n";
     o << "  Uptime:          " << s.uptime_seconds << "s\n";
-    o << "  Pressure:        " << s.pressure_level
+    o << "  Memory pressure: " << s.pressure_level
       << "  (PSI some " << s.psi_some_avg10
       << "% / full " << s.psi_full_avg10 << "%)\n";
+    o << "  CPU pressure:    " << s.cpu_pressure_level
+      << "  (PSI some " << s.cpu_psi_avg10
+      << "%, load_ratio " << std::setprecision(2) << s.load_ratio
+      << " across " << s.online_cpus << " CPUs)\n";
+    o << std::setprecision(1);
+    o << "  Slice weights:   P:" << s.protected_cpu_weight
+      << " / A:" << s.active_cpu_weight
+      << " / B:" << s.background_cpu_weight << "\n";
+    o << "  BG headroom cap: ";
+    if (s.cpu_headroom_engaged)
+        o << s.background_cpu_max_pct << "% (N-1 reserved, 25ms period)\n";
+    else if (s.unattended_lift)
+        o << "100.0% (auto-lifted: user idle >60s)\n";
+    else
+        o << "max (unconstrained)\n";
     o << "  Memory used:     " << s.mem_used_pct << "%"
       << "  (" << (s.mem_available_kb / 1024) << " MB free of "
       << (s.mem_total_kb / 1024) << " MB)\n";
@@ -318,7 +334,9 @@ static std::string format_top(const thm::TelemetrySnapshot& s, size_t n) {
 static std::string format_pressure(const thm::TelemetrySnapshot& s) {
     std::ostringstream o;
     o << std::fixed << std::setprecision(2);
-    o << "Pressure level:  " << s.pressure_level << "\n";
+    o << "Memory pressure: " << s.pressure_level << "\n";
+    o << "CPU pressure:    " << s.cpu_pressure_level
+      << "  (composite: " << s.composite_pressure_level << ")\n";
     o << "Memory PSI:      some " << s.psi_some_avg10
       << "%   full " << s.psi_full_avg10 << "%  (avg10)\n";
     o << "CPU PSI:         ";
@@ -329,7 +347,21 @@ static std::string format_pressure(const thm::TelemetrySnapshot& s) {
         o << "unavailable (/proc/pressure/cpu missing)";
     o << "\n";
     o << "Load average:    " << s.load1 << " " << s.load5 << " " << s.load15
-      << "   (" << s.runnable_procs << " runnable / " << s.total_procs << ")\n";
+      << "   (ratio " << s.load_ratio << " across " << s.online_cpus << " CPUs, "
+      << s.runnable_procs << " runnable / " << s.total_procs << ")\n";
+    o << "Slice weights:   protected=" << s.protected_cpu_weight
+      << "  active=" << s.active_cpu_weight
+      << "  background=" << s.background_cpu_weight << "\n";
+    o << "BG headroom cap: ";
+    if (s.cpu_headroom_engaged)
+        o << std::setprecision(1) << s.background_cpu_max_pct << "%  (25ms CFS period)\n";
+    else if (s.unattended_lift)
+        o << "max (auto-lifted: user idle >60s)\n";
+    else
+        o << "max (unconstrained)\n";
+    o << std::setprecision(2);
+    if (s.cpu_temp_c > 0.0f)
+        o << "CPU temp:        " << std::setprecision(1) << s.cpu_temp_c << " C\n" << std::setprecision(2);
     o << "Memory used:     " << s.mem_used_pct << "%  ("
       << (s.mem_available_kb / 1024) << " MB free of "
       << (s.mem_total_kb / 1024) << " MB)\n";
@@ -363,8 +395,8 @@ static std::string format_pressure(const thm::TelemetrySnapshot& s) {
         o << "RAM used >= 50% -> MODERATE\n";
     else
         o << "all memory signals below thresholds -> NORMAL\n";
-    o << "Note:            CPU pressure is telemetry-only; it can never "
-         "produce RECLAIM (HC-CPU-1).\n";
+    o << "Note:            CPU pressure drives cpu.weight + cpu.max headroom only; "
+         "it can never produce FREEZE or RECLAIM (HC-CPU-1).\n";
     return o.str();
 }
 
@@ -828,6 +860,15 @@ int main(int argc, char* argv[]) {
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     std::cout << "[THM] Entering main tick loop (" << tick_ms << "ms interval)\n";
 
+    // Dual-signal CPU pressure controller: 15 ticks x 200ms = 3.0s release hysteresis
+    thm::CpuPressureController cpu_pressure_ctrl(15);
+    const int online_cpus        = thm::read_online_cpus();
+    float cpu_temp_c             = 0.0f;
+    bool  thermally_constrained  = false;
+    thm::PressureLevel prev_cpu_level  = thm::PressureLevel::NORMAL;
+    bool  prev_headroom_engaged  = false;
+    bool  prev_unattended_lift   = false;
+
     int tick_count = 0;
     while (!g_shutdown) {
         if (max_ticks > 0 && ++tick_count > max_ticks) {
@@ -844,14 +885,15 @@ int main(int argc, char* argv[]) {
         ws_monitor.refresh_visibility();
         auto workspaces = ws_monitor.snapshot_workspaces();
 
-        // ── (c) Read pressure ───────────────────────────────────────────────
-        thm::MemInfo    mem = thm::read_meminfo();
-        thm::PSIStats   psi = thm::read_memory_psi();
+        // ── (c) Read dual-signal pressure (Memory + CPU) ────────────────────
+        thm::MemInfo     mem     = thm::read_meminfo();
+        thm::PSIStats    psi     = thm::read_memory_psi();
         thm::CpuPSIStats cpu_psi = thm::read_cpu_psi();
         thm::LoadAverage loadavg = thm::read_loadavg();
-        // HC-CPU-1: compute_pressure() intentionally receives memory signals
-        // only. CPU pressure is read for telemetry but never escalates.
-        thm::PressureLevel pressure = thm::compute_pressure(mem, psi);
+        thm::SystemPressure sys_pressure = cpu_pressure_ctrl.evaluate(
+            mem, psi, cpu_psi, loadavg, online_cpus);
+        // HC-CPU-1: memory plane receives strictly memory_plane_pressure(sys_pressure)
+        thm::PressureLevel pressure = thm::memory_plane_pressure(sys_pressure);
 
         // ── (d) Classify + assign new processes (observation-aware) ─────────
         // Counters feed the telemetry `processes` block and `titan-hwm scan`,
@@ -859,6 +901,8 @@ int main(int argc, char* argv[]) {
         int processes_seen      = 0;
         int processes_protected = 0;
         int processes_assigned  = 0;
+        std::vector<pid_t> protected_pids;
+        protected_pids.reserve(64);
 
         // Cap observed workloads so a pathological fork storm cannot turn the
         // telemetry into an unbounded registry.
@@ -873,6 +917,7 @@ int main(int argc, char* argv[]) {
             ++processes_seen;
             if (registry.is_protected(pid, node.comm)) {
                 ++processes_protected;
+                protected_pids.push_back(pid);
                 continue; // skip protected
             }
 
@@ -1126,12 +1171,54 @@ int main(int argc, char* argv[]) {
             }
         }
 
+        // Periodically keep protected daemons (Hyprland, pipewire, wireplumber,
+        // waybar, dbus-broker, titan-shell, titan-focus) pinned in SLICE_PROTECTED.
+        if (!dry_run && (tick_count % 25 == 1) && !protected_pids.empty()) {
+            cgroup.move_to_slice(protected_pids, thm::SLICE_PROTECTED);
+        }
+
+        // ── (f2) CPU arbitration plane (HC-CPU-1: scheduling/headroom only) ─
+        const bool unattended_idle = ws_monitor.user_unattended(thm::UNATTENDED_IDLE_SECONDS);
+        thm::CpuSlicePolicy cpu_policy = dry_run
+            ? thm::compute_cpu_slice_policy(sys_pressure.cpu, online_cpus, unattended_idle)
+            : enforcement.apply_cpu_pressure_policy(sys_pressure.cpu, online_cpus, unattended_idle);
+
+        if (sys_pressure.cpu != prev_cpu_level ||
+            cpu_policy.headroom_engaged != prev_headroom_engaged ||
+            cpu_policy.unattended_lift != prev_unattended_lift) {
+            std::lock_guard<std::mutex> lk(snap_mutex);
+            std::ostringstream line;
+            line << wall_clock_hms()
+                 << "  cpu_pressure=" << thm::to_string(sys_pressure.cpu)
+                 << "  psi=" << std::fixed << std::setprecision(1) << sys_pressure.cpu_some_avg10 << "%"
+                 << "  load_ratio=" << std::setprecision(2) << sys_pressure.load_ratio
+                 << "  weights=" << cpu_policy.protected_weight << "/"
+                 << cpu_policy.active_weight << "/" << cpu_policy.background_weight
+                 << "  bg_cap=" << (cpu_policy.headroom_engaged
+                                        ? (std::to_string(static_cast<int>(cpu_policy.background_max_pct)) + "%")
+                                        : (cpu_policy.unattended_lift ? "max(unattended)" : "max"));
+            decision_log.push_back(line.str());
+            if (decision_log.size() > kMaxDecisionLog)
+                decision_log.pop_front();
+            prev_cpu_level        = sys_pressure.cpu;
+            prev_headroom_engaged = cpu_policy.headroom_engaged;
+            prev_unattended_lift  = cpu_policy.unattended_lift;
+        }
+
         // ── (g) Governor update ─────────────────────────────────────────────
+        // Sample thermal zones every 5 ticks (~1s) to veto PERFORMANCE under heat.
+        if (tick_count % 5 == 1) {
+            cpu_temp_c = thm::read_cpu_temp_c();
+            thermally_constrained = (cpu_temp_c >= 80.0f);
+        }
+
         // Prune reclaimed/exited worklets so the registry stays bounded to live
         // processes (unbounded registry retention is a slow memory leak).
         workload_mgr.prune_dead();
         auto gov = thm::WorkspaceMonitor::compute_governor(all_workloads, pressure,
-                                                           current_gov);
+                                                           current_gov,
+                                                           sys_pressure.cpu,
+                                                           thermally_constrained);
         current_gov = gov;
         if (!dry_run) {
             thm::WorkspaceMonitor::apply_governor(gov);
@@ -1198,6 +1285,8 @@ int main(int argc, char* argv[]) {
             snap.mem_used_pct    = mem.used_pct();
             snap.mem_total_kb     = mem.total_kb;
             snap.mem_available_kb = mem.available_kb;
+            snap.cpu_pressure_level       = thm::to_string(sys_pressure.cpu);
+            snap.composite_pressure_level = thm::to_string(sys_pressure.composite);
             snap.cpu_psi_valid  = cpu_psi.valid;
             snap.cpu_psi_avg10  = cpu_psi.some_avg10;
             snap.cpu_psi_avg60  = cpu_psi.some_avg60;
@@ -1205,8 +1294,17 @@ int main(int argc, char* argv[]) {
             snap.load1          = loadavg.load1;
             snap.load5          = loadavg.load5;
             snap.load15         = loadavg.load15;
+            snap.load_ratio     = sys_pressure.load_ratio;
+            snap.online_cpus    = online_cpus;
             snap.runnable_procs = loadavg.running;
             snap.total_procs    = loadavg.total;
+            snap.protected_cpu_weight   = cpu_policy.protected_weight;
+            snap.active_cpu_weight      = cpu_policy.active_weight;
+            snap.background_cpu_weight  = cpu_policy.background_weight;
+            snap.background_cpu_max_pct = cpu_policy.background_max_pct;
+            snap.cpu_headroom_engaged   = cpu_policy.headroom_engaged;
+            snap.unattended_lift        = cpu_policy.unattended_lift;
+            snap.cpu_temp_c             = cpu_temp_c;
 
             snap.governor        = governor_to_string(current_gov);
             snap.workload_count  = static_cast<int>(workload_mgr.all_ids().size());

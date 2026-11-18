@@ -4,10 +4,14 @@
 // =============================================================================
 #include "pressure_level.hpp"
 
+#include <algorithm>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <system_error>
+#include <unistd.h>
 
 namespace thm {
 
@@ -142,6 +146,104 @@ PressureLevel compute_pressure(const MemInfo& mem, const PSIStats& psi) {
     if (free_pct < 25.0f) return PressureLevel::CRITICAL;
     if (free_pct < 50.0f) return PressureLevel::HIGH;
     return PressureLevel::NORMAL;
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// CPU pressure engine
+// ═════════════════════════════════════════════════════════════════════════════
+int read_online_cpus() {
+    const long n = ::sysconf(_SC_NPROCESSORS_ONLN);
+    return n < 1 ? 1 : static_cast<int>(n);
+}
+
+float read_cpu_temp_c() {
+    namespace fs = std::filesystem;
+    float hottest = 0.0f;
+    std::error_code ec;
+    for (const auto& entry : fs::directory_iterator("/sys/class/thermal", ec)) {
+        const std::string name = entry.path().filename().string();
+        if (name.rfind("thermal_zone", 0) != 0) continue;
+
+        std::string type;
+        { std::ifstream tf(entry.path() / "type"); std::getline(tf, type); }
+        const bool cpu_like =
+            type.find("x86_pkg") != std::string::npos ||
+            type.find("coretemp") != std::string::npos ||
+            type.find("k10temp") != std::string::npos ||
+            type.find("cpu")     != std::string::npos ||
+            type.find("CPU")     != std::string::npos ||
+            type.find("TCPU")    != std::string::npos ||
+            type.find("acpitz")  != std::string::npos;
+        if (!cpu_like) continue;
+
+        std::ifstream vf(entry.path() / "temp");
+        long milli = 0;
+        if (vf >> milli && milli > 0 && milli < 150000)
+            hottest = std::max(hottest, static_cast<float>(milli) / 1000.0f);
+    }
+    return hottest;
+}
+
+PressureLevel compute_cpu_pressure_raw(const CpuPSIStats& cpu_psi,
+                                       const LoadAverage& loadavg,
+                                       int online_cpus) {
+    if (!cpu_psi.valid) return PressureLevel::NORMAL;
+
+    const int   cpus  = online_cpus < 1 ? 1 : online_cpus;
+    const float ratio = loadavg.load1 / static_cast<float>(cpus);
+    const float psi   = cpu_psi.some_avg10;
+
+    if (psi >= 60.0f && ratio >= 2.5f) return PressureLevel::CRITICAL;
+    if (psi >= 30.0f && ratio >= 1.5f) return PressureLevel::HIGH;
+    if (psi >= 15.0f && ratio >= 1.0f) return PressureLevel::MODERATE;
+    return PressureLevel::NORMAL;
+}
+
+float CpuPressureController::release_threshold(PressureLevel level) {
+    switch (level) {
+        case PressureLevel::CRITICAL: return 30.0f;
+        case PressureLevel::HIGH:     return 15.0f;
+        case PressureLevel::MODERATE: return 10.0f;
+        case PressureLevel::NORMAL:   return 0.0f;
+    }
+    return 0.0f;
+}
+
+SystemPressure CpuPressureController::evaluate(const MemInfo& mem,
+                                               const PSIStats& mem_psi,
+                                               const CpuPSIStats& cpu_psi,
+                                               const LoadAverage& loadavg,
+                                               int online_cpus) {
+    const int cpus = online_cpus < 1 ? 1 : online_cpus;
+    const PressureLevel raw = compute_cpu_pressure_raw(cpu_psi, loadavg, cpus);
+
+    if (raw >= current_cpu_) {
+        // Escalate (or hold) immediately.
+        current_cpu_ = raw;
+        cool_ticks_  = 0;
+    } else {
+        // Raw signal is lower than what is applied. Only release after the PSI
+        // has stayed under this level's release threshold long enough.
+        if (cpu_psi.some_avg10 < release_threshold(current_cpu_)) {
+            if (++cool_ticks_ >= release_ticks_required_) {
+                current_cpu_ = raw;
+                cool_ticks_  = 0;
+            }
+        } else {
+            cool_ticks_ = 0;
+        }
+    }
+
+    SystemPressure sp;
+    sp.memory         = compute_pressure(mem, mem_psi);
+    sp.cpu            = current_cpu_;
+    sp.composite      = std::max(sp.memory, sp.cpu);
+    sp.cpu_some_avg10 = cpu_psi.some_avg10;
+    sp.cpu_some_avg60 = cpu_psi.some_avg60;
+    sp.mem_some_avg10 = mem_psi.some_avg10;
+    sp.load_ratio     = loadavg.load1 / static_cast<float>(cpus);
+    sp.online_cpus    = cpus;
+    return sp;
 }
 
 } // namespace thm

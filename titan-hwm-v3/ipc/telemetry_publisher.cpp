@@ -71,14 +71,25 @@ std::string serialize_snapshot(const TelemetrySnapshot& s) {
       << '}';
     o << ",\"cpu\":{"
       << "\"psi_valid\":"  << (s.cpu_psi_valid ? "true" : "false")
+      << ",\"pressure\":\"" << esc(s.cpu_pressure_level) << '"'
+      << ",\"composite_pressure\":\"" << esc(s.composite_pressure_level) << '"'
       << ",\"psi_some_avg10\":"  << f2(s.cpu_psi_avg10)
       << ",\"psi_some_avg60\":"  << f2(s.cpu_psi_avg60)
       << ",\"psi_some_avg300\":" << f2(s.cpu_psi_avg300)
       << ",\"load1\":"  << f2(s.load1)
       << ",\"load5\":"  << f2(s.load5)
       << ",\"load15\":" << f2(s.load15)
+      << ",\"load_ratio\":" << f2(s.load_ratio)
+      << ",\"online_cpus\":" << s.online_cpus
       << ",\"runnable\":" << s.runnable_procs
       << ",\"total\":"    << s.total_procs
+      << ",\"protected_weight\":" << s.protected_cpu_weight
+      << ",\"active_weight\":" << s.active_cpu_weight
+      << ",\"background_weight\":" << s.background_cpu_weight
+      << ",\"background_cpu_max_pct\":" << f2(s.background_cpu_max_pct)
+      << ",\"headroom_engaged\":" << (s.cpu_headroom_engaged ? "true" : "false")
+      << ",\"unattended_lift\":"  << (s.unattended_lift ? "true" : "false")
+      << ",\"temp_c\":" << f2(s.cpu_temp_c)
       << '}';
     o << ",\"governor\":\"" << esc(s.governor) << '"';
     o << ",\"workload_count\":" << s.workload_count;

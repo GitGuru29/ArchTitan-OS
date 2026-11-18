@@ -86,6 +86,10 @@ class SysmonController : public QObject
     Q_PROPERTY(bool thmHyprlandConnected READ thmHyprlandConnected NOTIFY updated)
     Q_PROPERTY(double thmCpuPsi READ thmCpuPsi NOTIFY updated)
     Q_PROPERTY(double thmLoad1 READ thmLoad1 NOTIFY updated)
+    Q_PROPERTY(QString thmCpuPressure READ thmCpuPressure NOTIFY updated)
+    Q_PROPERTY(bool thmHeadroomEngaged READ thmHeadroomEngaged NOTIFY updated)
+    Q_PROPERTY(double thmBackgroundCpuMaxPct READ thmBackgroundCpuMaxPct NOTIFY updated)
+    Q_PROPERTY(QString thmWeightRatio READ thmWeightRatio NOTIFY updated)
     Q_PROPERTY(QString thmLastAction READ thmLastAction NOTIFY updated)
     Q_PROPERTY(QString thmLastActionTarget READ thmLastActionTarget NOTIFY updated)
     Q_PROPERTY(QVariantList thmWorkloads READ thmWorkloads NOTIFY updated)
@@ -155,6 +159,10 @@ public:
     bool thmHyprlandConnected() const { return m_thm.hyprlandConnected; }
     double thmCpuPsi() const { return m_thm.cpuPsiSome; }
     double thmLoad1() const { return m_thm.load1; }
+    QString thmCpuPressure() const { return m_thm.cpuPressureLevel; }
+    bool thmHeadroomEngaged() const { return m_thm.cpuHeadroomEngaged; }
+    double thmBackgroundCpuMaxPct() const { return m_thm.backgroundCpuMaxPct; }
+    QString thmWeightRatio() const;
     QString thmLastAction() const { return m_thm.lastAction; }
     QString thmLastActionTarget() const { return m_thm.lastActionTarget; }
     QVariantList thmWorkloads() const { return m_thm.workloads; }

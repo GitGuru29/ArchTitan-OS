@@ -4,6 +4,7 @@
 // =============================================================================
 #include "cgroup_controller.hpp"
 
+#include <algorithm>
 #include <fstream>
 #include <iostream>
 #include <filesystem>
@@ -166,6 +167,65 @@ bool CgroupController::set_cpu_weight(const std::string& slice_name, int weight)
     weight = std::max(1, std::min(10000, weight));
     return write_file(slice_path(slice_name) + "/cpu.weight",
                       std::to_string(weight));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// set_cpu_max — write cpu.max as "<quota_us|max> <period_us>"
+// ─────────────────────────────────────────────────────────────────────────────
+bool CgroupController::set_cpu_max(const std::string& slice_name,
+                                   long quota_us, long period_us) {
+    // The kernel rejects periods outside 1 ms .. 1 s.
+    period_us = std::max(1000L, std::min(1000000L, period_us));
+    const std::string quota = (quota_us <= 0) ? std::string("max")
+                                              : std::to_string(quota_us);
+    return write_file(slice_path(slice_name) + "/cpu.max",
+                      quota + " " + std::to_string(period_us));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// compute_cpu_slice_policy — pure (pressure, cores, presence) -> cgroup values
+// ─────────────────────────────────────────────────────────────────────────────
+CpuSlicePolicy compute_cpu_slice_policy(PressureLevel cpu_pressure,
+                                        int online_cpus,
+                                        bool user_unattended_idle) {
+    const int cpus = online_cpus < 1 ? 1 : online_cpus;
+
+    CpuSlicePolicy p;
+    p.period_us = CFS_SMOOTH_PERIOD_US;
+
+    switch (cpu_pressure) {
+        case PressureLevel::NORMAL:
+            p.protected_weight = 2000; p.active_weight =  500; p.background_weight = 50;
+            break;
+        case PressureLevel::MODERATE:
+            p.protected_weight = 2000; p.active_weight =  800; p.background_weight = 25;
+            break;
+        case PressureLevel::HIGH:
+            p.protected_weight = 2000; p.active_weight = 1000; p.background_weight = 10;
+            break;
+        case PressureLevel::CRITICAL:
+            p.protected_weight = 5000; p.active_weight = 1000; p.background_weight = 10;
+            break;
+    }
+
+    const bool wants_cap = (cpu_pressure >= PressureLevel::HIGH);
+    if (!wants_cap) {
+        return p; // quota 0 == max, background_max_pct stays 100
+    }
+
+    if (user_unattended_idle) {
+        p.unattended_lift = true; // nobody is here to feel latency: lift the cap
+        return p;
+    }
+
+    // (N-1) cores of bandwidth; 75% of the single core when N == 1.
+    p.background_quota_us = (cpus >= 2)
+        ? static_cast<long>(cpus - 1) * p.period_us
+        : (p.period_us * 3) / 4;
+    p.background_max_pct = 100.0f * static_cast<float>(p.background_quota_us) /
+                           (static_cast<float>(p.period_us) * static_cast<float>(cpus));
+    p.headroom_engaged = true;
+    return p;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

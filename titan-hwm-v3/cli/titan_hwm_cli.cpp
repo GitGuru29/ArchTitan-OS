@@ -22,6 +22,8 @@
 // removed. All commands are answered by the daemon over /tmp/titan_hwm.sock.
 // =============================================================================
 
+#include "../resources/pressure_level.hpp"
+
 #include <chrono>
 #include <cstring>
 #include <dirent.h>
@@ -389,25 +391,30 @@ static int show_doctor() {
 
 // ── pressure fallback (daemon offline) ───────────────────────────────────────
 static void show_pressure_local() {
-    PSI ms = read_psi("/proc/pressure/memory", "some");
-    PSI mf = read_psi("/proc/pressure/memory", "full");
-    PSI cs = read_psi("/proc/pressure/cpu", "some");
+    const thm::MemInfo     mem  = thm::read_meminfo();
+    const thm::PSIStats    mpsi = thm::read_memory_psi();
+    const thm::CpuPSIStats cpsi = thm::read_cpu_psi();
+    const thm::LoadAverage la   = thm::read_loadavg();
+    const int              cpus = thm::read_online_cpus();
     PSI io = read_psi("/proc/pressure/io", "some");
 
-    std::ifstream la("/proc/loadavg");
-    std::string l1, l5, l15, run;
-    la >> l1 >> l5 >> l15 >> run;
+    const thm::PressureLevel mem_lvl = thm::compute_pressure(mem, mpsi);
+    const thm::PressureLevel cpu_lvl = thm::compute_cpu_pressure_raw(cpsi, la, cpus);
+    const float load_ratio = la.load1 / static_cast<float>(cpus);
 
     std::cout << std::fixed << std::setprecision(2)
-              << "Pressure level:  unavailable (daemon offline)\n"
-              << "Memory PSI:      some " << ms.avg10 << "%  full "
-              << mf.avg10 << "%  (avg10)\n"
-              << "CPU PSI:         some " << cs.avg10 << "%  (avg10)\n"
+              << "Daemon status:   offline (local kernel snapshot)\n"
+              << "Memory pressure: " << thm::to_string(mem_lvl) << "\n"
+              << "CPU pressure:    " << thm::to_string(cpu_lvl)
+              << "  (load_ratio " << load_ratio << " across " << cpus << " CPUs)\n"
+              << "Memory PSI:      some " << mpsi.some_avg10 << "%  full "
+              << mpsi.full_avg10 << "%  (avg10)\n"
+              << "CPU PSI:         some " << cpsi.some_avg10 << "%  (avg10)\n"
               << "I/O PSI:         some " << io.avg10 << "%  (avg10)\n"
-              << "Load average:    " << l1 << " " << l5 << " " << l15
-              << "   (" << run << ")\n"
-              << "Note:            CPU pressure is telemetry-only; it can never "
-                 "produce RECLAIM (HC-CPU-1).\n";
+              << "Load average:    " << la.load1 << " " << la.load5 << " " << la.load15
+              << "   (" << la.running << "/" << la.total << ")\n"
+              << "Note:            CPU pressure drives cpu.weight + cpu.max headroom only; "
+                 "it can never produce FREEZE or RECLAIM (HC-CPU-1).\n";
 }
 
 int main(int argc, char* argv[]) {
@@ -454,7 +461,7 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
-    if (cmd == "slices") {
+    if (cmd == "slices" || cmd == "cgroups") {
         show_slices();
         return 0;
     }

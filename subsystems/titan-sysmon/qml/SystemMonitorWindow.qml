@@ -729,8 +729,32 @@ Window {
                             Text {
                                 id: lpText
                                 anchors.centerIn: parent
-                                text: (sysmon.thmPressure || "—") + " pressure"
+                                text: "MEM " + (sysmon.thmPressure || "—")
                                 color: root.pressureColor(sysmon.thmPressure)
+                                font.family: TitanTheme.fontFamily
+                                font.pixelSize: 10
+                                font.weight: TitanTheme.weightSemiBold
+                            }
+                        }
+                        Rectangle {
+                            implicitWidth: cpText.implicitWidth + 14
+                            implicitHeight: 20
+                            radius: 7
+                            color: Qt.rgba(root.pressureColor(sysmon.thmCpuPressure).r,
+                                           root.pressureColor(sysmon.thmCpuPressure).g,
+                                           root.pressureColor(sysmon.thmCpuPressure).b, 0.16)
+                            border.width: 1
+                            border.color: Qt.rgba(root.pressureColor(sysmon.thmCpuPressure).r,
+                                                  root.pressureColor(sysmon.thmCpuPressure).g,
+                                                  root.pressureColor(sysmon.thmCpuPressure).b, 0.4)
+                            Text {
+                                id: cpText
+                                anchors.centerIn: parent
+                                text: "CPU " + (sysmon.thmCpuPressure || "NORMAL")
+                                      + (sysmon.thmHeadroomEngaged
+                                         ? (" · " + Math.round(sysmon.thmBackgroundCpuMaxPct) + "% cap")
+                                         : (" · " + sysmon.thmWeightRatio))
+                                color: root.pressureColor(sysmon.thmCpuPressure)
                                 font.family: TitanTheme.fontFamily
                                 font.pixelSize: 10
                                 font.weight: TitanTheme.weightSemiBold
@@ -742,7 +766,7 @@ Window {
                             horizontalAlignment: Text.AlignRight
                             elide: Text.ElideRight
                             text: sysmon.thmActiveWorkloads + " active · "
-                                  + sysmon.thmClassifiedWorkloads + " classified"
+                                  + sysmon.thmClassifiedWorkloads + " cls"
                             color: TitanTheme.textMid
                             font.family: TitanTheme.monoFamily
                             font.pixelSize: 10

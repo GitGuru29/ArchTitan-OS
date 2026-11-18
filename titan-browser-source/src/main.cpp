@@ -12,7 +12,52 @@
 #include <QStandardPaths>
 #include <QDir>
 #include <QFile>
+#include <QIODevice>
 #include <QSettings>
+
+namespace {
+
+bool readTrimmedDmi(const char *path, QString &out)
+{
+    QFile f(QString::fromLatin1(path));
+    if (!f.open(QIODevice::ReadOnly | QIODevice::Text))
+        return false;
+    out = QString::fromUtf8(f.readAll()).trimmed();
+    return !out.isEmpty();
+}
+
+/// Returns true inside virtual machines or systems without a DRM render node,
+/// falling back to SwiftShader software compositing; returns false on bare metal.
+bool shouldUseSoftwareGpu()
+{
+    if (!QFile::exists(QStringLiteral("/dev/dri/renderD128")))
+        return true;
+
+    const char *dmiPaths[] = {
+        "/sys/class/dmi/id/product_name",
+        "/sys/class/dmi/id/sys_vendor",
+    };
+    const QString vmVendors[] = {
+        QStringLiteral("qemu"),
+        QStringLiteral("virtualbox"),
+        QStringLiteral("vmware"),
+        QStringLiteral("bochs"),
+        QStringLiteral("kvm"),
+    };
+    for (const char *path : dmiPaths) {
+        QString val;
+        if (!readTrimmedDmi(path, val))
+            continue;
+        const QString lower = val.toLower();
+        for (const QString &vm : vmVendors) {
+            if (lower.contains(vm))
+                return true;
+        }
+    }
+    return false;
+}
+
+} // namespace
 
 int main(int argc, char *argv[])
 {
@@ -25,24 +70,24 @@ int main(int argc, char *argv[])
     if (qgetenv("QT_QPA_PLATFORM").isEmpty())
         qputenv("QT_QPA_PLATFORM", "xcb");
 
-    // Respect an explicit override so users on non-NVIDIA machines can opt back
-    // into GPU acceleration. The default keeps the SwiftShader fallback that
-    // avoids the NVIDIA+Wayland GBM/Vulkan SIGSEGV (see f76ae21). Note that
-    // --disable-gpu means all page compositing happens on the CPU, which is why
-    // the startpage avoids backdrop blur / per-shape canvas shadowBlur.
+    // Respect an explicit override; otherwise auto-detect bare-metal DRM GPU vs
+    // VM/headless software fallback so page compositing uses hardware rasterization
+    // when available without breaking QEMU/VirtualBox/VMware live sessions.
     if (qgetenv("QTWEBENGINE_CHROMIUM_FLAGS").isEmpty()) {
-        qputenv("QTWEBENGINE_CHROMIUM_FLAGS",
-                "--no-sandbox "
-                "--disable-gpu "
-                "--disable-gpu-sandbox "
-                "--disable-dev-shm-usage "
-                "--lang=en-US "
-                "--autoplay-policy=no-user-gesture-required "
-                "--enable-smooth-scrolling "
-                "--renderer-process-limit=2 "
-                "--disk-cache-size=134217728 "
-                "--disable-features=VaapiVideoDecoder,UseChromeOSDirectVideoDecoder,"
-                "IsolateOrigins,site-per-process,Translate");
+        const QByteArray gpuFlags = shouldUseSoftwareGpu()
+            ? QByteArrayLiteral("--disable-gpu --disable-gpu-sandbox ")
+            : QByteArrayLiteral("--enable-gpu-rasterization --enable-zero-copy --ignore-gpu-blocklist ");
+        const QByteArray commonFlags = QByteArrayLiteral(
+            "--no-sandbox "
+            "--disable-dev-shm-usage "
+            "--lang=en-US "
+            "--autoplay-policy=no-user-gesture-required "
+            "--enable-smooth-scrolling "
+            "--renderer-process-limit=2 "
+            "--disk-cache-size=134217728 "
+            "--disable-features=VaapiVideoDecoder,UseChromeOSDirectVideoDecoder,"
+            "IsolateOrigins,site-per-process,Translate");
+        qputenv("QTWEBENGINE_CHROMIUM_FLAGS", gpuFlags + commonFlags);
     }
 
     QApplication app(argc, argv);

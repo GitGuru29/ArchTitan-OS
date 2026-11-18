@@ -35,6 +35,57 @@ inline const char* slice_for_decision(PolicyDecision d) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// CPU bandwidth policy  (CPU pressure engine — never signals, only schedules)
+//
+// CFS bandwidth period. The kernel default is 100 ms, which means a capped
+// cgroup can sit throttled for up to ~100 ms at the end of every period — a
+// visible stutter if that cgroup were ever in the interactive path. 25 ms keeps
+// the worst-case throttle stall at one quarter of that while staying far above
+// the scheduler tick, so accounting overhead stays negligible.
+// ─────────────────────────────────────────────────────────────────────────────
+static constexpr long CFS_SMOOTH_PERIOD_US = 25000;
+
+// How long the user must be away before the background cap is lifted so an
+// unattended build can use the whole machine.
+static constexpr long UNATTENDED_IDLE_SECONDS = 60;
+
+// Result of compute_cpu_slice_policy(): the complete desired cgroup CPU state.
+struct CpuSlicePolicy {
+    int   protected_weight    = 2000;
+    int   active_weight       = 500;
+    int   background_weight   = 50;
+    long  background_quota_us = 0;      // 0 means "max" (no bandwidth cap)
+    long  period_us           = CFS_SMOOTH_PERIOD_US;
+    float background_max_pct  = 100.0f; // share of TOTAL machine CPU the BG slice may use
+    bool  headroom_engaged    = false;  // a bandwidth cap is currently applied
+    bool  unattended_lift     = false;  // cap was lifted because the user is away
+};
+
+// Pure, deterministic and root-free: the whole mapping from (CPU pressure, core
+// count, user presence) to cgroup values, so it can be unit-tested without
+// touching /sys/fs/cgroup.
+//
+//   CPU pressure   protected  active  background   background cpu.max
+//   NORMAL           2000       500       50         max
+//   MODERATE         2000       800       25         max
+//   HIGH             2000      1000       10         (N-1) cores
+//   CRITICAL         5000      1000       10         (N-1) cores
+//
+// The (N-1) cap permanently reserves one core's worth of bandwidth for
+// everything outside the background slice (compositor, input, audio) even when
+// the foreground is momentarily idle, where cpu.weight alone could not help
+// because weights only bite while slices compete. On a 1-core machine the cap is
+// 75% rather than 0, so a background build is slowed but never starved.
+//
+// When the user is unattended (idle >= UNATTENDED_IDLE_SECONDS) the cap is
+// lifted at HIGH/CRITICAL: nobody is there to feel latency, so the build gets
+// the whole machine. The weights stay biased, so the instant the user returns
+// the foreground wins every contention while the cap re-engages.
+CpuSlicePolicy compute_cpu_slice_policy(PressureLevel cpu_pressure,
+                                        int online_cpus,
+                                        bool user_unattended_idle);
+
+// ─────────────────────────────────────────────────────────────────────────────
 // CgroupController
 // ─────────────────────────────────────────────────────────────────────────────
 class CgroupController {
@@ -54,6 +105,12 @@ public:
 
     // Set cpu.weight inside archtitan.slice/<slice> (1–10000, default 100)
     bool set_cpu_weight(const std::string& slice_name, int weight);
+
+    // Set cpu.max (CFS bandwidth). quota_us <= 0 writes "max" (uncapped); the
+    // period is always written so a previously changed period is restored.
+    bool set_cpu_max(const std::string& slice_name,
+                     long quota_us,
+                     long period_us = CFS_SMOOTH_PERIOD_US);
 
     // Set memory.high limit (bytes; 0 = remove limit / restore to max)
     bool set_memory_high(const std::string& slice_name, long bytes);

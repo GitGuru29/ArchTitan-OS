@@ -71,13 +71,21 @@ target_link_libraries(titan-hwm-daemon PRIVATE thm_core pthread)
 # ── CLI executable (Phase 14) ────────────────────────────────────────────────
 add_executable(titan-hwm-cli cli/titan_hwm_cli.cpp)
 set_target_properties(titan-hwm-cli PROPERTIES OUTPUT_NAME "titan-hwm")
-target_link_libraries(titan-hwm-cli PRIVATE pthread)
+target_link_libraries(titan-hwm-cli PRIVATE thm_core pthread)
 
 # ── Test Suite Executable ───────────────────────────────────────────────────
 enable_testing()
 add_executable(thm_test_runner tests/test_runner.cpp)
 target_link_libraries(thm_test_runner PRIVATE thm_core pthread)
 add_test(NAME thm_os_tests COMMAND thm_test_runner)
+
+# ── Pure C++20 FYP Empirical Benchmark Harness ──────────────────────────────
+add_executable(bench_cpu_headroom benchmarks/bench_cpu_headroom.cpp)
+set_target_properties(bench_cpu_headroom PROPERTIES
+    CXX_STANDARD 20
+    CXX_STANDARD_REQUIRED ON
+)
+target_link_libraries(bench_cpu_headroom PRIVATE thm_core pthread)
 
 
 # ── Install targets ──────────────────────────────────────────────────────────

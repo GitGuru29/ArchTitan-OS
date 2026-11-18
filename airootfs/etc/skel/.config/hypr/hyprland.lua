@@ -294,7 +294,7 @@ hl.config({
         blur = {
             enabled           = true,
             size              = 8,
-            passes            = 4,
+            passes            = 2,
             new_optimizations = true,
             ignore_opacity    = true,
             noise             = 0.020,
@@ -328,6 +328,7 @@ hl.config({
 
     -- Misc
     misc = {
+        vfr                          = true,
         disable_hyprland_logo        = true,
         disable_splash_rendering     = true,
         animate_manual_resizes       = true,
