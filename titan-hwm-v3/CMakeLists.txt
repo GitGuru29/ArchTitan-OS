@@ -91,6 +91,9 @@ target_link_libraries(bench_cpu_headroom PRIVATE thm_core pthread)
 # ── Install targets ──────────────────────────────────────────────────────────
 install(TARGETS titan-hwm-daemon RUNTIME DESTINATION /usr/local/bin)
 install(TARGETS titan-hwm-cli RUNTIME DESTINATION /usr/local/bin)
+install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/bench_cpu_headroom
+        DESTINATION /usr/local/bin
+        RENAME titan-cpu-bench)
 install(FILES archtitan.slice titan-hwm.service
         DESTINATION lib/systemd/system
         COMPONENT systemd)

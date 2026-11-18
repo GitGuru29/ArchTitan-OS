@@ -22,12 +22,16 @@ fi
 
 echo "=== Installing into airootfs ==="
 mkdir -p "${AIRROOT}/usr/local/bin" "${AIRROOT}/usr/bin"
-cp -f "${BUILD_DIR}/titan-hwm-daemon" "${AIRROOT}/usr/local/bin/titan-hwm-daemon"
-cp -f "${BUILD_DIR}/titan-hwm-daemon" "${AIRROOT}/usr/bin/titan-hwm-daemon"
-cp -f "${BUILD_DIR}/titan-hwm"        "${AIRROOT}/usr/local/bin/titan-hwm"
+cp -f "${BUILD_DIR}/titan-hwm-daemon"   "${AIRROOT}/usr/local/bin/titan-hwm-daemon"
+cp -f "${BUILD_DIR}/titan-hwm-daemon"   "${AIRROOT}/usr/bin/titan-hwm-daemon"
+cp -f "${BUILD_DIR}/titan-hwm"          "${AIRROOT}/usr/local/bin/titan-hwm"
+cp -f "${BUILD_DIR}/titan-hwm"          "${AIRROOT}/usr/bin/titan-hwm"
+cp -f "${BUILD_DIR}/bench_cpu_headroom" "${AIRROOT}/usr/local/bin/titan-cpu-bench"
 chmod 0755 "${AIRROOT}/usr/local/bin/titan-hwm-daemon" \
            "${AIRROOT}/usr/bin/titan-hwm-daemon" \
-           "${AIRROOT}/usr/local/bin/titan-hwm"
+           "${AIRROOT}/usr/local/bin/titan-hwm" \
+           "${AIRROOT}/usr/bin/titan-hwm" \
+           "${AIRROOT}/usr/local/bin/titan-cpu-bench"
 
 if [[ -x "${TITANFETCH_DIR}/build/titanfetch" ]]; then
     cp -f "${TITANFETCH_DIR}/build/titanfetch" "${AIRROOT}/usr/local/bin/titanfetch"
