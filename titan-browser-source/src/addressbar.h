@@ -2,7 +2,8 @@
 #include <QLineEdit>
 #include <QUrl>
 #include <QAction>
-#include <QListWidget>
+#include <QCompleter>
+#include <QStringListModel>
 
 class AddressBar : public QLineEdit
 {
@@ -13,6 +14,7 @@ public:
     void setBookmarked(bool bookmarked);
     void setSearchEngine(const QString &engine);
     QString searchEngine() const { return m_searchEngine; }
+    void setSuggestions(const QStringList &history, const QStringList &bookmarks);
 
 signals:
     void urlEntered(const QUrl &url);
@@ -32,8 +34,10 @@ private:
     void updateSecurityBadge(const QUrl &url);
     QUrl buildSearchUrl(const QString &query) const;
 
-    QAction *m_securityAction = nullptr;
-    QAction *m_bookmarkAction = nullptr;
+    QAction          *m_securityAction = nullptr;
+    QAction          *m_bookmarkAction = nullptr;
+    QCompleter       *m_completer      = nullptr;
+    QStringListModel *m_completionModel = nullptr;
     QUrl     m_currentUrl;
     bool     m_isBookmarked   = false;
     QString  m_searchEngine   = QStringLiteral("google");
