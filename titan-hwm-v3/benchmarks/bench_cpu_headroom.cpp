@@ -134,7 +134,7 @@ bool write_sysfs(const std::string& path, const std::string& val) {
     return f.good();
 }
 
-// Lightweight JSON value extractors for /run/titan-hwm/telemetry.json
+// Lightweight JSON value extractors for /run/archtitan/thm-state.json
 struct LiveTelemetry {
     bool        valid               = false;
     bool        fresh               = false;
@@ -185,12 +185,12 @@ bool extract_json_bool(const std::string& blob, const std::string& key, bool def
     return def;
 }
 
-LiveTelemetry read_live_telemetry(const std::string& path = "/run/titan-hwm/telemetry.json") {
+LiveTelemetry read_live_telemetry(const std::string& path = "/run/archtitan/thm-state.json") {
     LiveTelemetry t;
     struct stat st {};
     if (::stat(path.c_str(), &st) != 0) return t;
     const auto now_s = std::time(nullptr);
-    t.fresh = (std::abs(now_s - st.st_mtime) <= 6);
+    t.fresh = (std::abs(now_s - st.st_mtime) <= 15);
 
     std::ifstream f(path);
     if (!f.is_open()) return t;
@@ -1052,7 +1052,7 @@ LiveCheckResult run_live_daemon_check(int duration_s, int threads, const Style& 
     if (!t0.valid || !t0.fresh) {
         std::cout << "\n" << st.yellow()
                   << "[LIVE CHECK] titan-hwm-daemon is not active on this host "
-                     "(/run/titan-hwm/telemetry.json missing or stale) — skipping live daemon test."
+                     "(/run/archtitan/thm-state.json missing or stale) — skipping live daemon test."
                   << st.reset() << "\n";
         return lr;
     }
@@ -1086,22 +1086,45 @@ LiveCheckResult run_live_daemon_check(int duration_s, int threads, const Style& 
         return 0;
     };
 
+    std::cout << std::left
+              << std::setw(7)  << "Time"
+              << std::setw(9)  << "PSI_10%"
+              << std::setw(9)  << "Load/N"
+              << std::setw(11) << "CPU_Lvl"
+              << std::setw(10) << "A:B Wt"
+              << std::setw(16) << "BG cpu.max"
+              << std::setw(10) << "Headroom"
+              << "Worker\n"
+              << std::string(79, '-') << "\n";
+
     const int steps = std::max(2, duration_s * 2);
     for (int i = 0; i < steps && !g_interrupted; ++i) {
         ::usleep(500'000);
         const auto t = read_live_telemetry();
-        if (t.valid) {
-            if (rank_level(t.cpu_pressure) > rank_level(lr.peak_level)) lr.peak_level = t.cpu_pressure;
-            if (t.cpu_psi_some > lr.peak_psi) lr.peak_psi = t.cpu_psi_some;
-            if (t.temp_c > lr.peak_temp_c)    lr.peak_temp_c = t.temp_c;
-            if (t.headroom_engaged)           lr.headroom_observed = true;
-        }
         const char ps = read_proc_state(worker);
         if (::kill(worker, 0) != 0 || ps == 'T' || ps == 't' || ps == 'Z') {
             lr.hc_cpu1_survived = false;
         }
         lr.live_bg_cpu_max    = read_file_trimmed("/sys/fs/cgroup/archtitan.slice/archtitan-background.slice/cpu.max");
         lr.live_bg_cpu_weight = read_file_trimmed("/sys/fs/cgroup/archtitan.slice/archtitan-background.slice/cpu.weight");
+        if (t.valid) {
+            if (rank_level(t.cpu_pressure) > rank_level(lr.peak_level)) lr.peak_level = t.cpu_pressure;
+            if (t.cpu_psi_some > lr.peak_psi) lr.peak_psi = t.cpu_psi_some;
+            if (t.temp_c > lr.peak_temp_c)    lr.peak_temp_c = t.temp_c;
+            if (t.headroom_engaged)           lr.headroom_observed = true;
+
+            if ((i + 1) % 4 == 0 || i == steps - 1) {
+                std::cout << std::left
+                          << std::setw(7)  << (std::to_string((i + 1) / 2) + "s")
+                          << std::setw(9)  << (std::ostringstream() << std::fixed << std::setprecision(1) << t.cpu_psi_some << "%").str()
+                          << std::setw(9)  << (std::ostringstream() << std::fixed << std::setprecision(2) << t.load_ratio).str()
+                          << std::setw(11) << t.cpu_pressure
+                          << std::setw(10) << (std::to_string(t.active_weight) + ":" + std::to_string(t.background_weight))
+                          << std::setw(16) << (lr.live_bg_cpu_max.empty() ? "n/a" : lr.live_bg_cpu_max)
+                          << std::setw(10) << (t.headroom_engaged ? "ENGAGED" : (t.unattended_lift ? "LIFTED" : "off"))
+                          << ps << "\n";
+            }
+        }
     }
 
     shm->stop.store(1, std::memory_order_release);
