@@ -138,6 +138,7 @@ inline const std::unordered_set<std::string>& protected_names() {
         "titan-gpu",       "titangpu",
         "titan-bar",       "titan-bar-daemon",
         "titan-media-hud", "titan-task-manager",
+        "titan-shell",     "titan-focus",
 
         // ── Audio server stack ────────────────────────────────────────────────
         "pipewire",        "pipewire-pulse",

@@ -87,6 +87,7 @@ file_permissions=(
   ["/usr/local/bin/titan-hotzones"]="0:0:755"
   ["/usr/local/bin/titan-zone-osd"]="0:0:755"
   ["/usr/local/bin/titan-sysmon"]="0:0:755"
+  ["/usr/local/bin/titan-focus"]="0:0:755"
   ["/usr/local/bin/titan-cycle-power"]="0:0:755"
   ["/usr/local/bin/archtitan-cycle-power"]="0:0:755"
   ["/etc/archtitan"]="0:0:755"

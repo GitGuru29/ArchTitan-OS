@@ -933,3 +933,8 @@ void SystemController::toggleWidgetSize(const QString &widgetKey)
         setWidgetSize(widgetKey, (cur == "half") ? "full" : "half");
     }
 }
+
+void SystemController::toggleFocusMode()
+{
+    QProcess::startDetached(QStringLiteral("titan-focus"), {QStringLiteral("--dnd")});
+}
