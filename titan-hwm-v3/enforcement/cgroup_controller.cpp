@@ -176,9 +176,17 @@ bool CgroupController::set_cpu_max(const std::string& slice_name,
                                    long quota_us, long period_us) {
     // The kernel rejects periods outside 1 ms .. 1 s.
     period_us = std::max(1000L, std::min(1000000L, period_us));
+    const std::string dir   = slice_path(slice_name);
     const std::string quota = (quota_us <= 0) ? std::string("max")
                                               : std::to_string(quota_us);
-    return write_file(slice_path(slice_name) + "/cpu.max",
+    // Smooth period-boundary unthrottle spikes via cpu.max.burst (20% of one
+    // core's period when capped, 0 when uncapped) if supported by the kernel.
+    const std::string burst_path = dir + "/cpu.max.burst";
+    if (fs::exists(burst_path)) {
+        const long burst_us = (quota_us > 0) ? std::min(quota_us, period_us / 5) : 0L;
+        write_file(burst_path, std::to_string(burst_us));
+    }
+    return write_file(dir + "/cpu.max",
                       quota + " " + std::to_string(period_us));
 }
 

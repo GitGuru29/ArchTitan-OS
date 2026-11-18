@@ -154,7 +154,7 @@ static pid_t resolve_tree_root(
                 break;
             }
             const auto& p = pit->second;
-            if (p.uid < 1000) break;
+            if (p.uid != uid || (uid < 1000 && p.ppid <= 2)) break;
             if (is_session_manager_comm(p.comm)) break;
             if (is_desktop_infra_comm(p.comm)) break;
             bool same_scope = has_scope && !p.cgroup.empty() && p.cgroup == scope;
@@ -171,7 +171,7 @@ static pid_t resolve_tree_root(
         // ensure best is not a session manager
         if (auto bit = graph.find(best); bit != graph.end()) {
             if (is_session_manager_comm(bit->second.comm)) return pid;
-            if (bit->second.uid < 1000) return pid;
+            if (bit->second.uid != uid) return pid;
         }
         return best;
     }
@@ -186,7 +186,7 @@ static pid_t resolve_tree_root(
         auto pit = graph.find(parent);
         if (pit == graph.end()) break;
         const auto& p = pit->second;
-        if (p.uid < 1000) break;
+        if (p.uid != uid || (uid < 1000 && p.ppid <= 2)) break;
         if (is_session_manager_comm(p.comm)) break;
         if (is_desktop_infra_comm(p.comm)) break;
         root = parent;
@@ -1030,9 +1030,13 @@ int main(int argc, char* argv[]) {
                 if (root != pid)
                     continue;
 
-                // Only interactive user processes. Kernel threads and system
-                // daemons stay unmanaged by design.
-                if (node.uid < 1000) continue;
+                // Only interactive user processes or sustained high-CPU user-space
+                // jobs (e.g. sudo build/benchmark). Kernel threads (ppid==2 or
+                // empty cmdline) and system daemons stay unmanaged by design.
+                if (node.cgroup.find("archtitan-bench-") != std::string::npos) continue;
+                const bool high_cpu_userspace =
+                    (pid > 2 && node.ppid > 2 && !node.cmdline.empty() && node.cpu_pct >= 50.0f);
+                if (node.uid < 1000 && !high_cpu_userspace) continue;
                 if (is_session_manager_comm(node.comm) ||
                     is_desktop_infra_comm(node.comm)) continue;
                 if (observed_count >= kMaxObserved) continue;
@@ -1113,12 +1117,33 @@ int main(int argc, char* argv[]) {
             // Drive state machine
             workload_mgr.tick(*wl, *ws, activity, pressure);
 
-            // Observation-only workloads have no enforcement authority. Skip
-            // the policy plane entirely: no cgroup moves, no signals, no
-            // governor contribution. This is belt-and-braces on top of the
-            // PolicyEngine guard.
-            if (wl->observed)
+            // Observation-only workloads never enter the memory/signal policy
+            // plane (no FREEZE, no RECLAIM, no memory.high throttle — TC-14/15).
+            // Under CPU pressure (>= MODERATE), however, actively executing
+            // observed workloads are assigned to SLICE_ACTIVE (if focused) or
+            // SLICE_BACKGROUND (if unfocused/headless) so unclassified CPU hogs
+            // still respect asymmetric cpu.weight and (N-1) cpu.max headroom.
+            if (wl->observed) {
+                if (!dry_run &&
+                    sys_pressure.cpu >= thm::PressureLevel::MODERATE &&
+                    activity == thm::ActivityState::EXECUTING) {
+                    bool in_bench = false;
+                    for (pid_t p : wl->pids) {
+                        auto pit = proc_graph.find(p);
+                        if (pit != proc_graph.end() &&
+                            pit->second.cgroup.find("archtitan-bench-") != std::string::npos) {
+                            in_bench = true;
+                            break;
+                        }
+                    }
+                    if (!in_bench) {
+                        cgroup.move_to_slice(
+                            wl->pids,
+                            ws->is_focused ? thm::SLICE_ACTIVE : thm::SLICE_BACKGROUND);
+                    }
+                }
                 continue;
+            }
 
             // Evaluate policy
             thm::PolicyDecision decision = policy.evaluate(*wl, *ws, activity,

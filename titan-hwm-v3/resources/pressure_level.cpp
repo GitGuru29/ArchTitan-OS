@@ -189,9 +189,16 @@ PressureLevel compute_cpu_pressure_raw(const CpuPSIStats& cpu_psi,
                                        int online_cpus) {
     if (!cpu_psi.valid) return PressureLevel::NORMAL;
 
-    const int   cpus  = online_cpus < 1 ? 1 : online_cpus;
-    const float ratio = loadavg.load1 / static_cast<float>(cpus);
-    const float psi   = cpu_psi.some_avg10;
+    const int   cpus        = online_cpus < 1 ? 1 : online_cpus;
+    const float load1_ratio = loadavg.load1 / static_cast<float>(cpus);
+    // Combine 60s EWMA load1_ratio with instantaneous runnable ratio so heavy
+    // multi-thread saturation escalates as soon as PSI climbs (~2-4s) instead
+    // of waiting 15-18s for the kernel's 5s LOAD_FREQ decay window, while still
+    // filtering out single-thread spikes (adj_running == 1 -> 1/cpus < 1.0).
+    const int   adj_running = loadavg.running > 1 ? (loadavg.running - 1) : loadavg.running;
+    const float runq_ratio  = static_cast<float>(adj_running) / static_cast<float>(cpus);
+    const float ratio       = std::max(load1_ratio, runq_ratio);
+    const float psi         = cpu_psi.some_avg10;
 
     if (psi >= 60.0f && ratio >= 2.5f) return PressureLevel::CRITICAL;
     if (psi >= 30.0f && ratio >= 1.5f) return PressureLevel::HIGH;
@@ -241,7 +248,9 @@ SystemPressure CpuPressureController::evaluate(const MemInfo& mem,
     sp.cpu_some_avg10 = cpu_psi.some_avg10;
     sp.cpu_some_avg60 = cpu_psi.some_avg60;
     sp.mem_some_avg10 = mem_psi.some_avg10;
-    sp.load_ratio     = loadavg.load1 / static_cast<float>(cpus);
+    const int   adj_running = loadavg.running > 1 ? (loadavg.running - 1) : loadavg.running;
+    const float runq_ratio  = static_cast<float>(adj_running) / static_cast<float>(cpus);
+    sp.load_ratio     = std::max(loadavg.load1 / static_cast<float>(cpus), runq_ratio);
     sp.online_cpus    = cpus;
     return sp;
 }

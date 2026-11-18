@@ -290,8 +290,10 @@ public:
         bool ok = true;
         ok &= write_sysfs(fg_dir + "/cpu.weight", "100");
         ok &= write_sysfs(fg_dir + "/cpu.max", "max 100000");
+        write_sysfs(fg_dir + "/cpu.max.burst", "0");
         ok &= write_sysfs(bg_dir + "/cpu.weight", "100");
         ok &= write_sysfs(bg_dir + "/cpu.max", "max 100000");
+        write_sysfs(bg_dir + "/cpu.max.burst", "0");
         return ok;
     }
 
@@ -324,7 +326,12 @@ public:
         bool ok = true;
         ok &= write_sysfs(fg_dir + "/cpu.weight", std::to_string(fg_w));
         ok &= write_sysfs(fg_dir + "/cpu.max", "max " + std::to_string(policy.period_us));
+        write_sysfs(fg_dir + "/cpu.max.burst", "0");
         ok &= write_sysfs(bg_dir + "/cpu.weight", std::to_string(policy.background_weight));
+        const long burst_us = (policy.background_quota_us > 0)
+            ? std::min(policy.background_quota_us, policy.period_us / 5)
+            : 0L;
+        write_sysfs(bg_dir + "/cpu.max.burst", std::to_string(burst_us));
         const std::string max_str = (policy.background_quota_us > 0)
             ? (std::to_string(policy.background_quota_us) + " " + std::to_string(policy.period_us))
             : ("max " + std::to_string(policy.period_us));
@@ -1509,7 +1516,11 @@ int main(int argc, char* argv[]) {
     if (csv_stdout) st.color = false;
 
     BenchCgroupEnv cg;
-    cg.init();
+    if (mode != "live") {
+        cg.init();
+    } else {
+        cg.reason = "live titan-hwm-daemon cgroups (/sys/fs/cgroup/archtitan.slice)";
+    }
 
     if (!csv_stdout) {
         std::cout << st.bold() << st.cyan()
@@ -1668,6 +1679,7 @@ int main(int argc, char* argv[]) {
             assertions.emplace_back("RAMP:HC-CPU-1_SURVIVAL",       rr.hc_cpu1_all_survived);
         }
         if (!g_interrupted) {
+            cg.cleanup(); // release bench cgroup so live daemon manages the worker directly
             LiveCheckResult lr = run_live_daemon_check(std::max(3, duration_s), threads, st);
             if (lr.daemon_active) {
                 assertions.emplace_back("LIVE:SCHEMA_V32",        lr.schema_v32);
@@ -1708,7 +1720,7 @@ int main(int argc, char* argv[]) {
                                      : (std::string(st.red())   + "[FAIL]" + st.reset()))
                       << "  " << name << "\n";
         }
-        if (!cg.available) {
+        if (!cg.available && ::geteuid() != 0) {
             std::cout << "\n" << st.yellow()
                       << "  Tip: Run with `sudo` to engage real Linux kernel cgroup v2 (cpu.weight + 25ms cpu.max)."
                       << st.reset() << "\n";
