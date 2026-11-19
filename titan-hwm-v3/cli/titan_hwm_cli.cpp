@@ -257,13 +257,14 @@ static void show_slices() {
     std::cout << std::left
               << std::setw(12) << "SLICE"
               << std::setw(12) << "CPU.WEIGHT"
-              << std::setw(24) << "CPU.MAX"
+              << std::setw(20) << "CPU.MAX"
+              << std::setw(9)  << "CPU.IDLE"
               << std::right << std::setw(10) << "MEM"
               << std::setw(10) << "MEM.HIGH"
               << std::setw(8)  << "PIDS"
               << std::setw(8)  << "FROZEN"
-              << "  POPULATED\n";
-    std::cout << std::string(94, '-') << "\n";
+              << "  THROTTLED\n";
+    std::cout << std::string(101, '-') << "\n";
 
     for (const auto& s : slices) {
         const std::string root = base + s.dir;
@@ -280,20 +281,41 @@ static void show_slices() {
         };
         std::string weight = read_file(root + "/cpu.weight");
         std::string cmax   = format_cpu_max_cell(read_line_trimmed(root + "/cpu.max"), ncpu);
+        std::string idle   = read_line_trimmed(root + "/cpu.idle");
         std::string mem    = mb("memory.current");
         std::string mhigh  = mb("memory.high");
         std::string pids   = read_file(root + "/pids.current");
         std::string frozen = read_file(root + "/cgroup.freeze");
         std::string pop    = read_cgroup_event_key(root + "/cgroup.events", "populated");
 
+        unsigned long long nr_periods = 0, nr_throttled = 0, throttled_usec = 0;
+        {
+            std::istringstream ss(read_file(root + "/cpu.stat"));
+            std::string key, val;
+            while (ss >> key >> val) {
+                try {
+                    if      (key == "nr_periods")     nr_periods     = std::stoull(val);
+                    else if (key == "nr_throttled")   nr_throttled   = std::stoull(val);
+                    else if (key == "throttled_usec") throttled_usec = std::stoull(val);
+                } catch (...) {}
+            }
+        }
+        std::string throttle =
+            nr_periods ? (std::to_string(nr_throttled) + "/" +
+                          std::to_string(nr_periods) + " " +
+                          std::to_string(throttled_usec / 1000) + "ms")
+                       : "-";
+
         std::cout << std::left << std::setw(12) << s.name
                   << std::setw(12) << (weight.empty() ? "?" : weight)
-                  << std::setw(24) << cmax
+                  << std::setw(20) << cmax
+                  << std::setw(9)  << (idle.empty() ? "n/a" : idle)
                   << std::right << std::setw(10) << mem
                   << std::setw(10) << mhigh
                   << std::setw(8)  << (pids.empty() ? "?" : pids)
                   << std::setw(8)  << (frozen.empty() ? "?" : frozen)
-                  << "  " << pop << "\n";
+                  << "  " << throttle
+                  << (pop.empty() ? "" : "  [" + pop + "]") << "\n";
     }
 
     std::string parent_max = read_line_trimmed(base + "cpu.max");

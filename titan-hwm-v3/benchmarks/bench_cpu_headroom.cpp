@@ -968,8 +968,10 @@ RampResult run_pressure_ramp(int stage_sec, const Style& st) {
             const double lr    = la.load1 / static_cast<double>(std::max(1, ncpu));
             const double rq    = static_cast<double>(la.running) / static_cast<double>(std::max(1, ncpu));
 
-            stage_raw      = thm::compute_cpu_pressure_raw(psi, la, ncpu);
-            stage_hyst     = ctrl.evaluate(mem, mem_psi, psi, la, ncpu).cpu;
+            stage_raw      = thm::compute_cpu_pressure_raw(psi, la, ncpu,
+                                                           static_cast<float>(inst_psi));
+            stage_hyst     = ctrl.evaluate(mem, mem_psi, psi, la, ncpu,
+                                           static_cast<long long>(wall_us)).cpu;
             stage_psi      = psi.some_avg10;
             stage_lr       = lr;
             stage_runq     = std::max(stage_runq, rq);

@@ -73,6 +73,7 @@ struct TelemetrySnapshot {
     float       cpu_psi_avg10    = 0.0f;
     float       cpu_psi_avg60    = 0.0f;
     float       cpu_psi_avg300   = 0.0f;
+    float       cpu_psi_inst     = -1.0f; // per-tick PSI delta (-1 = unavailable)
     float       load1            = 0.0f;
     float       load5            = 0.0f;
     float       load15           = 0.0f;
@@ -85,8 +86,12 @@ struct TelemetrySnapshot {
     int         background_cpu_weight  = 50;
     float       background_cpu_max_pct = 100.0f;
     bool        cpu_headroom_engaged   = false;
+    bool        background_cpu_idle    = false;
     bool        unattended_lift        = false;
     float       cpu_temp_c             = 0.0f;
+    unsigned long long bg_nr_periods   = 0;
+    unsigned long long bg_nr_throttled = 0;
+    unsigned long long bg_throttled_usec = 0;
 
     // Orchestration
     std::string governor = "schedutil";      // powersave|schedutil|performance

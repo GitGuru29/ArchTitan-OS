@@ -62,6 +62,7 @@ private:
         int  active_weight     = -1;
         int  background_weight = -1;
         long background_quota  = -2;
+        int  background_idle   = -1;
     } written_;
 
     CpuSlicePolicy effective_policy_;

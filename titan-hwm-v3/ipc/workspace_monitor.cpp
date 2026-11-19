@@ -27,6 +27,40 @@ long long now_steady_ms() {
     return duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
 }
 
+std::vector<std::string> split_tokens(const std::string& s) {
+    std::vector<std::string> out;
+    std::istringstream ss(s);
+    std::string tok;
+    while (ss >> tok) out.push_back(tok);
+    return out;
+}
+
+bool has_token(const std::vector<std::string>& toks, const char* name) {
+    for (const auto& t : toks)
+        if (t == name) return true;
+    return false;
+}
+
+std::string read_first_line(const std::string& path) {
+    std::ifstream f(path);
+    std::string line;
+    std::getline(f, line);
+    while (!line.empty() && (line.back() == '\n' || line.back() == '\r' ||
+                             line.back() == ' '  || line.back() == '\t'))
+        line.pop_back();
+    return line;
+}
+
+bool write_line(const std::string& path, const std::string& value) {
+    std::ofstream f(path);
+    if (!f.is_open()) return false;
+    f << value;
+    f.flush();
+    const bool ok = f.good();
+    f.close();
+    return ok;
+}
+
 // Check /run/systemd/sessions/* for IDLE_HINT=1 or IDLE_HINT=yes
 bool systemd_session_idle_hint() {
     std::error_code ec;
@@ -451,32 +485,114 @@ GovernorHint WorkspaceMonitor::compute_governor(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// apply_governor — write to all CPU scaling_governor files
+// Governor translation — hints are abstract; kernels expose different names
 // ─────────────────────────────────────────────────────────────────────────────
-bool WorkspaceMonitor::apply_governor(GovernorHint hint) {
-    const char* name = "schedutil";
+std::string choose_scaling_governor(GovernorHint hint,
+                                    const std::string& available) {
+    const auto toks = split_tokens(available);
+    if (toks.empty()) return "";
+
     switch (hint) {
-        case GovernorHint::POWERSAVE:   name = "powersave";   break;
-        case GovernorHint::SCHEDUTIL:   name = "schedutil";   break;
-        case GovernorHint::PERFORMANCE: name = "performance"; break;
+        case GovernorHint::PERFORMANCE:
+            if (has_token(toks, "performance")) return "performance";
+            break;
+        case GovernorHint::POWERSAVE:
+            if (has_token(toks, "powersave")) return "powersave";
+            if (has_token(toks, "ondemand"))  return "ondemand";
+            if (has_token(toks, "schedutil")) return "schedutil";
+            break;
+        case GovernorHint::SCHEDUTIL:
+            if (has_token(toks, "schedutil"))    return "schedutil";
+            if (has_token(toks, "ondemand"))     return "ondemand";
+            if (has_token(toks, "conservative")) return "conservative";
+            // intel_pstate/amd-pstate active mode: "powersave" is the balanced,
+            // kernel-autoscaling governor (not a fixed minimum frequency).
+            if (has_token(toks, "powersave"))    return "powersave";
+            break;
+    }
+    return toks.front(); // last resort: whatever the platform considers default
+}
+
+std::string choose_energy_preference(GovernorHint hint,
+                                     const std::string& available) {
+    const auto toks = split_tokens(available);
+    if (toks.empty()) return "";
+
+    switch (hint) {
+        case GovernorHint::PERFORMANCE:
+            if (has_token(toks, "performance"))        return "performance";
+            if (has_token(toks, "balance_performance")) return "balance_performance";
+            break;
+        case GovernorHint::SCHEDUTIL:
+            if (has_token(toks, "balance_performance")) return "balance_performance";
+            if (has_token(toks, "default"))             return "default";
+            if (has_token(toks, "balance_power"))       return "balance_power";
+            break;
+        case GovernorHint::POWERSAVE:
+            if (has_token(toks, "power"))               return "power";
+            if (has_token(toks, "balance_power"))       return "balance_power";
+            if (has_token(toks, "default"))             return "default";
+            break;
+    }
+    return "";
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// apply_governor — program scaling_governor + energy_performance_preference
+//
+// Writes are change-detected: steady state costs only the sysfs reads needed to
+// notice an external change, never a write per CPU per tick. Returns the
+// governor name applied to the first policy ("" when no cpufreq driver exists).
+// ─────────────────────────────────────────────────────────────────────────────
+std::string WorkspaceMonitor::apply_governor(GovernorHint hint) {
+    std::string applied;
+    bool found_policy = false;
+
+    // error_code overloads throughout: a partially delegated/restricted sysfs
+    // must not throw out of the 200 ms daemon loop.
+    std::error_code ec;
+    fs::directory_iterator it("/sys/devices/system/cpu", ec);
+    const fs::directory_iterator end;
+    for (; !ec && it != end; it.increment(ec)) {
+        const std::string cpu_dir = it->path().string();
+        const std::string dir     = cpu_dir + "/cpufreq";
+        const std::string gov_path = dir + "/scaling_governor";
+
+        std::error_code path_ec;
+        if (!fs::exists(gov_path, path_ec)) continue;
+
+        found_policy = true;
+
+        const std::string avail = read_first_line(dir + "/scaling_available_governors");
+        const std::string target = choose_scaling_governor(hint, avail);
+        if (!target.empty()) {
+            std::string actual = read_first_line(gov_path);
+            if (actual != target) {
+                write_line(gov_path, target);
+                // Report what the kernel accepted, not what we asked for. A
+                // restricted/undelegated sysfs can silently reject the write.
+                const std::string after = read_first_line(gov_path);
+                if (!after.empty()) actual = after;
+            }
+            if (applied.empty())
+                applied = actual.empty() ? target : actual;
+        }
+
+        // HWP/EPP gives finer power/performance control on pstate drivers, where
+        // "powersave" and "schedutil" can map to the same governor.
+        const std::string epp_path = dir + "/energy_performance_preference";
+        if (fs::exists(epp_path, path_ec)) {
+            const std::string epp_avail =
+                read_first_line(dir + "/energy_performance_available_preferences");
+            const std::string pref = choose_energy_preference(hint, epp_avail);
+            if (!pref.empty() && read_first_line(epp_path) != pref)
+                write_line(epp_path, pref);
+        }
     }
 
-    bool ok = true;
-    try {
-        for (const auto& entry : fs::directory_iterator("/sys/devices/system/cpu")) {
-            std::string gov_path = entry.path().string() + "/cpufreq/scaling_governor";
-            if (!fs::exists(gov_path)) continue;
-            std::ofstream f(gov_path);
-            if (f.is_open()) {
-                f << name;
-                ok &= f.good();
-            }
-        }
-    } catch (...) {
-        std::cerr << "[Governor] Failed to enumerate CPUs\n";
-        return false;
-    }
-    return ok;
+    if (ec)
+        std::cerr << "[Governor] Failed to enumerate CPUs: " << ec.message() << "\n";
+    return found_policy ? applied : std::string();
 }
 
 } // namespace thm

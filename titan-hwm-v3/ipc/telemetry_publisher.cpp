@@ -76,6 +76,7 @@ std::string serialize_snapshot(const TelemetrySnapshot& s) {
       << ",\"psi_some_avg10\":"  << f2(s.cpu_psi_avg10)
       << ",\"psi_some_avg60\":"  << f2(s.cpu_psi_avg60)
       << ",\"psi_some_avg300\":" << f2(s.cpu_psi_avg300)
+      << ",\"psi_some_inst\":"   << f2(s.cpu_psi_inst)
       << ",\"load1\":"  << f2(s.load1)
       << ",\"load5\":"  << f2(s.load5)
       << ",\"load15\":" << f2(s.load15)
@@ -88,8 +89,12 @@ std::string serialize_snapshot(const TelemetrySnapshot& s) {
       << ",\"background_weight\":" << s.background_cpu_weight
       << ",\"background_cpu_max_pct\":" << f2(s.background_cpu_max_pct)
       << ",\"headroom_engaged\":" << (s.cpu_headroom_engaged ? "true" : "false")
+      << ",\"background_idle\":"  << (s.background_cpu_idle ? "true" : "false")
       << ",\"unattended_lift\":"  << (s.unattended_lift ? "true" : "false")
       << ",\"temp_c\":" << f2(s.cpu_temp_c)
+      << ",\"bg_nr_periods\":" << s.bg_nr_periods
+      << ",\"bg_nr_throttled\":" << s.bg_nr_throttled
+      << ",\"bg_throttled_usec\":" << s.bg_throttled_usec
       << '}';
     o << ",\"governor\":\"" << esc(s.governor) << '"';
     o << ",\"workload_count\":" << s.workload_count;

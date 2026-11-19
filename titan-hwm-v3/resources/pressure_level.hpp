@@ -8,6 +8,7 @@
 #pragma once
 
 #include "../core/types.hpp"
+#include <cstdint>
 #include <string>
 
 namespace thm {
@@ -47,10 +48,11 @@ struct PSIStats {
 // cpu.max) — see the CPU pressure engine section below.
 // ─────────────────────────────────────────────────────────────────────────────
 struct CpuPSIStats {
-    bool  valid       = false;
-    float some_avg10  = 0.0f; // % of time at least one task was runnable-stalled
-    float some_avg60  = 0.0f;
-    float some_avg300 = 0.0f;
+    bool     valid        = false;
+    float    some_avg10   = 0.0f; // % of time at least one task was runnable-stalled
+    float    some_avg60   = 0.0f;
+    float    some_avg300  = 0.0f;
+    uint64_t some_total_us = 0;   // monotonic stalled-us counter (for per-tick deltas)
 };
 
 struct LoadAverage {
@@ -108,6 +110,7 @@ struct SystemPressure {
 
     float cpu_some_avg10 = 0.0f;
     float cpu_some_avg60 = 0.0f;
+    float cpu_some_inst  = -1.0f; // % stalled over the last sample window (-1 = n/a)
     float mem_some_avg10 = 0.0f;
     float load_ratio     = 0.0f; // load1 / online_cpus
     int   online_cpus    = 1;
@@ -135,22 +138,36 @@ float read_cpu_temp_c();
 //   HIGH            >= 30 %                   >= 1.5
 //   CRITICAL        >= 60 %                   >= 2.5
 //
+// `instant_some_pct` (optional, < 0 = unavailable) is the PSI stall percentage
+// measured directly from the change in the kernel's `total=` counter over one
+// tick. It reacts in ~200 ms instead of waiting for the kernel's 10 s avg10
+// EWMA, so a build storm is classified before the desktop starts stuttering.
+// It is only ever combined with the same runqueue gate, and callers should feed
+// a two-sample-minimum value (the controller does) so a lone blip cannot
+// escalate the machine.
+//
 // An invalid PSI sample (kernel without CONFIG_PSI) always yields NORMAL: with no
 // signal there is nothing to arbitrate.
 PressureLevel compute_cpu_pressure_raw(const CpuPSIStats& cpu_psi,
                                        const LoadAverage& loadavg,
-                                       int online_cpus);
+                                       int online_cpus,
+                                       float instant_some_pct = -1.0f);
 
 // Anti-flap smoothing around compute_cpu_pressure_raw().
 //
-//  * Escalation is immediate: starving the compositor for even a few seconds is
-//    exactly what this engine exists to prevent.
-//  * De-escalation requires CPU PSI avg10 to sit below the release threshold of
-//    the *current* level for `release_ticks_required` consecutive ticks, then
-//    drops straight to the raw level. A build oscillating around a boundary
-//    therefore cannot make the cgroup weights flap every tick.
+//  * Escalation is immediate for the 10 s average, and takes two consecutive
+//    ticks (~400 ms) when driven by the per-tick PSI delta. Starving the
+//    compositor for even a few seconds is exactly what this engine exists to
+//    prevent; the two-tick confirmation only filters a lone scheduling blip.
+//  * De-escalation requires the *instantaneous* PSI (falling back to avg10 when
+//    the delta is unavailable) to sit below the release threshold of the current
+//    level for `release_ticks_required` consecutive ticks, then drops straight
+//    to the raw level. Using the delta here matters: avg10 keeps a finished
+//    build's pressure visible for up to 10 s, which used to keep the background
+//    cap engaged long after the build exited. A build oscillating around a
+//    boundary therefore cannot make the cgroup weights flap every tick.
 //
-//   current level   release threshold (PSI some avg10)
+//   current level   release threshold (PSI some, instantaneous or avg10)
 //   MODERATE              < 10 %
 //   HIGH                  < 15 %
 //   CRITICAL              < 30 %
@@ -159,14 +176,25 @@ public:
     explicit CpuPressureController(int release_ticks_required = 3)
         : release_ticks_required_(release_ticks_required < 1 ? 1 : release_ticks_required) {}
 
+    // `elapsed_us` is the wall time since the previous evaluate() call. Pass the
+    // measured interval (not the nominal tick) so the instantaneous PSI delta is
+    // scaled correctly across scheduling delays. 0 disables the fast path for
+    // this call (used by offline/one-shot callers).
     SystemPressure evaluate(const MemInfo& mem,
                             const PSIStats& mem_psi,
                             const CpuPSIStats& cpu_psi,
                             const LoadAverage& loadavg,
-                            int online_cpus);
+                            int online_cpus,
+                            long long elapsed_us = 0);
 
     PressureLevel current_cpu_level() const { return current_cpu_; }
-    void reset() { current_cpu_ = PressureLevel::NORMAL; cool_ticks_ = 0; }
+    void reset() {
+        current_cpu_ = PressureLevel::NORMAL;
+        cool_ticks_  = 0;
+        prev_total_us_ = 0;
+        have_prev_total_ = false;
+        prev_inst_pct_ = -1.0f;
+    }
 
 private:
     static float release_threshold(PressureLevel level);
@@ -174,6 +202,12 @@ private:
     int           release_ticks_required_;
     PressureLevel current_cpu_ = PressureLevel::NORMAL;
     int           cool_ticks_  = 0;
+
+    // Per-tick PSI delta state. Kept here (not in the free reader) so a sample
+    // is only compared with the immediately preceding sample from this loop.
+    uint64_t prev_total_us_  = 0;
+    bool     have_prev_total_ = false;
+    float    prev_inst_pct_   = -1.0f;
 };
 
 } // namespace thm

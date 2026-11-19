@@ -30,6 +30,19 @@ enum class GovernorHint {
     PERFORMANCE,    // any build executing OR latency-sensitive workload active
 };
 
+// Translate a hint into a governor name that the kernel actually offers.
+// `available` is the verbatim contents of scaling_available_governors.
+// Exposed for tests: intel_pstate exposes "performance powersave" only, so the
+// old unconditional "schedutil" write failed EINVAL and governor management was
+// a silent no-op on most modern laptops.
+std::string choose_scaling_governor(GovernorHint hint,
+                                    const std::string& available);
+
+// Translate a hint into an energy_performance_preference (intel_pstate/amd-pstate
+// HWP). Returns "" when the desired preference is not available.
+std::string choose_energy_preference(GovernorHint hint,
+                                     const std::string& available);
+
 // Callback type for workspace events
 using WorkspaceCallback = std::function<void(int workspace_id, bool is_focused)>;
 using WindowCallback    = std::function<void(int workspace_id,
@@ -98,8 +111,16 @@ public:
         PressureLevel cpu_pressure = PressureLevel::NORMAL,
         bool thermally_constrained = false);
 
-    // Apply governor hint to /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
-    static bool apply_governor(GovernorHint hint);
+    // Apply governor hint to every online CPU's cpufreq policy.
+    //
+    // The kernel does not necessarily expose the governor THM would like to
+    // name: intel_pstate/amd-pstate systems, for example, offer only
+    // "performance" and "powersave" (no schedutil). The target is therefore
+    // chosen from each CPU's `scaling_available_governors`, and the matching
+    // `energy_performance_preference` is programmed where the platform supports
+    // it. Returns the governor actually applied ("" if no cpufreq driver), which
+    // the telemetry snapshot publishes instead of the abstract hint.
+    static std::string apply_governor(GovernorHint hint);
 
     ~WorkspaceMonitor() { stop(); }
 

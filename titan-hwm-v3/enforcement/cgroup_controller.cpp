@@ -191,6 +191,35 @@ bool CgroupController::set_cpu_max(const std::string& slice_name,
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// set_cpu_idle — write cpu.idle (1 = run only when the CPU would be idle)
+//
+// Unsupported kernels simply do not have the file; that is not an enforcement
+// failure, so report success and let the caller continue.
+// ─────────────────────────────────────────────────────────────────────────────
+bool CgroupController::set_cpu_idle(const std::string& slice_name, bool idle) {
+    const std::string path = slice_path(slice_name) + "/cpu.idle";
+    if (!fs::exists(path)) return true;
+    return write_file(path, idle ? "1" : "0");
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// read_cpu_stat — parse cpu.stat counters
+// ─────────────────────────────────────────────────────────────────────────────
+bool CgroupController::read_cpu_stat(const std::string& slice_name,
+                                     CpuSliceStat& out) const {
+    std::ifstream f(slice_path(slice_name) + "/cpu.stat");
+    if (!f.is_open()) return false;
+    std::string key;
+    uint64_t val = 0;
+    while (f >> key >> val) {
+        if      (key == "nr_periods")     out.nr_periods     = val;
+        else if (key == "nr_throttled")   out.nr_throttled   = val;
+        else if (key == "throttled_usec") out.throttled_usec = val;
+    }
+    return true;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // compute_cpu_slice_policy — pure (pressure, cores, presence) -> cgroup values
 // ─────────────────────────────────────────────────────────────────────────────
 CpuSlicePolicy compute_cpu_slice_policy(PressureLevel cpu_pressure,
@@ -226,13 +255,18 @@ CpuSlicePolicy compute_cpu_slice_policy(PressureLevel cpu_pressure,
         return p;
     }
 
-    // (N-1) cores of bandwidth; 75% of the single core when N == 1.
+    // Reserve one core at HIGH, two at CRITICAL (where the desktop is already
+    // visibly stuttering). On N <= 2 there is only ever one core to reserve, and
+    // on a single CPU the 75% branch below keeps the build alive.
+    const int reserve_cores = (cpu_pressure >= PressureLevel::CRITICAL) ? 2 : 1;
+    const long quota_cores  = static_cast<long>(std::max(1, cpus - reserve_cores));
     p.background_quota_us = (cpus >= 2)
-        ? static_cast<long>(cpus - 1) * p.period_us
+        ? quota_cores * p.period_us
         : (p.period_us * 3) / 4;
     p.background_max_pct = 100.0f * static_cast<float>(p.background_quota_us) /
                            (static_cast<float>(p.period_us) * static_cast<float>(cpus));
     p.headroom_engaged = true;
+    p.background_idle  = (cpu_pressure >= PressureLevel::CRITICAL);
     return p;
 }
 

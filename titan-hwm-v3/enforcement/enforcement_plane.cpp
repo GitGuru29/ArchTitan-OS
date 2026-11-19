@@ -179,6 +179,14 @@ CpuSlicePolicy EnforcementPlane::apply_cpu_pressure_policy(PressureLevel cpu_pre
             failed = true;
     }
 
+    const int want_idle = policy.background_idle ? 1 : 0;
+    if (want_idle != written_.background_idle) {
+        if (cgroup_.set_cpu_idle(SLICE_BACKGROUND, policy.background_idle))
+            written_.background_idle = want_idle;
+        else
+            failed = true;
+    }
+
     if (failed) write_backoff_ = 25; // ~5 s at the 200 ms daemon tick
     return policy;
 }
