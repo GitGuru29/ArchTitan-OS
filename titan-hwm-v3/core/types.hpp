@@ -119,11 +119,23 @@ struct ProcessNode {
 // ─────────────────────────────────────────────────────────────────────────────
 // Workload — group of related processes forming one logical unit of work
 // ─────────────────────────────────────────────────────────────────────────────
+// An observed (unclassified) workload must consume at least this much CPU
+// (summed over all member PIDs; 100% == one core) before it counts as real
+// system demand for the governor and the CPU slice arbiter. Idle windows that
+// merely happen to be observed must not pin PERFORMANCE, but a game, Blender
+// render or training job that the classifier does not recognise must never be
+// mistaken for an idle desktop (it used to force POWERSAVE).
+static constexpr float OBSERVED_CPU_DEMAND_PCT = 15.0f;
+
 struct Workload {
     uint32_t      id;
     int           workspace_id  = -1;
     WorkloadType  type          = WorkloadType::NEUTRAL;
     WorkloadState state         = WorkloadState::DISCOVERED;
+
+    // Aggregate CPU% over all member PIDs, refreshed every tick from the
+    // ExecutionDetector's measured deltas (100% == one fully used core).
+    float         cpu_pct       = 0.0f;
 
     // Classification metadata (from FusionClassifier)
     float         confidence    = 0.0f;

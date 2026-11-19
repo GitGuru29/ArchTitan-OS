@@ -446,10 +446,15 @@ GovernorHint WorkspaceMonitor::compute_governor(
     bool all_idle       = true;
 
     for (const auto& [id, wl] : workloads) {
-        // Observation-only workloads must not influence power policy: they are
-        // always present in large numbers and would pin the governor above
-        // POWERSAVE even when nothing classified is running.
-        if (wl.observed) continue;
+        // Observation-only workloads are unclassified, NOT idle. A game,
+        // Blender render or training job that the classifier does not yet know
+        // is still real demand: ignoring it used to leave all_idle=true and
+        // pin the governor at POWERSAVE under NORMAL pressure. Only observed
+        // workloads with measurable CPU use (or confirmed executing state)
+        // count, so a file manager window does not block idle downclocking.
+        if (wl.observed &&
+            wl.cpu_pct < OBSERVED_CPU_DEMAND_PCT &&
+            wl.state != WorkloadState::BACKGROUND_EXECUTING) continue;
         if (wl.state == WorkloadState::ACTIVE) {
             any_active = true;
             all_idle   = false;

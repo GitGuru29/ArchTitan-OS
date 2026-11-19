@@ -772,6 +772,15 @@ int main(int argc, char* argv[]) {
     // ── Previous child sets for execution detection ─────────────────────────
     std::unordered_map<pid_t, std::vector<pid_t>> prev_children;
 
+    // CPU% from the PREVIOUS tick, available while classifying new processes
+    // (ExecutionDetector runs later in the tick, so node.cpu_pct is still 0
+    // during classification on a freshly rebuilt graph).
+    std::unordered_map<pid_t, float> last_cpu_pct;
+
+    // Slice currently assigned to each observed workload. Avoids rewriting
+    // cgroup.procs for every PID on every tick in steady state.
+    std::unordered_map<uint32_t, const char*> observed_slices;
+
     // Governor hint currently applied — feeds compute_governor's hysteresis band
     thm::GovernorHint current_gov = thm::GovernorHint::SCHEDUTIL;
 
@@ -985,6 +994,7 @@ int main(int argc, char* argv[]) {
                                           << " (" << wl->root_cmdline << ") to "
                                           << thm::to_string(result.type) << "\n";
                                 wl->observed = false;
+                                observed_slices.erase(wl->id);
                             }
                             wl->root_cmdline  = node.cmdline;
                             wl->is_reclassifiable = false; // reset until next drift
@@ -1059,8 +1069,15 @@ int main(int argc, char* argv[]) {
                 // jobs (e.g. sudo build/benchmark). Kernel threads (ppid==2 or
                 // empty cmdline) and system daemons stay unmanaged by design.
                 if (node.cgroup.find("archtitan-bench-") != std::string::npos) continue;
+                // Use the previous tick's measured CPU%: the current graph was
+                // just rebuilt, so node.cpu_pct is still zero here until
+                // ExecutionDetector runs later in this tick.
+                auto cpu_it = last_cpu_pct.find(pid);
+                const float prev_cpu_pct =
+                    (cpu_it == last_cpu_pct.end()) ? 0.0f : cpu_it->second;
                 const bool high_cpu_userspace =
-                    (pid > 2 && node.ppid > 2 && !node.cmdline.empty() && node.cpu_pct >= 50.0f);
+                    (pid > 2 && node.ppid > 2 && !node.cmdline.empty() &&
+                     prev_cpu_pct >= 50.0f);
                 if (node.uid < 1000 && !high_cpu_userspace) continue;
                 if (is_session_manager_comm(node.comm) ||
                     is_desktop_infra_comm(node.comm)) continue;
@@ -1116,6 +1133,7 @@ int main(int argc, char* argv[]) {
             auto& prev = prev_children[pid];
             detector.detect(node, prev);
             prev = node.children; // snapshot for next tick
+            last_cpu_pct[pid] = node.cpu_pct; // reused by classification next tick
         }
 
         // ── (f) Drive state machine + evaluate policy + enforce ─────────────
@@ -1129,6 +1147,16 @@ int main(int argc, char* argv[]) {
         for (uint32_t id : workload_mgr.all_ids()) {
             auto* wl = workload_mgr.get(id);
             if (!wl || wl->state == thm::WorkloadState::TERMINATED) continue;
+
+            // Fresh aggregate CPU% (ExecutionDetector ran in step (e)). This is
+            // the demand signal used by the governor and the observed-workload
+            // slice arbiter, so it must be computed before both.
+            float wl_cpu_pct = 0.0f;
+            for (pid_t p : wl->pids) {
+                auto pit = proc_graph.find(p);
+                if (pit != proc_graph.end()) wl_cpu_pct += pit->second.cpu_pct;
+            }
+            wl->cpu_pct = wl_cpu_pct;
 
             // Find workspace state
             static const thm::WorkspaceState default_ws{};
@@ -1149,9 +1177,12 @@ int main(int argc, char* argv[]) {
             // SLICE_BACKGROUND (if unfocused/headless) so unclassified CPU hogs
             // still respect asymmetric cpu.weight and the CPU headroom cap.
             if (wl->observed) {
+                // Unclassified but real CPU work (game, render, training) joins
+                // the managed hierarchy immediately instead of waiting for CPU
+                // pressure to reach MODERATE. No signal is ever involved.
+                bool to_active = false;
                 if (!dry_run &&
-                    sys_pressure.cpu >= thm::PressureLevel::MODERATE &&
-                    activity == thm::ActivityState::EXECUTING) {
+                    thm::observed_slice_assignment(*wl, *ws, activity, to_active)) {
                     bool in_bench = false;
                     for (pid_t p : wl->pids) {
                         auto pit = proc_graph.find(p);
@@ -1162,9 +1193,13 @@ int main(int argc, char* argv[]) {
                         }
                     }
                     if (!in_bench) {
-                        cgroup.move_to_slice(
-                            wl->pids,
-                            ws->is_focused ? thm::SLICE_ACTIVE : thm::SLICE_BACKGROUND);
+                        const char* target = to_active ? thm::SLICE_ACTIVE
+                                                       : thm::SLICE_BACKGROUND;
+                        auto assigned = observed_slices.find(wl->id);
+                        if (assigned == observed_slices.end() || assigned->second != target) {
+                            if (cgroup.move_to_slice(wl->pids, target))
+                                observed_slices[wl->id] = target;
+                        }
                     }
                 }
                 continue;
@@ -1294,6 +1329,7 @@ int main(int argc, char* argv[]) {
             ownership.remove(pid);
             detector.remove_baseline(pid);
             prev_children.erase(pid);
+            last_cpu_pct.erase(pid);
         }
 
         // Drop exited members from each workload's pid list so it reflects the
@@ -1331,6 +1367,7 @@ int main(int argc, char* argv[]) {
         }
         for (uint32_t wl_id : expired) {
             workload_mgr.remove(wl_id);
+            observed_slices.erase(wl_id);
         }
 
         // ── (i) Publish telemetry snapshot ──────────────────────────────────
@@ -1406,17 +1443,13 @@ int main(int argc, char* argv[]) {
                 tw.pid_count    = static_cast<int>(wl->pids.size());
                 tw.observed     = wl->observed;
 
-                long  mem_kb  = 0;
-                float cpu_pct = 0.0f;
+                long mem_kb = 0;
                 for (pid_t p : wl->pids) {
                     auto it = proc_graph.find(p);
-                    if (it != proc_graph.end()) {
-                        mem_kb  += it->second.rss_kb;
-                        cpu_pct += it->second.cpu_pct;
-                    }
+                    if (it != proc_graph.end()) mem_kb += it->second.rss_kb;
                 }
                 tw.mem_kb  = mem_kb;
-                tw.cpu_pct = cpu_pct;
+                tw.cpu_pct = wl->cpu_pct; // computed once in step (f)
 
                 if (wl->observed) snap.observed_workloads++;
                 else              snap.classified_workloads++;

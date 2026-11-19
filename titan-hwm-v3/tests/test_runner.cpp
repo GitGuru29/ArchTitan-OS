@@ -2163,6 +2163,126 @@ void test_tc26_critical_extra_headroom_and_idle() {
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
+// TC-27: Observed Heavy Workload Is Real Governor Demand
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc27_observed_heavy_demand() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(27, "Observed Heavy Demand",
+                    "Unclassified game/render/training CPU load never selects POWERSAVE");
+
+    // A Blender render or game that the classifier has not seen yet: focused,
+    // observed, using several cores. It must keep the governor at SCHEDUTIL at
+    // NORMAL pressure and earn a boost once CPU pressure becomes MODERATE.
+    std::unordered_map<uint32_t, thm::Workload> heavy;
+    thm::Workload wl_heavy;
+    wl_heavy.id = 901;
+    wl_heavy.observed = true;
+    wl_heavy.state = thm::WorkloadState::ACTIVE;
+    wl_heavy.cpu_pct = 300.0f;
+    heavy[901] = wl_heavy;
+
+    const auto gov_calm = thm::WorkspaceMonitor::compute_governor(
+        heavy, thm::PressureLevel::NORMAL, thm::GovernorHint::SCHEDUTIL,
+        thm::PressureLevel::NORMAL);
+    const auto gov_contended = thm::WorkspaceMonitor::compute_governor(
+        heavy, thm::PressureLevel::NORMAL, thm::GovernorHint::SCHEDUTIL,
+        thm::PressureLevel::MODERATE);
+
+    // An observed but idle window must still allow POWERSAVE.
+    std::unordered_map<uint32_t, thm::Workload> idle;
+    thm::Workload wl_idle;
+    wl_idle.id = 902;
+    wl_idle.observed = true;
+    wl_idle.state = thm::WorkloadState::ACTIVE;
+    wl_idle.cpu_pct = 0.0f;
+    idle[902] = wl_idle;
+    const auto gov_idle = thm::WorkspaceMonitor::compute_governor(
+        idle, thm::PressureLevel::NORMAL, thm::GovernorHint::SCHEDUTIL,
+        thm::PressureLevel::NORMAL);
+
+    const bool passed =
+        (gov_calm == thm::GovernorHint::SCHEDUTIL) &&
+        (gov_contended == thm::GovernorHint::PERFORMANCE) &&
+        (gov_idle == thm::GovernorHint::POWERSAVE);
+    auto gov_name = [](thm::GovernorHint h) -> const char* {
+        switch (h) {
+            case thm::GovernorHint::PERFORMANCE: return "PERFORMANCE";
+            case thm::GovernorHint::POWERSAVE:   return "POWERSAVE";
+            default:                             return "SCHEDUTIL";
+        }
+    };
+    std::cout << "[Governor] observed heavy=" << gov_name(gov_calm)
+              << " contended=" << gov_name(gov_contended)
+              << " idle=" << gov_name(gov_idle) << "\n";
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-27: Observed Heavy Demand",
+                         "Unclassified heavy CPU work drives governor demand, idle windows do not",
+                         passed,
+                         "heavy=SCHEDUTIL, contended=PERFORMANCE, idle=POWERSAVE",
+                         ms});
+    std::cout << (passed ? ">>> PASS: observed demand verified.\n" : ">>> FAIL!\n");
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-28: Observed Workloads Join Slices Without Waiting For CPU Pressure
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc28_observed_slice_assignment() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(28, "Observed Slice Assignment",
+                    "Real unclassified CPU work is arbitrated at NORMAL pressure, no signals");
+
+    thm::WorkspaceState focused;
+    focused.is_focused = true;
+    focused.is_visible = true;
+    thm::WorkspaceState away;
+
+    thm::Workload heavy;
+    heavy.observed = true;
+    heavy.state = thm::WorkloadState::ACTIVE;
+    heavy.cpu_pct = 250.0f;
+
+    bool active_focused = false;
+    const bool assign_focused = thm::observed_slice_assignment(
+        heavy, focused, thm::ActivityState::EXECUTING, active_focused);
+    bool active_away = false;
+    const bool assign_away = thm::observed_slice_assignment(
+        heavy, away, thm::ActivityState::EXECUTING, active_away);
+
+    thm::Workload idle;
+    idle.observed = true;
+    idle.state = thm::WorkloadState::IDLE;
+    idle.cpu_pct = 0.0f;
+    bool ignored = false;
+    const bool assign_idle = thm::observed_slice_assignment(
+        idle, focused, thm::ActivityState::IDLE, ignored);
+
+    thm::Workload classified = heavy;
+    classified.observed = false;
+    bool ignored2 = false;
+    const bool assign_classified = thm::observed_slice_assignment(
+        classified, focused, thm::ActivityState::EXECUTING, ignored2);
+
+    const bool passed = assign_focused && active_focused &&
+                        assign_away && !active_away &&
+                        !assign_idle && !assign_classified;
+    std::cout << "[Slice] focused=" << (assign_focused && active_focused ? "ACTIVE" : "no")
+              << " away=" << (assign_away && !active_away ? "BACKGROUND" : "no")
+              << " idle=" << (assign_idle ? "moved" : "skipped")
+              << " classified=" << (assign_classified ? "moved" : "skipped") << "\n";
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-28: Observed Slice Assignment",
+                         "Unclassified heavy work joins ACTIVE/BACKGROUND slices at NORMAL pressure",
+                         passed,
+                         "focused=ACTIVE, unfocused=BACKGROUND, idle/classified=skipped",
+                         ms});
+    std::cout << (passed ? ">>> PASS: observed slice arbitration verified.\n" : ">>> FAIL!\n");
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
 // Main Test Harness Entry Point
 // ═════════════════════════════════════════════════════════════════════════════
 int main() {
@@ -2197,6 +2317,8 @@ int main() {
     test_tc24_instant_psi_fast_path();
     test_tc25_governor_availability_translation();
     test_tc26_critical_extra_headroom_and_idle();
+    test_tc27_observed_heavy_demand();
+    test_tc28_observed_slice_assignment();
 
     // Summary Table
     std::cout << "\n════════════════════════════════════════════════════════════════════════════════\n";

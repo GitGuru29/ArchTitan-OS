@@ -139,6 +139,32 @@ bool EnforcementPlane::apply(const Workload& wl, PolicyDecision decision) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// observed_slice_assignment — bring real unclassified CPU work into the managed
+// hierarchy on the very first tick it is seen.
+//
+// Previously observed workloads were only moved when CPU pressure had already
+// reached MODERATE. A focused game / Blender render / training job therefore
+// spent the ramp-up phase outside archtitan.slice, where no asymmetric weights
+// protected it. Membership is now driven by the workload's own demand, and is
+// change-detected by the daemon so this costs no syscalls in steady state.
+// ─────────────────────────────────────────────────────────────────────────────
+bool observed_slice_assignment(const Workload&       wl,
+                               const WorkspaceState& ws,
+                               ActivityState         activity,
+                               bool&                 to_active) {
+    to_active = false;
+    if (!wl.observed) return false; // classified work goes through PolicyEngine
+
+    const bool doing_work = (activity == ActivityState::EXECUTING) ||
+                            (wl.state == WorkloadState::BACKGROUND_EXECUTING) ||
+                            (wl.cpu_pct >= OBSERVED_CPU_DEMAND_PCT);
+    if (!doing_work) return false;
+
+    to_active = (ws.is_focused || ws.is_visible) && doing_work;
+    return true;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // apply_cpu_pressure_policy — CPU channel -> cpu.weight + cpu.max headroom
 //
 // HC-CPU-1: this function only ever writes cgroup scheduling files. It has no

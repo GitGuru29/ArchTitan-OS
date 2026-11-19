@@ -27,6 +27,16 @@ static constexpr int OOM_EXPOSE   =  500; // aging/reclaimable — OOM prefers t
 // decision can only ever push the background slice lower, never higher.
 static constexpr int CPU_WEIGHT_THROTTLE = 20;
 
+// Pure helper: should an OBSERVED workload be placed in a managed CPU slice
+// this tick? Unclassified games, renderers and training jobs must not run
+// outside the managed hierarchy just because system CPU pressure is NORMAL.
+// `to_active` is set for focused/visible work, otherwise the background slice
+// is used. No signal is ever sent and no policy decision is involved (HC-CPU-1).
+bool observed_slice_assignment(const Workload&       wl,
+                               const WorkspaceState& ws,
+                               ActivityState         activity,
+                               bool&                 to_active);
+
 class EnforcementPlane {
 public:
     explicit EnforcementPlane(CgroupController& cgroup,
