@@ -63,7 +63,9 @@ public:
     // that is in effect (also what telemetry should publish).
     CpuSlicePolicy apply_cpu_pressure_policy(PressureLevel cpu_pressure,
                                              int online_cpus,
-                                             bool user_unattended_idle);
+                                             bool user_unattended_idle,
+                                             const CpuDemandHint* demand = nullptr,
+                                             int reserved_cores_override = -1);
 
     const CpuSlicePolicy& current_cpu_policy() const { return effective_policy_; }
 

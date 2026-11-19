@@ -65,12 +65,51 @@ struct CpuSlicePolicy {
     long  period_us           = CFS_SMOOTH_PERIOD_US;
     float background_max_pct  = 100.0f; // share of TOTAL machine CPU the BG slice may use
     bool  headroom_engaged    = false;  // a bandwidth cap is currently applied
+    int   reserved_cores      = 0;      // v3.4: logical CPUs reserved for foreground
     bool  background_idle     = false;  // BG is SCHED_IDLE-equivalent (cpu.idle=1)
     bool  unattended_lift     = false;  // cap was lifted because the user is away
 };
 
+// ── v3.4: adaptive headroom inputs ──────────────────────────────────────────
+// Descriptive signals collected by the daemon each tick. Nothing here can kill,
+// freeze or signal a process — it only tunes how much CPU the bulk background
+// slice may use. All fields default to "no extra demand".
+struct CpuDemandHint {
+    int   latency_workloads  = 0;      // active games / real-time media
+    int   gpu_feeders        = 0;      // active training dataloaders
+    int   bulk_workloads     = 0;      // active renders / compiles
+    float foreground_cpu_pct = 0.0f;   // sum over active workloads (100% == 1 core)
+    float cpu_temp_c         = 0.0f;   // 0 = unknown
+    bool  smt_siblings       = false;  // logical CPUs share physical cores
+};
+
+// Pure: logical CPUs reserved for foreground work at HIGH/CRITICAL pressure.
+// With an empty hint this reproduces the classic 1-core (HIGH) / 2-core
+// (CRITICAL) reservation, so existing callers and tests are unchanged.
+int compute_reserved_cores(PressureLevel cpu_pressure,
+                           int online_cpus,
+                           bool user_unattended_idle,
+                           const CpuDemandHint& demand = {});
+
+// Stateful hysteresis for the reservation. A transient CPU spike must not
+// rewrite cpu.max; the target has to hold for 3 consecutive ticks. Pressure /
+// presence transitions reset immediately so relief is never delayed.
+class AdaptiveHeadroomTracker {
+public:
+    int update(int target, PressureLevel pressure, bool unattended);
+    int current() const { return current_; }
+private:
+    // First sighting sets the candidate; two further agreeing ticks confirm.
+    static constexpr int kRequiredStreak = 2;
+    int current_   = -1;
+    int candidate_ = -1;
+    int streak_    = 0;
+    PressureLevel last_pressure_ = PressureLevel::NORMAL;
+    bool last_unattended_ = false;
+};
+
 // Pure, deterministic and root-free: the whole mapping from (CPU pressure, core
-// count, user presence) to cgroup values, so it can be unit-tested without
+// count, presence, demand) to cgroup values, so it can be unit-tested without
 // touching /sys/fs/cgroup.
 //
 //   CPU pressure   protected  active  latency  background  bg cpu.max  bg idle
@@ -106,7 +145,9 @@ struct CpuSlicePolicy {
 // the foreground wins every contention while the cap re-engages.
 CpuSlicePolicy compute_cpu_slice_policy(PressureLevel cpu_pressure,
                                         int online_cpus,
-                                        bool user_unattended_idle);
+                                        bool user_unattended_idle,
+                                        const CpuDemandHint* demand = nullptr,
+                                        int reserved_cores_override = -1);
 
 // Per-slice CFS bandwidth counters from cpu.stat. Used for telemetry so the
 // operator can verify that a cap is actually binding (nr_throttled rising)

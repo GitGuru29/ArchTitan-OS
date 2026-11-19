@@ -65,6 +65,21 @@ static const char* governor_to_string(thm::GovernorHint h) {
     }
 }
 
+// Detect SMT from CPU0's thread_siblings_list ("0" = no sibling, "0-1" /
+// "0,2" = siblings share a physical core). Cached once: topology cannot change
+// while the daemon is running without an offline/online event that also
+// invalidates online_cpus.
+static bool has_smt_siblings() {
+    static const bool smt = []() {
+        std::ifstream f("/sys/devices/system/cpu/cpu0/topology/thread_siblings_list");
+        std::string list;
+        if (!(f >> list)) return false;
+        return list.find(',') != std::string::npos ||
+               list.find('-') != std::string::npos;
+    }();
+    return smt;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Observation-mode helpers
 //
@@ -230,7 +245,8 @@ static std::string format_status(const thm::TelemetrySnapshot& s) {
     if (s.cpu_headroom_engaged)
         o << s.background_cpu_max_pct << "%"
           << (s.background_cpu_idle ? " + cpu.idle" : "")
-          << " (25ms CFS period)\n";
+          << " (25ms CFS period, " << s.reserved_headroom_cores
+          << " core(s) reserved)\n";
     else if (s.unattended_lift)
         o << "100.0% (auto-lifted: user idle >60s)\n";
     else
@@ -362,7 +378,8 @@ static std::string format_pressure(const thm::TelemetrySnapshot& s) {
     o << "BG headroom cap: ";
     if (s.cpu_headroom_engaged)
         o << std::setprecision(1) << s.background_cpu_max_pct << "%  (25ms CFS period)"
-          << (s.background_cpu_idle ? "  cpu.idle=1" : "") << "\n";
+          << (s.background_cpu_idle ? "  cpu.idle=1" : "")
+          << "  reserved=" << s.reserved_headroom_cores << " core(s)\n";
     else if (s.unattended_lift)
         o << "max (auto-lifted: user idle >60s)\n";
     else
@@ -782,6 +799,9 @@ int main(int argc, char* argv[]) {
     // Slice currently assigned to each observed workload. Avoids rewriting
     // cgroup.procs for every PID on every tick in steady state.
     std::unordered_map<uint32_t, const char*> observed_slices;
+
+    // v3.4: 3-tick-confirmed adaptive headroom; avoids cpu.max flapping.
+    thm::AdaptiveHeadroomTracker headroom_tracker;
 
     // Governor hint currently applied — feeds compute_governor's hysteresis band
     thm::GovernorHint current_gov = thm::GovernorHint::SCHEDUTIL;
@@ -1283,9 +1303,32 @@ int main(int argc, char* argv[]) {
 
         // ── (f2) CPU arbitration plane (HC-CPU-1: scheduling/headroom only) ─
         const bool unattended_idle = ws_monitor.user_unattended(thm::UNATTENDED_IDLE_SECONDS);
+
+        // v3.4: adaptive headroom from real workload demand. All signals are
+        // descriptive; only cpu.max/quota is ever changed by this path.
+        thm::CpuDemandHint demand;
+        demand.cpu_temp_c   = cpu_temp_c; // sampled every 5 ticks in step (g)
+        demand.smt_siblings = has_smt_siblings();
+        for (uint32_t id : workload_mgr.all_ids()) {
+            const thm::Workload* wl = workload_mgr.get(id);
+            if (!wl || wl->observed) continue;
+            if (wl->state != thm::WorkloadState::ACTIVE &&
+                wl->state != thm::WorkloadState::BACKGROUND_EXECUTING) continue;
+            demand.foreground_cpu_pct += wl->cpu_pct;
+            if (wl->latency_critical) ++demand.latency_workloads;
+            if (wl->gpu_feeding)      ++demand.gpu_feeders;
+            if (wl->throughput_bulk)  ++demand.bulk_workloads;
+        }
+        const int reserve_target = thm::compute_reserved_cores(
+            sys_pressure.cpu, online_cpus, unattended_idle, demand);
+        const int reserve_applied = headroom_tracker.update(
+            reserve_target, sys_pressure.cpu, unattended_idle);
+
         thm::CpuSlicePolicy cpu_policy = dry_run
-            ? thm::compute_cpu_slice_policy(sys_pressure.cpu, online_cpus, unattended_idle)
-            : enforcement.apply_cpu_pressure_policy(sys_pressure.cpu, online_cpus, unattended_idle);
+            ? thm::compute_cpu_slice_policy(sys_pressure.cpu, online_cpus,
+                                            unattended_idle, &demand, reserve_applied)
+            : enforcement.apply_cpu_pressure_policy(sys_pressure.cpu, online_cpus,
+                                                    unattended_idle, &demand, reserve_applied);
 
         thm::CpuSliceStat bg_cpu_stat;
         cgroup.read_cpu_stat(thm::SLICE_BACKGROUND, bg_cpu_stat);
@@ -1307,7 +1350,8 @@ int main(int argc, char* argv[]) {
                  << "  bg_cap=" << (cpu_policy.headroom_engaged
                                         ? (std::to_string(static_cast<int>(cpu_policy.background_max_pct)) + "%")
                                         : (cpu_policy.unattended_lift ? "max(unattended)" : "max"))
-                 << (cpu_policy.background_idle ? " +idle" : "");
+                 << (cpu_policy.background_idle ? " +idle" : "")
+                 << "  reserved=" << cpu_policy.reserved_cores;
             decision_log.push_back(line.str());
             if (decision_log.size() > kMaxDecisionLog)
                 decision_log.pop_front();
@@ -1421,6 +1465,7 @@ int main(int argc, char* argv[]) {
             snap.background_cpu_weight  = cpu_policy.background_weight;
             snap.background_cpu_max_pct = cpu_policy.background_max_pct;
             snap.cpu_headroom_engaged   = cpu_policy.headroom_engaged;
+            snap.reserved_headroom_cores = cpu_policy.reserved_cores;
             snap.background_cpu_idle    = cpu_policy.background_idle;
             snap.unattended_lift        = cpu_policy.unattended_lift;
             snap.cpu_temp_c             = cpu_temp_c;

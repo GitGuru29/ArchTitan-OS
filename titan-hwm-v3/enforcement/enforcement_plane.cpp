@@ -195,9 +195,12 @@ bool observed_slice_assignment(const Workload&       wl,
 // ─────────────────────────────────────────────────────────────────────────────
 CpuSlicePolicy EnforcementPlane::apply_cpu_pressure_policy(PressureLevel cpu_pressure,
                                                            int online_cpus,
-                                                           bool user_unattended_idle) {
+                                                           bool user_unattended_idle,
+                                                           const CpuDemandHint* demand,
+                                                           int reserved_cores_override) {
     CpuSlicePolicy policy = compute_cpu_slice_policy(cpu_pressure, online_cpus,
-                                                     user_unattended_idle);
+                                                     user_unattended_idle,
+                                                     demand, reserved_cores_override);
 
     // A memory-driven THROTTLE this tick may push the background slice lower
     // than the CPU policy wants, but never higher.

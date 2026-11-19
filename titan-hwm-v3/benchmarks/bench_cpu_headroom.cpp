@@ -64,6 +64,10 @@ namespace {
 // =============================================================================
 volatile sig_atomic_t g_interrupted = 0;
 
+// v3.4: optional workload intent for the managed phase. Empty by default, so
+// all existing A/B runs keep the classic fixed headroom.
+thm::CpuDemandHint g_demand;
+
 void handle_signal(int) {
     g_interrupted = 1;
 }
@@ -696,7 +700,7 @@ PhaseResult run_benchmark_phase(const std::string& mode,
 
     // Compute exact production THM v3.2 policy for HIGH CPU pressure
     thm::CpuSlicePolicy policy = thm::compute_cpu_slice_policy(
-        thm::PressureLevel::HIGH, res.online_cpus, false);
+        thm::PressureLevel::HIGH, res.online_cpus, false, &g_demand);
     if (is_weights_only) {
         policy.background_quota_us = 0;
         policy.background_max_pct  = 100.0f;
@@ -1446,6 +1450,7 @@ void print_usage(const char* argv0) {
         << "  --threads <N>        Background saturation threads (default: 2 * online_cpus)\n"
         << "  --bg-procs <P>       Number of forked background worker processes (default: 2)\n"
         << "  --work-us <us>       Foreground simulated CPU work per tick in us (default: auto)\n"
+        << "  --adaptive <kind>    Managed-phase demand hint: none|game|train|both (default: none)\n"
         << "  --csv [file]         Output CSV (stdout if no file, or write to file)\n"
         << "  --json <file>        Write JSON report to file\n"
         << "  --markdown <file>    Write Markdown report to file\n"
@@ -1512,6 +1517,15 @@ int main(int argc, char* argv[]) {
             bg_procs = std::clamp(std::atoi(argv[++i]), 1, kMaxBgProcs);
         } else if (a == "--work-us" && i + 1 < argc) {
             work_us = std::max(0, std::atoi(argv[++i]));
+        } else if (a == "--adaptive" && i + 1 < argc) {
+            std::string kind = argv[++i];
+            g_demand = thm::CpuDemandHint{};
+            if (kind == "game" || kind == "both") g_demand.latency_workloads = 1;
+            if (kind == "train" || kind == "both") g_demand.gpu_feeders = 1;
+            if (kind != "none" && kind != "game" && kind != "train" && kind != "both") {
+                std::cerr << "Invalid --adaptive value: " << kind << "\n";
+                return 2;
+            }
         } else if (a == "--csv") {
             if (i + 1 < argc && argv[i + 1][0] != '-') {
                 csv_file = argv[++i];
@@ -1547,6 +1561,9 @@ int main(int argc, char* argv[]) {
                   << cg.reason << st.reset() << "\n"
                   << "  Mode / Load   : " << mode << " | " << threads << " BG threads across "
                   << bg_procs << " proc(s) | " << duration_s << " s/phase\n";
+        if (g_demand.latency_workloads || g_demand.gpu_feeders)
+            std::cout << "  Demand hint   : " << g_demand.latency_workloads << " game(s), "
+                      << g_demand.gpu_feeders << " dataloader(s)\n";
     }
 
     std::vector<PhaseResult> all_results;

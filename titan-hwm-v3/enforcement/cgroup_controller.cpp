@@ -221,11 +221,85 @@ bool CgroupController::read_cpu_stat(const std::string& slice_name,
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// compute_cpu_slice_policy — pure (pressure, cores, presence) -> cgroup values
+// compute_reserved_cores — v3.4 adaptive headroom (pure, no syscalls)
+//
+// The fixed "one core at HIGH, two at CRITICAL" rule was blind to what was
+// actually running. A foreground game plus a GPU dataloader needs more room;
+// a thermally throttled laptop doing only bulk work can afford less. The
+// reservation is expressed in LOGICAL cpus because cpu.max counts those, and
+// is multiplied on SMT systems where siblings share execution units.
+// ─────────────────────────────────────────────────────────────────────────────
+int compute_reserved_cores(PressureLevel cpu_pressure,
+                           int online_cpus,
+                           bool user_unattended_idle,
+                           const CpuDemandHint& demand) {
+    const int cpus = std::max(1, online_cpus);
+    if (user_unattended_idle || cpus < 2 || cpu_pressure < PressureLevel::HIGH)
+        return 0; // no cap below HIGH, or nobody is here to feel the latency
+
+    int reserve = (cpu_pressure >= PressureLevel::CRITICAL) ? 2 : 1;
+
+    // A running game / real-time app and a GPU dataloader each need their own
+    // core; otherwise they lose frames or starve the accelerator under cpu.max.
+    if (demand.latency_workloads > 0) ++reserve;
+    if (demand.gpu_feeders > 0)       ++reserve;
+
+    // If the foreground is already close to saturating the cores we left it,
+    // grow the reservation instead of making it contend with bulk work.
+    const int left_for_fg = std::max(1, cpus - reserve);
+    if (demand.foreground_cpu_pct >= 0.85f * 100.0f * left_for_fg) ++reserve;
+
+    // SMT siblings compete for the same execution units: reserve whole
+    // physical cores, not a single logical thread of one.
+    if (demand.smt_siblings) reserve *= 2;
+
+    // Thermal throttling already caps foreground clocks. Clawing back one
+    // logical CPU keeps bulk throughput without a visible desktop regression.
+    if (demand.cpu_temp_c >= 80.0f && reserve > 1) --reserve;
+
+    // Never take more than half the machine, never leave the BG slice empty.
+    const int cap = std::max(1, cpus / 2);
+    return std::clamp(reserve, 1, std::min(cap, cpus - 1));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AdaptiveHeadroomTracker — 3-tick confirmation, immediate reset on transitions
+// ─────────────────────────────────────────────────────────────────────────────
+int AdaptiveHeadroomTracker::update(int target, PressureLevel pressure,
+                                    bool unattended) {
+    if (current_ < 0 || pressure != last_pressure_ || unattended != last_unattended_) {
+        current_ = candidate_ = target;
+        streak_ = 0;
+        last_pressure_ = pressure;
+        last_unattended_ = unattended;
+        return current_;
+    }
+    if (target == current_) {
+        candidate_ = target;
+        streak_ = 0;
+        return current_;
+    }
+    if (target == candidate_) {
+        ++streak_;
+    } else {
+        candidate_ = target;
+        streak_ = 0;
+    }
+    if (streak_ >= kRequiredStreak) {
+        current_ = candidate_;
+        streak_ = 0;
+    }
+    return current_;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// compute_cpu_slice_policy — pure (pressure, cores, presence, demand) -> cgroup
 // ─────────────────────────────────────────────────────────────────────────────
 CpuSlicePolicy compute_cpu_slice_policy(PressureLevel cpu_pressure,
                                         int online_cpus,
-                                        bool user_unattended_idle) {
+                                        bool user_unattended_idle,
+                                        const CpuDemandHint* demand,
+                                        int reserved_cores_override) {
     const int cpus = online_cpus < 1 ? 1 : online_cpus;
 
     CpuSlicePolicy p;
@@ -260,10 +334,15 @@ CpuSlicePolicy compute_cpu_slice_policy(PressureLevel cpu_pressure,
         return p;
     }
 
-    // Reserve one core at HIGH, two at CRITICAL (where the desktop is already
-    // visibly stuttering). On N <= 2 there is only ever one core to reserve, and
-    // on a single CPU the 75% branch below keeps the build alive.
-    const int reserve_cores = (cpu_pressure >= PressureLevel::CRITICAL) ? 2 : 1;
+    // v3.4: adaptive reservation. The daemon passes a 3-tick-smoothed value;
+    // direct callers (benchmarks, tests) get the pure computation from the
+    // hint, or the classic fixed rule when no hint is supplied.
+    const CpuDemandHint empty_hint;
+    const int reserve_cores = (reserved_cores_override >= 0)
+        ? reserved_cores_override
+        : compute_reserved_cores(cpu_pressure, cpus, user_unattended_idle,
+                                 demand ? *demand : empty_hint);
+    p.reserved_cores = reserve_cores;
     const long quota_cores  = static_cast<long>(std::max(1, cpus - reserve_cores));
     p.background_quota_us = (cpus >= 2)
         ? quota_cores * p.period_us

@@ -90,6 +90,7 @@ std::string serialize_snapshot(const TelemetrySnapshot& s) {
       << ",\"background_weight\":" << s.background_cpu_weight
       << ",\"background_cpu_max_pct\":" << f2(s.background_cpu_max_pct)
       << ",\"headroom_engaged\":" << (s.cpu_headroom_engaged ? "true" : "false")
+      << ",\"reserved_cores\":" << s.reserved_headroom_cores
       << ",\"background_idle\":"  << (s.background_cpu_idle ? "true" : "false")
       << ",\"unattended_lift\":"  << (s.unattended_lift ? "true" : "false")
       << ",\"temp_c\":" << f2(s.cpu_temp_c)

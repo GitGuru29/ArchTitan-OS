@@ -1970,6 +1970,7 @@ void test_tc23_cpu_telemetry_contract_v32() {
     s.background_cpu_weight    = 10;
     s.background_cpu_max_pct   = 87.5f;
     s.cpu_headroom_engaged     = true;
+    s.reserved_headroom_cores  = 1;
     s.background_cpu_idle      = true;
     s.unattended_lift          = false;
     s.bg_nr_periods            = 400;
@@ -1990,6 +1991,7 @@ void test_tc23_cpu_telemetry_contract_v32() {
         "\"background_weight\":10",
         "\"background_cpu_max_pct\":87.5",
         "\"headroom_engaged\":true",
+        "\"reserved_cores\":1",
         "\"background_idle\":true",
         "\"unattended_lift\":false",
         "\"bg_nr_throttled\":37",
@@ -2009,7 +2011,7 @@ void test_tc23_cpu_telemetry_contract_v32() {
     g_results.push_back({"TC-23: Telemetry Contract v3.2",
                          "v3.2 CPU pressure and headroom fields serialized cleanly",
                          passed,
-                         std::string("checked 16 fields incl. latency slice, bytes=") + std::to_string(json.size()),
+                         std::string("checked 17 fields incl. latency slice/reserved cores, bytes=") + std::to_string(json.size()),
                          ms});
     std::cout << (passed ? ">>> PASS: v3.2 telemetry contract verified.\n" : ">>> FAIL!\n");
 }
@@ -2424,6 +2426,108 @@ void test_tc31_latency_slice_policy() {
     std::cout << (passed ? ">>> PASS: latency slice routing verified.\n" : ">>> FAIL!\n");
 }
 
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-32: v3.4 Adaptive Headroom From Real Workload Demand
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc32_adaptive_headroom() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(32, "Adaptive Headroom",
+                    "Reservation grows with game/dataloader/foreground demand, capped and thermal-aware");
+
+    const thm::CpuDemandHint empty;
+    const int legacy_high = thm::compute_reserved_cores(
+        thm::PressureLevel::HIGH, 8, false, empty);
+    const int legacy_crit = thm::compute_reserved_cores(
+        thm::PressureLevel::CRITICAL, 8, false, empty);
+
+    thm::CpuDemandHint game;
+    game.latency_workloads = 1;
+    const int game_reserve = thm::compute_reserved_cores(
+        thm::PressureLevel::HIGH, 8, false, game);
+
+    thm::CpuDemandHint game_trainer = game;
+    game_trainer.gpu_feeders = 1;
+    const int both_reserve = thm::compute_reserved_cores(
+        thm::PressureLevel::HIGH, 8, false, game_trainer);
+
+    thm::CpuDemandHint smt = game_trainer;
+    smt.smt_siblings = true;
+    const int smt_reserve = thm::compute_reserved_cores(
+        thm::PressureLevel::HIGH, 8, false, smt);
+
+    thm::CpuDemandHint hot = game_trainer;
+    hot.cpu_temp_c = 85.0f;
+    const int hot_reserve = thm::compute_reserved_cores(
+        thm::PressureLevel::HIGH, 8, false, hot);
+
+    thm::CpuDemandHint saturated;
+    saturated.foreground_cpu_pct = 700.0f; // 7 cores' worth on an 8-core box
+    const int saturated_reserve = thm::compute_reserved_cores(
+        thm::PressureLevel::HIGH, 8, false, saturated);
+
+    // The policy must actually change cpu.max, not just report a number.
+    const auto fixed_policy = thm::compute_cpu_slice_policy(
+        thm::PressureLevel::HIGH, 8, false, &empty);
+    const auto game_policy = thm::compute_cpu_slice_policy(
+        thm::PressureLevel::HIGH, 8, false, &game);
+
+    const bool passed =
+        legacy_high == 1 && legacy_crit == 2 &&
+        game_reserve == 2 && both_reserve == 3 && smt_reserve == 4 &&
+        hot_reserve == 2 && saturated_reserve == 2 &&
+        fixed_policy.background_quota_us == 175000 &&
+        game_policy.background_quota_us == 150000 &&
+        game_policy.reserved_cores == 2;
+
+    std::cout << "[Headroom] legacy=" << legacy_high << "/" << legacy_crit
+              << " game=" << game_reserve << " game+train=" << both_reserve
+              << " SMT=" << smt_reserve << " hot=" << hot_reserve
+              << " saturated=" << saturated_reserve
+              << " quota(ms)=" << fixed_policy.background_quota_us << "->"
+              << game_policy.background_quota_us << "\n";
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-32: Adaptive Headroom",
+                         "Demand-aware reservation with SMT/thermal caps changes cpu.max",
+                         passed,
+                         "game=2, game+train=3, SMT=4, hot=2, quota 175000->150000us",
+                         ms});
+    std::cout << (passed ? ">>> PASS: adaptive headroom verified.\n" : ">>> FAIL!\n");
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-33: Headroom Hysteresis (No cpu.max Flapping)
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc33_headroom_hysteresis() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(33, "Headroom Hysteresis",
+                    "A new reservation needs 3 stable ticks; transitions reset immediately");
+
+    thm::AdaptiveHeadroomTracker tracker;
+    const int a = tracker.update(1, thm::PressureLevel::HIGH, false);
+    const int b = tracker.update(2, thm::PressureLevel::HIGH, false);
+    const int c = tracker.update(2, thm::PressureLevel::HIGH, false);
+    const int d = tracker.update(2, thm::PressureLevel::HIGH, false);
+    const int e = tracker.update(1, thm::PressureLevel::HIGH, false); // aborted rise
+    const int f = tracker.update(2, thm::PressureLevel::HIGH, false); // back to current
+    const int g = tracker.update(0, thm::PressureLevel::MODERATE, false); // immediate
+
+    const bool passed = a == 1 && b == 1 && c == 1 && d == 2 &&
+                        e == 2 && f == 2 && g == 0;
+
+    std::cout << "[Hysteresis] ticks=" << a << b << c << d
+              << " aborted=" << e << " restored=" << f
+              << " transition=" << g << "\n";
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-33: Headroom Hysteresis",
+                         "Reservation changes only after 3 stable ticks; pressure jumps apply at once",
+                         passed, "1,1,1,2 then aborted->2, transition->0", ms});
+    std::cout << (passed ? ">>> PASS: headroom hysteresis verified.\n" : ">>> FAIL!\n");
+}
+
 int main() {
     std::cout << "\n╔══════════════════════════════════════════════════════════════════════════════╗\n";
     std::cout << "║        THM v3 Real OS-Level Architectural Test Suite                         ║\n";
@@ -2461,6 +2565,8 @@ int main() {
     test_tc29_workload_intent_classification();
     test_tc30_intent_policy_guard();
     test_tc31_latency_slice_policy();
+    test_tc32_adaptive_headroom();
+    test_tc33_headroom_hysteresis();
 
     // Summary Table
     std::cout << "\n════════════════════════════════════════════════════════════════════════════════\n";

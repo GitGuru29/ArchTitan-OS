@@ -91,6 +91,7 @@ struct TelemetrySnapshot {
     int         background_cpu_weight  = 50;
     float       background_cpu_max_pct = 100.0f;
     bool        cpu_headroom_engaged   = false;
+    int         reserved_headroom_cores = 0; // v3.4 adaptive reservation (logical CPUs)
     bool        background_cpu_idle    = false;
     bool        unattended_lift        = false;
     float       cpu_temp_c             = 0.0f;
