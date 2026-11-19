@@ -64,6 +64,9 @@ graph TD
 | **Titan Media HUD** | Dynamic Island overlay & playback controller | `subsystems/titan-media-hud/` (`titan-media-hud`) |
 | **Titan Power Menu** | Native C++/Qt6 glass session & power overlay (Lock, Sleep, Logout, Reboot, Shutdown) | `subsystems/titan-powermenu/` (`titan-powermenu`) |
 | **Titan System Monitor** | Hardware telemetry, GPU/CPU gauges, thermal state | `subsystems/titan-sysmon/` (`titan-sysmon`) |
+| **Titan Hotzones** | Edge & corner pointer dwell gesture daemon with LayerShell OSD | `subsystems/titan-hotzones/` (`titan-hotzones`, `titan-zone-osd`) |
+| **Titan Wallpaper Picker** | Fluid thumbnail grid wallpaper browser & boot persistence | `subsystems/titan-wallpaper-picker/` (`titan-wallpaper-picker`) |
+| **Titan Tour v2** | 3-island Liquid Glass Bento welcome walkthrough | `subsystems/titan-tour/` (`titan-tour`) |
 | **TitanBrowser** | First-party Qt6 WebEngine browser | `titan-browser-source/` (`titanbrowser`) |
 | **ArchTitan Settings** | System configuration GUI | `archtitan-settings/` |
 | **SwayNC** | Lightweight Wayland notification daemon backend | `~/.config/swaync/` |
@@ -86,6 +89,7 @@ All keybindings use the **Super** key (Windows/Cmd key) as the primary modifier:
 | <kbd>Super</kbd> + <kbd>K</kbd> | **Shortcuts & Command Palette** | `titan-menu --toggle` |
 | <kbd>Super</kbd> + <kbd>Tab</kbd> | Toggle **Titan Workspace HUD** (10-Workspace Mission Control Grid) | `titan-workspace-hud --toggle` |
 | <kbd>Super</kbd> + <kbd>N</kbd> | **Quick Settings & Notification Center** | `titan-quicksettings --toggle` |
+| <kbd>Super</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd> | **Titan System Monitor (Telemetry Sidebar)** | `titan-sysmon --toggle` |
 | <kbd>Super</kbd> + <kbd>M</kbd> | **Media Island HUD Overlay** | `titan-media-hud --toggle` |
 | <kbd>Super</kbd> + <kbd>\\</kbd> or <kbd>Super</kbd> + <kbd>Shift</kbd> + <kbd>\\</kbd> | **Wallpaper Picker** | `titan-wallpaper-picker` |
 | <kbd>Super</kbd> + <kbd>V</kbd> | Open **Spotlight Clipboard History Manager** | `titan-spotlight --clipboard` |
@@ -104,6 +108,24 @@ All keybindings use the **Super** key (Windows/Cmd key) as the primary modifier:
 | <kbd>Super</kbd> + <kbd>I</kbd> | Calamares Installer *(Live ISO)* / Settings *(Installed)* | `launch-installer` / `archtitan-settings` |
 | <kbd>Ctrl</kbd> + <kbd>Super</kbd> + <kbd>V</kbd> | Audio Mixer | `pavucontrol` |
 | <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Esc</kbd> | Task Manager | `kitty -e btop` |
+
+#### Terminal profile
+
+The shipped Kitty setup mirrors the host system's terminal: JetBrains Mono at
+11pt, beam cursor with trail, `window_margin_width 21.75`, Fish + Starship, and
+the split-pane `search.py` kitten. The default `archtitan` theme carries
+`"terminalProfile": "host"`, so `titan-theme` regenerates the exact host
+palette (including the extended `color232`–`color255` slots used by Starship).
+Switching to any other theme keeps those prompt slots while deriving the base
+colours from the new palette.
+
+| Keybinding | Action |
+| :--- | :--- |
+| <kbd>Ctrl</kbd> + <kbd>C</kbd> | Copy, or interrupt when a command is running |
+| <kbd>Ctrl</kbd> + <kbd>F</kbd> / <kbd>Super</kbd> + <kbd>F</kbd> | Open the split-pane search kitten |
+| <kbd>F3</kbd> / <kbd>Shift</kbd> + <kbd>F3</kbd> | Previous / next search match (inside search) |
+| <kbd>Page Up</kbd> / <kbd>Page Down</kbd> | Scroll one screen |
+| <kbd>Ctrl</kbd> + <kbd>+</kbd> / <kbd>-</kbd> / <kbd>0</kbd> | Increase / decrease / reset font size |
 
 ### 3. Screen Capture & Tools
 
@@ -255,3 +277,27 @@ Waybar features a dark pill design language matching the technical Linux aesthet
 - **Center Media Capsule Trigger**: Interactive central module that displays current media/audio track and triggers the **Titan Media HUD** Dynamic Island overlay when clicked.
 - **THM Workload Badge**: Displays current workload profile (`[SYS]`, `[WEB]`, `[AND]`, `[CAS]`) in vibrant accent colors.
 - **Hardware Telemetry**: Displays live CPU usage %, RAM consumption %, CPU temperature, and active PipeWire volume level.
+
+---
+
+## Edge Dwell Gestures & Hotzones
+
+ArchTitan OS ships **Titan Hotzones** (`titan-hotzones`), allowing users to trigger system overlays by resting the mouse cursor along the monitor's perimeter:
+
+- **Left Center Dwell**: Toggles the **Titan System Monitor** (`titan-sysmon`) telemetry sidebar.
+- **Top Left Corner**: Opens the central **Titan Menu** (`titan-menu`) command palette.
+- **Top Right Corner**: Opens the **Titan Quick Settings** (`titan-quicksettings`) obsidian drawer.
+- **Bottom Center Dwell**: Toggles the **Titan Workspace HUD** (`titan-workspace-hud`).
+
+A full-screen Wayland LayerShell overlay (`titan-zone-osd`) renders an interactive filling arc ring during the 250ms dwell window, providing instant visual feedback. See [Titan Hotzones & Zone OSD](Titan-Hotzones) for complete details.
+
+---
+
+## First-Boot Ceremony & Plymouth Splash
+
+ArchTitan greets users on their very first boot with the cinematic **"Rise, Titan."** ceremony:
+- **10 Chromatic Orbs**: Fluid orbit and gravity-drop physics tuned to Catppuccin Sapphire and Lavender accents.
+- **Typographic Baseline Alignment**: Exact vertical and horizontal alignment between the animated emblem and text.
+- **Atomic One-Shot Handover**: The first-boot ceremony plays only once; subsequent startups display the streamlined daily boot splash.
+
+For technical implementation and scripts, see [Boot Ceremony & Splash](Boot-Ceremony-and-Splash).

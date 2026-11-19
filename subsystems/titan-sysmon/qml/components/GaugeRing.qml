@@ -19,8 +19,8 @@ Item {
     property string caption: ""
     property color  displayColor: TitanTheme.textHigh
 
-    implicitWidth: 96
-    implicitHeight: 96
+    implicitWidth: 72
+    implicitHeight: 72
 
     // ── Instrument backing disc with tinted ambient core ─────────────────
     Rectangle {

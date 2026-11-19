@@ -22,10 +22,10 @@ static constexpr int OOM_PROTECT  = -500; // active workloads — harder to kill
 static constexpr int OOM_NORMAL   =    0; // background workloads
 static constexpr int OOM_EXPOSE   =  500; // aging/reclaimable — OOM prefers these
 
-// CPU weights per slice
-static constexpr int CPU_WEIGHT_ACTIVE     = 500;
-static constexpr int CPU_WEIGHT_BACKGROUND =  50;
-static constexpr int CPU_WEIGHT_THROTTLE   =  20;
+// CPU weight THROTTLE caps the background slice at. The dynamic CPU policy
+// (compute_cpu_slice_policy) owns every other weight; a memory-driven THROTTLE
+// decision can only ever push the background slice lower, never higher.
+static constexpr int CPU_WEIGHT_THROTTLE = 20;
 
 class EnforcementPlane {
 public:
@@ -40,9 +40,34 @@ public:
     // Thaw all stopped PIDs (used during startup recovery / crash thaw)
     void sigcont_tree(const std::vector<pid_t>& pids);
 
+    // ── CPU arbitration (HC-CPU-1: scheduling only, never a signal) ─────────
+    // Translate the CPU pressure channel into cpu.weight on the protected /
+    // active / background slices plus a cpu.max headroom cap on the background
+    // slice. Call once per tick AFTER the per-workload apply() loop. Writes are
+    // change-detected, so steady state costs zero syscalls. Returns the policy
+    // that is in effect (also what telemetry should publish).
+    CpuSlicePolicy apply_cpu_pressure_policy(PressureLevel cpu_pressure,
+                                             int online_cpus,
+                                             bool user_unattended_idle);
+
+    const CpuSlicePolicy& current_cpu_policy() const { return effective_policy_; }
+
 private:
     CgroupController&        cgroup_;
     const ProtectedRegistry& registry_;
+
+    // Last values successfully written to the kernel (-1 / -2 = never written).
+    struct WrittenState {
+        int  protected_weight  = -1;
+        int  active_weight     = -1;
+        int  background_weight = -1;
+        long background_quota  = -2;
+        int  background_idle   = -1;
+    } written_;
+
+    CpuSlicePolicy effective_policy_;
+    bool           throttle_seen_  = false; // a THROTTLE decision landed this tick
+    int            write_backoff_  = 0;     // ticks to wait after a failed write
 
     // Send signal to all PIDs in list; skip protected PIDs (extra safety)
     void signal_tree(const std::vector<pid_t>& pids, int sig);

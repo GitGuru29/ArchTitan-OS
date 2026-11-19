@@ -105,6 +105,7 @@ public slots:
   void toggleScreenRecording();
   void toggleAirplaneMode();
   void openClipboard();
+  void toggleFocusMode();
 
 signals:
   void uptimeChanged();

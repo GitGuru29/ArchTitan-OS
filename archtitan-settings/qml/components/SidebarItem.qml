@@ -1,8 +1,8 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Effects
-import ArchTitanSettings
 import ArchTitan.TitanUI
+import ArchTitanSettings
 
 Item {
     id: root

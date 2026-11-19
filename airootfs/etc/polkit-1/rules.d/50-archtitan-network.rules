@@ -1,0 +1,6 @@
+// Allow all desktop users to configure and control NetworkManager without password prompts
+polkit.addRule(function(action, subject) {
+    if (action.id.indexOf("org.freedesktop.NetworkManager.") === 0) {
+        return polkit.Result.YES;
+    }
+});

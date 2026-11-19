@@ -18,7 +18,6 @@ public:
     bool isDark() const;
 
     Q_INVOKABLE void scanWallpapers();
-    Q_INVOKABLE void openFilePicker();
     Q_INVOKABLE void launchPicker();
     Q_INVOKABLE void refresh();
 

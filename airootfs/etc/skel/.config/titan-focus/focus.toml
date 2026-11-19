@@ -1,0 +1,69 @@
+# =============================================================================
+# TitanFocus — Developer Work Optimization Engine Configuration
+# Advisory only: observes developer state, never throttles or signals processes.
+# =============================================================================
+
+[general]
+# Global non-critical notification-fatigue floor (seconds).
+# At most ONE non-critical nudge fires within this window regardless of active rules.
+min_nudge_gap_sec = 1200
+
+# Idle duration (seconds) after which continuous session / screen timers reset.
+idle_reset_sec = 300
+
+# Default Pomodoro focus block and break durations (minutes).
+focus_block_min = 50
+break_duration_min = 10
+
+# Local hour (24h, 0-23) and minute for late_night and daily_summary rules.
+late_night_hour = 23
+late_night_minute = 30
+daily_summary_hour = 18
+daily_summary_minute = 0
+
+[categories]
+# Toggle entire rule categories independently.
+health = true
+focus = true
+workflow = true
+system = true
+summary = true
+
+[rules]
+# Per-rule enable flags.
+hydration = true
+eye_strain = true
+posture = true
+focus_block = true
+session_cap = true
+context_thrash = true
+long_build = true
+thermal_pressure = true
+late_night = true
+daily_summary = true
+# Opt-in rules (ship disabled by default to avoid false positives).
+agent_done = false
+uncommitted = false
+
+[thresholds]
+hydration_interval_sec = 2700
+eye_strain_interval_sec = 1200
+posture_interval_sec = 2700
+focus_block_sec = 3000
+session_cap_1_sec = 5400
+session_cap_2_sec = 7200
+session_cap_3_sec = 10800
+context_thrash_switches = 18
+context_thrash_window_sec = 120
+long_build_sec = 180
+thermal_cpu_c = 80
+pressure_mem_pct = 40
+uncommitted_sec = 5400
+
+[classifier]
+# Synced with airootfs/etc/titan-hwm/config [classifier]
+lsp_binaries = ["clangd", "ccls", "rust-analyzer", "tsserver", "eslint_d"]
+build_daemons = ["gradle", "cargo", "webpack", "vite", "java", "cmake", "ninja", "make", "rustc", "gcc", "clang", "g++", "clang++"]
+ai_inference = ["ollama", "llama-server", "claude", "codex", "aider"]
+known_ides = ["code", "code-oss", "cursor", "zed", "windsurf", "antigravity", "fleet", "idea", "android-studio", "nvim", "vim", "neovide", "qtcreator", "clion", "pycharm", "webstorm"]
+meeting_apps = ["zoom", "teams", "teams-for-linux", "obs", "slack", "discord", "vesktop", "webcord"]

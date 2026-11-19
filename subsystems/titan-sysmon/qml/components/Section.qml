@@ -15,14 +15,17 @@ Rectangle {
 
     default property alias content: body.data
 
-    color: TitanTheme.isDark ? TitanTheme.alphaColor(TitanTheme.surface0, 0.75)
+    color: TitanTheme.isDark ? TitanTheme.alphaColor(TitanTheme.surface0, 0.78)
                              : TitanTheme.alphaColor(TitanTheme.base, 0.90)
     radius: TitanTheme.radiusCard
     border.width: 1
     border.color: TitanTheme.borderSubtle
+    clip: true
 
+    implicitWidth: 0
     implicitHeight: layout.implicitHeight + TitanTheme.space4 * 2
     Layout.fillWidth: true
+    Layout.minimumWidth: 0
 
     ColumnLayout {
         id: layout
@@ -36,6 +39,8 @@ Rectangle {
 
         RowLayout {
             Layout.fillWidth: true
+            Layout.minimumWidth: 0
+            Layout.maximumWidth: layout.width
             visible: root.title !== ""
             spacing: TitanTheme.space2
 
@@ -52,17 +57,21 @@ Rectangle {
                 font.family: TitanTheme.fontFamily
                 font.pixelSize: TitanTheme.sizeBody
                 font.weight: TitanTheme.weightSemiBold
+                elide: Text.ElideRight
+                Layout.fillWidth: true
+                Layout.minimumWidth: 0
                 Layout.alignment: Qt.AlignVCenter
             }
-            Item { Layout.fillWidth: true }
             Text {
+                visible: root.subtitle !== ""
                 text: root.subtitle
-                color: TitanTheme.textLow
+                color: TitanTheme.textMid
                 font.family: TitanTheme.fontFamily
-                font.pixelSize: TitanTheme.sizeLabel
-                elide: Text.ElideLeft
+                font.pixelSize: TitanTheme.sizeCaption
+                elide: Text.ElideRight
                 horizontalAlignment: Text.AlignRight
-                Layout.maximumWidth: layout.width * 0.55
+                Layout.minimumWidth: 0
+                Layout.maximumWidth: Math.max(80, layout.width * 0.48)
                 Layout.alignment: Qt.AlignVCenter
             }
         }
@@ -70,6 +79,8 @@ Rectangle {
         ColumnLayout {
             id: body
             Layout.fillWidth: true
+            Layout.minimumWidth: 0
+            Layout.maximumWidth: layout.width
             spacing: TitanTheme.space3
         }
     }

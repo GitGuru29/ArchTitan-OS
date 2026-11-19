@@ -22,6 +22,8 @@
 // removed. All commands are answered by the daemon over /tmp/titan_hwm.sock.
 // =============================================================================
 
+#include "../resources/pressure_level.hpp"
+
 #include <chrono>
 #include <cstring>
 #include <dirent.h>
@@ -149,6 +151,51 @@ static std::string read_file(const std::string& path) {
     return s;
 }
 
+static std::string read_line_trimmed(const std::string& path) {
+    std::ifstream f(path);
+    std::string s;
+    if (f) std::getline(f, s);
+    while (!s.empty() && (s.back() == '\n' || s.back() == '\r' || s.back() == ' '))
+        s.pop_back();
+    return s;
+}
+
+static std::string read_cgroup_event_key(const std::string& path, const std::string& key) {
+    std::ifstream f(path);
+    std::string k, v;
+    while (f >> k >> v) {
+        if (k == key) return v;
+    }
+    return "?";
+}
+
+static std::string format_cpu_max_cell(const std::string& raw, int online_cpus) {
+    if (raw.empty()) return "?";
+    std::istringstream iss(raw);
+    std::string quota_s, period_s;
+    iss >> quota_s >> period_s;
+    if (quota_s == "max" || quota_s.empty()) {
+        if (!period_s.empty()) {
+            try {
+                long p_ms = std::stol(period_s) / 1000;
+                return "max (" + std::to_string(p_ms) + "ms)";
+            } catch (...) {}
+        }
+        return "max";
+    }
+    try {
+        const long q = std::stol(quota_s);
+        const long p = period_s.empty() ? 25000L : std::max(1L, std::stol(period_s));
+        const int  c = std::max(1, online_cpus);
+        const double pct = (100.0 * static_cast<double>(q)) / (static_cast<double>(p) * c);
+        std::ostringstream os;
+        os << q << "/" << p << " (" << std::fixed << std::setprecision(1) << pct << "%)";
+        return os.str();
+    } catch (...) {
+        return raw;
+    }
+}
+
 static std::string read_text(const std::string& path) {
     std::ifstream f(path);
     std::ostringstream ss;
@@ -178,6 +225,7 @@ static void show_metrics() {
     std::cout << "  I/O    (Some): " << io_some.avg10 << "%\n\n";
 
     std::cout << "\033[1;32m[ Cgroup v2 Slices - Memory ]\033[0m\n";
+    std::cout << "  Protected Slice:  " << read_slice_mem_mb("archtitan-protected.slice") << " MB\n";
     std::cout << "  Active Slice:     " << read_slice_mem_mb("archtitan-active.slice") << " MB\n";
     std::cout << "  Background Slice: " << read_slice_mem_mb("archtitan-background.slice") << " MB\n";
     std::cout << "  Frozen Slice:     " << read_slice_mem_mb("archtitan-frozen.slice") << " MB\n\n";
@@ -198,22 +246,25 @@ static void show_metrics() {
 static void show_slices() {
     struct SliceInfo { const char* name; const char* dir; };
     const SliceInfo slices[] = {
+        {"protected",  "archtitan-protected.slice"},
         {"active",     "archtitan-active.slice"},
         {"background", "archtitan-background.slice"},
         {"frozen",     "archtitan-frozen.slice"},
     };
 
+    const int ncpu = thm::read_online_cpus();
     const std::string base = "/sys/fs/cgroup/archtitan.slice/";
     std::cout << std::left
               << std::setw(12) << "SLICE"
               << std::setw(12) << "CPU.WEIGHT"
-              << std::setw(22) << "CPU.MAX"
+              << std::setw(20) << "CPU.MAX"
+              << std::setw(9)  << "CPU.IDLE"
               << std::right << std::setw(10) << "MEM"
               << std::setw(10) << "MEM.HIGH"
               << std::setw(8)  << "PIDS"
               << std::setw(8)  << "FROZEN"
-              << "  POPULATED\n";
-    std::cout << std::string(92, '-') << "\n";
+              << "  THROTTLED\n";
+    std::cout << std::string(101, '-') << "\n";
 
     for (const auto& s : slices) {
         const std::string root = base + s.dir;
@@ -229,26 +280,47 @@ static void show_slices() {
             catch (...) { return "max"; }
         };
         std::string weight = read_file(root + "/cpu.weight");
-        std::string cmax   = read_file(root + "/cpu.max");
+        std::string cmax   = format_cpu_max_cell(read_line_trimmed(root + "/cpu.max"), ncpu);
+        std::string idle   = read_line_trimmed(root + "/cpu.idle");
         std::string mem    = mb("memory.current");
         std::string mhigh  = mb("memory.high");
         std::string pids   = read_file(root + "/pids.current");
         std::string frozen = read_file(root + "/cgroup.freeze");
-        std::string pop    = read_file(root + "/cgroup.populated");
+        std::string pop    = read_cgroup_event_key(root + "/cgroup.events", "populated");
+
+        unsigned long long nr_periods = 0, nr_throttled = 0, throttled_usec = 0;
+        {
+            std::istringstream ss(read_file(root + "/cpu.stat"));
+            std::string key, val;
+            while (ss >> key >> val) {
+                try {
+                    if      (key == "nr_periods")     nr_periods     = std::stoull(val);
+                    else if (key == "nr_throttled")   nr_throttled   = std::stoull(val);
+                    else if (key == "throttled_usec") throttled_usec = std::stoull(val);
+                } catch (...) {}
+            }
+        }
+        std::string throttle =
+            nr_periods ? (std::to_string(nr_throttled) + "/" +
+                          std::to_string(nr_periods) + " " +
+                          std::to_string(throttled_usec / 1000) + "ms")
+                       : "-";
 
         std::cout << std::left << std::setw(12) << s.name
                   << std::setw(12) << (weight.empty() ? "?" : weight)
-                  << std::setw(22) << (cmax.empty() ? "?" : cmax)
+                  << std::setw(20) << cmax
+                  << std::setw(9)  << (idle.empty() ? "n/a" : idle)
                   << std::right << std::setw(10) << mem
                   << std::setw(10) << mhigh
                   << std::setw(8)  << (pids.empty() ? "?" : pids)
                   << std::setw(8)  << (frozen.empty() ? "?" : frozen)
-                  << "  " << (pop.empty() ? "?" : pop) << "\n";
+                  << "  " << throttle
+                  << (pop.empty() ? "" : "  [" + pop + "]") << "\n";
     }
 
-    std::string parent_max = read_file(base + "cpu.max");
+    std::string parent_max = read_line_trimmed(base + "cpu.max");
     std::cout << "\nParent archtitan.slice cpu.max: "
-              << (parent_max.empty() ? "unset (no CPU cap)" : parent_max) << "\n";
+              << (parent_max.empty() ? "unset (no CPU cap)" : format_cpu_max_cell(parent_max, ncpu)) << "\n";
 }
 
 // ── doctor ───────────────────────────────────────────────────────────────────
@@ -389,25 +461,30 @@ static int show_doctor() {
 
 // ── pressure fallback (daemon offline) ───────────────────────────────────────
 static void show_pressure_local() {
-    PSI ms = read_psi("/proc/pressure/memory", "some");
-    PSI mf = read_psi("/proc/pressure/memory", "full");
-    PSI cs = read_psi("/proc/pressure/cpu", "some");
+    const thm::MemInfo     mem  = thm::read_meminfo();
+    const thm::PSIStats    mpsi = thm::read_memory_psi();
+    const thm::CpuPSIStats cpsi = thm::read_cpu_psi();
+    const thm::LoadAverage la   = thm::read_loadavg();
+    const int              cpus = thm::read_online_cpus();
     PSI io = read_psi("/proc/pressure/io", "some");
 
-    std::ifstream la("/proc/loadavg");
-    std::string l1, l5, l15, run;
-    la >> l1 >> l5 >> l15 >> run;
+    const thm::PressureLevel mem_lvl = thm::compute_pressure(mem, mpsi);
+    const thm::PressureLevel cpu_lvl = thm::compute_cpu_pressure_raw(cpsi, la, cpus);
+    const float load_ratio = la.load1 / static_cast<float>(cpus);
 
     std::cout << std::fixed << std::setprecision(2)
-              << "Pressure level:  unavailable (daemon offline)\n"
-              << "Memory PSI:      some " << ms.avg10 << "%  full "
-              << mf.avg10 << "%  (avg10)\n"
-              << "CPU PSI:         some " << cs.avg10 << "%  (avg10)\n"
+              << "Daemon status:   offline (local kernel snapshot)\n"
+              << "Memory pressure: " << thm::to_string(mem_lvl) << "\n"
+              << "CPU pressure:    " << thm::to_string(cpu_lvl)
+              << "  (load_ratio " << load_ratio << " across " << cpus << " CPUs)\n"
+              << "Memory PSI:      some " << mpsi.some_avg10 << "%  full "
+              << mpsi.full_avg10 << "%  (avg10)\n"
+              << "CPU PSI:         some " << cpsi.some_avg10 << "%  (avg10)\n"
               << "I/O PSI:         some " << io.avg10 << "%  (avg10)\n"
-              << "Load average:    " << l1 << " " << l5 << " " << l15
-              << "   (" << run << ")\n"
-              << "Note:            CPU pressure is telemetry-only; it can never "
-                 "produce RECLAIM (HC-CPU-1).\n";
+              << "Load average:    " << la.load1 << " " << la.load5 << " " << la.load15
+              << "   (" << la.running << "/" << la.total << ")\n"
+              << "Note:            CPU pressure drives cpu.weight + cpu.max headroom only; "
+                 "it can never produce FREEZE or RECLAIM (HC-CPU-1).\n";
 }
 
 int main(int argc, char* argv[]) {
@@ -454,7 +531,7 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
-    if (cmd == "slices") {
+    if (cmd == "slices" || cmd == "cgroups") {
         show_slices();
         return 0;
     }

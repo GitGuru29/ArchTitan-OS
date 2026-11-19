@@ -39,6 +39,7 @@ qt_add_qml_module(archtitan-settings
     QML_FILES
         qml/Main.qml
         qml/components/SidebarItem.qml
+        qml/components/NavRailItem.qml
         qml/components/SettingsCard.qml
         qml/components/TitanSwitch.qml
         qml/components/TitanSlider.qml

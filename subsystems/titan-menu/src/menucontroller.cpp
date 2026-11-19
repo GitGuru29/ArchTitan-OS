@@ -28,6 +28,7 @@ QString userMenuPath()
 MenuController::MenuController(QObject *parent)
     : QObject(parent)
 {
+    loadDefault();
 }
 
 bool MenuController::loadJson(const QByteArray &json, QString *error)
@@ -56,8 +57,11 @@ bool MenuController::loadDefault()
 
     QFile builtin(QStringLiteral(":/data/menu.json"));
     if (!builtin.open(QIODevice::ReadOnly)) {
-        qCritical("[titan-menu] built-in menu missing from resources");
-        return false;
+        builtin.setFileName(QStringLiteral(":/menu/data/menu.json"));
+        if (!builtin.open(QIODevice::ReadOnly)) {
+            qCritical("[titan-menu] built-in menu missing from resources");
+            return false;
+        }
     }
     if (!loadJson(builtin.readAll(), &error)) {
         qCritical().noquote() << "[titan-menu] built-in menu invalid:" << error;

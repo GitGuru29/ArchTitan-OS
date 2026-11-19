@@ -7,8 +7,10 @@ class BluetoothController : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(bool powered READ powered NOTIFY poweredChanged)
+    Q_PROPERTY(bool bluetoothEnabled READ powered NOTIFY poweredChanged)
     Q_PROPERTY(bool connected READ connected NOTIFY connectedChanged)
     Q_PROPERTY(QString statusText READ statusText NOTIFY statusTextChanged)
+    Q_PROPERTY(QString connectedDeviceName READ statusText NOTIFY statusTextChanged)
 
 public:
     explicit BluetoothController(QObject *parent = nullptr);

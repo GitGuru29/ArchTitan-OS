@@ -13,6 +13,7 @@ ro_paths = [
     "/etc/fonts",
     "/etc/passwd", "/etc/group", "/etc/localtime",
     "/etc/xdg",
+    "/run/user",
     "/proc/self",
 ]
 
@@ -20,8 +21,8 @@ ro_paths = [
 enabled = false
 
 [devices]
-# Minimal GPU access for rendering the UI
-allowed = ["/dev/dri/renderD128"]
+# GPU access for Wayland/rendering
+allowed = ["/dev/dri/renderD128", "/dev/dri/card0"]
 
 [syscalls]
 risk_tier = "medium"

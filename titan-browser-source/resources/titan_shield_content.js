@@ -12,6 +12,13 @@
 (function () {
     'use strict';
 
+    // Idempotence guard: the script is installed by QWebEngineScript at
+    // DocumentCreation and can also be injected manually via runJavaScript.
+    // Without this, every injection adds another permanent setInterval and
+    // MutationObserver to the page (the old 350ms "guardian" did exactly that).
+    if (window.__titanShieldInstalled) return;
+    window.__titanShieldInstalled = true;
+
     /* ─── 1. Anti-Adblock Defusal & English Locale ───────────────────────── */
     try {
         window.canRunAds = true;
@@ -244,23 +251,41 @@
     }
 
     /* ─── 5. Main Loop ────────────────────────────────────────────────────── */
+    const host = window.location.hostname || '';
+    const relevant = host.includes('youtube.com') || host.includes('youtu.be') ||
+                     host.includes('spotify.com');
+
     function tick() {
+        // Ordinary pages have nothing to skip — don't run querySelectorAll
+        // five times a second in every tab/frame for no reason.
+        if (!relevant) return;
         handleYouTubeAds();
         handleSpotifyAds();
     }
 
-    // Run at moderate frequency — 200ms is plenty for skip buttons
-    setInterval(tick, 200);
+    if (relevant) {
+        // 500ms is still plenty for skip buttons and halves idle CPU.
+        setInterval(tick, 500);
 
-    // Also run on DOM mutations for instant response to ad injection
-    const obs = new MutationObserver(tick);
-    function startObserver() {
-        if (document.body) {
-            obs.observe(document.body, { childList: true, subtree: true });
-        } else {
-            setTimeout(startObserver, 200);
+        // Debounce mutations: YouTube/Spotify mutate the DOM constantly, so
+        // run at most one pass per animation frame instead of one per record.
+        let pending = false;
+        const obs = new MutationObserver(() => {
+            if (pending) return;
+            pending = true;
+            requestAnimationFrame(() => {
+                pending = false;
+                tick();
+            });
+        });
+        function startObserver() {
+            if (document.body) {
+                obs.observe(document.body, { childList: true, subtree: true });
+            } else {
+                setTimeout(startObserver, 200);
+            }
         }
+        startObserver();
     }
-    startObserver();
 
 })();

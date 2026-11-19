@@ -4,6 +4,7 @@
 // =============================================================================
 #include "cgroup_controller.hpp"
 
+#include <algorithm>
 #include <fstream>
 #include <iostream>
 #include <filesystem>
@@ -166,6 +167,107 @@ bool CgroupController::set_cpu_weight(const std::string& slice_name, int weight)
     weight = std::max(1, std::min(10000, weight));
     return write_file(slice_path(slice_name) + "/cpu.weight",
                       std::to_string(weight));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// set_cpu_max — write cpu.max as "<quota_us|max> <period_us>"
+// ─────────────────────────────────────────────────────────────────────────────
+bool CgroupController::set_cpu_max(const std::string& slice_name,
+                                   long quota_us, long period_us) {
+    // The kernel rejects periods outside 1 ms .. 1 s.
+    period_us = std::max(1000L, std::min(1000000L, period_us));
+    const std::string dir   = slice_path(slice_name);
+    const std::string quota = (quota_us <= 0) ? std::string("max")
+                                              : std::to_string(quota_us);
+    // Smooth period-boundary unthrottle spikes via cpu.max.burst (20% of one
+    // core's period when capped, 0 when uncapped) if supported by the kernel.
+    const std::string burst_path = dir + "/cpu.max.burst";
+    if (fs::exists(burst_path)) {
+        const long burst_us = (quota_us > 0) ? std::min(quota_us, period_us / 5) : 0L;
+        write_file(burst_path, std::to_string(burst_us));
+    }
+    return write_file(dir + "/cpu.max",
+                      quota + " " + std::to_string(period_us));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// set_cpu_idle — write cpu.idle (1 = run only when the CPU would be idle)
+//
+// Unsupported kernels simply do not have the file; that is not an enforcement
+// failure, so report success and let the caller continue.
+// ─────────────────────────────────────────────────────────────────────────────
+bool CgroupController::set_cpu_idle(const std::string& slice_name, bool idle) {
+    const std::string path = slice_path(slice_name) + "/cpu.idle";
+    if (!fs::exists(path)) return true;
+    return write_file(path, idle ? "1" : "0");
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// read_cpu_stat — parse cpu.stat counters
+// ─────────────────────────────────────────────────────────────────────────────
+bool CgroupController::read_cpu_stat(const std::string& slice_name,
+                                     CpuSliceStat& out) const {
+    std::ifstream f(slice_path(slice_name) + "/cpu.stat");
+    if (!f.is_open()) return false;
+    std::string key;
+    uint64_t val = 0;
+    while (f >> key >> val) {
+        if      (key == "nr_periods")     out.nr_periods     = val;
+        else if (key == "nr_throttled")   out.nr_throttled   = val;
+        else if (key == "throttled_usec") out.throttled_usec = val;
+    }
+    return true;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// compute_cpu_slice_policy — pure (pressure, cores, presence) -> cgroup values
+// ─────────────────────────────────────────────────────────────────────────────
+CpuSlicePolicy compute_cpu_slice_policy(PressureLevel cpu_pressure,
+                                        int online_cpus,
+                                        bool user_unattended_idle) {
+    const int cpus = online_cpus < 1 ? 1 : online_cpus;
+
+    CpuSlicePolicy p;
+    p.period_us = CFS_SMOOTH_PERIOD_US;
+
+    switch (cpu_pressure) {
+        case PressureLevel::NORMAL:
+            p.protected_weight = 2000; p.active_weight =  500; p.background_weight = 50;
+            break;
+        case PressureLevel::MODERATE:
+            p.protected_weight = 2000; p.active_weight =  800; p.background_weight = 25;
+            break;
+        case PressureLevel::HIGH:
+            p.protected_weight = 2000; p.active_weight = 1000; p.background_weight = 10;
+            break;
+        case PressureLevel::CRITICAL:
+            p.protected_weight = 5000; p.active_weight = 1000; p.background_weight = 10;
+            break;
+    }
+
+    const bool wants_cap = (cpu_pressure >= PressureLevel::HIGH);
+    if (!wants_cap) {
+        return p; // quota 0 == max, background_max_pct stays 100
+    }
+
+    if (user_unattended_idle) {
+        p.unattended_lift = true; // nobody is here to feel latency: lift the cap
+        return p;
+    }
+
+    // Reserve one core at HIGH, two at CRITICAL (where the desktop is already
+    // visibly stuttering). On N <= 2 there is only ever one core to reserve, and
+    // on a single CPU the 75% branch below keeps the build alive.
+    const int reserve_cores = (cpu_pressure >= PressureLevel::CRITICAL) ? 2 : 1;
+    const long quota_cores  = static_cast<long>(std::max(1, cpus - reserve_cores));
+    p.background_quota_us = (cpus >= 2)
+        ? quota_cores * p.period_us
+        : (p.period_us * 3) / 4;
+    p.background_max_pct = 100.0f * static_cast<float>(p.background_quota_us) /
+                           (static_cast<float>(p.period_us) * static_cast<float>(cpus));
+    p.headroom_engaged = true;
+    p.background_idle  = (cpu_pressure >= PressureLevel::CRITICAL);
+    return p;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

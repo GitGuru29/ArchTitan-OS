@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Window
 import QtQuick.Layouts
+import QtQuick.Controls as QQC2
 import QtQuick.Effects
 import ArchTitan.TitanUI
 import "components"
@@ -19,7 +20,7 @@ import "components"
 Window {
     id: root
 
-    width: 420
+    width: 450
     height: 1080
 
     flags: Qt.FramelessWindowHint
@@ -52,7 +53,7 @@ Window {
     function pressureColor(p) {
         var s = (p || "").toString().toUpperCase();
         if (s.indexOf("CRIT") >= 0 || s.indexOf("HIGH") >= 0) return TitanTheme.danger;
-        if (s.indexOf("ELEV") >= 0) return TitanTheme.warning;
+        if (s.indexOf("ELEV") >= 0 || s.indexOf("MOD") >= 0) return TitanTheme.warning;
         return TitanTheme.success;
     }
 
@@ -81,7 +82,6 @@ Window {
         Rectangle {
             id: glassCard
             anchors.fill: parent
-            anchors.margins: 10
             radius: TitanTheme.radiusWindow
             color: "transparent"
             border.width: 1
@@ -160,11 +160,20 @@ Window {
         Flickable {
             id: flick
             anchors.fill: parent
-            anchors.margins: 10
             contentWidth: width
             contentHeight: contentColumn.implicitHeight + 28
             clip: true
             boundsBehavior: Flickable.StopAtBounds
+
+            QQC2.ScrollBar.vertical: QQC2.ScrollBar {
+                policy: QQC2.ScrollBar.AsNeeded
+                width: 4
+                contentItem: Rectangle {
+                    implicitWidth: 4
+                    radius: 2
+                    color: TitanTheme.alphaColor(TitanTheme.textMid, 0.32)
+                }
+            }
 
             ColumnLayout {
                 id: contentColumn
@@ -176,6 +185,8 @@ Window {
                 // ── Header ───────────────────────────────────────────────────
                 RowLayout {
                     Layout.fillWidth: true
+                    Layout.minimumWidth: 0
+                    Layout.maximumWidth: contentColumn.width
                     spacing: 10
 
                     Rectangle {
@@ -190,21 +201,26 @@ Window {
                     }
                     ColumnLayout {
                         Layout.fillWidth: true
-                        spacing: 0
+                        Layout.minimumWidth: 0
+                        spacing: 1
                         Text {
-                            text: "System Monitor — ArchTitan"
+                            text: "System Monitor"
                             color: TitanTheme.textHigh
                             font.family: TitanTheme.fontFamily
                             font.pixelSize: TitanTheme.sizeTitle
                             font.weight: TitanTheme.weightBold
+                            elide: Text.ElideRight
+                            Layout.fillWidth: true
+                            Layout.minimumWidth: 0
                         }
                         Text {
-                            text: sysmon.cpuModel
-                            color: TitanTheme.textLow
+                            text: "ArchTitan · " + sysmon.cpuModel
+                            color: TitanTheme.textMid
                             font.family: TitanTheme.fontFamily
-                            font.pixelSize: 9
+                            font.pixelSize: 10
                             elide: Text.ElideRight
-                            Layout.preferredWidth: parent.width
+                            Layout.fillWidth: true
+                            Layout.minimumWidth: 0
                         }
                     }
 
@@ -224,7 +240,7 @@ Window {
                             text: (sysmon.thmGovernor || "").toString().toUpperCase()
                             color: TitanTheme.accent
                             font.family: TitanTheme.fontFamily
-                            font.pixelSize: 9
+                            font.pixelSize: 10
                             font.weight: TitanTheme.weightSemiBold
                             font.letterSpacing: 0.5
                         }
@@ -256,7 +272,9 @@ Window {
                 // ── Hero gauges ──────────────────────────────────────────────
                 RowLayout {
                     Layout.fillWidth: true
-                    spacing: 12
+                    Layout.minimumWidth: 0
+                    Layout.maximumWidth: contentColumn.width
+                    spacing: 10
 
                     Repeater {
                         model: [
@@ -273,7 +291,9 @@ Window {
                         ]
                         delegate: Rectangle {
                             Layout.fillWidth: true
-                            implicitHeight: 118
+                            Layout.minimumWidth: 0
+                            Layout.preferredWidth: 1
+                            implicitHeight: 114
                             radius: TitanTheme.radiusCard
                             color: TitanTheme.isDark ? TitanTheme.alphaColor(TitanTheme.surface0, 0.82)
                                                      : TitanTheme.alphaColor(TitanTheme.base, 0.95)
@@ -282,7 +302,7 @@ Window {
 
                             GaugeRing {
                                 anchors.centerIn: parent
-                                width: Math.min(parent.width - 20, 92)
+                                width: Math.min(parent.width - 18, 90)
                                 height: width
                                 value: modelData.value
                                 display: modelData.disp
@@ -311,18 +331,19 @@ Window {
 
                     RowLayout {
                         Layout.fillWidth: true
+                        Layout.minimumWidth: 0
                         spacing: 8
                         Text {
                             text: "Freq"
-                            color: TitanTheme.textLow
+                            color: TitanTheme.textMid
                             font.family: TitanTheme.fontFamily
-                            font.pixelSize: 9
+                            font.pixelSize: 10
                         }
                         Text {
                             text: sysmon.cpuFreqMhz > 0
                                   ? (sysmon.cpuFreqMhz / 1000).toFixed(2) + " GHz"
                                   : "—"
-                            color: TitanTheme.textMid
+                            color: TitanTheme.textHigh
                             font.family: TitanTheme.monoFamily
                             font.pixelSize: 10
                         }
@@ -332,6 +353,8 @@ Window {
                             color: TitanTheme.textMid
                             font.family: TitanTheme.monoFamily
                             font.pixelSize: 10
+                            elide: Text.ElideRight
+                            Layout.minimumWidth: 0
                         }
                     }
 
@@ -344,12 +367,12 @@ Window {
 
                     Item {
                         Layout.fillWidth: true
-                        implicitHeight: 40
+                        implicitHeight: 42
                         Text {
                             text: "Per-core"
-                            color: TitanTheme.textLow
+                            color: TitanTheme.textMid
                             font.family: TitanTheme.fontFamily
-                            font.pixelSize: 9
+                            font.pixelSize: 10
                         }
                         Row {
                             id: coreRow
@@ -410,16 +433,17 @@ Window {
 
                     RowLayout {
                         Layout.fillWidth: true
+                        Layout.minimumWidth: 0
                         spacing: 8
                         Text {
                             text: "Pressure"
-                            color: TitanTheme.textLow
+                            color: TitanTheme.textMid
                             font.family: TitanTheme.fontFamily
-                            font.pixelSize: 9
+                            font.pixelSize: 10
                         }
                         Rectangle {
                             implicitWidth: presText.implicitWidth + 14
-                            implicitHeight: 18
+                            implicitHeight: 20
                             radius: 7
                             color: TitanTheme.alphaColor(root.pressureColor(sysmon.pressureLevel), 0.16)
                             border.width: 1
@@ -430,7 +454,7 @@ Window {
                                 text: (sysmon.pressureLevel || "—").toString()
                                 color: root.pressureColor(sysmon.pressureLevel)
                                 font.family: TitanTheme.fontFamily
-                                font.pixelSize: 9
+                                font.pixelSize: 10
                                 font.weight: TitanTheme.weightSemiBold
                             }
                         }
@@ -462,10 +486,12 @@ Window {
                         model: gpuModel
                         delegate: ColumnLayout {
                             Layout.fillWidth: true
+                            Layout.minimumWidth: 0
                             spacing: 8
 
                             RowLayout {
                                 Layout.fillWidth: true
+                                Layout.minimumWidth: 0
                                 Text {
                                     text: model.name
                                     color: TitanTheme.textHigh
@@ -474,12 +500,13 @@ Window {
                                     font.weight: TitanTheme.weightSemiBold
                                     elide: Text.ElideRight
                                     Layout.fillWidth: true
+                                    Layout.minimumWidth: 0
                                 }
                                 Text {
                                     text: model.vendor
-                                    color: TitanTheme.textLow
+                                    color: TitanTheme.textMid
                                     font.family: TitanTheme.fontFamily
-                                    font.pixelSize: 9
+                                    font.pixelSize: 10
                                 }
                             }
 
@@ -502,12 +529,13 @@ Window {
 
                             RowLayout {
                                 Layout.fillWidth: true
+                                Layout.minimumWidth: 0
                                 visible: model.hasTemp
                                 Text {
                                     text: "Temperature"
-                                    color: TitanTheme.textLow
+                                    color: TitanTheme.textMid
                                     font.family: TitanTheme.fontFamily
-                                    font.pixelSize: 9
+                                    font.pixelSize: 10
                                 }
                                 Item { Layout.fillWidth: true }
                                 Text {
@@ -546,16 +574,17 @@ Window {
 
                     RowLayout {
                         Layout.fillWidth: true
+                        Layout.minimumWidth: 0
                         spacing: 8
                         Text {
                             text: "Free"
-                            color: TitanTheme.textLow
+                            color: TitanTheme.textMid
                             font.family: TitanTheme.fontFamily
-                            font.pixelSize: 9
+                            font.pixelSize: 10
                         }
                         Text {
                             text: sysmon.diskFreeGb.toFixed(1) + " GB"
-                            color: TitanTheme.textMid
+                            color: TitanTheme.textHigh
                             font.family: TitanTheme.monoFamily
                             font.pixelSize: 10
                         }
@@ -577,6 +606,7 @@ Window {
 
                     RowLayout {
                         Layout.fillWidth: true
+                        Layout.minimumWidth: 0
                         spacing: 12
 
                         Repeater {
@@ -586,7 +616,9 @@ Window {
                             ]
                             delegate: Rectangle {
                                 Layout.fillWidth: true
-                                implicitHeight: 58
+                                Layout.minimumWidth: 0
+                                Layout.preferredWidth: 1
+                                implicitHeight: 60
                                 radius: TitanTheme.radiusMd
                                 color: TitanTheme.isDark ? TitanTheme.bgInset : Qt.rgba(0, 0, 0, 0.04)
                                 border.width: 1
@@ -594,11 +626,11 @@ Window {
 
                                 ColumnLayout {
                                     anchors.centerIn: parent
-                                    spacing: 0
+                                    spacing: 1
                                     Text {
                                         Layout.alignment: Qt.AlignHCenter
                                         text: modelData.has ? (Math.round(modelData.value) + "°C") : "—"
-                                        color: modelData.has ? root.tempColor(modelData.value) : TitanTheme.textLow
+                                        color: modelData.has ? root.tempColor(modelData.value) : TitanTheme.textMid
                                         font.family: TitanTheme.monoFamily
                                         font.pixelSize: 20
                                         font.weight: TitanTheme.weightBold
@@ -606,9 +638,9 @@ Window {
                                     Text {
                                         Layout.alignment: Qt.AlignHCenter
                                         text: modelData.label
-                                        color: TitanTheme.textLow
+                                        color: TitanTheme.textMid
                                         font.family: TitanTheme.fontFamily
-                                        font.pixelSize: 9
+                                        font.pixelSize: 10
                                         font.weight: TitanTheme.weightMedium
                                     }
                                 }
@@ -618,17 +650,18 @@ Window {
 
                     RowLayout {
                         Layout.fillWidth: true
+                        Layout.minimumWidth: 0
                         visible: sysmon.hasFan
                         Text {
                             text: "Fans"
-                            color: TitanTheme.textLow
+                            color: TitanTheme.textMid
                             font.family: TitanTheme.fontFamily
-                            font.pixelSize: 9
+                            font.pixelSize: 10
                         }
                         Item { Layout.fillWidth: true }
                         Text {
                             text: sysmon.fanRpm + " RPM"
-                            color: TitanTheme.textMid
+                            color: TitanTheme.textHigh
                             font.family: TitanTheme.monoFamily
                             font.pixelSize: 10
                         }
@@ -646,7 +679,7 @@ Window {
 
                 // ── Titan Hardware Manager ───────────────────────────────────
                 Section {
-                    title: "Titan Hardware Manager (THM)"
+                    title: "Titan Hardware Manager"
                     glyph: "\uf0e7"
                     subtitle: sysmon.thmAvailable
                               ? (sysmon.thmClassifiedWorkloads + " classified · "
@@ -656,19 +689,20 @@ Window {
                     // Offline state
                     ColumnLayout {
                         Layout.fillWidth: true
+                        Layout.minimumWidth: 0
                         visible: !sysmon.thmAvailable
                         spacing: 4
                         Text {
                             text: "THM v3 telemetry unavailable"
-                            color: TitanTheme.textMid
+                            color: TitanTheme.textHigh
                             font.family: TitanTheme.fontFamily
                             font.pixelSize: TitanTheme.sizeLabel
                         }
                         Text {
                             text: "Start titan-hwm.service to see pressure, governor and live workload decisions."
-                            color: TitanTheme.textLow
+                            color: TitanTheme.textMid
                             font.family: TitanTheme.fontFamily
-                            font.pixelSize: 9
+                            font.pixelSize: 10
                             wrapMode: Text.WordWrap
                             Layout.fillWidth: true
                         }
@@ -677,12 +711,13 @@ Window {
                     // Online state
                     RowLayout {
                         Layout.fillWidth: true
+                        Layout.minimumWidth: 0
                         visible: sysmon.thmAvailable
                         spacing: 8
 
                         Rectangle {
                             implicitWidth: lpText.implicitWidth + 14
-                            implicitHeight: 18
+                            implicitHeight: 20
                             radius: 7
                             color: Qt.rgba(root.pressureColor(sysmon.thmPressure).r,
                                            root.pressureColor(sysmon.thmPressure).g,
@@ -694,17 +729,44 @@ Window {
                             Text {
                                 id: lpText
                                 anchors.centerIn: parent
-                                text: (sysmon.thmPressure || "—") + " pressure"
+                                text: "MEM " + (sysmon.thmPressure || "—")
                                 color: root.pressureColor(sysmon.thmPressure)
                                 font.family: TitanTheme.fontFamily
-                                font.pixelSize: 9
+                                font.pixelSize: 10
                                 font.weight: TitanTheme.weightSemiBold
                             }
                         }
-                        Item { Layout.fillWidth: true }
+                        Rectangle {
+                            implicitWidth: cpText.implicitWidth + 14
+                            implicitHeight: 20
+                            radius: 7
+                            color: Qt.rgba(root.pressureColor(sysmon.thmCpuPressure).r,
+                                           root.pressureColor(sysmon.thmCpuPressure).g,
+                                           root.pressureColor(sysmon.thmCpuPressure).b, 0.16)
+                            border.width: 1
+                            border.color: Qt.rgba(root.pressureColor(sysmon.thmCpuPressure).r,
+                                                  root.pressureColor(sysmon.thmCpuPressure).g,
+                                                  root.pressureColor(sysmon.thmCpuPressure).b, 0.4)
+                            Text {
+                                id: cpText
+                                anchors.centerIn: parent
+                                text: "CPU " + (sysmon.thmCpuPressure || "NORMAL")
+                                      + (sysmon.thmHeadroomEngaged
+                                         ? (" · " + Math.round(sysmon.thmBackgroundCpuMaxPct) + "% cap")
+                                         : (" · " + sysmon.thmWeightRatio))
+                                color: root.pressureColor(sysmon.thmCpuPressure)
+                                font.family: TitanTheme.fontFamily
+                                font.pixelSize: 10
+                                font.weight: TitanTheme.weightSemiBold
+                            }
+                        }
                         Text {
+                            Layout.fillWidth: true
+                            Layout.minimumWidth: 0
+                            horizontalAlignment: Text.AlignRight
+                            elide: Text.ElideRight
                             text: sysmon.thmActiveWorkloads + " active · "
-                                  + sysmon.thmClassifiedWorkloads + " classified"
+                                  + sysmon.thmClassifiedWorkloads + " cls"
                             color: TitanTheme.textMid
                             font.family: TitanTheme.monoFamily
                             font.pixelSize: 10
@@ -715,14 +777,15 @@ Window {
                     // user with a bare "0 workloads" that looks like a bug.
                     Text {
                         Layout.fillWidth: true
+                        Layout.minimumWidth: 0
                         visible: sysmon.thmAvailable && sysmon.thmClassifiedWorkloads === 0
                         text: "No dev workload classified yet — THM is tracking "
                               + sysmon.thmWorkloadCount + " process tree(s), "
                               + sysmon.thmProcessesUnmanaged + " unmanaged. "
                               + "Run `titan-hwm scan` for details."
-                        color: TitanTheme.textLow
+                        color: TitanTheme.textMid
                         font.family: TitanTheme.fontFamily
-                        font.pixelSize: 9
+                        font.pixelSize: 10
                         wrapMode: Text.WordWrap
                     }
 
@@ -740,24 +803,27 @@ Window {
                         model: sysmon.thmAvailable ? sysmon.thmWorkloads : []
                         delegate: WorkloadRow {
                             Layout.fillWidth: true
+                            Layout.minimumWidth: 0
                             workload: modelData
                         }
                     }
 
                     RowLayout {
                         Layout.fillWidth: true
+                        Layout.minimumWidth: 0
                         visible: sysmon.thmAvailable && sysmon.thmLastAction !== ""
                         spacing: 6
                         Text {
                             text: "Last action"
-                            color: TitanTheme.textLow
+                            color: TitanTheme.textMid
                             font.family: TitanTheme.fontFamily
-                            font.pixelSize: 9
+                            font.pixelSize: 10
                         }
                         Text {
                             Layout.fillWidth: true
+                            Layout.minimumWidth: 0
                             text: sysmon.thmLastAction + " · " + sysmon.thmLastActionTarget
-                            color: TitanTheme.textMid
+                            color: TitanTheme.textHigh
                             font.family: TitanTheme.monoFamily
                             font.pixelSize: 10
                             elide: Text.ElideMiddle

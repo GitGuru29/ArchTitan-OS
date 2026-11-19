@@ -145,6 +145,7 @@ lazygit
 # ── Terminal Productivity & Utilities ─────────────────────────────────────────
 fish
 starship
+eza
 btop
 zellij
 ranger

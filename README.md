@@ -146,9 +146,11 @@ ArchTitan provides a suite of native C++ and Qt6 applications built specifically
 ### 8.  Titan System Monitor (`titan-sysmon`)
 * **Lead:** `@GitGuru29` | **Location:** `subsystems/titan-sysmon/`
 * Hardware-accelerated Wayland LayerShell telemetry dashboard and overlay built in C++20/Qt6:
-  - Streams real-time kernel & hardware metrics directly from THM v3's UNIX telemetry socket (`/run/titan-hwm/telemetry.sock`).
-  - Features smooth animated `GaugeRing` indicators for CPU/Memory, per-core utilization sparklines, and GPU performance telemetry (AMD, NVIDIA, Intel).
-  - Displays dynamic THM workload tier allocation across `archtitan-active.slice`, `archtitan-background.slice`, `archtitan-idle.slice`, and `archtitan-reclaimable.slice`.
+  - Streams real-time kernel & hardware metrics directly from THM v3's UNIX telemetry socket and `/run/archtitan/thm-state.json`.
+  - **Refined TDL 2.0 Geometry:** 450px precision bento panel with smooth vertical scrolling (`QQC2.ScrollBar.vertical`), eliminating horizontal card blowout across diverse display aspect ratios.
+  - **GPU-Accelerated Hero Gauges:** Dynamic `TitanArcItem` rings for CPU load, RAM utilization, and system thermals sharing balanced row space without horizontal clipping.
+  - **Comprehensive THM Telemetry:** Displays classified vs. tracked workload counts, active workloads, PSI memory/CPU pressure pills (with amber `MODERATE` and red `CRITICAL` states), process count formatting (`1 proc` / `N procs`), and workspace mappings (`headless` for background daemons, `special` for scratchpads).
+  - **Compositor Integration:** Native Hyprland LayerShell blur styling with `ignore_alpha = 0.05` to eliminate dark shadow halos around transparent window borders.
   - Toggled instantly via left-center screen hotzone dwell or command-line toggle (`titan-sysmon --toggle`).
 
 ### 9.  Titan Hotzones & Zone OSD (`titan-hotzones`)
@@ -187,7 +189,7 @@ ArchTitan provides a suite of native C++ and Qt6 applications built specifically
   - Intercepts package operations to prevent conflicting display managers or removal of core greeter components (`sddm-rise-theme`).
   - Ensures seamless SDDM and Hyprland startup across live and installed environments.
 
-### 14. 📱 TITAN Share (`titanshare-daemon`)
+### 14. TITAN Share (`titanshare-daemon`)
 * **Lead:** Teammate | **Location:** `subsystems/titan-share/`
 * Cross-platform peer-to-peer file sharing subsystem comprising a C++ mDNS Linux daemon and Jetpack Compose Android client:
   - Dynamic path resolution: Root execution (`/var/lib/titanshare`), User (`~/.local/share/titanshare`), Fallback (`/tmp/titanshare`).
@@ -195,7 +197,14 @@ ArchTitan provides a suite of native C++ and Qt6 applications built specifically
   - Hardened systemd sandboxing (`ProtectSystem=strict`, `StateDirectory=titanshare`) with IPC pairing PIN output at `/run/titanshare/titanshare-pin.json`.
   - Registered in THM v3.1 `ProtectedRegistry` to prevent freeze or OOM reclaim during active file transfers.
 
-### 15. 🚧 TitanFocus (`titan-focus`) — *Proposed*
+### 15. ArchTitan Boot Ceremony & Splash (`archtitan-rise` & `archtitan`)
+* **Lead:** `@GitGuru29` | **Location:** `airootfs/usr/share/plymouth/themes/` & `airootfs/usr/local/bin/`
+* Cinematic boot experience engineered for high-impact first impressions and rapid daily startups:
+  - **One-Shot First-Boot Ceremony ("Rise, Titan."):** A custom Plymouth ceremony welcoming the user upon initial boot. Displays 10 chromatic glowing orbs calibrated to the exact ArchTitan palette (Titanium Ice White, Laser Cyan `#00D2FF`, Precision Sapphire `#0284C7`, Lavender `#9C8CFF`, and Soft Violet `#BD88FF`) curling into an orbit and descending smoothly onto a true typographic baseline of "Rise, Titan."
+  - **Atomic One-Shot Handover:** Governed by `archtitan-wait-rise` and `archtitan-firstboot-plymouth` to ensure the animation completes in ~5.5s before SDDM login, automatically records `/var/lib/archtitan/firstboot_done`, and permanently switches `plymouthd.conf` to the daily theme so daily boots never repeat the ceremony.
+  - **Daily Boot Splash (`archtitan`):** Clean, ambient ArchTitan insignia splash with zero delay (`ShowDelay=0`) for instant visual feedback on subsequent daily boots.
+
+### 16. 🚧 TitanFocus (`titan-focus`) — *Proposed*
 * **Lead:** `@GitGuru29` | **Location:** `subsystems/titan-focus/` *(not yet created)*
 * **Status:** 🚧 Design proposal only — no code implemented. Review the plan before contributing.
 * Developer work optimization engine, extending THM's existing fusion classifier from machine-resource orchestration to human-attention orchestration:
@@ -204,7 +213,7 @@ ArchTitan provides a suite of native C++ and Qt6 applications built specifically
   - Zero-cost presence detection via Wayland `ext-idle-notify-v1` v2 — no camera, no sensors, no polling loop.
   - Reuses THM's classifier vocabulary from `/etc/titan-hwm/config` for developer-context signals.
 
-### 16. 🚧 Additional Subsystems (In Development)
+### 17. 🚧 Additional Subsystems (In Development)
 * **Auto GPU Switcher** (`subsystems/auto-gpu-switcher/`): Intelligent iGPU/dGPU dynamic switching.
 * **TITAN AI** (`subsystems/titan-ai/`): Context-aware developer assistant.
 * **TITAN Task Manager** (`subsystems/titan-task-manager/`): Advanced scheduling and resource tracking.
@@ -400,9 +409,11 @@ ArchTitan is developed as a modular group project with 4 members. The repository
 | **Titan System Monitor** | System Overlay | @GitGuru29 (Lead) | 🟢 Shipped | `subsystems/titan-sysmon/` |
 | **Titan Hotzones & Zone OSD** | Interaction Daemon | @GitGuru29 (Lead) | 🟢 Shipped | `subsystems/titan-hotzones/` |
 | **Titan Quick Settings** | Desktop Drawer | @GitGuru29 (Lead) | 🟢 Shipped | `subsystems/titan-quicksettings/` |
+| **Titan Tour v2** | Onboarding HUD | @GitGuru29 (Lead) | 🟢 Shipped | `subsystems/titan-tour/` |
 | **Titan Design Language (TDL)** | UI Library | @GitGuru29 (Lead) | 🟢 Shipped | `titan-ui/` |
 | **Titan Wallpaper Picker** | Desktop Utility | @GitGuru29 (Lead) | 🟢 Shipped | `subsystems/titan-wallpaper-picker/` |
 | **ArchTitan Guard** | Security Enforcer | @GitGuru29 (Lead) | 🟢 Shipped | `subsystems/archtitan-guard/` |
+| **Titan Boot Ceremony & Splash** | Boot Experience | @GitGuru29 (Lead) | 🟢 Shipped | `airootfs/usr/share/plymouth/themes/` |
 | **BTRFS Snapshot Hook** | Safety Feature | @GitGuru29 (Lead) | 🟢 Shipped | `airootfs/etc/pacman.d/hooks/` |
 | **Auto GPU Switcher** | Subsystem | @GitGuru29 (Lead) | 🟡 In Dev | `subsystems/auto-gpu-switcher/` |
 | **TITAN AI** | Subsystem | @Kaveesha23dil | 🟡 In Dev | `subsystems/titan-ai/` |

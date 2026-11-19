@@ -1,6 +1,7 @@
 #include "networkcontroller.h"
 #include <QProcess>
 #include <QDebug>
+#include <QPointer>
 #include <algorithm>
 
 NetworkController::NetworkController(QObject *parent)
@@ -38,46 +39,62 @@ void NetworkController::queryStatus()
         return;
     }
 
-    // Check active wifi connection SSID
-    QProcess wifiProc;
-    wifiProc.start("bash", {"-c", "nmcli -t -f ACTIVE,SSID dev wifi 2>/dev/null | grep '^yes:' | cut -d: -f2"});
-    if (wifiProc.waitForFinished(1000)) {
-        QString ssid = wifiProc.readAllStandardOutput().trimmed();
-        if (!ssid.isEmpty()) {
-            if (!m_connected) {
-                m_connected = true;
-                emit connectedChanged();
+    // Check active wifi connection SSID using nmcli device status
+    QProcess devProc;
+    devProc.start("nmcli", {"-t", "-f", "DEVICE,TYPE,STATE,CONNECTION", "dev"});
+    if (devProc.waitForFinished(1000)) {
+        QString out = QString::fromUtf8(devProc.readAllStandardOutput());
+        const QStringList lines = out.split('\n', Qt::SkipEmptyParts);
+        for (const QString &line : lines) {
+            const QStringList parts = line.split(':');
+            if (parts.size() >= 4 && parts[1].compare("wifi", Qt::CaseInsensitive) == 0) {
+                if (parts[2].compare("connected", Qt::CaseInsensitive) == 0) {
+                    QString activeCon = parts[3].trimmed();
+                    if (!activeCon.isEmpty()) {
+                        if (!m_connected) {
+                            m_connected = true;
+                            emit connectedChanged();
+                        }
+                        if (m_ssid != activeCon) {
+                            m_ssid = activeCon;
+                            emit ssidChanged();
+                        }
+                        return;
+                    }
+                }
             }
-            if (m_ssid != ssid) {
-                m_ssid = ssid;
-                emit ssidChanged();
-            }
-            return;
         }
     }
 
-    // Secondary check: active connection name
+    // Secondary fallback: active connection name
     QProcess conProc;
-    conProc.start("bash", {"-c", "nmcli -t -f NAME,TYPE con show --active 2>/dev/null | grep -iE 'wireless|wifi' | cut -d: -f1"});
+    conProc.start("nmcli", {"-t", "-f", "NAME,TYPE", "con", "show", "--active"});
     if (conProc.waitForFinished(1000)) {
-        QString conName = conProc.readAllStandardOutput().trimmed();
-        if (!conName.isEmpty()) {
-            if (!m_connected) {
-                m_connected = true;
-                emit connectedChanged();
+        QString out = QString::fromUtf8(conProc.readAllStandardOutput());
+        const QStringList lines = out.split('\n', Qt::SkipEmptyParts);
+        for (const QString &line : lines) {
+            const QStringList parts = line.split(':');
+            if (parts.size() >= 2 && (parts[1].contains("wireless", Qt::CaseInsensitive) || parts[1].compare("wifi", Qt::CaseInsensitive) == 0)) {
+                QString activeCon = parts[0].trimmed();
+                if (!activeCon.isEmpty()) {
+                    if (!m_connected) {
+                        m_connected = true;
+                        emit connectedChanged();
+                    }
+                    if (m_ssid != activeCon) {
+                        m_ssid = activeCon;
+                        emit ssidChanged();
+                    }
+                    return;
+                }
             }
-            if (m_ssid != conName) {
-                m_ssid = conName;
-                emit ssidChanged();
-            }
-            return;
         }
     }
 
     // If no wifi connection active, mark as Not connected
-    if (m_ssid.isEmpty() || m_ssid != "Not connected") {
-        m_ssid = "Not connected";
+    if (m_connected || m_ssid != "Not connected") {
         m_connected = false;
+        m_ssid = "Not connected";
         emit connectedChanged();
         emit ssidChanged();
     }
@@ -106,10 +123,21 @@ void NetworkController::scanNetworks()
     emit isScanningChanged();
 
     auto *proc = new QProcess(this);
+    proc->closeWriteChannel();
+
+    QPointer<QProcess> safeProc(proc);
+    QTimer::singleShot(12000, this, [this, safeProc]() {
+        if (safeProc && safeProc->state() != QProcess::NotRunning) {
+            safeProc->kill();
+            m_isScanning = false;
+            emit isScanningChanged();
+        }
+    });
+
     connect(proc, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
             this, [this, proc](int exitCode, QProcess::ExitStatus) {
         if (exitCode == 0) {
-            QString out = proc->readAllStandardOutput();
+            QString out = QString::fromUtf8(proc->readAllStandardOutput());
             parseWifiList(out);
         }
         m_isScanning = false;
@@ -117,7 +145,7 @@ void NetworkController::scanNetworks()
         proc->deleteLater();
     });
 
-    proc->start("nmcli", {"-t", "-f", "IN-USE,SSID,SIGNAL,SECURITY", "dev", "wifi", "list", "--rescan", "yes"});
+    proc->start("nmcli", {"-t", "-f", "IN-USE,SSID,SIGNAL,SECURITY", "dev", "wifi", "list", "--rescan", "auto"});
 }
 
 void NetworkController::parseWifiList(const QString &output)
@@ -196,7 +224,29 @@ void NetworkController::connectToNetwork(const QString &ssid, const QString &pas
     emit isConnectingChanged();
     emit statusMessageChanged();
 
+    // If password was provided, delete any stale or conflicting profile for this SSID
+    // so NetworkManager does not fail with cached/stale secrets or duplicate profile errors.
+    if (!password.isEmpty()) {
+        QProcess delProc;
+        delProc.start("nmcli", {"connection", "delete", "id", ssid});
+        delProc.waitForFinished(1000);
+    }
+
     auto *proc = new QProcess(this);
+    proc->closeWriteChannel(); // Ensure stdin is closed so nmcli cannot block on interactive prompts
+
+    QPointer<QProcess> safeProc(proc);
+    QTimer::singleShot(25000, this, [this, safeProc, ssid]() {
+        if (safeProc && safeProc->state() != QProcess::NotRunning) {
+            safeProc->kill();
+            m_isConnecting = false;
+            m_statusMessage = QStringLiteral("Connection timed out");
+            emit isConnectingChanged();
+            emit statusMessageChanged();
+            emit connectionResult(false, m_statusMessage);
+        }
+    });
+
     connect(proc, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
             this, [this, proc, ssid](int exitCode, QProcess::ExitStatus) {
         m_isConnecting = false;
@@ -209,9 +259,9 @@ void NetworkController::connectToNetwork(const QString &ssid, const QString &pas
             queryStatus();
             scanNetworks();
         } else {
-            QString err = proc->readAllStandardError().trimmed();
+            QString err = QString::fromUtf8(proc->readAllStandardError()).trimmed();
             if (err.isEmpty())
-                err = proc->readAllStandardOutput().trimmed();
+                err = QString::fromUtf8(proc->readAllStandardOutput()).trimmed();
             m_statusMessage = err.isEmpty() ? QStringLiteral("Failed to connect to %1").arg(ssid) : err;
             emit statusMessageChanged();
             emit connectionResult(false, m_statusMessage);
@@ -219,20 +269,23 @@ void NetworkController::connectToNetwork(const QString &ssid, const QString &pas
         proc->deleteLater();
     });
 
-    if (password.isEmpty()) {
-        proc->start("nmcli", {"dev", "wifi", "connect", ssid});
-    } else {
-        proc->start("nmcli", {"dev", "wifi", "connect", ssid, "password", password});
+    QStringList args;
+    args << "--wait" << "20" << "dev" << "wifi" << "connect" << ssid;
+    if (!password.isEmpty()) {
+        args << "password" << password;
     }
+    proc->start("nmcli", args);
 }
 
 void NetworkController::disconnectNetwork()
 {
     if (m_connected && !m_ssid.isEmpty() && m_ssid != "Not connected") {
         QProcess::startDetached("nmcli", {"con", "down", "id", m_ssid});
-    } else {
-        QProcess::startDetached("nmcli", {"dev", "disconnect", "wlan0"});
     }
+
+    // Disconnect any active wifi interface dynamically without hardcoding wlan0
+    QProcess::startDetached("bash", {"-c", "for d in $(nmcli -t -f DEVICE,TYPE dev 2>/dev/null | grep ':wifi$' | cut -d: -f1); do nmcli dev disconnect \"$d\" 2>/dev/null; done"});
+
     QTimer::singleShot(800, this, [this]() {
         queryStatus();
         scanNetworks();

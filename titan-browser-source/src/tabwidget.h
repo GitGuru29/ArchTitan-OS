@@ -7,7 +7,6 @@
 #include <QDateTime>
 #include <QMap>
 
-class NewTabWidget;
 class SettingsWidget;
 
 class TabWidget : public QObject
@@ -60,6 +59,9 @@ private slots:
     void onCurrentTabChanged(int index);
     void onTabBarContextMenu(const QPoint &pos);
 
+protected:
+    bool eventFilter(QObject *watched, QEvent *event) override;
+
 private:
     void connectView(QWebEngineView *view);
     void updateTabAudioIcon(int index, bool audible, bool muted);
@@ -70,5 +72,6 @@ private:
     bool m_memorySaverEnabled = true;
     QMap<QWidget*, QUrl>       m_tabUrls;
     QMap<QWidget*, QDateTime>  m_lastAccessed;
-    QMap<QWidget*, bool>       m_isSuspended;
+    QMap<QWidget*, bool>       m_isFrozen;    // 5 min idle → Frozen
+    QMap<QWidget*, bool>       m_isSuspended; // 10 min idle → Discarded
 };
