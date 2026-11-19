@@ -9,10 +9,12 @@
 //     processes communicating via MAP_SHARED anonymous memory so Linux cgroup v2
 //     (cgroup.procs is per-process) applies genuine kernel CFS cpu.weight &
 //     25 ms cpu.max bandwidth headroom between competing slices.
-//   - Automatically provisions an isolated /sys/fs/cgroup/archtitan-bench-<pid>
-//     hierarchy ({fg, bg}) when privileged, tearing it down cleanly on exit or
-//     SIGINT/SIGTERM. Falls back transparently to nice(+19) simulation when
-//     unprivileged (never misrepresenting the active isolation mechanism).
+//   - Automatically provisions an isolated archtitan-bench-<pid> hierarchy
+//     ({fg, bg}) under the root cgroup when privileged, or under the user's
+//     delegated user@<uid>.service cgroup when unprivileged, tearing it down
+//     cleanly on exit or SIGINT/SIGTERM. Falls back to nice(+19) simulation
+//     only when no cgroup cpu controller is delegated (never misrepresenting
+//     the active isolation mechanism).
 //   - Measures BOTH wake-up oversleep latency AND calibrated foreground frame
 //     completion time (144 Hz compositor 6.944 ms budget or 48 kHz/128-sample
 //     2.667 ms audio DSP quantum), deadline misses, background throughput
@@ -248,41 +250,51 @@ public:
             reason = "cgroup v2 cpu controller unavailable";
             return false;
         }
-        // Best-effort ensure +cpu is delegated on root if we're root
-        const std::string root_sub = read_file_trimmed("/sys/fs/cgroup/cgroup.subtree_control");
-        if (root_sub.find("cpu") == std::string::npos) {
-            write_sysfs("/sys/fs/cgroup/cgroup.subtree_control", "+cpu");
+
+        // Try the root first (when privileged), then the systemd user manager's
+        // delegated subtree. Most desktop sessions have cpu delegated to
+        // user@<uid>.service, which is enough for real cpu.weight/cpu.max A/B
+        // testing without asking the operator for a root password.
+        const std::string uid = std::to_string(::getuid());
+        const std::vector<std::string> bases = {
+            "/sys/fs/cgroup",
+            "/sys/fs/cgroup/user.slice/user-" + uid + ".slice/user@" + uid + ".service",
+        };
+
+        for (const auto& base : bases) {
+            root_dir = base + "/archtitan-bench-" + std::to_string(::getpid());
+            fg_dir   = root_dir + "/fg";
+            bg_dir   = root_dir + "/bg";
+
+            if (::mkdir(root_dir.c_str(), 0755) != 0) {
+                reason = "cannot create " + root_dir;
+                continue;
+            }
+            if (!write_sysfs(root_dir + "/cgroup.subtree_control", "+cpu")) {
+                reason = "cannot enable +cpu in " + root_dir;
+                cleanup();
+                continue;
+            }
+            if (::mkdir(fg_dir.c_str(), 0755) != 0 || ::mkdir(bg_dir.c_str(), 0755) != 0) {
+                reason = "cannot create fg/bg child cgroups in " + root_dir;
+                cleanup();
+                continue;
+            }
+            // Verify write access to cpu.weight and cpu.max
+            if (!write_sysfs(fg_dir + "/cpu.weight", "100") ||
+                !write_sysfs(bg_dir + "/cpu.weight", "100") ||
+                !write_sysfs(bg_dir + "/cpu.max", "max 25000")) {
+                reason = "cgroup cpu.weight/cpu.max not writable in " + root_dir;
+                cleanup();
+                continue;
+            }
+
+            available = true;
+            reason    = "kernel cgroup v2 (" + root_dir + ")";
+            return true;
         }
 
-        root_dir = "/sys/fs/cgroup/archtitan-bench-" + std::to_string(::getpid());
-        fg_dir   = root_dir + "/fg";
-        bg_dir   = root_dir + "/bg";
-
-        if (::mkdir(root_dir.c_str(), 0755) != 0) {
-            reason = "cannot create " + root_dir + " (run with sudo for real cgroup v2)";
-            return false;
-        }
-        if (!write_sysfs(root_dir + "/cgroup.subtree_control", "+cpu")) {
-            reason = "cannot enable +cpu in " + root_dir;
-            cleanup();
-            return false;
-        }
-        if (::mkdir(fg_dir.c_str(), 0755) != 0 || ::mkdir(bg_dir.c_str(), 0755) != 0) {
-            reason = "cannot create fg/bg child cgroups";
-            cleanup();
-            return false;
-        }
-        // Verify write access to cpu.weight and cpu.max
-        if (!write_sysfs(fg_dir + "/cpu.weight", "100") ||
-            !write_sysfs(bg_dir + "/cpu.weight", "100") ||
-            !write_sysfs(bg_dir + "/cpu.max", "max 25000")) {
-            reason = "cgroup cpu.weight/cpu.max not writable";
-            cleanup();
-            return false;
-        }
-        available = true;
-        reason    = "kernel cgroup v2 (" + root_dir + ")";
-        return true;
+        return false;
     }
 
     bool configure_baseline() const {
@@ -1242,7 +1254,7 @@ void print_comparison(const PhaseResult& base, const PhaseResult& mng, const Sty
         "max (100%)",
         (std::ostringstream() << std::fixed << std::setprecision(1) << mng.bg_max_pct
                               << (mng.isolation == "cgroup-v2" ? "% @ 25ms" : "% (N-1 sim)")).str(),
-        mng.isolation == "cgroup-v2" ? "1-core FG headroom" : "1-core sim (use sudo)", st.cyan());
+        mng.isolation == "cgroup-v2" ? "1-core FG headroom" : "1-core sim (no cgroup)", st.cyan());
     row("Wake-up Jitter p50",  ms(base.wakeup.p50),  ms(mng.wakeup.p50),
         fmt_delta(base.wakeup.p50, mng.wakeup.p50, true),
         mng.wakeup.p50 <= base.wakeup.p50 ? st.green() : st.yellow());
@@ -1724,7 +1736,8 @@ int main(int argc, char* argv[]) {
         }
         if (!cg.available && ::geteuid() != 0) {
             std::cout << "\n" << st.yellow()
-                      << "  Tip: Run with `sudo` to engage real Linux kernel cgroup v2 (cpu.weight + 25ms cpu.max)."
+                      << "  Tip: Run with cgroup cpu delegation (root or systemd user@<uid>.service) "
+                         "to engage real cpu.weight + 25ms cpu.max."
                       << st.reset() << "\n";
         }
     }
