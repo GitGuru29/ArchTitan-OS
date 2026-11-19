@@ -22,6 +22,11 @@ static constexpr const char* SLICE_PROTECTED  = "archtitan-protected.slice";
 static constexpr const char* SLICE_ACTIVE     = "archtitan-active.slice";
 static constexpr const char* SLICE_BACKGROUND = "archtitan-background.slice";
 static constexpr const char* SLICE_FROZEN     = "archtitan-frozen.slice";
+// v3.3: background work that must keep low wake-up latency (a background game,
+// voice chat, or a dataloader feeding a busy GPU). It gets a near-active weight
+// but is NEVER given cpu.max or cpu.idle, so it cannot be throttled into
+// dropping frames / starving the accelerator.
+static constexpr const char* SLICE_LATENCY    = "archtitan-latency.slice";
 
 // Map PolicyDecision to the target slice name
 inline const char* slice_for_decision(PolicyDecision d) {
@@ -54,6 +59,7 @@ static constexpr long UNATTENDED_IDLE_SECONDS = 60;
 struct CpuSlicePolicy {
     int   protected_weight    = 2000;
     int   active_weight       = 500;
+    int   latency_weight      = 450;     // v3.3: background latency slice (never capped)
     int   background_weight   = 50;
     long  background_quota_us = 0;      // 0 means "max" (no bandwidth cap)
     long  period_us           = CFS_SMOOTH_PERIOD_US;
@@ -67,11 +73,16 @@ struct CpuSlicePolicy {
 // count, user presence) to cgroup values, so it can be unit-tested without
 // touching /sys/fs/cgroup.
 //
-//   CPU pressure   protected  active  background   background cpu.max   cpu.idle
-//   NORMAL           2000       500       50         max               0
-//   MODERATE         2000       800       25         max               0
-//   HIGH             2000      1000       10         (N-1) cores       0
-//   CRITICAL         5000      1000       10         (N-2) cores       1
+//   CPU pressure   protected  active  latency  background  bg cpu.max  bg idle
+//   NORMAL           2000       500      450        50       max        0
+//   MODERATE         2000       800      750        25       max        0
+//   HIGH             2000      1000      950        10       (N-1)      0
+//   CRITICAL         5000      1000     1000        10       (N-2)      1
+//
+// The latency slice is deliberately excluded from cpu.max and cpu.idle at
+// every level: capping a background game or a GPU dataloader would trade a
+// small amount of compositor headroom for a very visible frame drop / GPU
+// starvation. Only the bulk background slice is bandwidth-limited.
 //
 // The (N-1) cap permanently reserves one core's worth of bandwidth for
 // everything outside the background slice (compositor, input, audio) even when

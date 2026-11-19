@@ -86,6 +86,7 @@ std::string serialize_snapshot(const TelemetrySnapshot& s) {
       << ",\"total\":"    << s.total_procs
       << ",\"protected_weight\":" << s.protected_cpu_weight
       << ",\"active_weight\":" << s.active_cpu_weight
+      << ",\"latency_weight\":" << s.latency_cpu_weight
       << ",\"background_weight\":" << s.background_cpu_weight
       << ",\"background_cpu_max_pct\":" << f2(s.background_cpu_max_pct)
       << ",\"headroom_engaged\":" << (s.cpu_headroom_engaged ? "true" : "false")
@@ -148,6 +149,9 @@ std::string serialize_snapshot(const TelemetrySnapshot& s) {
           << ",\"mem_mb\":"   << (w.mem_kb / 1024)
           << ",\"cpu_pct\":"  << f2(w.cpu_pct)
           << ",\"observed\":" << (w.observed ? "true" : "false")
+          << ",\"latency_critical\":" << (w.latency_critical ? "true" : "false")
+          << ",\"throughput_bulk\":"  << (w.throughput_bulk ? "true" : "false")
+          << ",\"gpu_feeding\":"      << (w.gpu_feeding ? "true" : "false")
           << '}';
     }
     o << "]}";

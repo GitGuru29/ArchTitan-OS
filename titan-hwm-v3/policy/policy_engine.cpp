@@ -26,6 +26,22 @@ PolicyDecision PolicyEngine::evaluate(
     // never be throttled, frozen or reclaimed.
     if (wl.observed) return PolicyDecision::KEEP_BACKGROUND;
 
+    // ── Step 1a-2 (v3.3): latency-critical interactive work ─────────────────
+    // A game / real-time app keeps foreground slice rights and OOM protection
+    // even when its workspace is no longer focused (e.g. running while the
+    // user browses or streams). It is never frozen or reclaimed by any memory
+    // level; CPU pressure cannot signal it either (HC-CPU-1).
+    if (wl.latency_critical) return PolicyDecision::KEEP_FULL;
+
+    // ── Step 1a-3 (v3.3): GPU-feeding work (training dataloaders) ────────────
+    // Capping or freezing the process that keeps a busy accelerator fed loses
+    // far more throughput than the headroom it saves. It stays alive in the
+    // uncapped latency slice and can only be memory-throttled at CRITICAL.
+    if (wl.gpu_feeding) {
+        if (pressure >= PressureLevel::CRITICAL) return PolicyDecision::THROTTLE;
+        return PolicyDecision::KEEP_BACKGROUND;
+    }
+
     // ── Step 1b (HC-07): SERVICE workloads — DB servers, containers ──────────
     // These headless services have no window and low CPU but must stay alive.
     // Minimum decision: KEEP_BACKGROUND. Never FREEZE or RECLAIM.

@@ -79,6 +79,12 @@ bool EnforcementPlane::apply(const Workload& wl, PolicyDecision decision) {
     // apply_cpu_pressure_policy(), which derives them from the CPU pressure
     // channel once per tick; writing them per workload decision made the two
     // fight and cost a syscall per workload per tick.
+    //
+    // v3.3: latency-critical work (games, real-time media) and GPU dataloaders
+    // use the dedicated latency slice when they are not foreground. It shares
+    // the elevated weight but is never given cpu.max or cpu.idle — capping a
+    // dataloader starves the GPU, and capping a background game drops frames.
+    const char* bg_slice = slice_for_intent(wl, decision);
     switch (decision) {
 
     case PolicyDecision::KEEP_FULL:
@@ -89,13 +95,13 @@ bool EnforcementPlane::apply(const Workload& wl, PolicyDecision decision) {
         break;
 
     case PolicyDecision::KEEP_BACKGROUND:
-        cgroup_.move_to_slice(wl.pids, SLICE_BACKGROUND);
+        cgroup_.move_to_slice(wl.pids, bg_slice);
         cgroup_.set_oom_score(wl.pids, OOM_NORMAL);
         sigcont_if_stopped(wl.pids);       // background ≠ stopped
         break;
 
     case PolicyDecision::THROTTLE:
-        cgroup_.move_to_slice(wl.pids, SLICE_BACKGROUND);
+        cgroup_.move_to_slice(wl.pids, bg_slice);
         throttle_seen_ = true; // apply_cpu_pressure_policy() lowers the BG weight
         // Reduce memory.high to 75% of current RSS as a soft cap
         // (exact calculation deferred to daemon tick which has RSS info)
@@ -136,6 +142,22 @@ bool EnforcementPlane::apply(const Workload& wl, PolicyDecision decision) {
     }
 
     return true;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// slice_for_intent — pure slice routing used by apply() and by the tests.
+const char* slice_for_intent(const Workload& wl, PolicyDecision decision) {
+    const bool latency_bg = wl.latency_critical || wl.gpu_feeding;
+    switch (decision) {
+        case PolicyDecision::KEEP_FULL:      return SLICE_ACTIVE;
+        case PolicyDecision::THROTTLE:       return latency_bg ? SLICE_LATENCY
+                                                               : SLICE_BACKGROUND;
+        case PolicyDecision::FREEZE:
+        case PolicyDecision::RECLAIM:        return SLICE_FROZEN;
+        case PolicyDecision::KEEP_BACKGROUND:
+        default:                             return latency_bg ? SLICE_LATENCY
+                                                               : SLICE_BACKGROUND;
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -196,6 +218,7 @@ CpuSlicePolicy EnforcementPlane::apply_cpu_pressure_policy(PressureLevel cpu_pre
     };
     put_weight(SLICE_PROTECTED,  policy.protected_weight,  written_.protected_weight);
     put_weight(SLICE_ACTIVE,     policy.active_weight,     written_.active_weight);
+    put_weight(SLICE_LATENCY,    policy.latency_weight,    written_.latency_weight);
     put_weight(SLICE_BACKGROUND, policy.background_weight, written_.background_weight);
 
     if (policy.background_quota_us != written_.background_quota) {

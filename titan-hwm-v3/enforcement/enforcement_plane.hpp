@@ -37,6 +37,11 @@ bool observed_slice_assignment(const Workload&       wl,
                                ActivityState         activity,
                                bool&                 to_active);
 
+// Pure helper (also used by the test harness): which slice does a workload's
+// v3.3 intent select for a background/throttled decision? Latency-critical
+// games and GPU dataloaders use the uncapped latency slice.
+const char* slice_for_intent(const Workload& wl, PolicyDecision decision);
+
 class EnforcementPlane {
 public:
     explicit EnforcementPlane(CgroupController& cgroup,
@@ -70,6 +75,7 @@ private:
     struct WrittenState {
         int  protected_weight  = -1;
         int  active_weight     = -1;
+        int  latency_weight    = -1;
         int  background_weight = -1;
         long background_quota  = -2;
         int  background_idle   = -1;

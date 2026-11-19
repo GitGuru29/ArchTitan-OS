@@ -76,6 +76,26 @@ struct ClassifierConfig {
         "qemu-system-x86_64", "qemu-system-aarch64", "qemu-system-arm",
         "qemu-kvm", "kvm"
     };
+    // ── v3.3 workload intent sets ─────────────────────────────────────────
+    // Games and real-time apps: must never be capped or given cpu.idle.
+    std::vector<std::string> latency_critical_apps = {
+        "steam", "steamwebhelper", "gamescope", "gamemode", "mangohud",
+        "wine", "wine64", "wineserver", "lutris", "heroic", "bottles",
+        "proton", "cs2", "dota2", "minecraft", "factorio", "terraria",
+        "retroarch", "rpcs3", "yuzu", "dolphin-emu", "osu!"
+    };
+    // Bulk throughput jobs: safe to cap when they are not the foreground task.
+    std::vector<std::string> bulk_render_apps = {
+        "blender", "cycles", "inkscape", "krita", "handbrake", "handbrakecli",
+        "resolve", "davinci-resolve", "povray", "luxrender", "octane",
+        "octanerender", "renderdoc", "sshadertoy"
+    };
+    // Training marker: requires a python-family executable AND one of these in
+    // the full command line, so ordinary python scripts are not misclassified.
+    std::vector<std::string> training_markers = {
+        "torch", "pytorch", "torchrun", "tensorflow", "train.py", "training",
+        "dataloader", "lightning", "keras"
+    };
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -99,6 +119,14 @@ public:
     static std::optional<WorkloadType> from_title(const std::string& title);
     static std::optional<WorkloadType> from_cwd(pid_t pid);
 
+    // v3.3 intent detection (public for testing): games/renderers by executable
+    // name, training by python-family executable + full-cmdline marker.
+    // `full_cmdline` is optional so tests need not fabricate a /proc entry.
+    static void detect_intent(const ClassifierConfig& cfg,
+                              const std::string& cmd, pid_t pid,
+                              ClassificationResult& r,
+                              const std::string* full_cmdline = nullptr);
+
 private:
     ClassifierConfig cfg_;
 
@@ -120,6 +148,9 @@ private:
 
     // Read argv[0] from /proc/<pid>/cmdline
     static std::string read_cmdline(pid_t pid);
+    // Read the full NUL-delimited command line (needed for training markers
+    // such as `python train.py --epochs 20`; argv[0] alone is just "python").
+    static std::string read_full_cmdline(pid_t pid);
 
     static constexpr std::size_t kMaxWarnedCwds = 256;
 

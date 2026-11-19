@@ -461,7 +461,20 @@ GovernorHint WorkspaceMonitor::compute_governor(
         } else if (wl.state == WorkloadState::BACKGROUND_EXECUTING) {
             all_idle = false;
         }
+        // v3.3: a background game or GPU dataloader is still demand — it keeps
+        // a full slice and must not be clocked down just because its workspace
+        // lost focus (streaming while playing, training while browsing).
+        if (wl.latency_critical || wl.gpu_feeding) {
+            any_active = true;
+            all_idle   = false;
+            any_latency = true;
+        }
         if (wl.state == WorkloadState::BACKGROUND_EXECUTING && wl.is_building)
+            any_building = true;
+        // A focused render / compile / training job gets the same boost as a
+        // classic build daemon, but only while it is actually consuming CPU.
+        if (wl.state == WorkloadState::ACTIVE && wl.throughput_bulk &&
+            wl.cpu_pct >= OBSERVED_CPU_DEMAND_PCT)
             any_building = true;
         if (wl.state == WorkloadState::ACTIVE && wl.latency_sensitive)
             any_latency = true;

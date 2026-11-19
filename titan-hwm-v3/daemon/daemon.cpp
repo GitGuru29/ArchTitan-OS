@@ -224,6 +224,7 @@ static std::string format_status(const thm::TelemetrySnapshot& s) {
     o << std::setprecision(1);
     o << "  Slice weights:   P:" << s.protected_cpu_weight
       << " / A:" << s.active_cpu_weight
+      << " / L:" << s.latency_cpu_weight
       << " / B:" << s.background_cpu_weight << "\n";
     o << "  BG headroom cap: ";
     if (s.cpu_headroom_engaged)
@@ -356,6 +357,7 @@ static std::string format_pressure(const thm::TelemetrySnapshot& s) {
       << s.runnable_procs << " runnable / " << s.total_procs << ")\n";
     o << "Slice weights:   protected=" << s.protected_cpu_weight
       << "  active=" << s.active_cpu_weight
+      << "  latency=" << s.latency_cpu_weight
       << "  background=" << s.background_cpu_weight << "\n";
     o << "BG headroom cap: ";
     if (s.cpu_headroom_engaged)
@@ -982,13 +984,22 @@ int main(int argc, char* argv[]) {
                         auto ws_it = workspaces.find(ws_id);
                         if (ws_it != workspaces.end()) title = ws_it->second.active_window_title;
                         auto result = classifier.classify(pid, title, proc_graph);
-                        if (result.type != thm::WorkloadType::NEUTRAL) {
+                        // Intent alone can promote an observed workload: games
+                        // and headless training jobs have no window title, so
+                        // their WorkloadType often stays NEUTRAL.
+                        const bool has_intent = result.latency_critical ||
+                                                result.throughput_bulk ||
+                                                result.gpu_feeding;
+                        if (result.type != thm::WorkloadType::NEUTRAL || has_intent) {
                             wl->type          = result.type;
                             wl->confidence    = result.confidence;
                             wl->is_building   = result.is_building;
                             wl->has_lsp       = result.has_lsp;
                             wl->latency_sensitive = result.latency_sensitive;
                             wl->is_browser_root   = result.is_browser_root;
+                            wl->latency_critical  = result.latency_critical;
+                            wl->throughput_bulk   = result.throughput_bulk;
+                            wl->gpu_feeding       = result.gpu_feeding;
                             if (wl->observed) {
                                 std::cout << "[THM] Promoted observed workload " << wl->id
                                           << " (" << wl->root_cmdline << ") to "
@@ -1036,7 +1047,12 @@ int main(int argc, char* argv[]) {
             }
 
             auto result = classifier.classify(pid, title, proc_graph);
-            if (result.type != thm::WorkloadType::NEUTRAL) {
+            // v3.3: a game / renderer / training job is worth managing even if
+            // no classic WorkloadType was inferred — the flags carry the intent.
+            const bool has_intent = result.latency_critical ||
+                                    result.throughput_bulk ||
+                                    result.gpu_feeding;
+            if (result.type != thm::WorkloadType::NEUTRAL || has_intent) {
                 thm::Workload wl;
                 wl.id               = next_workload_id++;
                 wl.type             = result.type;
@@ -1045,6 +1061,9 @@ int main(int argc, char* argv[]) {
                 wl.is_building      = result.is_building;
                 wl.latency_sensitive = result.latency_sensitive;
                 wl.is_browser_root  = result.is_browser_root;  // HC-05/06
+                wl.latency_critical = result.latency_critical;
+                wl.throughput_bulk  = result.throughput_bulk;
+                wl.gpu_feeding      = result.gpu_feeding;
                 wl.is_reclassifiable = true;                   // HC-10: all new workloads eligible
                 wl.root_pid         = pid;
                 wl.root_cmdline     = node.cmdline.empty() ? node.comm
@@ -1442,6 +1461,9 @@ int main(int argc, char* argv[]) {
                 tw.state        = thm::to_string(wl->state);
                 tw.pid_count    = static_cast<int>(wl->pids.size());
                 tw.observed     = wl->observed;
+                tw.latency_critical = wl->latency_critical;
+                tw.throughput_bulk  = wl->throughput_bulk;
+                tw.gpu_feeding      = wl->gpu_feeding;
 
                 long mem_kb = 0;
                 for (pid_t p : wl->pids) {

@@ -152,6 +152,12 @@ struct Workload {
     // skips enforcement for it. A workload leaves observation-only status once
     // the classifier identifies it.
     bool          observed           = false;
+
+    // v3.3 workload intent — descriptive, derived from the classifier. It
+    // routes work to a CPU slice; it is never a kill/freeze authority.
+    bool          latency_critical   = false; // game / real-time app — never capped or idled
+    bool          throughput_bulk    = false; // render / compile — safe to cap when background
+    bool          gpu_feeding        = false; // dataloader feeding a GPU — uncapped latency slice
     // ── v3.1 additions ────────────────────────────────────────────────────
     bool          is_browser_root    = false; // HC-05/06: browser root — skip SIGSTOP on FREEZE
     bool          is_reclassifiable  = false; // HC-10: allow WorkloadType re-evaluation
@@ -202,6 +208,10 @@ struct ClassificationResult {
     bool         ai_modifier = false;  // AI agent child detected
     bool         latency_sensitive = false; // streaming / media detected
     bool         is_browser_root   = false; // HC-05/06: root is a browser process
+    // v3.3: CPU_slice intent for games / bulk renderers / GPU-feeding jobs.
+    bool         latency_critical  = false;
+    bool         throughput_bulk   = false;
+    bool         gpu_feeding       = false;
     // Full per-type score map for polyglot / multi-context detection
     std::unordered_map<int, float> score_map;
 };

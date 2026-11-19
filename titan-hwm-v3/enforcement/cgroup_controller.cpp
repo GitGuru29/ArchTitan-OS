@@ -120,12 +120,13 @@ bool CgroupController::setup_slices() {
 
     bool ok = true;
     for (const char* name : {SLICE_PROTECTED, SLICE_ACTIVE,
-                              SLICE_BACKGROUND, SLICE_FROZEN}) {
+                              SLICE_BACKGROUND, SLICE_LATENCY, SLICE_FROZEN}) {
         ok &= mkdir_p(slice_path(name));
     }
 
     // Enable memory accounting in the slices we manage
-    for (const char* name : {SLICE_ACTIVE, SLICE_BACKGROUND, SLICE_FROZEN}) {
+    for (const char* name : {SLICE_ACTIVE, SLICE_BACKGROUND,
+                              SLICE_LATENCY, SLICE_FROZEN}) {
         ok &= write_file(slice_path(name) + "/memory.oom.group", "1");
     }
 
@@ -232,16 +233,20 @@ CpuSlicePolicy compute_cpu_slice_policy(PressureLevel cpu_pressure,
 
     switch (cpu_pressure) {
         case PressureLevel::NORMAL:
-            p.protected_weight = 2000; p.active_weight =  500; p.background_weight = 50;
+            p.protected_weight = 2000; p.active_weight =  500;
+            p.latency_weight = 450;   p.background_weight = 50;
             break;
         case PressureLevel::MODERATE:
-            p.protected_weight = 2000; p.active_weight =  800; p.background_weight = 25;
+            p.protected_weight = 2000; p.active_weight =  800;
+            p.latency_weight = 750;   p.background_weight = 25;
             break;
         case PressureLevel::HIGH:
-            p.protected_weight = 2000; p.active_weight = 1000; p.background_weight = 10;
+            p.protected_weight = 2000; p.active_weight = 1000;
+            p.latency_weight = 950;   p.background_weight = 10;
             break;
         case PressureLevel::CRITICAL:
-            p.protected_weight = 5000; p.active_weight = 1000; p.background_weight = 10;
+            p.protected_weight = 5000; p.active_weight = 1000;
+            p.latency_weight = 1000;  p.background_weight = 10;
             break;
     }
 

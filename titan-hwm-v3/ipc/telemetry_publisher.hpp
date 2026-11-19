@@ -36,6 +36,10 @@ struct TelemetryWorkload {
     long        mem_kb       = 0;     // summed RSS of member PIDs
     float       cpu_pct      = 0.0f;  // summed CPU% of member PIDs
     bool        observed     = false; // telemetry-only (no enforcement authority)
+    // v3.3 intent — shows why a workload landed in a particular CPU slice.
+    bool        latency_critical = false;
+    bool        throughput_bulk  = false;
+    bool        gpu_feeding      = false;
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -83,6 +87,7 @@ struct TelemetrySnapshot {
     int         total_procs      = 0;
     int         protected_cpu_weight   = 2000;
     int         active_cpu_weight      = 500;
+    int         latency_cpu_weight     = 450;
     int         background_cpu_weight  = 50;
     float       background_cpu_max_pct = 100.0f;
     bool        cpu_headroom_engaged   = false;

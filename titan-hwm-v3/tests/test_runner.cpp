@@ -1966,6 +1966,7 @@ void test_tc23_cpu_telemetry_contract_v32() {
     s.online_cpus              = 8;
     s.protected_cpu_weight     = 2000;
     s.active_cpu_weight        = 1000;
+    s.latency_cpu_weight       = 950;
     s.background_cpu_weight    = 10;
     s.background_cpu_max_pct   = 87.5f;
     s.cpu_headroom_engaged     = true;
@@ -1985,6 +1986,7 @@ void test_tc23_cpu_telemetry_contract_v32() {
         "\"online_cpus\":8",
         "\"protected_weight\":2000",
         "\"active_weight\":1000",
+        "\"latency_weight\":950",
         "\"background_weight\":10",
         "\"background_cpu_max_pct\":87.5",
         "\"headroom_engaged\":true",
@@ -2007,7 +2009,7 @@ void test_tc23_cpu_telemetry_contract_v32() {
     g_results.push_back({"TC-23: Telemetry Contract v3.2",
                          "v3.2 CPU pressure and headroom fields serialized cleanly",
                          passed,
-                         std::string("checked 15 v3.2 fields, bytes=") + std::to_string(json.size()),
+                         std::string("checked 16 fields incl. latency slice, bytes=") + std::to_string(json.size()),
                          ms});
     std::cout << (passed ? ">>> PASS: v3.2 telemetry contract verified.\n" : ">>> FAIL!\n");
 }
@@ -2285,6 +2287,143 @@ void test_tc28_observed_slice_assignment() {
 // ═════════════════════════════════════════════════════════════════════════════
 // Main Test Harness Entry Point
 // ═════════════════════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-29: v3.3 Workload Intent Classification
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc29_workload_intent_classification() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(29, "Workload Intent Classification",
+                    "Games, renderers and training jobs get explicit CPU slice intent");
+
+    thm::ClassifierConfig cfg;
+    thm::FusionClassifier fc(cfg);
+    const std::string train_cmd = "python3 /home/u/project/train.py --epochs 20";
+    const std::string lint_cmd  = "python3 tools/lint.py";
+
+    thm::ClassificationResult game, render, training, plain_python;
+    fc.detect_intent(cfg, "steam",   ::getpid(), game);
+    fc.detect_intent(cfg, "blender", ::getpid(), render);
+    fc.detect_intent(cfg, "python3", ::getpid(), training, &train_cmd);
+    fc.detect_intent(cfg, "python3", ::getpid(), plain_python, &lint_cmd);
+
+    const bool passed =
+        game.latency_critical && game.latency_sensitive &&
+        render.throughput_bulk && !render.latency_critical &&
+        training.gpu_feeding && training.throughput_bulk &&
+        !plain_python.gpu_feeding && !plain_python.throughput_bulk &&
+        !plain_python.latency_critical;
+
+    std::cout << "[Intent] game=" << (game.latency_critical ? "LATENCY" : "-")
+              << " render=" << (render.throughput_bulk ? "BULK" : "-")
+              << " train=" << (training.gpu_feeding ? "GPU_FEED" : "-")
+              << " plain_python=" << (plain_python.gpu_feeding ? "GPU_FEED" : "-") << "\n";
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-29: Workload Intent Classification",
+                         "Game/render/training intent detected; ordinary python unaffected",
+                         passed,
+                         "game=LATENCY, render=BULK, train=GPU_FEED, plain=none", ms});
+    std::cout << (passed ? ">>> PASS: workload intent verified.\n" : ">>> FAIL!\n");
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-30: v3.3 Policy Protection For Intent Workloads
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc30_intent_policy_guard() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(30, "Intent Policy Guard",
+                    "Background games stay full, GPU dataloaders are never frozen or reclaimed");
+
+    thm::ProtectedRegistry registry;
+    thm::PolicyEngine policy;
+    thm::WorkspaceState away; // unfocused, not visible
+
+    thm::Workload game;
+    game.id = 903;
+    game.latency_critical = true;
+    game.state = thm::WorkloadState::BACKGROUND_EXECUTING;
+    game.pids = {::getpid()};
+    auto game_decision = policy.evaluate(game, away, thm::ActivityState::IDLE,
+                                         thm::PressureLevel::CRITICAL, registry);
+
+    thm::Workload train;
+    train.id = 904;
+    train.gpu_feeding = true;
+    train.state = thm::WorkloadState::BACKGROUND_EXECUTING;
+    train.pids = {::getpid()};
+    auto train_high = policy.evaluate(train, away, thm::ActivityState::IDLE,
+                                      thm::PressureLevel::HIGH, registry);
+    auto train_critical = policy.evaluate(train, away, thm::ActivityState::IDLE,
+                                          thm::PressureLevel::CRITICAL, registry);
+
+    const bool passed =
+        game_decision == thm::PolicyDecision::KEEP_FULL &&
+        train_high != thm::PolicyDecision::FREEZE &&
+        train_high != thm::PolicyDecision::RECLAIM &&
+        train_critical == thm::PolicyDecision::THROTTLE;
+
+    std::cout << "[Policy] game@CRITICAL=" << thm::to_string(game_decision)
+              << " train@HIGH=" << thm::to_string(train_high)
+              << " train@CRITICAL=" << thm::to_string(train_critical) << "\n";
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-30: Intent Policy Guard",
+                         "Latency-critical kept full at CRITICAL; GPU feeder never frozen",
+                         passed,
+                         "game=KEEP_FULL, train@HIGH=KEEP_BACKGROUND, train@CRITICAL=THROTTLE",
+                         ms});
+    std::cout << (passed ? ">>> PASS: intent policy guard verified.\n" : ">>> FAIL!\n");
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-31: v3.3 Latency Slice Routing & Weights
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc31_latency_slice_policy() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(31, "Latency Slice Routing",
+                    "Latency intent uses uncapped slice; bulk still uses capped background slice");
+
+    thm::Workload game, train, bulk;
+    game.latency_critical = true;
+    train.gpu_feeding = true;
+    bulk.throughput_bulk = true;
+
+    const std::string s_game  = thm::slice_for_intent(game,  thm::PolicyDecision::KEEP_BACKGROUND);
+    const std::string s_train = thm::slice_for_intent(train, thm::PolicyDecision::THROTTLE);
+    const std::string s_bulk  = thm::slice_for_intent(bulk,  thm::PolicyDecision::KEEP_BACKGROUND);
+
+    const auto normal = thm::compute_cpu_slice_policy(
+        thm::PressureLevel::NORMAL, 8, false);
+    const auto high = thm::compute_cpu_slice_policy(
+        thm::PressureLevel::HIGH, 8, false);
+    const auto critical = thm::compute_cpu_slice_policy(
+        thm::PressureLevel::CRITICAL, 8, false);
+
+    const bool passed =
+        s_game == thm::SLICE_LATENCY && s_train == thm::SLICE_LATENCY &&
+        s_bulk == thm::SLICE_BACKGROUND &&
+        normal.latency_weight == 450 && !normal.background_idle &&
+        high.latency_weight == 950 && high.latency_weight > high.background_weight &&
+        high.headroom_engaged && !high.background_idle &&
+        critical.latency_weight == 1000 && critical.background_idle;
+
+    std::cout << "[Slice] game=" << s_game << " train=" << s_train
+              << " bulk=" << s_bulk
+              << " weights(HIGH): L=" << high.latency_weight
+              << " B=" << high.background_weight << "\n";
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-31: Latency Slice Routing",
+                         "Latency slice is weighted but never capped or idled",
+                         passed,
+                         "game/train=archtitan-latency.slice, bulk=background, L(HIGH)=950",
+                         ms});
+    std::cout << (passed ? ">>> PASS: latency slice routing verified.\n" : ">>> FAIL!\n");
+}
+
 int main() {
     std::cout << "\n╔══════════════════════════════════════════════════════════════════════════════╗\n";
     std::cout << "║        THM v3 Real OS-Level Architectural Test Suite                         ║\n";
@@ -2319,6 +2458,9 @@ int main() {
     test_tc26_critical_extra_headroom_and_idle();
     test_tc27_observed_heavy_demand();
     test_tc28_observed_slice_assignment();
+    test_tc29_workload_intent_classification();
+    test_tc30_intent_policy_guard();
+    test_tc31_latency_slice_policy();
 
     // Summary Table
     std::cout << "\n════════════════════════════════════════════════════════════════════════════════\n";
