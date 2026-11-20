@@ -161,6 +161,29 @@ const char* slice_for_intent(const Workload& wl, PolicyDecision decision) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Memory-orchestration math (pure — no syscalls, no signals)
+//
+// THROTTLE is a soft pressure signal: memory.high at 75% of the workload's
+// current RSS makes the kernel reclaim from that slice first, rather than
+// THM killing the process. memory.low protects only what is actually active
+// and never locks more than half of RAM.
+// ─────────────────────────────────────────────────────────────────────────────
+static constexpr long kMemHighFloorBytes = 16L * 1024 * 1024;
+
+long compute_memory_high_bytes(long rss_kb) {
+    if (rss_kb <= 0) return 0; // 0 => memory.high "max"
+    const long bytes = (rss_kb * 1024LL * 75) / 100;
+    return std::max(bytes, kMemHighFloorBytes);
+}
+
+long compute_memory_low_bytes(long rss_kb, long total_kb) {
+    if (rss_kb <= 0 || total_kb <= 0) return 0;
+    const long wanted = rss_kb * 1024LL;
+    const long cap    = (total_kb * 1024LL) / 2;
+    return std::min(wanted, cap);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // observed_slice_assignment — bring real unclassified CPU work into the managed
 // hierarchy on the very first tick it is seen.
 //

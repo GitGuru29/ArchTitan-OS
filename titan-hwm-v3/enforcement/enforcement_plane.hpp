@@ -52,6 +52,15 @@ bool observed_slice_assignment(const Workload&       wl,
 // games and GPU dataloaders use the uncapped latency slice.
 const char* slice_for_intent(const Workload& wl, PolicyDecision decision);
 
+// Pure memory-orchestration helpers used by the daemon tick and by tests.
+// compute_memory_high_bytes() returns 0 (meaning "max") when nothing is
+// throttled, otherwise 75% of the summed RSS with a 16 MiB floor so a tiny
+// workload cannot produce an unusably small soft limit.
+// compute_memory_low_bytes() protects up to the full active/protected RSS but
+// never more than half of total RAM.
+long compute_memory_high_bytes(long rss_kb);
+long compute_memory_low_bytes(long rss_kb, long total_kb);
+
 class EnforcementPlane {
 public:
     explicit EnforcementPlane(CgroupController& cgroup,

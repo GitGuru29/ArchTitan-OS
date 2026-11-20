@@ -2,7 +2,7 @@
 // titan-hwm-v3/tests/test_runner.cpp
 // Real OS-Level Test Suite for Titan Hardware Manager v3 (THM v3)
 //
-// Validates 39 architectural test cases on real Linux OS primitives:
+// Validates 40 architectural test cases on real Linux OS primitives:
 //   TC-1:  Gradle / Background Build Survival
 //   TC-2:  AI Agent Workload Survival & Execution Authority
 //   TC-3:  Idle IDE Aging, Throttling & Freeze under Pressure
@@ -17,6 +17,7 @@
 //   TC-12: Protected-PID Guard on SIGKILL Escalation (regression, ISSUE-13)
 //   TC-13: Browser Collateral Guard vs. Hard-Block Separation
 //   TC-39: AGING Pressure-Relief Downgrade (v3.3-R1)
+//   TC-40: Memory Orchestration Math (v3.3-R2)
 // =============================================================================
 
 #include "../core/types.hpp"
@@ -2837,6 +2838,51 @@ void test_tc39_aging_pressure_relief() {
     std::cout << (passed ? ">>> PASS: AGING pressure relief verified.\n" : ">>> FAIL!\n");
 }
 
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-40: Memory orchestration math
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc40_memory_orchestration_math() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(40, "Memory Orchestration Math",
+                    "memory.high = 75% RSS with floor; memory.low capped at half of RAM");
+
+    constexpr long k16MiB = 16L * 1024 * 1024;
+    constexpr long k1GiB  = 1024L * 1024 * 1024;
+    constexpr long k2GiB  = 2L * 1024 * 1024 * 1024;
+    constexpr long k8GiB  = 8L * 1024 * 1024 * 1024;
+
+    const long high_none  = thm::compute_memory_high_bytes(0);
+    const long high_small = thm::compute_memory_high_bytes(1024);
+    const long high_1gib  = thm::compute_memory_high_bytes(1024 * 1024);
+    const long low_none   = thm::compute_memory_low_bytes(0, 16 * 1024 * 1024);
+    const long low_2gib   = thm::compute_memory_low_bytes(2 * 1024 * 1024,
+                                                          16 * 1024 * 1024);
+    const long low_capped = thm::compute_memory_low_bytes(20 * 1024 * 1024,
+                                                          16 * 1024 * 1024);
+
+    const bool passed =
+        (high_none  == 0) &&
+        (high_small == k16MiB) &&
+        (high_1gib  == (k1GiB * 75) / 100) &&
+        (low_none   == 0) &&
+        (low_2gib   == k2GiB) &&
+        (low_capped == k8GiB);
+
+    std::cout << "[Memory] high(0)=" << high_none
+              << ", high(1MiB RSS)=" << high_small
+              << ", high(1GiB RSS)=" << high_1gib
+              << ", low(2GiB/16GiB)=" << low_2gib
+              << ", low(20GiB/16GiB)=" << low_capped << "\n";
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-40: Memory Orchestration Math",
+                         "memory.high soft cap and memory.low protection are bounded and safe",
+                         passed,
+                         "high=0/16MiB/0.75GiB, low=0/2GiB/8GiB cap", ms});
+    std::cout << (passed ? ">>> PASS: memory orchestration math verified.\n" : ">>> FAIL!\n");
+}
+
 int main() {
     std::cout << "\n╔══════════════════════════════════════════════════════════════════════════════╗\n";
     std::cout << "║        THM v3 Real OS-Level Architectural Test Suite                         ║\n";
@@ -2882,6 +2928,7 @@ int main() {
     test_tc37_standalone_game_intent();
     test_tc38_unattended_game_cap_guard();
     test_tc39_aging_pressure_relief();
+    test_tc40_memory_orchestration_math();
 
     // Summary Table
     std::cout << "\n════════════════════════════════════════════════════════════════════════════════\n";

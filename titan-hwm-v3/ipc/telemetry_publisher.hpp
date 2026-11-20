@@ -70,6 +70,12 @@ struct TelemetrySnapshot {
     long        mem_total_kb     = 0;
     long        mem_available_kb = 0;
 
+    // Kernel-native memory orchestration (v3.3-R2)
+    long        background_memory_high_bytes = 0; // 0 == max
+    long        latency_memory_high_bytes    = 0; // 0 == max
+    long        protected_memory_low_bytes   = 0; // 0 == no protection
+    bool        memory_enforcement_active    = false;
+
     // CPU pressure & asymmetric scheduling (HC-CPU-1: scheduling/headroom only, never kills)
     std::string cpu_pressure_level       = "NORMAL";
     std::string composite_pressure_level = "NORMAL";

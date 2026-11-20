@@ -1222,6 +1222,13 @@ int main(int argc, char* argv[]) {
             if (wl) all_workloads[id] = *wl;
         }
 
+        // v3.3-R2: aggregate RSS by memory-orchestration role. Hyprland IPC
+        // focus/visibility has already driven the state machine and policy by
+        // this point, so these are the *live* foreground/background sets.
+        long throttled_bg_rss_kb     = 0;
+        long throttled_latency_rss_kb = 0;
+        long protected_active_rss_kb = 0;
+
         for (uint32_t id : workload_mgr.all_ids()) {
             auto* wl = workload_mgr.get(id);
             if (!wl || wl->state == thm::WorkloadState::TERMINATED) continue;
@@ -1330,6 +1337,23 @@ int main(int argc, char* argv[]) {
                         decision == thm::PolicyDecision::FREEZE) {
                         record_action(decision);
                     }
+
+                    // Feed the memory-orchestration math with this workload's
+                    // live RSS. RECLAIM is intentionally excluded: a job that
+                    // is being torn down must not receive a soft limit.
+                    long rss_kb = 0;
+                    for (pid_t p : wl->pids) {
+                        auto pit = proc_graph.find(p);
+                        if (pit != proc_graph.end()) rss_kb += pit->second.rss_kb;
+                    }
+                    if (decision == thm::PolicyDecision::THROTTLE) {
+                        if (wl->latency_critical || wl->gpu_feeding)
+                            throttled_latency_rss_kb += rss_kb;
+                        else
+                            throttled_bg_rss_kb += rss_kb;
+                    } else if (decision == thm::PolicyDecision::KEEP_FULL) {
+                        protected_active_rss_kb += rss_kb;
+                    }
                 }
             }
         }
@@ -1340,7 +1364,60 @@ int main(int argc, char* argv[]) {
             cgroup.move_to_slice(protected_pids, thm::SLICE_PROTECTED);
         }
 
-        // ── (f2) CPU arbitration plane (HC-CPU-1: scheduling/headroom only) ─
+        // ── (f2) Memory orchestration: kernel-native soft limits ────────────
+        // THROTTLE now means a real memory.high write, not just OOM exposure.
+        // Protected/active work gets memory.soft protection so the kernel
+        // reclaims bulk slices first. All writes are change-detected, so a
+        // steady state costs zero cgroup syscalls.
+        long applied_bg_mem_high    = 0;
+        long applied_lat_mem_high   = 0;
+        long applied_prot_mem_low   = 0;
+        bool memory_enforcement_active = false;
+
+        if (!dry_run && cgroup.hierarchy_healthy()) {
+            static std::unordered_map<std::string, long> last_mem_high;
+            static std::unordered_map<std::string, long> last_mem_low;
+            bool all_ok = true;
+
+            auto apply_high = [&](const char* slice, long bytes, long& applied) {
+                auto it = last_mem_high.find(slice);
+                if (it == last_mem_high.end() || it->second != bytes) {
+                    if (cgroup.set_memory_high(slice, bytes)) {
+                        last_mem_high[slice] = bytes;
+                    } else {
+                        all_ok = false;
+                    }
+                }
+                applied = bytes;
+            };
+            auto apply_low = [&](const char* slice, long bytes, long& applied) {
+                auto it = last_mem_low.find(slice);
+                if (it == last_mem_low.end() || it->second != bytes) {
+                    if (cgroup.set_memory_low(slice, bytes)) {
+                        last_mem_low[slice] = bytes;
+                    } else {
+                        all_ok = false;
+                    }
+                }
+                applied = bytes;
+            };
+
+            apply_high(thm::SLICE_BACKGROUND,
+                       thm::compute_memory_high_bytes(throttled_bg_rss_kb),
+                       applied_bg_mem_high);
+            apply_high(thm::SLICE_LATENCY,
+                       thm::compute_memory_high_bytes(throttled_latency_rss_kb),
+                       applied_lat_mem_high);
+
+            const long low_bytes = thm::compute_memory_low_bytes(
+                protected_active_rss_kb, mem.total_kb);
+            apply_low(thm::SLICE_ACTIVE, low_bytes, applied_prot_mem_low);
+            apply_low(thm::SLICE_PROTECTED, low_bytes, applied_prot_mem_low);
+
+            memory_enforcement_active = all_ok;
+        }
+
+        // ── (f3) CPU arbitration plane (HC-CPU-1: scheduling/headroom only) ─
         // Raw presence is refined after workload demand is collected: a game
         // or GPU feeder with no recent input is still real foreground demand.
         const bool raw_unattended = ws_monitor.user_unattended(thm::UNATTENDED_IDLE_SECONDS);
@@ -1514,6 +1591,10 @@ int main(int argc, char* argv[]) {
             snap.mem_used_pct    = mem.used_pct();
             snap.mem_total_kb     = mem.total_kb;
             snap.mem_available_kb = mem.available_kb;
+            snap.background_memory_high_bytes = applied_bg_mem_high;
+            snap.latency_memory_high_bytes    = applied_lat_mem_high;
+            snap.protected_memory_low_bytes   = applied_prot_mem_low;
+            snap.memory_enforcement_active    = memory_enforcement_active;
             snap.cpu_pressure_level       = thm::to_string(sys_pressure.cpu);
             snap.composite_pressure_level = thm::to_string(sys_pressure.composite);
             snap.cpu_psi_valid  = cpu_psi.valid;
@@ -1531,6 +1612,7 @@ int main(int argc, char* argv[]) {
             snap.protected_cpu_weight   = cpu_policy.protected_weight;
             snap.active_cpu_weight      = cpu_policy.active_weight;
             snap.background_cpu_weight  = cpu_policy.background_weight;
+            snap.latency_cpu_weight     = cpu_policy.latency_weight;
             snap.background_cpu_max_pct = cpu_policy.background_max_pct;
             snap.cpu_headroom_engaged   = cpu_policy.headroom_engaged;
             snap.reserved_headroom_cores = cpu_policy.reserved_cores;

@@ -209,6 +209,10 @@ public:
     // Set memory.high limit (bytes; 0 = remove limit / restore to max)
     bool set_memory_high(const std::string& slice_name, long bytes);
 
+    // Set memory.low protection (bytes; 0 = remove protection). Best-effort:
+    // kernels without memory.low support are a successful no-op.
+    bool set_memory_low(const std::string& slice_name, long bytes);
+
     // Set cgroup.freeze (1 = frozen, 0 = thawed)
     bool set_freeze(const std::string& slice_name, bool freeze);
 

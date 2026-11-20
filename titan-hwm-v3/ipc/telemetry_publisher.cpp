@@ -68,6 +68,10 @@ std::string serialize_snapshot(const TelemetrySnapshot& s) {
       << ",\"mem_used_pct\":"   << f2(s.mem_used_pct)
       << ",\"mem_total_kb\":"   << s.mem_total_kb
       << ",\"mem_available_kb\":" << s.mem_available_kb
+      << ",\"bg_memory_high_bytes\":" << s.background_memory_high_bytes
+      << ",\"latency_memory_high_bytes\":" << s.latency_memory_high_bytes
+      << ",\"protected_memory_low_bytes\":" << s.protected_memory_low_bytes
+      << ",\"memory_enforcement\":" << (s.memory_enforcement_active ? "true" : "false")
       << '}';
     o << ",\"cpu\":{"
       << "\"psi_valid\":"  << (s.cpu_psi_valid ? "true" : "false")

@@ -416,6 +416,14 @@ bool CgroupController::set_memory_high(const std::string& slice_name, long bytes
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// set_memory_low — soft memory protection (bytes; 0 = remove)
+// ─────────────────────────────────────────────────────────────────────────────
+bool CgroupController::set_memory_low(const std::string& slice_name, long bytes) {
+    std::string val = (bytes <= 0) ? "0" : std::to_string(bytes);
+    return write_file(slice_path(slice_name) + "/memory.low", val);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // set_freeze — write cgroup.freeze (1 = frozen, 0 = thawed)
 // ─────────────────────────────────────────────────────────────────────────────
 bool CgroupController::set_freeze(const std::string& slice_name, bool freeze) {
