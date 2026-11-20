@@ -96,6 +96,8 @@ struct TelemetrySnapshot {
     int         isolated_physical_cores = 0;
     std::string latency_cpuset;                  // e.g. "0,4,1,5"
     std::string background_cpuset;               // e.g. "2,3,6,7"
+    bool        input_feedforward_active = false; // v3.6 short boost after real input
+    long        input_age_ms             = -1;    // age of last observed event
     bool        background_cpu_idle    = false;
     bool        unattended_lift        = false;
     float       cpu_temp_c             = 0.0f;

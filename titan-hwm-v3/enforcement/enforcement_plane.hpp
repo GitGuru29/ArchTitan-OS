@@ -11,6 +11,7 @@
 #include "../core/types.hpp"
 #include "../core/protected_registry.hpp"
 #include "../resources/smt_topology.hpp"
+#include "../resources/input_feedforward.hpp"
 #include "cgroup_controller.hpp"
 
 #include <csignal>
@@ -74,7 +75,8 @@ public:
                                              int online_cpus,
                                              bool user_unattended_idle,
                                              const CpuDemandHint* demand = nullptr,
-                                             int reserved_cores_override = -1);
+                                             int reserved_cores_override = -1,
+                                             const InputBoost* input_boost = nullptr);
 
     const CpuSlicePolicy& current_cpu_policy() const { return effective_policy_; }
 

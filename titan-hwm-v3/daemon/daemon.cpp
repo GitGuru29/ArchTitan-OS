@@ -26,6 +26,7 @@
 #include "../enforcement/enforcement_plane.hpp"
 #include "../resources/pressure_level.hpp"
 #include "../resources/smt_topology.hpp"
+#include "../resources/input_feedforward.hpp"
 #include "../ipc/workspace_monitor.hpp"
 #include "../ipc/telemetry_publisher.hpp"
 #include "../ipc/command_server.hpp"
@@ -237,6 +238,8 @@ static std::string format_status(const thm::TelemetrySnapshot& s) {
         o << "  SMT isolation:  " << s.isolated_physical_cores
           << " physical core(s) | latency[" << s.latency_cpuset
           << "] bg[" << s.background_cpuset << "]\n";
+    if (s.input_feedforward_active)
+        o << "Input boost:    active (last event " << s.input_age_ms << " ms ago)\n";
     else if (s.unattended_lift)
         o << "100.0% (auto-lifted: user idle >60s)\n";
     else
@@ -374,6 +377,8 @@ static std::string format_pressure(const thm::TelemetrySnapshot& s) {
         o << "SMT isolation:  " << s.isolated_physical_cores
           << " core(s) | latency[" << s.latency_cpuset
           << "] bg[" << s.background_cpuset << "]\n";
+    if (s.input_feedforward_active)
+        o << "Input boost:    active (last event " << s.input_age_ms << " ms ago)\n";
     else if (s.unattended_lift)
         o << "max (auto-lifted: user idle >60s)\n";
     else
@@ -800,6 +805,10 @@ int main(int argc, char* argv[]) {
     // v3.5: physical-core topology, discovered once when online_cpus is known.
     thm::SmtTopology smt_topo;
     thm::CpuIsolationState isolation_state;
+
+    // v3.6: non-blocking evdev monitor + 1.2 s input boost latch.
+    thm::InputDeviceMonitor input_monitor;
+    thm::InputFeedForwardTracker input_tracker;
 
     // Governor hint currently applied — feeds compute_governor's hysteresis band
     thm::GovernorHint current_gov = thm::GovernorHint::SCHEDUTIL;
@@ -1303,6 +1312,14 @@ int main(int argc, char* argv[]) {
         const bool unattended_idle = ws_monitor.user_unattended(thm::UNATTENDED_IDLE_SECONDS);
         if (!smt_topo.valid()) smt_topo = thm::read_smt_topology(online_cpus);
 
+        // v3.6: real keyboard/mouse activity grants a short, bounded boost
+        // before PSI sees contention. In dry-run no devices are read.
+        const auto tick_now = thm::InputFeedForwardTracker::Clock::now();
+        const bool input_now = !dry_run && input_monitor.poll();
+        const bool input_hot = input_tracker.observe(input_now, tick_now);
+        thm::InputBoost input_boost;
+        input_boost.active = input_hot;
+
         // v3.4: adaptive headroom from real workload demand. All signals are
         // descriptive; only cpu.max/quota / cpuset is ever changed by this path.
         thm::CpuDemandHint demand;
@@ -1327,7 +1344,10 @@ int main(int argc, char* argv[]) {
             ? thm::compute_cpu_slice_policy(sys_pressure.cpu, online_cpus,
                                             unattended_idle, &demand, reserve_applied)
             : enforcement.apply_cpu_pressure_policy(sys_pressure.cpu, online_cpus,
-                                                    unattended_idle, &demand, reserve_applied);
+                                                    unattended_idle, &demand,
+                                                    reserve_applied, &input_boost);
+        if (dry_run && input_boost.active)
+            thm::apply_input_boost(cpu_policy, input_boost, online_cpus);
 
         // v3.5: v3.3 intent plus SMT topology decide which physical cores the
         // latency slices own. The bulk slice loses those cores' siblings so a
@@ -1477,6 +1497,8 @@ int main(int argc, char* argv[]) {
             snap.isolated_physical_cores = isolation_state.reserved_physical_cores;
             snap.latency_cpuset          = isolation_state.latency_cpus;
             snap.background_cpuset       = isolation_state.background_cpus;
+            snap.input_feedforward_active = input_hot;
+            snap.input_age_ms             = input_tracker.age_ms(tick_now);
             snap.background_cpu_idle    = cpu_policy.background_idle;
             snap.unattended_lift        = cpu_policy.unattended_lift;
             snap.cpu_temp_c             = cpu_temp_c;

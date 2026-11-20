@@ -95,6 +95,8 @@ std::string serialize_snapshot(const TelemetrySnapshot& s) {
       << ",\"isolated_cores\":" << s.isolated_physical_cores
       << ",\"latency_cpuset\":\"" << s.latency_cpuset << "\""
       << ",\"background_cpuset\":\"" << s.background_cpuset << "\""
+      << ",\"input_feedforward\":" << (s.input_feedforward_active ? "true" : "false")
+      << ",\"input_age_ms\":" << s.input_age_ms
       << ",\"background_idle\":"  << (s.background_cpu_idle ? "true" : "false")
       << ",\"unattended_lift\":"  << (s.unattended_lift ? "true" : "false")
       << ",\"temp_c\":" << f2(s.cpu_temp_c)

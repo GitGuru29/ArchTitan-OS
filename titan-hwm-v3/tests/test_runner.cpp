@@ -29,6 +29,7 @@
 #include "../enforcement/cgroup_controller.hpp"
 #include "../enforcement/enforcement_plane.hpp"
 #include "../resources/smt_topology.hpp"
+#include "../resources/input_feedforward.hpp"
 #include "../resources/pressure_level.hpp"
 #include "../ipc/workspace_monitor.hpp"
 #include "../ipc/telemetry_publisher.hpp"
@@ -1976,6 +1977,8 @@ void test_tc23_cpu_telemetry_contract_v32() {
     s.isolated_physical_cores  = 2;
     s.latency_cpuset           = "0,1,4,5";
     s.background_cpuset        = "2,3,6,7";
+    s.input_feedforward_active = true;
+    s.input_age_ms             = 42;
     s.background_cpu_idle      = true;
     s.unattended_lift          = false;
     s.bg_nr_periods            = 400;
@@ -2001,6 +2004,8 @@ void test_tc23_cpu_telemetry_contract_v32() {
         "\"isolated_cores\":2",
         "\"latency_cpuset\":\"0,1,4,5\"",
         "\"background_cpuset\":\"2,3,6,7\"",
+        "\"input_feedforward\":true",
+        "\"input_age_ms\":42",
         "\"background_idle\":true",
         "\"unattended_lift\":false",
         "\"bg_nr_throttled\":37",
@@ -2020,7 +2025,7 @@ void test_tc23_cpu_telemetry_contract_v32() {
     g_results.push_back({"TC-23: Telemetry Contract v3.2",
                          "v3.2 CPU pressure and headroom fields serialized cleanly",
                          passed,
-                         std::string("checked 21 fields incl. SMT cpusets, bytes=") + std::to_string(json.size()),
+                         std::string("checked 23 fields incl. SMT cpusets/input boost, bytes=") + std::to_string(json.size()),
                          ms});
     std::cout << (passed ? ">>> PASS: v3.2 telemetry contract verified.\n" : ">>> FAIL!\n");
 }
@@ -2592,6 +2597,66 @@ void test_tc34_smt_isolation() {
     std::cout << (passed ? ">>> PASS: SMT isolation planning verified.\n" : ">>> FAIL!\n");
 }
 
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-35: v3.6 Input Feed-Forward
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc35_input_feedforward() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(35, "Input Feed-Forward",
+                    "Real key/pointer input arms a bounded 1.2 s foreground boost");
+
+    struct input_event key{}, rel{}, power{}, release{};
+    key.type = EV_KEY;  key.code = KEY_A;   key.value = 1;
+    rel.type = EV_REL;  rel.code = REL_X;   rel.value = 5;
+    power.type = EV_KEY; power.code = KEY_POWER; power.value = 1;
+    release.type = EV_KEY; release.code = KEY_A; release.value = 0;
+
+    const bool filter_ok = thm::is_user_input_event(key) &&
+                           thm::is_user_input_event(rel) &&
+                           !thm::is_user_input_event(power) &&
+                           !thm::is_user_input_event(release);
+
+    using Clock = thm::InputFeedForwardTracker::Clock;
+    const auto t_base = Clock::now();
+    thm::InputFeedForwardTracker tracker;
+    const bool a = tracker.observe(true, t_base);
+    const bool b = tracker.observe(false, t_base + std::chrono::milliseconds(600));
+    const bool c = tracker.observe(false, t_base + std::chrono::milliseconds(1300));
+
+    thm::InputBoost boost;
+    boost.active = true;
+    auto normal = thm::compute_cpu_slice_policy(thm::PressureLevel::NORMAL, 8, false);
+    thm::apply_input_boost(normal, boost, 8);
+    auto high = thm::compute_cpu_slice_policy(thm::PressureLevel::HIGH, 8, false);
+    thm::apply_input_boost(high, boost, 8);
+    auto away = thm::compute_cpu_slice_policy(thm::PressureLevel::HIGH, 8, true);
+    thm::apply_input_boost(away, boost, 8);
+
+    const bool boost_ok =
+        normal.headroom_engaged && normal.reserved_cores == 1 &&
+        normal.background_quota_us == 175000 &&
+        normal.active_weight == 900 && normal.latency_weight == 850 &&
+        high.reserved_cores == 2 && high.background_quota_us == 150000 &&
+        high.active_weight == 1400 && high.latency_weight == 1350 &&
+        high.background_weight == 10 && // penalty floored, never zero
+        !away.headroom_engaged && away.background_quota_us == 0;
+
+    const bool passed = filter_ok && a && b && !c && boost_ok;
+
+    std::cout << "[Input] filter=" << filter_ok << " latch=" << a << b << c
+              << " normal_quota=" << normal.background_quota_us
+              << " high_quota=" << high.background_quota_us << "\n";
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-35: Input Feed-Forward",
+                         "Evdev filter, 1.2 s self-expiring latch, bounded weight/cap boost",
+                         passed,
+                         "key/mouse=yes power/release=no, latch 1->1->0, quota 175000/150000us",
+                         ms});
+    std::cout << (passed ? ">>> PASS: input feed-forward verified.\n" : ">>> FAIL!\n");
+}
+
 int main() {
     std::cout << "\n╔══════════════════════════════════════════════════════════════════════════════╗\n";
     std::cout << "║        THM v3 Real OS-Level Architectural Test Suite                         ║\n";
@@ -2632,6 +2697,7 @@ int main() {
     test_tc32_adaptive_headroom();
     test_tc33_headroom_hysteresis();
     test_tc34_smt_isolation();
+    test_tc35_input_feedforward();
 
     // Summary Table
     std::cout << "\n════════════════════════════════════════════════════════════════════════════════\n";

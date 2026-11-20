@@ -197,10 +197,12 @@ CpuSlicePolicy EnforcementPlane::apply_cpu_pressure_policy(PressureLevel cpu_pre
                                                            int online_cpus,
                                                            bool user_unattended_idle,
                                                            const CpuDemandHint* demand,
-                                                           int reserved_cores_override) {
+                                                           int reserved_cores_override,
+                                                           const InputBoost* input_boost) {
     CpuSlicePolicy policy = compute_cpu_slice_policy(cpu_pressure, online_cpus,
                                                      user_unattended_idle,
                                                      demand, reserved_cores_override);
+    if (input_boost) apply_input_boost(policy, *input_boost, online_cpus);
 
     // A memory-driven THROTTLE this tick may push the background slice lower
     // than the CPU policy wants, but never higher.

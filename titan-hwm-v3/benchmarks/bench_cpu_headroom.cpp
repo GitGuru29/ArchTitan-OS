@@ -30,6 +30,7 @@
 
 #include "../enforcement/cgroup_controller.hpp"
 #include "../resources/pressure_level.hpp"
+#include "../resources/input_feedforward.hpp"
 
 #include <algorithm>
 #include <array>
@@ -67,6 +68,7 @@ volatile sig_atomic_t g_interrupted = 0;
 // v3.4: optional workload intent for the managed phase. Empty by default, so
 // all existing A/B runs keep the classic fixed headroom.
 thm::CpuDemandHint g_demand;
+thm::InputBoost g_input_boost;
 
 void handle_signal(int) {
     g_interrupted = 1;
@@ -701,6 +703,8 @@ PhaseResult run_benchmark_phase(const std::string& mode,
     // Compute exact production THM v3.2 policy for HIGH CPU pressure
     thm::CpuSlicePolicy policy = thm::compute_cpu_slice_policy(
         thm::PressureLevel::HIGH, res.online_cpus, false, &g_demand);
+    if (g_input_boost.active)
+        thm::apply_input_boost(policy, g_input_boost, res.online_cpus);
     if (is_weights_only) {
         policy.background_quota_us = 0;
         policy.background_max_pct  = 100.0f;
@@ -1451,6 +1455,7 @@ void print_usage(const char* argv0) {
         << "  --bg-procs <P>       Number of forked background worker processes (default: 2)\n"
         << "  --work-us <us>       Foreground simulated CPU work per tick in us (default: auto)\n"
         << "  --adaptive <kind>    Managed-phase demand hint: none|game|train|both (default: none)\n"
+        << "  --input-boost        Simulate a fresh keyboard/mouse event in the managed phase\n"
         << "  --csv [file]         Output CSV (stdout if no file, or write to file)\n"
         << "  --json <file>        Write JSON report to file\n"
         << "  --markdown <file>    Write Markdown report to file\n"
@@ -1517,6 +1522,8 @@ int main(int argc, char* argv[]) {
             bg_procs = std::clamp(std::atoi(argv[++i]), 1, kMaxBgProcs);
         } else if (a == "--work-us" && i + 1 < argc) {
             work_us = std::max(0, std::atoi(argv[++i]));
+        } else if (a == "--input-boost") {
+            g_input_boost.active = true;
         } else if (a == "--adaptive" && i + 1 < argc) {
             std::string kind = argv[++i];
             g_demand = thm::CpuDemandHint{};
@@ -1564,6 +1571,8 @@ int main(int argc, char* argv[]) {
         if (g_demand.latency_workloads || g_demand.gpu_feeders)
             std::cout << "  Demand hint   : " << g_demand.latency_workloads << " game(s), "
                       << g_demand.gpu_feeders << " dataloader(s)\n";
+        if (g_input_boost.active)
+            std::cout << "  Input boost   : armed for the managed phase\n";
     }
 
     std::vector<PhaseResult> all_results;
