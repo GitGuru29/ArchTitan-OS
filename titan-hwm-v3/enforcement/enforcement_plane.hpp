@@ -10,6 +10,7 @@
 
 #include "../core/types.hpp"
 #include "../core/protected_registry.hpp"
+#include "../resources/smt_topology.hpp"
 #include "cgroup_controller.hpp"
 
 #include <csignal>
@@ -26,6 +27,14 @@ static constexpr int OOM_EXPOSE   =  500; // aging/reclaimable — OOM prefers t
 // (compute_cpu_slice_policy) owns every other weight; a memory-driven THROTTLE
 // decision can only ever push the background slice lower, never higher.
 static constexpr int CPU_WEIGHT_THROTTLE = 20;
+
+// Effective SMT-aware cpuset split (empty strings = whole machine).
+struct CpuIsolationState {
+    bool active = false;
+    int  reserved_physical_cores = 0;
+    std::string latency_cpus;
+    std::string background_cpus;
+};
 
 // Pure helper: should an OBSERVED workload be placed in a managed CPU slice
 // this tick? Unclassified games, renderers and training jobs must not run
@@ -69,6 +78,16 @@ public:
 
     const CpuSlicePolicy& current_cpu_policy() const { return effective_policy_; }
 
+    // v3.5: place latency work on whole physical cores and keep their SMT
+    // siblings out of the bulk background slice. Change-detected: in steady
+    // state this performs no cgroup writes. Never signals a process.
+    CpuIsolationState apply_smt_isolation(const SmtTopology& topology,
+                                          const CpuDemandHint& demand,
+                                          PressureLevel cpu_pressure,
+                                          bool user_unattended_idle);
+
+    const CpuIsolationState& current_isolation() const { return isolation_; }
+
 private:
     CgroupController&        cgroup_;
     const ProtectedRegistry& registry_;
@@ -84,6 +103,11 @@ private:
     } written_;
 
     CpuSlicePolicy effective_policy_;
+    CpuIsolationState isolation_;
+    bool cpuset_written_ = false;
+    std::string written_latency_cpuset_;
+    std::string written_bg_cpuset_;
+
     bool           throttle_seen_  = false; // a THROTTLE decision landed this tick
     int            write_backoff_  = 0;     // ticks to wait after a failed write
 

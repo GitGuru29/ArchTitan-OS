@@ -75,7 +75,7 @@ std::string CgroupController::slice_path(const std::string& slice_name) {
 // stop the daemon, so it is logged and the caller continues.
 // ─────────────────────────────────────────────────────────────────────────────
 void CgroupController::enable_controllers() {
-    static const char* kWanted[] = { "cpu", "memory", "pids" };
+    static const char* kWanted[] = { "cpu", "cpuset", "memory", "pids" };
 
     const std::string subtree = std::string(SLICE_ROOT) + "/cgroup.subtree_control";
 
@@ -189,6 +189,41 @@ bool CgroupController::set_cpu_max(const std::string& slice_name,
     }
     return write_file(dir + "/cpu.max",
                       quota + " " + std::to_string(period_us));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// set_cpuset — v3.5 SMT-aware placement (scheduling only, no signals)
+// ─────────────────────────────────────────────────────────────────────────────
+bool CgroupController::set_cpuset(const std::string& slice_name,
+                                  const std::string& cpus) {
+    const std::string dir = slice_path(slice_name);
+    if (!fs::exists(dir + "/cpuset.cpus")) return true; // kernel without cpuset
+
+    // An empty list means "give the slice the whole machine again".
+    std::string full;
+    if (cpus.empty()) {
+        std::ifstream f(std::string(SLICE_ROOT) + "/cpuset.cpus.effective");
+        if (!(f >> full)) {
+            f.clear();
+            f.open(std::string(SLICE_ROOT) + "/cpuset.cpus");
+            if (!(f >> full)) full = "0";
+        }
+    }
+    const std::string value = cpus.empty() ? full : cpus;
+
+    // cpuset.mems must be non-empty before tasks can be placed; inherit the
+    // parent's node list instead of assuming NUMA node 0.
+    std::string mems;
+    {
+        std::ifstream f(std::string(SLICE_ROOT) + "/cpuset.mems.effective");
+        if (!(f >> mems)) {
+            f.clear();
+            f.open(std::string(SLICE_ROOT) + "/cpuset.mems");
+            if (!(f >> mems)) mems = "0";
+        }
+    }
+    write_file(dir + "/cpuset.mems", mems);
+    return write_file(dir + "/cpuset.cpus", value);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -28,6 +28,7 @@
 #include "../policy/reclaim_engine.hpp"
 #include "../enforcement/cgroup_controller.hpp"
 #include "../enforcement/enforcement_plane.hpp"
+#include "../resources/smt_topology.hpp"
 #include "../resources/pressure_level.hpp"
 #include "../ipc/workspace_monitor.hpp"
 #include "../ipc/telemetry_publisher.hpp"
@@ -1971,6 +1972,10 @@ void test_tc23_cpu_telemetry_contract_v32() {
     s.background_cpu_max_pct   = 87.5f;
     s.cpu_headroom_engaged     = true;
     s.reserved_headroom_cores  = 1;
+    s.smt_isolation_active     = true;
+    s.isolated_physical_cores  = 2;
+    s.latency_cpuset           = "0,1,4,5";
+    s.background_cpuset        = "2,3,6,7";
     s.background_cpu_idle      = true;
     s.unattended_lift          = false;
     s.bg_nr_periods            = 400;
@@ -1992,6 +1997,10 @@ void test_tc23_cpu_telemetry_contract_v32() {
         "\"background_cpu_max_pct\":87.5",
         "\"headroom_engaged\":true",
         "\"reserved_cores\":1",
+        "\"smt_isolation\":true",
+        "\"isolated_cores\":2",
+        "\"latency_cpuset\":\"0,1,4,5\"",
+        "\"background_cpuset\":\"2,3,6,7\"",
         "\"background_idle\":true",
         "\"unattended_lift\":false",
         "\"bg_nr_throttled\":37",
@@ -2011,7 +2020,7 @@ void test_tc23_cpu_telemetry_contract_v32() {
     g_results.push_back({"TC-23: Telemetry Contract v3.2",
                          "v3.2 CPU pressure and headroom fields serialized cleanly",
                          passed,
-                         std::string("checked 17 fields incl. latency slice/reserved cores, bytes=") + std::to_string(json.size()),
+                         std::string("checked 21 fields incl. SMT cpusets, bytes=") + std::to_string(json.size()),
                          ms});
     std::cout << (passed ? ">>> PASS: v3.2 telemetry contract verified.\n" : ">>> FAIL!\n");
 }
@@ -2528,6 +2537,61 @@ void test_tc33_headroom_hysteresis() {
     std::cout << (passed ? ">>> PASS: headroom hysteresis verified.\n" : ">>> FAIL!\n");
 }
 
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-34: v3.5 SMT Topology & Whole-Core cpuset Planning
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc34_smt_isolation() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(34, "SMT Whole-Core Isolation",
+                    "On 4c/8t, reserve whole physical cores for latency work and exclude their siblings from BG");
+
+    const auto parsed = thm::parse_cpu_list("0-1,4,7");
+    const bool parse_ok = (parsed == std::vector<int>{0, 1, 4, 7});
+
+    // 4 physical cores, each with two logical threads: 0/4, 1/5, 2/6, 3/7.
+    thm::SmtTopology topo;
+    topo.logical_cpus = 8;
+    topo.core_id = {0, 1, 2, 3, 0, 1, 2, 3};
+    const auto groups = topo.core_groups();
+    const bool groups_ok = groups.size() == 4 &&
+        groups[0] == (std::vector<int>{0, 4}) &&
+        groups[3] == (std::vector<int>{3, 7}) && topo.has_smt();
+
+    const auto one = thm::plan_smt_isolation(
+        topo, 1, 0, thm::PressureLevel::HIGH, false);
+    const auto both = thm::plan_smt_isolation(
+        topo, 1, 1, thm::PressureLevel::HIGH, false);
+    // Intent alone engages isolation: a game at MODERATE pressure still must
+    // not share execution units with a background compiler on its SMT sibling.
+    const auto cool = thm::plan_smt_isolation(
+        topo, 2, 0, thm::PressureLevel::MODERATE, false);
+    const auto away = thm::plan_smt_isolation(
+        topo, 2, 0, thm::PressureLevel::CRITICAL, true);
+
+    const bool passed = parse_ok && groups_ok &&
+        one.active && one.reserved_physical_cores == 1 &&
+        thm::format_cpu_list(one.latency_ids) == "0,4" &&
+        thm::format_cpu_list(one.background_ids) == "1,2,3,5,6,7" &&
+        both.active && both.reserved_physical_cores == 2 &&
+        thm::format_cpu_list(both.latency_ids) == "0,1,4,5" &&
+        thm::format_cpu_list(both.background_ids) == "2,3,6,7" &&
+        cool.active && cool.reserved_physical_cores == 2 && !away.active;
+
+    std::cout << "[SMT] 1 job: latency[" << thm::format_cpu_list(one.latency_ids)
+              << "] bg[" << thm::format_cpu_list(one.background_ids) << "]\n"
+              << "[SMT] 2 jobs: latency[" << thm::format_cpu_list(both.latency_ids)
+              << "] bg[" << thm::format_cpu_list(both.background_ids) << "]\n";
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-34: SMT Whole-Core Isolation",
+                         "Latency work owns whole physical cores; BG excludes every reserved sibling",
+                         passed,
+                         "game=1 core {0,4}, game+dataloader=2 cores {0,1,4,5}, BG={2,3,6,7}",
+                         ms});
+    std::cout << (passed ? ">>> PASS: SMT isolation planning verified.\n" : ">>> FAIL!\n");
+}
+
 int main() {
     std::cout << "\n╔══════════════════════════════════════════════════════════════════════════════╗\n";
     std::cout << "║        THM v3 Real OS-Level Architectural Test Suite                         ║\n";
@@ -2567,6 +2631,7 @@ int main() {
     test_tc31_latency_slice_policy();
     test_tc32_adaptive_headroom();
     test_tc33_headroom_hysteresis();
+    test_tc34_smt_isolation();
 
     // Summary Table
     std::cout << "\n════════════════════════════════════════════════════════════════════════════════\n";

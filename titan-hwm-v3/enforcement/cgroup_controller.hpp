@@ -185,6 +185,12 @@ public:
                      long quota_us,
                      long period_us = CFS_SMOOTH_PERIOD_US);
 
+    // v3.5: restrict a slice to a set of logical CPUs ("0,4,1,5"). An empty
+    // list restores the full machine. cpuset.mems is copied from the parent so
+    // the write works on multi-NUMA hosts too. Missing cpuset support is a
+    // best-effort no-op, never a failure of the rest of the CPU policy.
+    bool set_cpuset(const std::string& slice_name, const std::string& cpus);
+
     // Set cpu.idle (1 = SCHED_IDLE-equivalent for the whole slice). Kernels
     // without the file are treated as a successful no-op: the rest of the
     // policy still applies, and the daemon must not enter write-backoff.

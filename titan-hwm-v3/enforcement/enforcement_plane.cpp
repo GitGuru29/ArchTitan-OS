@@ -243,4 +243,53 @@ CpuSlicePolicy EnforcementPlane::apply_cpu_pressure_policy(PressureLevel cpu_pre
     return policy;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// apply_smt_isolation — v3.5 whole-core placement (HC-CPU-1: scheduling only)
+// ─────────────────────────────────────────────────────────────────────────────
+CpuIsolationState EnforcementPlane::apply_smt_isolation(
+        const SmtTopology& topology,
+        const CpuDemandHint& demand,
+        PressureLevel cpu_pressure,
+        bool user_unattended_idle) {
+    if (!topology.valid()) return isolation_; // cannot safely change cpusets
+
+    const auto plan = plan_smt_isolation(topology,
+                                         demand.latency_workloads,
+                                         demand.gpu_feeders,
+                                         cpu_pressure,
+                                         user_unattended_idle);
+
+    std::vector<int> all;
+    for (int cpu = 0; cpu < topology.logical_cpus; ++cpu) all.push_back(cpu);
+    const std::string want_latency = plan.active ? format_cpu_list(plan.latency_ids)
+                                                 : format_cpu_list(all);
+    const std::string want_bg = plan.active ? format_cpu_list(plan.background_ids)
+                                            : format_cpu_list(all);
+
+    const bool latency_changed = !cpuset_written_ ||
+                                 want_latency != written_latency_cpuset_;
+    const bool bg_changed = !cpuset_written_ || want_bg != written_bg_cpuset_;
+
+    bool ok = true;
+    if (latency_changed) {
+        // Foreground and latency slices share the reserved physical cores.
+        ok &= cgroup_.set_cpuset(SLICE_ACTIVE, want_latency);
+        ok &= cgroup_.set_cpuset(SLICE_LATENCY, want_latency);
+    }
+    if (bg_changed) {
+        ok &= cgroup_.set_cpuset(SLICE_BACKGROUND, want_bg);
+    }
+    if (!ok) return isolation_; // report only writes the kernel accepted
+
+    written_latency_cpuset_ = want_latency;
+    written_bg_cpuset_ = want_bg;
+    cpuset_written_ = true;
+
+    isolation_.active = plan.active;
+    isolation_.reserved_physical_cores = plan.reserved_physical_cores;
+    isolation_.latency_cpus = plan.active ? want_latency : "";
+    isolation_.background_cpus = plan.active ? want_bg : "";
+    return isolation_;
+}
+
 } // namespace thm

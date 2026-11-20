@@ -25,6 +25,7 @@
 #include "../enforcement/cgroup_controller.hpp"
 #include "../enforcement/enforcement_plane.hpp"
 #include "../resources/pressure_level.hpp"
+#include "../resources/smt_topology.hpp"
 #include "../ipc/workspace_monitor.hpp"
 #include "../ipc/telemetry_publisher.hpp"
 #include "../ipc/command_server.hpp"
@@ -63,21 +64,6 @@ static const char* governor_to_string(thm::GovernorHint h) {
         case thm::GovernorHint::SCHEDUTIL:
         default:                             return "schedutil";
     }
-}
-
-// Detect SMT from CPU0's thread_siblings_list ("0" = no sibling, "0-1" /
-// "0,2" = siblings share a physical core). Cached once: topology cannot change
-// while the daemon is running without an offline/online event that also
-// invalidates online_cpus.
-static bool has_smt_siblings() {
-    static const bool smt = []() {
-        std::ifstream f("/sys/devices/system/cpu/cpu0/topology/thread_siblings_list");
-        std::string list;
-        if (!(f >> list)) return false;
-        return list.find(',') != std::string::npos ||
-               list.find('-') != std::string::npos;
-    }();
-    return smt;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -247,6 +233,10 @@ static std::string format_status(const thm::TelemetrySnapshot& s) {
           << (s.background_cpu_idle ? " + cpu.idle" : "")
           << " (25ms CFS period, " << s.reserved_headroom_cores
           << " core(s) reserved)\n";
+    if (s.smt_isolation_active)
+        o << "  SMT isolation:  " << s.isolated_physical_cores
+          << " physical core(s) | latency[" << s.latency_cpuset
+          << "] bg[" << s.background_cpuset << "]\n";
     else if (s.unattended_lift)
         o << "100.0% (auto-lifted: user idle >60s)\n";
     else
@@ -380,6 +370,10 @@ static std::string format_pressure(const thm::TelemetrySnapshot& s) {
         o << std::setprecision(1) << s.background_cpu_max_pct << "%  (25ms CFS period)"
           << (s.background_cpu_idle ? "  cpu.idle=1" : "")
           << "  reserved=" << s.reserved_headroom_cores << " core(s)\n";
+    if (s.smt_isolation_active)
+        o << "SMT isolation:  " << s.isolated_physical_cores
+          << " core(s) | latency[" << s.latency_cpuset
+          << "] bg[" << s.background_cpuset << "]\n";
     else if (s.unattended_lift)
         o << "max (auto-lifted: user idle >60s)\n";
     else
@@ -802,6 +796,10 @@ int main(int argc, char* argv[]) {
 
     // v3.4: 3-tick-confirmed adaptive headroom; avoids cpu.max flapping.
     thm::AdaptiveHeadroomTracker headroom_tracker;
+
+    // v3.5: physical-core topology, discovered once when online_cpus is known.
+    thm::SmtTopology smt_topo;
+    thm::CpuIsolationState isolation_state;
 
     // Governor hint currently applied — feeds compute_governor's hysteresis band
     thm::GovernorHint current_gov = thm::GovernorHint::SCHEDUTIL;
@@ -1303,12 +1301,13 @@ int main(int argc, char* argv[]) {
 
         // ── (f2) CPU arbitration plane (HC-CPU-1: scheduling/headroom only) ─
         const bool unattended_idle = ws_monitor.user_unattended(thm::UNATTENDED_IDLE_SECONDS);
+        if (!smt_topo.valid()) smt_topo = thm::read_smt_topology(online_cpus);
 
         // v3.4: adaptive headroom from real workload demand. All signals are
-        // descriptive; only cpu.max/quota is ever changed by this path.
+        // descriptive; only cpu.max/quota / cpuset is ever changed by this path.
         thm::CpuDemandHint demand;
         demand.cpu_temp_c   = cpu_temp_c; // sampled every 5 ticks in step (g)
-        demand.smt_siblings = has_smt_siblings();
+        demand.smt_siblings = smt_topo.has_smt();
         for (uint32_t id : workload_mgr.all_ids()) {
             const thm::Workload* wl = workload_mgr.get(id);
             if (!wl || wl->observed) continue;
@@ -1329,6 +1328,14 @@ int main(int argc, char* argv[]) {
                                             unattended_idle, &demand, reserve_applied)
             : enforcement.apply_cpu_pressure_policy(sys_pressure.cpu, online_cpus,
                                                     unattended_idle, &demand, reserve_applied);
+
+        // v3.5: v3.3 intent plus SMT topology decide which physical cores the
+        // latency slices own. The bulk slice loses those cores' siblings so a
+        // compiler cannot steal execution units from a game / dataloader.
+        if (!dry_run) {
+            isolation_state = enforcement.apply_smt_isolation(
+                smt_topo, demand, sys_pressure.cpu, unattended_idle);
+        }
 
         thm::CpuSliceStat bg_cpu_stat;
         cgroup.read_cpu_stat(thm::SLICE_BACKGROUND, bg_cpu_stat);
@@ -1466,6 +1473,10 @@ int main(int argc, char* argv[]) {
             snap.background_cpu_max_pct = cpu_policy.background_max_pct;
             snap.cpu_headroom_engaged   = cpu_policy.headroom_engaged;
             snap.reserved_headroom_cores = cpu_policy.reserved_cores;
+            snap.smt_isolation_active    = isolation_state.active;
+            snap.isolated_physical_cores = isolation_state.reserved_physical_cores;
+            snap.latency_cpuset          = isolation_state.latency_cpus;
+            snap.background_cpuset       = isolation_state.background_cpus;
             snap.background_cpu_idle    = cpu_policy.background_idle;
             snap.unattended_lift        = cpu_policy.unattended_lift;
             snap.cpu_temp_c             = cpu_temp_c;
