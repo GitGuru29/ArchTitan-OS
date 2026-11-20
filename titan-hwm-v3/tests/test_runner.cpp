@@ -2,7 +2,7 @@
 // titan-hwm-v3/tests/test_runner.cpp
 // Real OS-Level Test Suite for Titan Hardware Manager v3 (THM v3)
 //
-// Validates 41 architectural test cases on real Linux OS primitives:
+// Validates 42 architectural test cases on real Linux OS primitives:
 //   TC-1:  Gradle / Background Build Survival
 //   TC-2:  AI Agent Workload Survival & Execution Authority
 //   TC-3:  Idle IDE Aging, Throttling & Freeze under Pressure
@@ -19,6 +19,7 @@
 //   TC-39: AGING Pressure-Relief Downgrade (v3.3-R1)
 //   TC-40: Memory Orchestration Math (v3.3-R2)
 //   TC-41: Fail-Closed Decision Gate (v3.3-R3)
+//   TC-42: Shared pidfd Signal Path (v3.3-R5)
 // =============================================================================
 
 #include "../core/types.hpp"
@@ -31,6 +32,7 @@
 #include "../policy/reclaim_engine.hpp"
 #include "../enforcement/cgroup_controller.hpp"
 #include "../enforcement/enforcement_plane.hpp"
+#include "../core/signal_utils.hpp"
 #include "../resources/smt_topology.hpp"
 #include "../resources/input_feedforward.hpp"
 #include "../resources/pressure_level.hpp"
@@ -1951,15 +1953,15 @@ void test_tc22_unattended_idle_autolift() {
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// TC-23: Telemetry Contract v3.2 (CPU Pressure & Headroom Fields)
+// TC-23: Telemetry Contract v3.3 (CPU + Memory Orchestration Fields)
 // ═════════════════════════════════════════════════════════════════════════════
 void test_tc23_cpu_telemetry_contract_v32() {
     auto t0 = std::chrono::steady_clock::now();
-    log_test_header(23, "Telemetry Contract v3.2",
-                    "Telemetry JSON emits CPU pressure, load_ratio, weights, and headroom state");
+    log_test_header(23, "Telemetry Contract v3.3",
+                    "Telemetry JSON emits CPU, headroom, and kernel-memory orchestration state");
 
     thm::TelemetrySnapshot s;
-    s.version                  = "3.2.0";
+    s.version                  = "3.3.0";
     s.pressure_level           = "NORMAL";
     s.cpu_pressure_level       = "HIGH";
     s.composite_pressure_level = "HIGH";
@@ -1987,10 +1989,16 @@ void test_tc23_cpu_telemetry_contract_v32() {
     s.bg_nr_periods            = 400;
     s.bg_nr_throttled          = 37;
     s.bg_throttled_usec        = 125000;
+    s.background_memory_high_bytes = 100663296;
+    s.latency_memory_high_bytes    = 50331648;
+    s.protected_memory_low_bytes   = 33554432;
+    s.memory_enforcement_active    = true;
+    s.enforcement_degraded         = false;
+    s.destructive_reclaim_enabled  = false;
 
     const std::string json = thm::serialize_snapshot(s);
     const char* needles[] = {
-        "\"version\":\"3.2.0\"",
+        "\"version\":\"3.3.0\"",
         "\"pressure\":\"HIGH\"",
         "\"composite_pressure\":\"HIGH\"",
         "\"psi_some_inst\":72.25",
@@ -2013,6 +2021,12 @@ void test_tc23_cpu_telemetry_contract_v32() {
         "\"unattended_lift\":false",
         "\"bg_nr_throttled\":37",
         "\"bg_throttled_usec\":125000",
+        "\"bg_memory_high_bytes\":100663296",
+        "\"latency_memory_high_bytes\":50331648",
+        "\"protected_memory_low_bytes\":33554432",
+        "\"memory_enforcement\":true",
+        "\"enforcement_degraded\":false",
+        "\"destructive_reclaim_enabled\":false",
     };
 
     bool passed = true;
@@ -2025,12 +2039,12 @@ void test_tc23_cpu_telemetry_contract_v32() {
 
     auto t1 = std::chrono::steady_clock::now();
     long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
-    g_results.push_back({"TC-23: Telemetry Contract v3.2",
-                         "v3.2 CPU pressure and headroom fields serialized cleanly",
+    g_results.push_back({"TC-23: Telemetry Contract v3.3",
+                         "v3.3 CPU, headroom, and memory orchestration fields serialized cleanly",
                          passed,
-                         std::string("checked 23 fields incl. SMT cpusets/input boost, bytes=") + std::to_string(json.size()),
+                         std::string("checked 30 fields incl. SMT cpusets/memory.high/memory.low, bytes=") + std::to_string(json.size()),
                          ms});
-    std::cout << (passed ? ">>> PASS: v3.2 telemetry contract verified.\n" : ">>> FAIL!\n");
+    std::cout << (passed ? ">>> PASS: v3.3 telemetry contract verified.\n" : ">>> FAIL!\n");
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -2927,6 +2941,42 @@ void test_tc41_fail_closed_gate() {
     std::cout << (passed ? ">>> PASS: fail-closed gate verified.\n" : ">>> FAIL!\n");
 }
 
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-42: Shared pidfd signal path
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc42_shared_pidfd_signal_path() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(42, "Shared pidfd Signal Path",
+                    "All enforcement paths use one pidfd-backed signal_process() helper");
+
+    const pid_t self = ::getpid();
+    const bool self_signalled =
+        (thm::signal_process(self, 0) == thm::SignalResult::Signaled);
+    const bool self_alive = thm::process_alive(self);
+
+    pid_t child = ::fork();
+    if (child == 0) _exit(0);
+    int status = 0;
+    if (child > 0) ::waitpid(child, &status, 0);
+
+    const bool gone_reported =
+        (child > 0 && thm::signal_process(child, 0) == thm::SignalResult::Gone);
+    const bool dead_not_alive = (child > 0 && !thm::process_alive(child));
+
+    const bool passed = self_signalled && self_alive && gone_reported && dead_not_alive;
+
+    std::cout << "[Signal] self=signalled/alive, reaped child="
+              << (gone_reported ? "gone" : "unexpected") << "\n";
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-42: Shared pidfd Signal Path",
+                         "pidfd delivery reports Gone for recycled/reaped PIDs",
+                         passed,
+                         "signal 0 to self + reaped child, liveness probe", ms});
+    std::cout << (passed ? ">>> PASS: shared pidfd signal path verified.\n" : ">>> FAIL!\n");
+}
+
 int main() {
     std::cout << "\n╔══════════════════════════════════════════════════════════════════════════════╗\n";
     std::cout << "║        THM v3 Real OS-Level Architectural Test Suite                         ║\n";
@@ -2974,6 +3024,7 @@ int main() {
     test_tc39_aging_pressure_relief();
     test_tc40_memory_orchestration_math();
     test_tc41_fail_closed_gate();
+    test_tc42_shared_pidfd_signal_path();
 
     // Summary Table
     std::cout << "\n════════════════════════════════════════════════════════════════════════════════\n";

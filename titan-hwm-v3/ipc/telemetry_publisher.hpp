@@ -58,7 +58,7 @@ struct UnmanagedProc {
 // TelemetrySnapshot — full daemon state for one tick.
 // ─────────────────────────────────────────────────────────────────────────────
 struct TelemetrySnapshot {
-    std::string version     = "3.2.0";
+    std::string version     = "3.3.0";
     long long   timestamp_ms = 0;     // wall clock (epoch ms)
     long long   uptime_seconds = 0;
 

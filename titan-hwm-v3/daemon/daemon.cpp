@@ -16,6 +16,7 @@
 // =============================================================================
 #include "../core/types.hpp"
 #include "../core/protected_registry.hpp"
+#include "../core/signal_utils.hpp"
 #include "../workload/ownership_graph.hpp"
 #include "../workload/workload_manager.hpp"
 #include "../classifier/fusion_classifier.hpp"
@@ -698,8 +699,9 @@ static int startup_thaw_sweep() {
         if (proc_uid != my_uid) continue;      // not ours
         if (state != 'T' && state != 't') continue; // not stopped
 
-        // Issue SIGCONT to recover from previous crash
-        if (::kill(pid, SIGCONT) == 0) {
+        // Issue SIGCONT to recover from previous crash. Use the shared pidfd
+        // path so a recycled PID cannot receive another process's SIGCONT.
+        if (thm::signal_process(pid, SIGCONT) == thm::SignalResult::Signaled) {
             std::cout << "[THM] Startup thaw: sent SIGCONT to frozen PID " << pid << "\n";
             ++thawed;
         }

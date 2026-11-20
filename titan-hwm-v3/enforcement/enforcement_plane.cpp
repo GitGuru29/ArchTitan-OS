@@ -3,15 +3,13 @@
 // Phase 9 — implementation
 // =============================================================================
 #include "enforcement_plane.hpp"
+#include "../core/signal_utils.hpp"
 
 #include <algorithm>
 #include <fstream>
 #include <iostream>
-#include <filesystem>
 #include <csignal>
 #include <cstring>
-
-namespace fs = std::filesystem;
 
 namespace thm {
 
@@ -35,9 +33,11 @@ void EnforcementPlane::signal_tree(const std::vector<pid_t>& pids, int sig) {
             continue;
         }
 
-        if (!fs::exists("/proc/" + std::to_string(pid))) continue;
-        if (::kill(pid, sig) != 0 && errno != ESRCH)
-            std::cerr << "[Enforce] kill(" << pid << ", " << sig
+        // signal_process() opens a pidfd, so the protected check above and the
+        // delivery are atomic with respect to PID recycling. Gone is a normal
+        // outcome for a workload that exited between ticks.
+        if (signal_process(pid, sig) == SignalResult::Failed)
+            std::cerr << "[Enforce] signal(" << pid << ", " << sig
                       << ") failed: " << std::strerror(errno) << "\n";
     }
 }
@@ -52,7 +52,7 @@ void EnforcementPlane::sigcont_if_stopped(const std::vector<pid_t>& pids) {
         char state = '?';
         if (sf >> tok && sf >> tok && sf >> state) {
             if (state == 'T' || state == 't')
-                ::kill(pid, SIGCONT);
+                (void)signal_process(pid, SIGCONT);
         }
     }
 }
