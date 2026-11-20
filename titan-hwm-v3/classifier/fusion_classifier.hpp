@@ -82,7 +82,11 @@ struct ClassifierConfig {
         "steam", "steamwebhelper", "gamescope", "gamemode", "mangohud",
         "wine", "wine64", "wineserver", "lutris", "heroic", "bottles",
         "proton", "cs2", "dota2", "minecraft", "factorio", "terraria",
-        "retroarch", "rpcs3", "yuzu", "dolphin-emu", "osu!"
+        "retroarch", "rpcs3", "yuzu", "dolphin-emu", "osu!",
+        // Standalone game/benchmark engines. Unigine Superposition launches
+        // `bin/superposition` directly with no launcher parent, so without its
+        // own name it silently lands in OBSERVED and never gets latency intent.
+        "superposition", "superposition_cli", "unigine", "unigine-superposition"
     };
     // Bulk throughput jobs: safe to cap when they are not the foreground task.
     std::vector<std::string> bulk_render_apps = {

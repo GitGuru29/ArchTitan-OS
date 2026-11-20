@@ -1341,7 +1341,9 @@ int main(int argc, char* argv[]) {
         }
 
         // ── (f2) CPU arbitration plane (HC-CPU-1: scheduling/headroom only) ─
-        const bool unattended_idle = ws_monitor.user_unattended(thm::UNATTENDED_IDLE_SECONDS);
+        // Raw presence is refined after workload demand is collected: a game
+        // or GPU feeder with no recent input is still real foreground demand.
+        const bool raw_unattended = ws_monitor.user_unattended(thm::UNATTENDED_IDLE_SECONDS);
         if (!smt_topo.valid()) smt_topo = thm::read_smt_topology(online_cpus);
 
         // v3.6: real keyboard/mouse activity grants a short, bounded boost
@@ -1367,6 +1369,13 @@ int main(int argc, char* argv[]) {
             if (wl->gpu_feeding)      ++demand.gpu_feeders;
             if (wl->throughput_bulk)  ++demand.bulk_workloads;
         }
+
+        // v3.7: an unattended interactive/GPU workload must not trip the
+        // "nobody is here" escape hatch. Bulk-only work (an unattended build)
+        // still gets the whole machine; games/benchmarks/data loaders do not.
+        const bool unattended_idle = thm::should_lift_unattended_cap(
+            raw_unattended, demand);
+
         const int reserve_target = thm::compute_reserved_cores(
             sys_pressure.cpu, online_cpus, unattended_idle, demand);
         const int reserve_applied = headroom_tracker.update(

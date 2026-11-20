@@ -143,6 +143,13 @@ private:
 // lifted at HIGH/CRITICAL: nobody is there to feel latency, so the build gets
 // the whole machine. The weights stay biased, so the instant the user returns
 // the foreground wins every contention while the cap re-engages.
+//
+// Exception: an active game / GPU feeder is real demand even with no keyboard
+// or mouse events (a benchmark or an always-on game can run hands-free), so it
+// suppresses the unattended lift. A background compile still gets the lift.
+bool should_lift_unattended_cap(bool user_unattended_idle,
+                                const CpuDemandHint& demand);
+
 CpuSlicePolicy compute_cpu_slice_policy(PressureLevel cpu_pressure,
                                         int online_cpus,
                                         bool user_unattended_idle,

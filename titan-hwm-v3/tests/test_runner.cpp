@@ -2684,6 +2684,91 @@ void test_tc36_proc_stat_parse() {
     std::cout << (passed ? ">>> PASS: cached stat parsing verified.\n" : ">>> FAIL!\n");
 }
 
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-37: Standalone game/benchmark engine intent
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc37_standalone_game_intent() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(37, "Standalone Game Engine Intent",
+                    "Unigine Superposition is latency-critical even with no launcher parent");
+
+    thm::ClassifierConfig cfg;
+    thm::FusionClassifier fc(cfg);
+    const std::string unrelated = "random-background-tool";
+
+    thm::ClassificationResult sp, sp_cli, unigine, other;
+    fc.detect_intent(cfg, "superposition",        ::getpid(), sp);
+    fc.detect_intent(cfg, "superposition_cli",    ::getpid(), sp_cli);
+    fc.detect_intent(cfg, "unigine",              ::getpid(), unigine);
+    fc.detect_intent(cfg, unrelated,              ::getpid(), other);
+
+    const bool passed =
+        sp.latency_critical && sp.latency_sensitive &&
+        sp_cli.latency_critical && sp_cli.latency_sensitive &&
+        unigine.latency_critical && unigine.latency_sensitive &&
+        !other.latency_critical;
+
+    std::cout << "[GameEngine] superposition=" << (sp.latency_critical ? "LATENCY" : "-")
+              << " cli=" << (sp_cli.latency_critical ? "LATENCY" : "-")
+              << " unigine=" << (unigine.latency_critical ? "LATENCY" : "-")
+              << " unrelated=" << (other.latency_critical ? "LATENCY" : "-") << "\n";
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-37: Standalone Game Engine Intent",
+                         "Unigine/Superposition executables get latency slice; unrelated tools do not",
+                         passed,
+                         "superposition/cli/unigine=LATENCY, unrelated=none", ms});
+    std::cout << (passed ? ">>> PASS: standalone game intent verified.\n" : ">>> FAIL!\n");
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-38: Unattended interactive-workload cap guard
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc38_unattended_game_cap_guard() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(38, "Unattended Game Cap Guard",
+                    "A hands-free game/GPU feeder keeps the cap; a lone build still lifts it");
+
+    thm::CpuDemandHint game, feeder, bulk;
+    game.latency_workloads = 1;
+    game.foreground_cpu_pct = 100.0f;
+    feeder.gpu_feeders = 1;
+    feeder.foreground_cpu_pct = 80.0f;
+    bulk.bulk_workloads = 2;
+    bulk.foreground_cpu_pct = 160.0f;
+
+    const auto p_game   = thm::compute_cpu_slice_policy(
+        thm::PressureLevel::CRITICAL, 8, true, &game);
+    const auto p_feeder = thm::compute_cpu_slice_policy(
+        thm::PressureLevel::HIGH, 8, true, &feeder);
+    const auto p_bulk   = thm::compute_cpu_slice_policy(
+        thm::PressureLevel::HIGH, 8, true, &bulk);
+
+    const bool passed =
+        !thm::should_lift_unattended_cap(true, game) &&
+        !thm::should_lift_unattended_cap(true, feeder) &&
+        thm::should_lift_unattended_cap(true, bulk) &&
+        !p_game.unattended_lift && p_game.headroom_engaged &&
+        p_game.background_quota_us > 0 &&
+        !p_feeder.unattended_lift && p_feeder.headroom_engaged &&
+        p_feeder.background_quota_us > 0 &&
+        p_bulk.unattended_lift && p_bulk.background_quota_us == 0;
+
+    std::cout << "[Unattended] game lift=" << p_game.unattended_lift
+              << " quota=" << p_game.background_quota_us
+              << " | feeder lift=" << p_feeder.unattended_lift
+              << " | bulk lift=" << p_bulk.unattended_lift << "\n";
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-38: Unattended Game Cap Guard",
+                         "Interactive demand suppresses lift; bulk-only unattended work still lifts",
+                         passed,
+                         "game/feeder=cap engaged, bulk=max (100%)", ms});
+    std::cout << (passed ? ">>> PASS: unattended game cap guard verified.\n" : ">>> FAIL!\n");
+}
+
 int main() {
     std::cout << "\n╔══════════════════════════════════════════════════════════════════════════════╗\n";
     std::cout << "║        THM v3 Real OS-Level Architectural Test Suite                         ║\n";
@@ -2726,6 +2811,8 @@ int main() {
     test_tc34_smt_isolation();
     test_tc35_input_feedforward();
     test_tc36_proc_stat_parse();
+    test_tc37_standalone_game_intent();
+    test_tc38_unattended_game_cap_guard();
 
     // Summary Table
     std::cout << "\n════════════════════════════════════════════════════════════════════════════════\n";

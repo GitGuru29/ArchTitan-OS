@@ -328,6 +328,20 @@ int AdaptiveHeadroomTracker::update(int target, PressureLevel pressure,
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// should_lift_unattended_cap — presence gate for the background bandwidth cap
+//
+// Idle detection alone is not enough: an unattended game, benchmark or GPU
+// dataloader produces no keyboard/mouse events but still needs every core it
+// can get. Only lift the cap when no latency-critical or GPU-feeding workload
+// is active. Bulk-only work (a compile left running) still gets the lift.
+// ─────────────────────────────────────────────────────────────────────────────
+bool should_lift_unattended_cap(bool user_unattended_idle,
+                                const CpuDemandHint& demand) {
+    if (!user_unattended_idle) return false;
+    return demand.latency_workloads == 0 && demand.gpu_feeders == 0;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // compute_cpu_slice_policy — pure (pressure, cores, presence, demand) -> cgroup
 // ─────────────────────────────────────────────────────────────────────────────
 CpuSlicePolicy compute_cpu_slice_policy(PressureLevel cpu_pressure,
@@ -364,7 +378,9 @@ CpuSlicePolicy compute_cpu_slice_policy(PressureLevel cpu_pressure,
         return p; // quota 0 == max, background_max_pct stays 100
     }
 
-    if (user_unattended_idle) {
+    const CpuDemandHint empty_hint;
+    if (should_lift_unattended_cap(user_unattended_idle,
+                                   demand ? *demand : empty_hint)) {
         p.unattended_lift = true; // nobody is here to feel latency: lift the cap
         return p;
     }
@@ -372,10 +388,12 @@ CpuSlicePolicy compute_cpu_slice_policy(PressureLevel cpu_pressure,
     // v3.4: adaptive reservation. The daemon passes a 3-tick-smoothed value;
     // direct callers (benchmarks, tests) get the pure computation from the
     // hint, or the classic fixed rule when no hint is supplied.
-    const CpuDemandHint empty_hint;
+    // If the cap was not lifted, the user is effectively present for CPU
+    // arbitration — even when raw idle detection said "away" but a game or GPU
+    // feeder suppressed the lift. Passing raw idle here would reserve 0 cores.
     const int reserve_cores = (reserved_cores_override >= 0)
         ? reserved_cores_override
-        : compute_reserved_cores(cpu_pressure, cpus, user_unattended_idle,
+        : compute_reserved_cores(cpu_pressure, cpus, false,
                                  demand ? *demand : empty_hint);
     p.reserved_cores = reserve_cores;
     const long quota_cores  = static_cast<long>(std::max(1, cpus - reserve_cores));
