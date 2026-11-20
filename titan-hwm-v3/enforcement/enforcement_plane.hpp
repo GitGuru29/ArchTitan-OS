@@ -61,6 +61,15 @@ const char* slice_for_intent(const Workload& wl, PolicyDecision decision);
 long compute_memory_high_bytes(long rss_kb);
 long compute_memory_low_bytes(long rss_kb, long total_kb);
 
+// Fail-closed decision gate. If the cgroup hierarchy is not delegated/writable,
+// destructive and freezing decisions are downgraded to KEEP_BACKGROUND so THM
+// never falls back to raw signals it cannot safely audit. Destructive reclaim
+// is additionally gated behind an explicit opt-in until its lifecycle has a
+// real RAM-pressure benchmark.
+PolicyDecision sanitize_decision(PolicyDecision decision,
+                                 bool cgroup_healthy,
+                                 bool allow_destructive_reclaim);
+
 class EnforcementPlane {
 public:
     explicit EnforcementPlane(CgroupController& cgroup,

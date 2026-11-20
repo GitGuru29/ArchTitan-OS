@@ -2,7 +2,7 @@
 // titan-hwm-v3/tests/test_runner.cpp
 // Real OS-Level Test Suite for Titan Hardware Manager v3 (THM v3)
 //
-// Validates 40 architectural test cases on real Linux OS primitives:
+// Validates 41 architectural test cases on real Linux OS primitives:
 //   TC-1:  Gradle / Background Build Survival
 //   TC-2:  AI Agent Workload Survival & Execution Authority
 //   TC-3:  Idle IDE Aging, Throttling & Freeze under Pressure
@@ -18,6 +18,7 @@
 //   TC-13: Browser Collateral Guard vs. Hard-Block Separation
 //   TC-39: AGING Pressure-Relief Downgrade (v3.3-R1)
 //   TC-40: Memory Orchestration Math (v3.3-R2)
+//   TC-41: Fail-Closed Decision Gate (v3.3-R3)
 // =============================================================================
 
 #include "../core/types.hpp"
@@ -2883,6 +2884,49 @@ void test_tc40_memory_orchestration_math() {
     std::cout << (passed ? ">>> PASS: memory orchestration math verified.\n" : ">>> FAIL!\n");
 }
 
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-41: Fail-Closed Decision Gate
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc41_fail_closed_gate() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(41, "Fail-Closed Decision Gate",
+                    "Unhealthy cgroups block FREEZE/RECLAIM; RECLAIM needs explicit opt-in");
+
+    using thm::PolicyDecision;
+    const bool healthy = true;
+    const bool broken  = false;
+    const bool opt_in  = true;
+    const bool no_opt  = false;
+
+    const bool a = thm::sanitize_decision(PolicyDecision::RECLAIM, healthy, no_opt)
+                   == PolicyDecision::FREEZE;
+    const bool b = thm::sanitize_decision(PolicyDecision::RECLAIM, healthy, opt_in)
+                   == PolicyDecision::RECLAIM;
+    const bool c = thm::sanitize_decision(PolicyDecision::RECLAIM, broken, opt_in)
+                   == PolicyDecision::KEEP_BACKGROUND;
+    const bool d = thm::sanitize_decision(PolicyDecision::FREEZE, broken, opt_in)
+                   == PolicyDecision::KEEP_BACKGROUND;
+    const bool e = thm::sanitize_decision(PolicyDecision::THROTTLE, broken, no_opt)
+                   == PolicyDecision::THROTTLE;
+    const bool f = thm::sanitize_decision(PolicyDecision::KEEP_FULL, broken, no_opt)
+                   == PolicyDecision::KEEP_FULL;
+
+    const bool passed = a && b && c && d && e && f;
+
+    std::cout << "[Gate] reclaim->freeze(no opt)=" << (a ? "yes" : "no")
+              << ", reclaim kept(opt)=" << (b ? "yes" : "no")
+              << ", broken->background(reclaim)=" << (c ? "yes" : "no")
+              << ", broken->background(freeze)=" << (d ? "yes" : "no") << "\n";
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-41: Fail-Closed Decision Gate",
+                         "No signals without writable cgroups; no kill without opt-in",
+                         passed,
+                         "reclaim->freeze, broken->background, throttle preserved", ms});
+    std::cout << (passed ? ">>> PASS: fail-closed gate verified.\n" : ">>> FAIL!\n");
+}
+
 int main() {
     std::cout << "\n╔══════════════════════════════════════════════════════════════════════════════╗\n";
     std::cout << "║        THM v3 Real OS-Level Architectural Test Suite                         ║\n";
@@ -2929,6 +2973,7 @@ int main() {
     test_tc38_unattended_game_cap_guard();
     test_tc39_aging_pressure_relief();
     test_tc40_memory_orchestration_math();
+    test_tc41_fail_closed_gate();
 
     // Summary Table
     std::cout << "\n════════════════════════════════════════════════════════════════════════════════\n";

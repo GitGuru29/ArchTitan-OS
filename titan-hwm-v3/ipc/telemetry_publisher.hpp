@@ -75,6 +75,8 @@ struct TelemetrySnapshot {
     long        latency_memory_high_bytes    = 0; // 0 == max
     long        protected_memory_low_bytes   = 0; // 0 == no protection
     bool        memory_enforcement_active    = false;
+    bool        enforcement_degraded          = false;
+    bool        destructive_reclaim_enabled   = false;
 
     // CPU pressure & asymmetric scheduling (HC-CPU-1: scheduling/headroom only, never kills)
     std::string cpu_pressure_level       = "NORMAL";

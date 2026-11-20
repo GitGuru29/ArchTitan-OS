@@ -44,6 +44,7 @@
 #include <unordered_set>
 #include <iomanip>
 #include <ctime>
+#include <cstdlib>
 #include <unordered_set>
 #include <unistd.h>
 #include <sys/stat.h>
@@ -752,6 +753,15 @@ int main(int argc, char* argv[]) {
     // ── Configuration ────────────────────────────────────────────────────────
     const int tick_ms = 200; // 5 Hz tick rate
 
+    // v3.3-R3: destructive reclaim stays off until a real RAM-exhaustion
+    // benchmark proves the whole freeze/reclaim lifecycle. Opt in explicitly
+    // with THM_ALLOW_DESTRUCTIVE_RECLAIM=1.
+    const char* reclaim_env = std::getenv("THM_ALLOW_DESTRUCTIVE_RECLAIM");
+    const bool allow_destructive_reclaim =
+        reclaim_env != nullptr && std::string(reclaim_env) == "1";
+    if (allow_destructive_reclaim)
+        std::cout << "[THM] WARNING: destructive reclaim explicitly enabled.\n";
+
     // ── Phase 0: Protected Domain Registry ──────────────────────────────────
     thm::ProtectedRegistry registry;
     registry.register_pid(getpid(), "THM-self");
@@ -959,6 +969,11 @@ int main(int argc, char* argv[]) {
         }
 
         auto tick_start = std::chrono::steady_clock::now();
+
+        // Cgroup health is the authority for any action that changes process
+        // state. If the hierarchy is not delegated, fall back to observation
+        // rather than issuing signals THM cannot safely audit.
+        const bool cgroup_ok = !dry_run && cgroup.hierarchy_healthy();
 
         // ── (a) Refresh /proc snapshot ──────────────────────────────────────
         // Fast path: one stat read per PID. Full metadata refresh at 1 Hz.
@@ -1303,6 +1318,19 @@ int main(int argc, char* argv[]) {
                 std::cout << "[DRY-RUN] Workload " << wl->id << " (" << wl->pids.size()
                           << " PIDs) -> Decision: " << (d_idx >= 0 && d_idx <= 4 ? dec_names[d_idx] : "UNKNOWN") << "\n";
             } else {
+                // Fail-closed gate: never signal or kill when cgroups are not
+                // writable, and require an explicit opt-in for RECLAIM.
+                const thm::PolicyDecision effective =
+                    thm::sanitize_decision(decision, cgroup_ok,
+                                           allow_destructive_reclaim);
+                if (effective != decision) {
+                    std::cerr << "[THM] Downgraded "
+                              << thm::to_string(decision) << " -> "
+                              << thm::to_string(effective)
+                              << " for workload " << wl->id << "\n";
+                }
+                decision = effective;
+
                 auto record_action = [&](thm::PolicyDecision d) {
                     const std::string dec = thm::to_string(d);
                     const bool changed = (dec != last_action ||
@@ -1374,7 +1402,7 @@ int main(int argc, char* argv[]) {
         long applied_prot_mem_low   = 0;
         bool memory_enforcement_active = false;
 
-        if (!dry_run && cgroup.hierarchy_healthy()) {
+        if (cgroup_ok) {
             static std::unordered_map<std::string, long> last_mem_high;
             static std::unordered_map<std::string, long> last_mem_low;
             bool all_ok = true;
@@ -1595,6 +1623,8 @@ int main(int argc, char* argv[]) {
             snap.latency_memory_high_bytes    = applied_lat_mem_high;
             snap.protected_memory_low_bytes   = applied_prot_mem_low;
             snap.memory_enforcement_active    = memory_enforcement_active;
+            snap.enforcement_degraded         = !cgroup_ok && !dry_run;
+            snap.destructive_reclaim_enabled  = allow_destructive_reclaim;
             snap.cpu_pressure_level       = thm::to_string(sys_pressure.cpu);
             snap.composite_pressure_level = thm::to_string(sys_pressure.composite);
             snap.cpu_psi_valid  = cpu_psi.valid;

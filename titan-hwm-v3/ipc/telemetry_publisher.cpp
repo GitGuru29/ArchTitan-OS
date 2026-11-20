@@ -72,6 +72,9 @@ std::string serialize_snapshot(const TelemetrySnapshot& s) {
       << ",\"latency_memory_high_bytes\":" << s.latency_memory_high_bytes
       << ",\"protected_memory_low_bytes\":" << s.protected_memory_low_bytes
       << ",\"memory_enforcement\":" << (s.memory_enforcement_active ? "true" : "false")
+      << ",\"enforcement_degraded\":" << (s.enforcement_degraded ? "true" : "false")
+      << ",\"destructive_reclaim_enabled\":"
+        << (s.destructive_reclaim_enabled ? "true" : "false")
       << '}';
     o << ",\"cpu\":{"
       << "\"psi_valid\":"  << (s.cpu_psi_valid ? "true" : "false")

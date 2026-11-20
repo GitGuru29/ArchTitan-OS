@@ -184,6 +184,22 @@ long compute_memory_low_bytes(long rss_kb, long total_kb) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// sanitize_decision — fail-closed enforcement gate
+// ─────────────────────────────────────────────────────────────────────────────
+PolicyDecision sanitize_decision(PolicyDecision decision,
+                                 bool cgroup_healthy,
+                                 bool allow_destructive_reclaim) {
+    if (!cgroup_healthy &&
+        (decision == PolicyDecision::FREEZE ||
+         decision == PolicyDecision::RECLAIM)) {
+        return PolicyDecision::KEEP_BACKGROUND;
+    }
+    if (!allow_destructive_reclaim && decision == PolicyDecision::RECLAIM)
+        return PolicyDecision::FREEZE;
+    return decision;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // observed_slice_assignment — bring real unclassified CPU work into the managed
 // hierarchy on the very first tick it is seen.
 //
