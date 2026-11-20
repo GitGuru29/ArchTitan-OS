@@ -327,9 +327,13 @@ void WorkspaceMonitor::handle_event(const std::string& line) {
             // Mark previous workspace as unfocused
             if (workspaces_.count(prev))
                 workspaces_[prev].is_focused = false;
-            // Mark new workspace as focused
+            // Mark new workspace as focused. Stamp the Hyprland event so the
+            // v3.4 context layer can protect the recently-left workspace for
+            // kRecentFocusWindowS after the user switches away.
             workspaces_[ws_id].id = ws_id;
             workspaces_[ws_id].is_focused = true;
+            workspaces_[ws_id].last_focused = ms_clock::now();
+            workspaces_[ws_id].last_user_activity = ms_clock::now();
         }
 
         if (ws_cb_) ws_cb_(ws_id, true);

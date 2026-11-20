@@ -2,7 +2,7 @@
 // titan-hwm-v3/tests/test_runner.cpp
 // Real OS-Level Test Suite for Titan Hardware Manager v3 (THM v3)
 //
-// Validates 42 architectural test cases on real Linux OS primitives:
+// Validates 43 architectural test cases on real Linux OS primitives:
 //   TC-1:  Gradle / Background Build Survival
 //   TC-2:  AI Agent Workload Survival & Execution Authority
 //   TC-3:  Idle IDE Aging, Throttling & Freeze under Pressure
@@ -20,6 +20,7 @@
 //   TC-40: Memory Orchestration Math (v3.3-R2)
 //   TC-41: Fail-Closed Decision Gate (v3.3-R3)
 //   TC-42: Shared pidfd Signal Path (v3.3-R5)
+//   TC-43: Hyprland Recent-Focus Context (v3.4-R1)
 // =============================================================================
 
 #include "../core/types.hpp"
@@ -2977,6 +2978,79 @@ void test_tc42_shared_pidfd_signal_path() {
     std::cout << (passed ? ">>> PASS: shared pidfd signal path verified.\n" : ">>> FAIL!\n");
 }
 
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-43: Hyprland recent-focus workload context
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc43_recent_focus_context() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(43, "Hyprland Recent-Focus Context",
+                    "Hyprland focus events protect a workspace for 30s after the user leaves");
+
+    thm::ProtectedRegistry registry;
+    thm::PolicyEngine       policy;
+    thm::WorkloadManager    mgr;
+
+    thm::Workload wl;
+    wl.id              = 501;
+    wl.root_pid        = ::getpid();
+    wl.type            = thm::WorkloadType::SYSTEM_DEV;
+    wl.state           = thm::WorkloadState::IDLE;
+    wl.created_at      = thm::ms_clock::now() - std::chrono::minutes(10);
+    wl.last_active     = thm::ms_clock::now() - std::chrono::minutes(10);
+    wl.last_executing  = thm::ms_clock::now() - std::chrono::minutes(10);
+    mgr.add(wl);
+
+    thm::WorkspaceState ws;
+    ws.id            = 3;
+    ws.is_focused    = false;
+    ws.is_visible    = false;
+    ws.last_focused  = thm::ms_clock::now() - std::chrono::seconds(10);
+
+    const bool context_ok = ws.context_active();
+
+    // A recently-left workspace still behaves like foreground context.
+    mgr.tick(*mgr.get(501), ws, thm::ActivityState::IDLE,
+             thm::PressureLevel::MODERATE);
+    const bool state_active =
+        (mgr.get(501)->state == thm::WorkloadState::ACTIVE);
+
+    const auto decision = policy.evaluate(*mgr.get(501), ws,
+                                          thm::ActivityState::IDLE,
+                                          thm::PressureLevel::MODERATE,
+                                          registry);
+    const bool policy_ok = (decision == thm::PolicyDecision::KEEP_FULL);
+
+    // After the bounded window, the same unfocused workspace is no longer
+    // foreground context and the workload ages normally under pressure.
+    ws.last_focused = thm::ms_clock::now() -
+                      std::chrono::seconds(thm::kRecentFocusWindowS + 5);
+    const bool aged_out = !ws.context_active();
+
+    mgr.tick(*mgr.get(501), ws, thm::ActivityState::IDLE,
+             thm::PressureLevel::MODERATE); // ACTIVE -> IDLE
+    mgr.tick(*mgr.get(501), ws, thm::ActivityState::IDLE,
+             thm::PressureLevel::MODERATE); // IDLE -> AGING
+    const bool degraded =
+        (mgr.get(501)->state == thm::WorkloadState::AGING);
+
+    const bool passed = context_ok && state_active && policy_ok &&
+                        aged_out && degraded;
+
+    std::cout << "[Context] recent=" << (context_ok ? "yes" : "no")
+              << ", state=" << (state_active ? "ACTIVE" : "unexpected")
+              << ", decision=" << thm::to_string(decision)
+              << ", aged_out=" << (aged_out ? "yes" : "no")
+              << ", degraded=" << (degraded ? "yes" : "no") << "\n";
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-43: Hyprland Recent-Focus Context",
+                         "Recent IPC focus acts as foreground context, then expires cleanly",
+                         passed,
+                         "focus 10s->ACTIVE/KEEP_FULL, 35s->AGING", ms});
+    std::cout << (passed ? ">>> PASS: Hyprland recent-focus context verified.\n" : ">>> FAIL!\n");
+}
+
 int main() {
     std::cout << "\n╔══════════════════════════════════════════════════════════════════════════════╗\n";
     std::cout << "║        THM v3 Real OS-Level Architectural Test Suite                         ║\n";
@@ -3025,6 +3099,7 @@ int main() {
     test_tc40_memory_orchestration_math();
     test_tc41_fail_closed_gate();
     test_tc42_shared_pidfd_signal_path();
+    test_tc43_recent_focus_context();
 
     // Summary Table
     std::cout << "\n════════════════════════════════════════════════════════════════════════════════\n";

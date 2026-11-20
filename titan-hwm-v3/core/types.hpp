@@ -15,6 +15,12 @@ namespace thm {
 using ms_clock   = std::chrono::steady_clock;
 using time_point = std::chrono::time_point<ms_clock>;
 
+// v3.4: Hyprland IPC focus events stay authoritative for this long after the
+// user leaves a workspace. Prevents an immediate downgrade on a quick switch.
+static constexpr long kRecentFocusWindowS = 30;
+
+inline long seconds_since(const time_point& tp);
+
 // ─────────────────────────────────────────────────────────────────────────────
 // WorkloadType — classification label ONLY, never used as a kill authority
 // ─────────────────────────────────────────────────────────────────────────────
@@ -181,10 +187,21 @@ struct WorkspaceState {
     int           id           = -1;
     bool          is_visible   = false; // on a physical monitor right now
     bool          is_focused   = false; // receiving keyboard input
+    time_point    last_focused;         // v3.4: last Hyprland focus event
     time_point    last_user_activity;
     std::string   active_window_class;  // Hyprland window class of focused window
     std::string   active_window_title;  // Hyprland window title of focused window
     std::vector<uint32_t> workload_ids; // workloads associated with this WS
+
+    // v3.4 workload context. True for the live focus/visibility signal OR
+    // during the bounded recent-focus window after a Hyprland workspace event.
+    // Default-constructed states have no last_focused stamp, so existing tests
+    // and callers keep the old behaviour exactly.
+    bool context_active(long window_s = kRecentFocusWindowS) const {
+        if (is_focused || is_visible) return true;
+        if (last_focused == time_point{}) return false;
+        return seconds_since(last_focused) < window_s;
+    }
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -280,6 +297,12 @@ inline const char* to_string(PolicyDecision d) {
 // ─────────────────────────────────────────────────────────────────────────────
 inline long minutes_since(const time_point& tp) {
     return std::chrono::duration_cast<std::chrono::minutes>(
+        ms_clock::now() - tp).count();
+}
+
+// Convenience: seconds elapsed since a time_point
+inline long seconds_since(const time_point& tp) {
+    return std::chrono::duration_cast<std::chrono::seconds>(
         ms_clock::now() - tp).count();
 }
 

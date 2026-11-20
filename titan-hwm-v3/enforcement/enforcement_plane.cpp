@@ -221,7 +221,7 @@ bool observed_slice_assignment(const Workload&       wl,
                             (wl.cpu_pct >= OBSERVED_CPU_DEMAND_PCT);
     if (!doing_work) return false;
 
-    to_active = (ws.is_focused || ws.is_visible) && doing_work;
+    to_active = ws.context_active() && doing_work;
     return true;
 }
 

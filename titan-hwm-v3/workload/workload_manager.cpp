@@ -93,7 +93,7 @@ void WorkloadManager::tick(Workload&           wl,
     // Observation-only workloads mirror activity for telemetry but never age:
     // AGING/RECLAIMABLE imply enforcement authority they do not have.
     if (wl.observed) {
-        if (ws.is_focused || ws.is_visible)
+        if (ws.context_active())
             wl.state = WorkloadState::ACTIVE;
         else if (activity == ActivityState::EXECUTING)
             wl.state = WorkloadState::BACKGROUND_EXECUTING;
@@ -106,7 +106,7 @@ void WorkloadManager::tick(Workload&           wl,
 
     case WorkloadState::DISCOVERED:
         // Classification runs separately; move to ACTIVE or IDLE on first tick
-        if (ws.is_focused || ws.is_visible)
+        if (ws.context_active())
             wl.state = WorkloadState::ACTIVE;
         else if (activity == ActivityState::EXECUTING)
             wl.state = WorkloadState::BACKGROUND_EXECUTING;
@@ -115,7 +115,7 @@ void WorkloadManager::tick(Workload&           wl,
         break;
 
     case WorkloadState::ACTIVE:
-        if (!(ws.is_focused || ws.is_visible)) {
+        if (!(ws.context_active())) {
             // Workspace left focus/visibility — start hysteresis window (HC-09)
             // Gives rapid workspace switches time to "bounce back" without
             // issuing unnecessary STOP/CONT signals.
@@ -135,7 +135,7 @@ void WorkloadManager::tick(Workload&           wl,
 
     case WorkloadState::BACKGROUND_EXECUTING:
         // Workspace return always upgrades to ACTIVE
-        if (ws.is_focused || ws.is_visible) {
+        if (ws.context_active()) {
             wl.ws_hysteresis_ticks = 0; // reset on return
             wl.state = WorkloadState::ACTIVE;
             break;
@@ -160,7 +160,7 @@ void WorkloadManager::tick(Workload&           wl,
             break;
         }
         // Workspace return → ACTIVE
-        if (ws.is_focused || ws.is_visible) {
+        if (ws.context_active()) {
             wl.state = WorkloadState::ACTIVE;
             break;
         }
@@ -173,7 +173,7 @@ void WorkloadManager::tick(Workload&           wl,
 
     case WorkloadState::AGING: {
         // Workspace return → ACTIVE
-        if (ws.is_focused || ws.is_visible) {
+        if (ws.context_active()) {
             wl.state = WorkloadState::ACTIVE;
             break;
         }
@@ -203,7 +203,7 @@ void WorkloadManager::tick(Workload&           wl,
 
     case WorkloadState::RECLAIMABLE:
         // Workspace return → rescue from reclaim
-        if (ws.is_focused || ws.is_visible) {
+        if (ws.context_active()) {
             wl.state = WorkloadState::ACTIVE;
             break;
         }
