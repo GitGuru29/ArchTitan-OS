@@ -183,6 +183,17 @@ void WorkloadManager::tick(Workload&           wl,
             wl.last_executing = ms_clock::now();
             break;
         }
+        // v3.3-R1: pressure relief. Memory pressure is the only authority that
+        // can push an idle workload into AGING, so when it falls back below
+        // MODERATE the workload must return to IDLE. This prevents a transient
+        // pressure spike from leaving a long-lived workload permanently
+        // THROTTLEd after the machine has recovered. Focus/visibility and
+        // execution are still checked first — Hyprland IPC remains the primary
+        // live context provider.
+        if (pressure < PressureLevel::MODERATE) {
+            wl.state = WorkloadState::IDLE;
+            break;
+        }
         // Age + high pressure → RECLAIMABLE
         long age = minutes_since(wl.last_active);
         if (age >= cfg_.age_hard_decay_min && pressure >= PressureLevel::HIGH)

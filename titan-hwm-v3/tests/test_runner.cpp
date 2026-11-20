@@ -2,7 +2,7 @@
 // titan-hwm-v3/tests/test_runner.cpp
 // Real OS-Level Test Suite for Titan Hardware Manager v3 (THM v3)
 //
-// Validates all 10 core architectural test cases on real Linux OS primitives:
+// Validates 39 architectural test cases on real Linux OS primitives:
 //   TC-1:  Gradle / Background Build Survival
 //   TC-2:  AI Agent Workload Survival & Execution Authority
 //   TC-3:  Idle IDE Aging, Throttling & Freeze under Pressure
@@ -16,6 +16,7 @@
 //   TC-11: Governor Pressure Authority & Hysteresis (regression, ISSUE-05)
 //   TC-12: Protected-PID Guard on SIGKILL Escalation (regression, ISSUE-13)
 //   TC-13: Browser Collateral Guard vs. Hard-Block Separation
+//   TC-39: AGING Pressure-Relief Downgrade (v3.3-R1)
 // =============================================================================
 
 #include "../core/types.hpp"
@@ -2769,6 +2770,73 @@ void test_tc38_unattended_game_cap_guard() {
     std::cout << (passed ? ">>> PASS: unattended game cap guard verified.\n" : ">>> FAIL!\n");
 }
 
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-39: AGING Pressure-Relief Downgrade
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc39_aging_pressure_relief() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(39, "AGING Pressure-Relief Downgrade",
+                    "AGING returns to IDLE when memory pressure falls below MODERATE");
+
+    thm::WorkloadManager mgr;
+
+    thm::Workload wl;
+    wl.id                 = 301;
+    wl.root_pid           = ::getpid();
+    wl.type               = thm::WorkloadType::SYSTEM_DEV;
+    wl.state              = thm::WorkloadState::IDLE;
+    wl.created_at         = thm::ms_clock::now() - std::chrono::minutes(10);
+    wl.last_active        = thm::ms_clock::now() - std::chrono::minutes(10);
+    wl.last_executing     = thm::ms_clock::now() - std::chrono::minutes(10);
+    mgr.add(wl);
+
+    thm::WorkspaceState unfocused;
+    unfocused.id        = 7;
+    unfocused.is_focused = false;
+    unfocused.is_visible = false;
+
+    // Enter AGING under sustained HIGH memory pressure. Age is kept between
+    // the 5-minute soft and 15-minute hard decay thresholds so the workload
+    // does not jump straight to RECLAIMABLE.
+    for (int i = 0; i < 3; ++i)
+        mgr.tick(*mgr.get(301), unfocused, thm::ActivityState::IDLE,
+                 thm::PressureLevel::HIGH);
+    const bool entered = (mgr.get(301)->state == thm::WorkloadState::AGING);
+
+    // Pressure relief: NORMAL must downgrade back to IDLE.
+    mgr.tick(*mgr.get(301), unfocused, thm::ActivityState::IDLE,
+             thm::PressureLevel::NORMAL);
+    const bool relieved = (mgr.get(301)->state == thm::WorkloadState::IDLE);
+
+    // A single HIGH tick must re-qualify through the state machine again.
+    mgr.tick(*mgr.get(301), unfocused, thm::ActivityState::IDLE,
+             thm::PressureLevel::HIGH);
+    const bool requalified = (mgr.get(301)->state == thm::WorkloadState::AGING);
+
+    // Hyprland focus still wins over pressure and rescues immediately.
+    thm::WorkspaceState focused;
+    focused.id         = 7;
+    focused.is_focused = true;
+    mgr.tick(*mgr.get(301), focused, thm::ActivityState::IDLE,
+             thm::PressureLevel::HIGH);
+    const bool focus_ok = (mgr.get(301)->state == thm::WorkloadState::ACTIVE);
+
+    const bool passed = entered && relieved && requalified && focus_ok;
+
+    std::cout << "[WorkloadManager] entered=" << (entered ? "yes" : "no")
+              << ", relieved=" << (relieved ? "yes" : "no")
+              << ", requalified=" << (requalified ? "yes" : "no")
+              << ", focus-rescue=" << (focus_ok ? "yes" : "no") << "\n";
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-39: AGING Pressure-Relief Downgrade",
+                         "Pressure relief returns AGING to IDLE; Hyprland focus still rescues",
+                         passed,
+                         "HIGH->AGING, NORMAL->IDLE, HIGH->AGING, focus->ACTIVE", ms});
+    std::cout << (passed ? ">>> PASS: AGING pressure relief verified.\n" : ">>> FAIL!\n");
+}
+
 int main() {
     std::cout << "\n╔══════════════════════════════════════════════════════════════════════════════╗\n";
     std::cout << "║        THM v3 Real OS-Level Architectural Test Suite                         ║\n";
@@ -2813,6 +2881,7 @@ int main() {
     test_tc36_proc_stat_parse();
     test_tc37_standalone_game_intent();
     test_tc38_unattended_game_cap_guard();
+    test_tc39_aging_pressure_relief();
 
     // Summary Table
     std::cout << "\n════════════════════════════════════════════════════════════════════════════════\n";
