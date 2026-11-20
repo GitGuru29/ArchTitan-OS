@@ -2657,6 +2657,33 @@ void test_tc35_input_feedforward() {
     std::cout << (passed ? ">>> PASS: input feed-forward verified.\n" : ">>> FAIL!\n");
 }
 
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-36: Cached /proc stat parsing
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc36_proc_stat_parse() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(36, "Cached /proc Stat Parse",
+                    "One stat read per tick feeds both graph state and ExecutionDetector");
+
+    // pid (comm with spaces) state ppid pgrp sid tty tpgid flags minflt cminflt
+    // majflt cmajflt utime stime ...
+    const std::string good =
+        "4242 (my weird proc) S 1 4242 4242 0 -1 4194560 100 0 5 0 1234 56 0 0";
+    const std::string truncated = "4242 (proc) S 1 100 0";
+    const long ticks = thm::ExecutionDetector::parse_cpu_ticks(good);
+    const long bad = thm::ExecutionDetector::parse_cpu_ticks(truncated);
+
+    const bool passed = (ticks == 1290) && (bad == -1);
+    std::cout << "[Proc] utime+stime=" << ticks << " malformed=" << bad << "\n";
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-36: Cached /proc Stat Parse",
+                         "Shared parser handles spaces in comm and rejects truncated stat lines",
+                         passed, "utime 1234 + stime 56 = 1290 ticks", ms});
+    std::cout << (passed ? ">>> PASS: cached stat parsing verified.\n" : ">>> FAIL!\n");
+}
+
 int main() {
     std::cout << "\n╔══════════════════════════════════════════════════════════════════════════════╗\n";
     std::cout << "║        THM v3 Real OS-Level Architectural Test Suite                         ║\n";
@@ -2698,6 +2725,7 @@ int main() {
     test_tc33_headroom_hysteresis();
     test_tc34_smt_isolation();
     test_tc35_input_feedforward();
+    test_tc36_proc_stat_parse();
 
     // Summary Table
     std::cout << "\n════════════════════════════════════════════════════════════════════════════════\n";

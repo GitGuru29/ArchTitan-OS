@@ -41,6 +41,7 @@
 #include <algorithm>
 #include <sstream>
 #include <deque>
+#include <unordered_set>
 #include <iomanip>
 #include <ctime>
 #include <unordered_set>
@@ -539,106 +540,127 @@ static std::string format_explain(const thm::TelemetrySnapshot& s,
 // ─────────────────────────────────────────────────────────────────────────────
 // Build a fresh /proc snapshot (like v2 MemoryGraph::build())
 // ─────────────────────────────────────────────────────────────────────────────
-static void refresh_proc_graph(std::unordered_map<pid_t, thm::ProcessNode>& graph) {
-    graph.clear();
+// Cheap per-tick fields: one /proc/<pid>/stat read gives comm, state, ppid and
+// the utime+stime snapshot also consumed by ExecutionDetector.
+static bool read_stat_fields(const std::string& d, thm::ProcessNode& n) {
+    std::ifstream sf("/proc/" + d + "/stat");
+    std::string line;
+    if (!std::getline(sf, line)) return false;
+
+    size_t lp = line.find('('), rp = line.rfind(')');
+    if (lp == std::string::npos || rp == std::string::npos || rp <= lp) return false;
+    n.comm = line.substr(lp + 1, rp - lp - 1);
+    std::istringstream iss(line.substr(rp + 2));
+    iss >> n.proc_state >> n.ppid;
+
+    const long ticks = thm::ExecutionDetector::parse_cpu_ticks(line);
+    if (ticks >= 0) n.cpu_ticks = ticks;
+    return true;
+}
+
+// Expensive fields, needed only for new PIDs and refreshed at 1 Hz. Cached on
+// ProcessNode between full scans: cmdline/exe/cgroup/uid/sid do not change at
+// 5 Hz for the vast majority of processes.
+static void read_full_fields(const std::string& d, thm::ProcessNode& n) {
+    {
+        std::ifstream cf("/proc/" + d + "/cmdline", std::ios::binary);
+        std::string raw;
+        std::getline(cf, raw, '\0');
+        auto slash = raw.rfind('/');
+        n.cmdline = (slash != std::string::npos) ? raw.substr(slash + 1) : raw;
+    }
+    {
+        std::ifstream mf("/proc/" + d + "/statm");
+        long total_pages = 0, rss_pages = 0;
+        if (mf >> total_pages >> rss_pages)
+            n.rss_kb = rss_pages * 4; // 4 KB pages
+    }
+    {
+        struct stat st{};
+        if (::stat(("/proc/" + d).c_str(), &st) == 0)
+            n.uid = st.st_uid;
+    }
+    {
+        pid_t sid = ::getsid(n.pid);
+        if (sid >= 0) n.sid = sid;
+    }
+    {
+        char buf[4096];
+        const std::string exe_link = "/proc/" + d + "/exe";
+        ssize_t elen = readlink(exe_link.c_str(), buf, sizeof(buf) - 1);
+        if (elen > 0) {
+            buf[elen] = '\0';
+            std::string es(buf);
+            auto spd = es.find(" (deleted)");
+            if (spd != std::string::npos) es = es.substr(0, spd);
+            n.exe = std::move(es);
+        }
+    }
+    {
+        std::ifstream cf("/proc/" + d + "/cgroup");
+        std::string line;
+        while (std::getline(cf, line)) {
+            if (line.find(".scope") != std::string::npos ||
+                line.find("app.slice") != std::string::npos ||
+                line.find("user.slice") != std::string::npos) {
+                auto colon = line.rfind(':');
+                if (colon != std::string::npos && colon + 1 < line.size()) {
+                    n.cgroup = line.substr(colon + 1);
+                    break;
+                }
+            }
+        }
+        if (n.cgroup.empty()) {
+            cf.clear();
+            cf.seekg(0);
+            std::string last;
+            while (std::getline(cf, line)) {
+                auto colon = line.rfind(':');
+                if (colon != std::string::npos && colon + 1 < line.size())
+                    last = line.substr(colon + 1);
+            }
+            n.cgroup = last;
+        }
+    }
+}
+
+static void refresh_proc_graph(std::unordered_map<pid_t, thm::ProcessNode>& graph,
+                               bool full_refresh) {
+    // Directory enumeration is the only unavoidable per-tick /proc walk. All
+    // per-PID file reads below are gated by full_refresh for known PIDs.
+    std::vector<pid_t> live;
     for (const auto& entry : fs::directory_iterator("/proc")) {
         if (!entry.is_directory()) continue;
         const std::string d = entry.path().filename().string();
         if (!std::all_of(d.begin(), d.end(), ::isdigit)) continue;
         pid_t pid = 0;
         try { pid = static_cast<pid_t>(std::stoi(d)); } catch (...) { continue; }
-        if (pid <= 1) continue;
+        if (pid > 1) live.push_back(pid);
+    }
 
-        thm::ProcessNode n;
+    const std::unordered_set<pid_t> live_set(live.begin(), live.end());
+    for (auto it = graph.begin(); it != graph.end();) {
+        if (live_set.count(it->first) == 0) it = graph.erase(it);
+        else ++it;
+    }
+
+    for (pid_t pid : live) {
+        const std::string d = std::to_string(pid);
+        const bool is_new = (graph.find(pid) == graph.end());
+        thm::ProcessNode n = is_new ? thm::ProcessNode{} : graph[pid];
         n.pid = pid;
 
-        // Read comm, state, ppid from /proc/<pid>/stat
-        std::ifstream sf("/proc/" + d + "/stat");
-        std::string line;
-        if (std::getline(sf, line)) {
-            size_t lp = line.find('('), rp = line.rfind(')');
-            if (lp != std::string::npos && rp != std::string::npos) {
-                n.comm = line.substr(lp + 1, rp - lp - 1);
-                std::istringstream iss(line.substr(rp + 2));
-                iss >> n.proc_state >> n.ppid;
-            }
+        // A process that vanished between readdir and here is dropped.
+        if (!read_stat_fields(d, n)) {
+            if (!is_new) graph.erase(pid);
+            continue;
         }
-
-        // Read cmdline
-        {
-            std::ifstream cf("/proc/" + d + "/cmdline", std::ios::binary);
-            std::string raw;
-            std::getline(cf, raw, '\0');
-            auto slash = raw.rfind('/');
-            n.cmdline = (slash != std::string::npos) ? raw.substr(slash + 1) : raw;
-        }
-
-        // Read RSS from /proc/<pid>/statm (field 2, pages)
-        {
-            std::ifstream mf("/proc/" + d + "/statm");
-            long total_pages = 0, rss_pages = 0;
-            if (mf >> total_pages >> rss_pages)
-                n.rss_kb = rss_pages * 4; // 4 KB pages
-        }
-
-        // Ownership — one stat() syscall on /proc/<pid> gives the real UID.
-        // Used to keep observation mode scoped to interactive user apps.
-        {
-            struct stat st{};
-            if (::stat(("/proc/" + d).c_str(), &st) == 0)
-                n.uid = st.st_uid;
-        }
-
-        // Session ID for grouping
-        {
-            pid_t sid = ::getsid(pid);
-            if (sid >= 0) n.sid = sid;
-        }
-
-        // Exe + cgroup for smarter rooting/classification
-        {
-            char buf[4096];
-            std::string exe_link = "/proc/" + d + "/exe";
-            ssize_t elen = readlink(exe_link.c_str(), buf, sizeof(buf) - 1);
-            if (elen > 0) {
-                buf[elen] = '\0';
-                std::string es(buf);
-                auto spd = es.find(" (deleted)");
-                if (spd != std::string::npos) es = es.substr(0, spd);
-                n.exe = std::move(es);
-            }
-        }
-        {
-            std::ifstream cf("/proc/" + d + "/cgroup");
-            std::string line;
-            while (std::getline(cf, line)) {
-                if (line.find(".scope") != std::string::npos ||
-                    line.find("app.slice") != std::string::npos ||
-                    line.find("user.slice") != std::string::npos) {
-                    auto colon = line.rfind(':');
-                    if (colon != std::string::npos && colon + 1 < line.size()) {
-                        n.cgroup = line.substr(colon + 1);
-                        break;
-                    }
-                }
-            }
-            if (n.cgroup.empty()) {
-                cf.clear();
-                cf.seekg(0);
-                std::string last;
-                while (std::getline(cf, line)) {
-                    auto colon = line.rfind(':');
-                    if (colon != std::string::npos && colon + 1 < line.size())
-                        last = line.substr(colon + 1);
-                }
-                n.cgroup = last;
-            }
-        }
-
+        if (is_new || full_refresh) read_full_fields(d, n);
         graph[pid] = std::move(n);
     }
 
-    // Build child lists
+    // Build child lists (clear first: graph entries are reused now).
+    for (auto& [pid, node] : graph) { (void)pid; node.children.clear(); }
     for (auto& [pid, node] : graph) {
         if (node.ppid > 0 && graph.count(node.ppid))
             graph[node.ppid].children.push_back(pid);
@@ -928,6 +950,8 @@ int main(int argc, char* argv[]) {
     auto last_pressure_ts = std::chrono::steady_clock::now();
 
     int tick_count = 0;
+    long long scan_us_total = 0;
+    int scan_ticks = 0;
     while (!g_shutdown) {
         if (max_ticks > 0 && ++tick_count > max_ticks) {
             std::cout << "[THM] Reached target tick count (" << max_ticks << "). Exiting cleanly.\n";
@@ -937,7 +961,13 @@ int main(int argc, char* argv[]) {
         auto tick_start = std::chrono::steady_clock::now();
 
         // ── (a) Refresh /proc snapshot ──────────────────────────────────────
-        refresh_proc_graph(proc_graph);
+        // Fast path: one stat read per PID. Full metadata refresh at 1 Hz.
+        const bool full_proc_refresh = (tick_count % 5 == 0) || proc_graph.empty();
+        const auto scan_start = std::chrono::steady_clock::now();
+        refresh_proc_graph(proc_graph, full_proc_refresh);
+        scan_us_total += std::chrono::duration_cast<std::chrono::microseconds>(
+            std::chrono::steady_clock::now() - scan_start).count();
+        ++scan_ticks;
 
         // ── (b) Refresh workspace visibility ────────────────────────────────
         ws_monitor.refresh_visibility();
@@ -1177,7 +1207,9 @@ int main(int argc, char* argv[]) {
         // ── (e) Detect execution state per process + aggregate ──────────────
         for (auto& [pid, node] : proc_graph) {
             auto& prev = prev_children[pid];
-            detector.detect(node, prev);
+            // stat was already read by refresh_proc_graph this tick; passing
+            // the ticks avoids a second open/read per PID in the detector.
+            detector.detect(node, prev, node.cpu_ticks);
             prev = node.children; // snapshot for next tick
             last_cpu_pct[pid] = node.cpu_pct; // reused by classification next tick
         }
@@ -1578,6 +1610,10 @@ int main(int argc, char* argv[]) {
     }
 
     // ── Shutdown ────────────────────────────────────────────────────────────
+    if (scan_ticks > 0)
+        std::cout << "[THM] /proc refresh: " << (scan_us_total / scan_ticks)
+                  << " us/tick avg over " << scan_ticks << " ticks ("
+                  << proc_graph.size() << " PIDs)\n";
     std::cout << "\n[THM] Shutdown initiated.\n";
 
     // Thaw all frozen processes before exiting
