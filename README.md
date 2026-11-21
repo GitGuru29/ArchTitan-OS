@@ -15,7 +15,7 @@ ArchTitan is a custom, high-performance Linux distribution built on top of Arch 
 ArchTitan embraces the Unix philosophy while providing a cohesive, pre-configured premium experience out of the box.
 
 - **Wayland Native:** Powered by the **Hyprland** dynamic tiling window manager with fluid animations, 1:1 touchpad relative workspace gestures, pointer hotzones, and responsive window rules.
-- **Resource Aware:** Features custom daemons like the **Titan Hardware Manager (THM v3.1)** and **Titan System Monitor (`titan-sysmon`)** for deterministic system-level resource orchestration and live telemetry streaming.
+- **Resource Aware:** Features custom daemons like the **Titan Hardware Manager (THM v3.4)** — a workload-aware resource orchestration engine built on Hyprland IPC context — and **Titan System Monitor (`titan-sysmon`)** for live telemetry streaming.
 - **Aesthetic First:** Deeply integrated **Catppuccin Mocha** dark theme and unified **Titan Design Language (TDL)** across all UI elements, terminals, browsers, overlays, and custom tools.
 - **Privacy & Security Focused:** Process sandboxing via Linux namespaces & seccomp-bpf, plus native ad & tracker blocking in Titan Browser.
 - **System Safety:** Automated BTRFS pre-transaction snapshots before `pacman` updates with bootable subvolume rollback entries in GRUB, alongside **ArchTitan Guard** display manager integrity protection.
@@ -40,7 +40,7 @@ ArchTitan bridges the gap between the modern Wayland compositor, custom middlewa
 ```mermaid
 graph TD
     subgraph "User Space (Wayland & UI)"
-        H[Hyprland Compositor]
+        H[Hyprland Compositor<br>IPC context stream]
         W[Waybar Status Panel]
         MH[Titan Media HUD<br>Dynamic Island Overlay]
         QS[Titan Quick Settings<br>Slide-in Control Drawer]
@@ -56,13 +56,13 @@ graph TD
         TF[TitanFetch<br>Glassmorphic Technical HUD]
         TDL[Titan Design System<br>ArchTitan.TitanUI / Qt6]
         TSD[Titan Sandbox<br>Namespace Isolation]
-        THM[Titan Hardware Manager<br>Privileged Daemon]
+        THM[Titan Hardware Manager<br>Workload-Aware Orchestration]
         BTRFS[BTRFS Snapshot Hook<br>Pacman Pre-Update Safety]
         GUARD[ArchTitan Guard<br>Integrity & DM Enforcer]
     end
 
     subgraph "Kernel & System Subsystems"
-        CG[cgroups v2 & Scheduler]
+        CG[cgroups v2 & Scheduler<br>CPU + Memory planes]
         SEC[seccomp-bpf & Namespaces]
         PM[Power Management / ACPI]
         PW[PipeWire Audio / WirePlumber]
@@ -78,6 +78,7 @@ graph TD
     H --- HZ
     H --- R
     H --- K
+    H -.->|Workspace / window context| THM
     HZ -.->|Edge Dwell Toggle| SM
     
     %% Tooling Interactions
@@ -100,11 +101,29 @@ graph TD
 
 ArchTitan provides a suite of native C++ and Qt6 applications built specifically for the OS:
 
-### 1.  Titan Hardware Manager (`titan-hwm` v3)
+### 1.  Titan Hardware Manager (`titan-hwm` v3.4)
 * **Lead:** `@GitGuru29` | **Location:** `titan-hwm-v3/` & `subsystems/titan-hwm/`
-* High-performance C++20 autonomous resource orchestrator running as `titan-hwm.service` with `archtitan.slice` cgroup v2 delegation (`OOMScoreAdjust=-1000`).
-* Dynamically routes workloads across `archtitan-active.slice`, `archtitan-background.slice`, and `archtitan-frozen.slice` based on multi-signal fusion classification (process trees depth-3 traversal, Hyprland window/workspace focus, CWD project signatures, and cmdline drift).
-* Features resilience against memory starvation: atomic `pidfd`-based reclaim signaling, `posix_spawn()` execution, 2-second workspace leave hysteresis, browser-safe cgroup freezing, first-class VM & database service immunity, and automated orphan thaw sweep.
+* **Direction:** “Titan Hardware Manager — Workload-Aware Resource Orchestration Engine.” The kernel keeps low-level scheduling; THM supplies intent, context, reservations, and guardrails. Hyprland IPC is the primary live context provider — no parallel context source.
+* High-performance C++20 autonomous daemon running at 5 Hz as `titan-hwm.service` with `archtitan.slice` cgroup v2 delegation (`OOMScoreAdjust=-1000`).
+* Routes classified workloads across `archtitan-active.slice`, `archtitan-latency.slice`, `archtitan-background.slice`, and `archtitan-frozen.slice` using multi-signal fusion classification (process ancestry to depth 3, Hyprland window/workspace focus, CWD project signatures, cmdline drift, and execution observation).
+* **Context:** a bounded 30-second recent-focus window keeps a just-left workspace foreground, so fast workspace switches no longer cause immediate downgrades; protection expires cleanly.
+* **CPU plane:** PSI + loadavg + `cpu.stat` + thermal drive `cpu.weight`, `cpu.max`, `cpu.idle`, SMT-aware `cpuset`, governor hints, and input boost. `archtitan-latency.slice` is never capped or idled. **HC-CPU-1:** CPU pressure can change scheduling, never process lifetime — no kill, stop, or freeze.
+* **Memory plane:** real `memory.high` / `memory.low` wiring, fail-closed enforcement gate, unified `pidfd` reclaim signaling with `posix_spawn()` helper execution, browser-safe cgroup freezing, protected-daemon immunity, and orphan thaw sweep. Destructive automatic reclaim stays off unless `THM_ALLOW_DESTRUCTIVE_RECLAIM=1` is explicitly set.
+* **Validated:** 43/43 unit tests, 8/8 CPU headroom scorecard, and real cgroup RAM-pressure benchmark PASS (`high=18`, `oom_kill=0`).
+* **Next isolation item:** give the latency/game workload its own physical core, the foreground IDE/agent another, and background work the rest — stricter than today’s shared latency/active cpuset. Also next: bind `active_window_class` / `active_window_title` to workload roots and build the dependency/workload graph. I/O and GPU planes remain out of scope.
+
+#### Current THM validation snapshot (v3.4-R1)
+
+| Check | Result |
+| :--- | :--- |
+| Unit suite (`./build/thm_test_runner`) | **43/43 PASSED** (TC-43 covers bounded Hyprland context) |
+| CPU headroom A/B (`bench_cpu_headroom --compare`) | **8/8 scorecard**, HC-CPU-1 workers 2/2 alive in both runs |
+| Latency | deadline misses **24.8% → 2.5%**; severe drops **51 → 1** |
+| Background work | ~**90.7%** throughput retained while `cpu.max` is actively throttling |
+| Real RAM pressure (`bench_memory_pressure.sh`) | `memory.high=96 MiB`, `memory.low=32 MiB`, `high=18`, `oom_kill=0` — **PASS** |
+| Safety | CPU pressure never kills/stops/freezes; destructive reclaim opt-in only |
+
+Detailed reports live in [`titan-hwm-v3/docs/benchmark-results/`](titan-hwm-v3/docs/benchmark-results/).
 
 ### 2.  ArchTitan Settings (`archtitan-settings`)
 * **Lead:** `@GitGuru29` | **Location:** `archtitan-settings/`
@@ -195,7 +214,7 @@ ArchTitan provides a suite of native C++ and Qt6 applications built specifically
   - Dynamic path resolution: Root execution (`/var/lib/titanshare`), User (`~/.local/share/titanshare`), Fallback (`/tmp/titanshare`).
   - Path traversal sanitization for received files and dedicated send staging folder (`send_to_android/`).
   - Hardened systemd sandboxing (`ProtectSystem=strict`, `StateDirectory=titanshare`) with IPC pairing PIN output at `/run/titanshare/titanshare-pin.json`.
-  - Registered in THM v3.1 `ProtectedRegistry` to prevent freeze or OOM reclaim during active file transfers.
+  - Registered in THM v3.4 `ProtectedRegistry` to prevent freeze or OOM reclaim during active file transfers.
 
 ### 15. ArchTitan Boot Ceremony & Splash (`archtitan-rise` & `archtitan`)
 * **Lead:** `@GitGuru29` | **Location:** `airootfs/usr/share/plymouth/themes/` & `airootfs/usr/local/bin/`
@@ -293,7 +312,19 @@ mindmap
 
 ---
 
-## 🔬 Empirical Stress Benchmarks (THM v3 vs Stock Arch)
+## 🔬 Empirical Stress Benchmarks (THM v3)
+
+### Latest host-level validation (v3.4-R1)
+
+The current tree is validated on real cgroup v2 with the 5 Hz daemon, not only in the VM harness:
+
+- **CPU:** 8/8 scorecard — deadline misses **24.8% → 2.5%**, severe drops **51 → 1**, ~**90.7%** background throughput retained while `cpu.max` is actively throttling.
+- **Memory:** real `memory.high` / `memory.low` scope produced **18 `high` events with `oom_kill=0`** — **PASS**.
+- **Invariants:** **43/43** tests; HC-CPU-1 held; destructive reclaim remains off by default.
+
+Full reports: [`titan-hwm-v3/docs/benchmark-results/`](titan-hwm-v3/docs/benchmark-results/).
+
+### Historical QEMU/KVM baseline (original THM v3)
 
 ArchTitan's dynamic resource orchestration was benchmarked using an automated headless QEMU/KVM stress harness (2 vCPU, 4 GB RAM, 2 GB swap) simulating developer-day pressure (continuous `make -j2` compilation, 100 ms latency probe, 2×400 MB idle background applications, and an aggressive memory hog bursting to 1.9 GB+):
 
@@ -400,7 +431,7 @@ ArchTitan is developed as a modular group project with 4 members. The repository
 
 | Component | Category | Owner | Status | Directory |
 | :--- | :--- | :--- | :--- | :--- |
-| **Titan Hardware Manager** | Core Daemon | @GitGuru29 (Lead) | 🟢 Shipped (v3.1) | `titan-hwm-v3/` & `subsystems/titan-hwm/` |
+| **Titan Hardware Manager** | Core Daemon | @GitGuru29 (Lead) | 🟢 Shipped (v3.4) | `titan-hwm-v3/` & `subsystems/titan-hwm/` |
 | **ArchTitan Settings** | Core App | @GitGuru29 (Lead) | 🟢 Shipped | `archtitan-settings/` |
 | **Titan Browser** | Core App | @GitGuru29 (Lead) | 🟢 Shipped | `titan-browser-source/` |
 | **Titan Sandbox** | Core Subsystem | @GitGuru29 (Lead) | 🟢 Shipped | `sandbox/` & `subsystems/titan-sandbox/` |
@@ -483,6 +514,7 @@ Comprehensive guides and technical documentation are available on the [ArchTitan
 | **Building the ISO** | Archiso compilation steps and dependency handling | [Build Documentation](https://github.com/GitGuru29/archtitan-os/wiki/Building-the-ISO) |
 | **Installation Guide** | UEFI partitioning, live environment, and dual-booting | [Installation Manual](https://github.com/GitGuru29/archtitan-os/wiki/Installation-Guide) |
 | **Hardware Manager** | cgroups v2 resource orchestration and power policies | [THM Documentation](https://github.com/GitGuru29/archtitan-os/wiki/Titan-Hardware-Manager) |
+| **THM Benchmark Results** | Per-task CPU/memory validation reports, including v3.4 Hyprland context | [`titan-hwm-v3/docs/benchmark-results/`](titan-hwm-v3/docs/benchmark-results/) |
 | **Titan Sandbox** | Namespaces, capability drops, and TOML policies | [Sandbox Manual](https://github.com/GitGuru29/archtitan-os/wiki/Titan-Sandbox) |
 | **Titan Browser** | Qt6 WebEngine browser and sandboxing guide | [Titan Browser Guide](https://github.com/GitGuru29/archtitan-os/wiki/Titan-Browser) |
 | **ArchTitan Settings** | System control center and THM profile manager | [Settings Manual](https://github.com/GitGuru29/archtitan-os/wiki/ArchTitan-Settings) |
