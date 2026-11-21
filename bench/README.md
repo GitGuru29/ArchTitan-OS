@@ -98,6 +98,13 @@ Requirements (host): `qemu-system-x86_64`, KVM access, `bsdtar`, `e2fsprogs`
 in the filename) from `out/`, `~/Desktop/` or `~/Downloads/`; override with
 `--iso-archtitan` / `--iso-vanilla`.
 
+**Current-source injection (v3.4+):** `make-bench-disk.sh` stages the freshly
+built `titan-hwm-v3/build/titan-hwm-daemon` onto the shared bench disk. Arm A
+replaces the ISO's older THM unit with a transient unit that runs that binary
+with the original slice properties; arm B still has no THM. `meta.txt` records
+`thm_source=bench-disk-v3.4` and the exact commit. Re-run
+`./titan-hwm-v3/build.sh` before the benchmark when comparing new THM code.
+
 The VM is only as fast as the host is idle, so each arm starts behind a
 **host-load guard**: it waits until 1-min load < 60% of `nproc` and
 MemAvailable ≥ 5 GB (up to `--host-wait SEC`, default 600). If the host is

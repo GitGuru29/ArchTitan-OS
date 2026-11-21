@@ -115,13 +115,35 @@ say "environment recorded"; cat meta.txt
 # ── 1. arm-specific preparation ──────────────────────────────────────────────
 case "$ARM" in
     A)
-        if ! systemctl is-active --quiet titan-hwm; then
-            say "THM not active — starting it"
-            systemctl start titan-hwm
-            sleep 2
+        # The live ISO may contain an older THM build. Arm A must exercise the
+        # current source tree, so replace the ISO daemon with the freshly built
+        # v3.4 binary staged on the shared bench disk. The transient unit keeps
+        # the original slice/OOM/protection settings.
+        say "ARM A: installing bench-disk THM v3.4 daemon"
+        systemctl stop titan-hwm 2>/dev/null || true
+        rm -f /etc/systemd/system/titan-hwm.service
+        rm -f /etc/systemd/system/*.wants/titan-hwm.service
+        systemctl daemon-reload 2>/dev/null || true
+        pkill -9 -f 'titan-hwm-daemon' 2>/dev/null || true
+        sleep 1
+        THMBIN=$BENCH/guest/bin/titan-hwm-daemon
+        if [ ! -x "$THMBIN" ]; then
+            say "FATAL: bench-disk THM daemon missing at $THMBIN"
+            exit 3
         fi
+        systemd-run --unit=titan-hwm --slice=archtitan.slice \
+            -p Restart=always \
+            -p RestartSec=500ms \
+            -p OOMScoreAdjust=-1000 \
+            -p ProtectKernelModules=true \
+            -p ProtectKernelTunables=false \
+            -p ProtectControlGroups=false \
+            "$THMBIN" > thm-systemd-run.log 2>&1
+        sleep 2
         if systemctl is-active --quiet titan-hwm; then
-            say "ARM A: THM v3 ACTIVE (systemctl: $(systemctl is-active titan-hwm))"
+            say "ARM A: THM v3.4 ACTIVE (systemctl: $(systemctl is-active titan-hwm))"
+            echo "thm_source=bench-disk-v3.4" >> meta.txt
+            [ -f "$BENCH/guest/bin/thm-build.info" ] && cat "$BENCH/guest/bin/thm-build.info" >> meta.txt
             systemctl status titan-hwm --no-pager | head -14 > thm-service-before.txt 2>&1
             titan-hwm status > thm-status-before.txt 2>&1 || true
             ls /sys/fs/cgroup/archtitan.slice/ > thm-slices-before.txt 2>&1 || true
@@ -129,7 +151,8 @@ case "$ARM" in
             echo "thm_pid=$THMPID" >> meta.txt
             ps -o pid,%cpu,rss,etime,comm -p "$THMPID" >> meta.txt 2>/dev/null || true
         else
-            say "FATAL: THM refused to start — aborting arm A"
+            say "FATAL: THM v3.4 refused to start — aborting arm A"
+            cat thm-systemd-run.log 2>/dev/null || true
             exit 3
         fi
         ;;

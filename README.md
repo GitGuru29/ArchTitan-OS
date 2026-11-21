@@ -324,6 +324,26 @@ The current tree is validated on real cgroup v2 with the 5 Hz daemon, not only i
 
 Full reports: [`titan-hwm-v3/docs/benchmark-results/`](titan-hwm-v3/docs/benchmark-results/).
 
+### QEMU/KVM re-run against current v3.4 (2026-11-21) — regression found
+
+Re-running the original v3 A/B with the freshly built v3.4 daemon exposed a
+**memory.high slice-scoping regression** introduced by v3.3-R2:
+
+| Metric | THM v3.4 | THM disabled |
+| :--- | :---: | :---: |
+| Compile rounds completed | **1** | **5** |
+| Median round wall time | **468.3 s** | **47.6 s** |
+| Swap-out pages | **401085** | **0** |
+| Full-stall seconds | **18.0 s** | **14.3 s** |
+| THROTTLE action on `g++` | **yes** | — |
+
+The compiler shares `archtitan-background.slice` with idle/AGING workloads, so
+the soft limit meant for reclaimable work caps the build. Probe p95 still
+improved (3.0 ms vs 4.7 ms), but compile throughput regressed 9.8×. Recommended
+fix: a dedicated `archtitan-throttled.slice` for `THROTTLE`/`AGING` work, then
+re-run this exact A/B. Full report:
+[`2026-11-21-v3.4-qemu-ab-regression.md`](titan-hwm-v3/docs/benchmark-results/2026-11-21-v3.4-qemu-ab-regression.md).
+
 ### Historical QEMU/KVM baseline (original THM v3)
 
 ArchTitan's dynamic resource orchestration was benchmarked using an automated headless QEMU/KVM stress harness (2 vCPU, 4 GB RAM, 2 GB swap) simulating developer-day pressure (continuous `make -j2` compilation, 100 ms latency probe, 2×400 MB idle background applications, and an aggressive memory hog bursting to 1.9 GB+):

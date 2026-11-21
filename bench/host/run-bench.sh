@@ -99,7 +99,8 @@ if [ ! -f "$BENCH_IMG" ] \
    || [ "$BENCH_DIR/guest/tstress.c" -nt "$BENCH_IMG" ] \
    || [ "$BENCH_DIR/guest/scenario.sh" -nt "$BENCH_IMG" ] \
    || [ "$BENCH_DIR/guest/collector.sh" -nt "$BENCH_IMG" ] \
-   || [ "$BENCH_DIR/guest/genproject.sh" -nt "$BENCH_IMG" ]; then
+   || [ "$BENCH_DIR/guest/genproject.sh" -nt "$BENCH_IMG" ] \
+   || [ "$REPO_ROOT/titan-hwm-v3/build/titan-hwm-daemon" -nt "$BENCH_IMG" ]; then
     bash "$HOST_DIR/make-bench-disk.sh"
 fi
 
