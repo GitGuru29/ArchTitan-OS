@@ -81,9 +81,10 @@ public:
     // Best-effort "is anyone at the machine" signal for the unattended-build
     // auto-lift. Hyprland exposes no keystroke events, so this tracks the user-
     // driven compositor events (workspace / focus / window open-close-move /
-    // fullscreen). It is deliberately conservative: when the compositor is not
-    // connected the user is assumed PRESENT, because wrongly lifting the CPU cap
-    // costs interactivity while wrongly keeping it only costs build speed.
+    // fullscreen). Conservative on IPC loss: if Hyprland was ever connected and
+    // the socket drops, assume the user is PRESENT. Headless hosts that never had
+    // a compositor are different: with no active graphical session there is no
+    // one to protect, so an unattended build is allowed to use every core.
     void      mark_activity();
     long long seconds_since_last_activity() const;
     bool      user_unattended(long idle_threshold_s) const;
@@ -131,6 +132,9 @@ private:
     std::atomic<int>  focused_ws_{1};
     std::atomic<bool> running_{false};
     std::atomic<bool> connected_{false};
+    // Distinguish "Hyprland IPC never existed" (headless QEMU/CI/server) from
+    // "IPC was up and dropped" (compositor glitch: assume the user is present).
+    std::atomic<bool> ever_connected_{false};
     std::thread       listener_thread_;
 
     // steady_clock milliseconds of the last user-driven compositor event.

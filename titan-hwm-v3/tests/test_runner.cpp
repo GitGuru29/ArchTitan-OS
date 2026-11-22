@@ -2,7 +2,7 @@
 // titan-hwm-v3/tests/test_runner.cpp
 // Real OS-Level Test Suite for Titan Hardware Manager v3 (THM v3)
 //
-// Validates 43 architectural test cases on real Linux OS primitives:
+// Validates 45 architectural test cases on real Linux OS primitives:
 //   TC-1:  Gradle / Background Build Survival
 //   TC-2:  AI Agent Workload Survival & Execution Authority
 //   TC-3:  Idle IDE Aging, Throttling & Freeze under Pressure
@@ -21,6 +21,8 @@
 //   TC-41: Fail-Closed Decision Gate (v3.3-R3)
 //   TC-42: Shared pidfd Signal Path (v3.3-R5)
 //   TC-43: Hyprland Recent-Focus Context (v3.4-R1)
+//   TC-44: Throttled Slice Isolation (v3.4-R2)
+//   TC-45: Build Toolchain Never Frozen (v3.4-R2)
 // =============================================================================
 
 #include "../core/types.hpp"
@@ -3051,6 +3053,110 @@ void test_tc43_recent_focus_context() {
     std::cout << (passed ? ">>> PASS: Hyprland recent-focus context verified.\n" : ">>> FAIL!\n");
 }
 
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-44: Throttled slice isolation (v3.4-R2)
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc44_throttled_slice_isolation() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(44, "Throttled Slice Isolation",
+                    "memory.high scope never caps executing background builds");
+
+    thm::Workload build, idle, feeder;
+    build.throughput_bulk = true;
+    build.state           = thm::WorkloadState::BACKGROUND_EXECUTING;
+    idle.state            = thm::WorkloadState::IDLE;
+    feeder.gpu_feeding    = true;
+
+    const std::string build_bg =
+        thm::slice_for_intent(build, thm::PolicyDecision::KEEP_BACKGROUND);
+    const std::string build_thr =
+        thm::slice_for_intent(build, thm::PolicyDecision::THROTTLE);
+    const std::string idle_thr =
+        thm::slice_for_intent(idle, thm::PolicyDecision::THROTTLE);
+    const std::string feeder_thr =
+        thm::slice_for_intent(feeder, thm::PolicyDecision::THROTTLE);
+    const std::string decision_thr =
+        thm::slice_for_decision(thm::PolicyDecision::THROTTLE);
+
+    const long high = thm::compute_memory_high_bytes(1024 * 1024);
+    const bool passed =
+        build_bg == thm::SLICE_BACKGROUND &&
+        build_thr == thm::SLICE_THROTTLED &&
+        idle_thr == thm::SLICE_THROTTLED &&
+        feeder_thr == thm::SLICE_LATENCY &&
+        decision_thr == thm::SLICE_THROTTLED &&
+        build_bg != build_thr &&
+        high > 0;
+
+    std::cout << "[Memory] executing-bg=" << build_bg
+              << " throttled=" << build_thr
+              << " decision=" << decision_thr
+              << " feeder=" << feeder_thr << "\n";
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-44: Throttled Slice Isolation",
+                         "memory.high moved off executing background work into dedicated slice",
+                         passed,
+                         "bg=archtitan-background, throttle=archtitan-throttled, latency unchanged",
+                         ms});
+    std::cout << (passed ? ">>> PASS: throttled slice isolation verified.\n" : ">>> FAIL!\n");
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-45: Build Toolchain Never Frozen (v3.4-R2)
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc45_bulk_build_never_frozen() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(45, "Build Toolchain Never Frozen",
+                    "compiler children are bulk work: throttled, never stopped");
+
+    thm::ClassifierConfig cfg;
+    thm::ClassificationResult classified;
+    thm::FusionClassifier::detect_intent(cfg, "cc1plus", 0, classified);
+
+    thm::ProtectedRegistry registry;
+    thm::PolicyEngine policy;
+    thm::Workload build;
+    build.id              = 902;
+    build.root_pid        = ::getpid();
+    build.pids            = {::getpid()};
+    build.type            = thm::WorkloadType::SYSTEM_DEV;
+    build.state           = thm::WorkloadState::IDLE; // short-lived children look idle
+    build.throughput_bulk = true;
+
+    thm::WorkspaceState ws;
+    ws.id = 7;
+    ws.is_focused = false;
+    ws.is_visible = false;
+
+    const auto d_norm = policy.evaluate(build, ws, thm::ActivityState::IDLE,
+                                        thm::PressureLevel::NORMAL, registry);
+    const auto d_high = policy.evaluate(build, ws, thm::ActivityState::IDLE,
+                                        thm::PressureLevel::HIGH, registry);
+    const auto d_crit = policy.evaluate(build, ws, thm::ActivityState::IDLE,
+                                        thm::PressureLevel::CRITICAL, registry);
+
+    const bool passed =
+        classified.throughput_bulk &&
+        d_norm == thm::PolicyDecision::KEEP_BACKGROUND &&
+        d_high == thm::PolicyDecision::KEEP_BACKGROUND &&
+        d_crit == thm::PolicyDecision::KEEP_BACKGROUND;
+
+    std::cout << "[Build] cc1plus bulk=" << classified.throughput_bulk
+              << " decisions=" << thm::to_string(d_norm) << "/"
+              << thm::to_string(d_high) << "/" << thm::to_string(d_crit) << "\n";
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-45: Build Toolchain Never Frozen",
+                         "compiler processes classified bulk; no FREEZE at any memory level",
+                         passed,
+                         "cc1plus=bulk, HIGH/CRITICAL=KEEP_BACKGROUND, memory.low protected",
+                         ms});
+    std::cout << (passed ? ">>> PASS: build toolchain freeze guard verified.\n" : ">>> FAIL!\n");
+}
+
 int main() {
     std::cout << "\n╔══════════════════════════════════════════════════════════════════════════════╗\n";
     std::cout << "║        THM v3 Real OS-Level Architectural Test Suite                         ║\n";
@@ -3100,6 +3206,8 @@ int main() {
     test_tc41_fail_closed_gate();
     test_tc42_shared_pidfd_signal_path();
     test_tc43_recent_focus_context();
+    test_tc44_throttled_slice_isolation();
+    test_tc45_bulk_build_never_frozen();
 
     // Summary Table
     std::cout << "\n════════════════════════════════════════════════════════════════════════════════\n";

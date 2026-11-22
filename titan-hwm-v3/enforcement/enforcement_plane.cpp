@@ -151,7 +151,7 @@ const char* slice_for_intent(const Workload& wl, PolicyDecision decision) {
     switch (decision) {
         case PolicyDecision::KEEP_FULL:      return SLICE_ACTIVE;
         case PolicyDecision::THROTTLE:       return latency_bg ? SLICE_LATENCY
-                                                               : SLICE_BACKGROUND;
+                                                               : SLICE_THROTTLED;
         case PolicyDecision::FREEZE:
         case PolicyDecision::RECLAIM:        return SLICE_FROZEN;
         case PolicyDecision::KEEP_BACKGROUND:
@@ -243,10 +243,12 @@ CpuSlicePolicy EnforcementPlane::apply_cpu_pressure_policy(PressureLevel cpu_pre
                                                      demand, reserved_cores_override);
     if (input_boost) apply_input_boost(policy, *input_boost, online_cpus);
 
-    // A memory-driven THROTTLE this tick may push the background slice lower
-    // than the CPU policy wants, but never higher.
+    // A memory-driven THROTTLE only lowers the dedicated throttled slice.
+    // Executing background work must keep the CPU-policy weight: penalising it
+    // here caused the 9.8x compile regression in the QEMU A/B.
+    int throttled_weight = policy.background_weight;
     if (throttle_seen_)
-        policy.background_weight = std::min(policy.background_weight, CPU_WEIGHT_THROTTLE);
+        throttled_weight = std::min(throttled_weight, CPU_WEIGHT_THROTTLE);
     throttle_seen_ = false;
 
     effective_policy_ = policy;
@@ -264,10 +266,17 @@ CpuSlicePolicy EnforcementPlane::apply_cpu_pressure_policy(PressureLevel cpu_pre
     put_weight(SLICE_ACTIVE,     policy.active_weight,     written_.active_weight);
     put_weight(SLICE_LATENCY,    policy.latency_weight,    written_.latency_weight);
     put_weight(SLICE_BACKGROUND, policy.background_weight, written_.background_weight);
+    put_weight(SLICE_THROTTLED,  throttled_weight,         written_.throttled_weight);
 
     if (policy.background_quota_us != written_.background_quota) {
         if (cgroup_.set_cpu_max(SLICE_BACKGROUND, policy.background_quota_us, policy.period_us))
             written_.background_quota = policy.background_quota_us;
+        else
+            failed = true;
+    }
+    if (policy.background_quota_us != written_.throttled_quota) {
+        if (cgroup_.set_cpu_max(SLICE_THROTTLED, policy.background_quota_us, policy.period_us))
+            written_.throttled_quota = policy.background_quota_us;
         else
             failed = true;
     }
@@ -276,6 +285,12 @@ CpuSlicePolicy EnforcementPlane::apply_cpu_pressure_policy(PressureLevel cpu_pre
     if (want_idle != written_.background_idle) {
         if (cgroup_.set_cpu_idle(SLICE_BACKGROUND, policy.background_idle))
             written_.background_idle = want_idle;
+        else
+            failed = true;
+    }
+    if (want_idle != written_.throttled_idle) {
+        if (cgroup_.set_cpu_idle(SLICE_THROTTLED, policy.background_idle))
+            written_.throttled_idle = want_idle;
         else
             failed = true;
     }
@@ -319,6 +334,7 @@ CpuIsolationState EnforcementPlane::apply_smt_isolation(
     }
     if (bg_changed) {
         ok &= cgroup_.set_cpuset(SLICE_BACKGROUND, want_bg);
+        ok &= cgroup_.set_cpuset(SLICE_THROTTLED,  want_bg);
     }
     if (!ok) return isolation_; // report only writes the kernel accepted
 

@@ -314,34 +314,46 @@ mindmap
 
 ## 🔬 Empirical Stress Benchmarks (THM v3)
 
-### Latest host-level validation (v3.4-R1)
+### Latest host-level validation (v3.4-R2)
 
 The current tree is validated on real cgroup v2 with the 5 Hz daemon, not only in the VM harness:
 
 - **CPU:** 8/8 scorecard — deadline misses **24.8% → 2.5%**, severe drops **51 → 1**, ~**90.7%** background throughput retained while `cpu.max` is actively throttling.
 - **Memory:** real `memory.high` / `memory.low` scope produced **18 `high` events with `oom_kill=0`** — **PASS**.
-- **Invariants:** **43/43** tests; HC-CPU-1 held; destructive reclaim remains off by default.
+- **Invariants:** **45/45** tests; HC-CPU-1 held; destructive reclaim remains off by default.
 
 Full reports: [`titan-hwm-v3/docs/benchmark-results/`](titan-hwm-v3/docs/benchmark-results/).
 
-### QEMU/KVM re-run against current v3.4 (2026-11-21) — regression found
+### QEMU/KVM re-run against current v3.4 (2026-11-21 → 2026-11-22) — regression fixed
 
-Re-running the original v3 A/B with the freshly built v3.4 daemon exposed a
-**memory.high slice-scoping regression** introduced by v3.3-R2:
+The first re-run with v3.4 exposed a **9.8× compile regression** (1 round at
+468.3 s vs 5 rounds at 47.6 s). It was traced to three stacked causes, all fixed
+in v3.4-R2:
 
-| Metric | THM v3.4 | THM disabled |
-| :--- | :---: | :---: |
-| Compile rounds completed | **1** | **5** |
-| Median round wall time | **468.3 s** | **47.6 s** |
-| Swap-out pages | **401085** | **0** |
-| Full-stall seconds | **18.0 s** | **14.3 s** |
-| THROTTLE action on `g++` | **yes** | — |
+1. `memory.high` was written slice-wide to `archtitan-background.slice`, which
+   also held executing builds.
+2. Headless QEMU had no Hyprland IPC, so THM conservatively assumed a user was
+   present and kept a 50% `cpu.max` cap on background work.
+3. Short-lived `cc1plus` children looked IDLE and were frozen at HIGH memory
+   pressure, costing throughput without reclaiming the hog's pages.
 
-The compiler shares `archtitan-background.slice` with idle/AGING workloads, so
-the soft limit meant for reclaimable work caps the build. Probe p95 still
-improved (3.0 ms vs 4.7 ms), but compile throughput regressed 9.8×. Recommended
-fix: a dedicated `archtitan-throttled.slice` for `THROTTLE`/`AGING` work, then
-re-run this exact A/B. Full report:
+Final exact-A/B rerun (`A-20261122-080242` vs `B-20261122-081054`):
+
+| Metric | THM v3.4-R2 | THM disabled | Original failing run |
+| :--- | :---: | :---: | :---: |
+| Complete compile rounds | **3** | **5** | 1 |
+| Median round wall time | **79.9 s** | **50.3 s** | 468.3 s |
+| Swap-out pages | **0** | **0** | 401085 |
+| Full-stall seconds | **0.3 s** | **10.6 s** | 18.0 s |
+| Kernel OOM kills | 0 | 0 | 0 |
+| Compiler frozen | **no** | — | yes |
+
+The 9.8× regression is reduced to **1.59×** on median round time. No compiler
+processes were frozen; only the two idle apps and the memory hog were contained.
+The remaining gap is the bounded cost of THM's foreground guardrails in a
+2-vCPU guest, with zero swap and an order-of-magnitude reduction in full stalls.
+
+Full report:
 [`2026-11-21-v3.4-qemu-ab-regression.md`](titan-hwm-v3/docs/benchmark-results/2026-11-21-v3.4-qemu-ab-regression.md).
 
 ### Historical QEMU/KVM baseline (original THM v3)

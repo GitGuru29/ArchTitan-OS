@@ -42,6 +42,15 @@ PolicyDecision PolicyEngine::evaluate(
         return PolicyDecision::KEEP_BACKGROUND;
     }
 
+    // ── Step 1a-4 (v3.4-R2): bulk throughput work is never frozen ────────────
+    // Compilers, renderers and encoders are the definition of "safe to cap,
+    // unsafe to stop". Their children are short-lived and can look IDLE/AGING
+    // to the state machine; freezing them stalls a build even though no memory
+    // is reclaimed (frozen pages stay resident). Executing bulk work receives
+    // memory.low protection instead: pressure relief comes from idle/AGING work
+    // in archtitan-throttled.slice, never from capping a live compiler.
+    if (wl.throughput_bulk) return PolicyDecision::KEEP_BACKGROUND;
+
     // ── Step 1b (HC-07): SERVICE workloads — DB servers, containers ──────────
     // These headless services have no window and low CPU but must stay alive.
     // Minimum decision: KEEP_BACKGROUND. Never FREEZE or RECLAIM.

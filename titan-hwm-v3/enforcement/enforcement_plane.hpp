@@ -120,6 +120,9 @@ private:
         int  background_weight = -1;
         long background_quota  = -2;
         int  background_idle   = -1;
+        int  throttled_weight  = -1;
+        long throttled_quota   = -2;
+        int  throttled_idle    = -1;
     } written_;
 
     CpuSlicePolicy effective_policy_;

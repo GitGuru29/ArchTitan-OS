@@ -120,15 +120,22 @@ bool CgroupController::setup_slices() {
 
     bool ok = true;
     for (const char* name : {SLICE_PROTECTED, SLICE_ACTIVE,
-                              SLICE_BACKGROUND, SLICE_LATENCY, SLICE_FROZEN}) {
+                              SLICE_BACKGROUND, SLICE_THROTTLED,
+                              SLICE_LATENCY, SLICE_FROZEN}) {
         ok &= mkdir_p(slice_path(name));
     }
 
     // Enable memory accounting in the slices we manage
     for (const char* name : {SLICE_ACTIVE, SLICE_BACKGROUND,
-                              SLICE_LATENCY, SLICE_FROZEN}) {
+                              SLICE_THROTTLED, SLICE_LATENCY,
+                              SLICE_FROZEN}) {
         ok &= write_file(slice_path(name) + "/memory.oom.group", "1");
     }
+
+    // A previous THM version may have left a slice-wide memory.high on the
+    // background slice. Clear it once at startup so executing builds never
+    // inherit a stale soft ceiling from an older daemon.
+    ok &= write_file(slice_path(SLICE_BACKGROUND) + "/memory.high", "max");
 
     // Definitive writability probe. The sub-slice directories existing is NOT
     // sufficient: under an undelegated slice they exist (created by systemd, or

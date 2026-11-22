@@ -21,6 +21,11 @@ static constexpr const char* SLICE_ROOT       = "/sys/fs/cgroup/archtitan.slice"
 static constexpr const char* SLICE_PROTECTED  = "archtitan-protected.slice";
 static constexpr const char* SLICE_ACTIVE     = "archtitan-active.slice";
 static constexpr const char* SLICE_BACKGROUND = "archtitan-background.slice";
+// v3.4-R2: memory-driven THROTTLE/AGING work gets its own slice so a soft
+// memory.high cap can never land on executing background builds that share
+// archtitan-background.slice. This slice carries the same low CPU weight and
+// cpuset as background work, but no longer shares its memory ceiling.
+static constexpr const char* SLICE_THROTTLED  = "archtitan-throttled.slice";
 static constexpr const char* SLICE_FROZEN     = "archtitan-frozen.slice";
 // v3.3: background work that must keep low wake-up latency (a background game,
 // voice chat, or a dataloader feeding a busy GPU). It gets a near-active weight
@@ -33,7 +38,7 @@ inline const char* slice_for_decision(PolicyDecision d) {
     switch (d) {
         case PolicyDecision::KEEP_FULL:       return SLICE_ACTIVE;
         case PolicyDecision::KEEP_BACKGROUND: return SLICE_BACKGROUND;
-        case PolicyDecision::THROTTLE:        return SLICE_BACKGROUND;
+        case PolicyDecision::THROTTLE:        return SLICE_THROTTLED;
         case PolicyDecision::FREEZE:          return SLICE_FROZEN;
         case PolicyDecision::RECLAIM:         return SLICE_BACKGROUND; // transient until killed
         default:                              return SLICE_BACKGROUND;

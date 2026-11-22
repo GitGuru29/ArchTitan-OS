@@ -92,7 +92,13 @@ struct ClassifierConfig {
     std::vector<std::string> bulk_render_apps = {
         "blender", "cycles", "inkscape", "krita", "handbrake", "handbrakecli",
         "resolve", "davinci-resolve", "povray", "luxrender", "octane",
-        "octanerender", "renderdoc", "sshadertoy"
+        "octanerender", "renderdoc", "sshadertoy",
+        // Compiler/driver processes are short-lived bulk work. Without explicit
+        // intent they look IDLE between samples and get frozen under memory
+        // pressure, stalling the whole build (the v3.4 QEMU regression).
+        "gcc", "g++", "cc1", "cc1plus", "clang", "clang++", "cpp",
+        "make", "gmake", "cmake", "ninja", "meson", "rustc", "cargo",
+        "go", "javac", "dotnet", "ld", "collect2", "as"
     };
     // Training marker: requires a python-family executable AND one of these in
     // the full command line, so ordinary python scripts are not misclassified.

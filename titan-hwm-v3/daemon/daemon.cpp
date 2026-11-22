@@ -1381,7 +1381,13 @@ int main(int argc, char* argv[]) {
                             throttled_latency_rss_kb += rss_kb;
                         else
                             throttled_bg_rss_kb += rss_kb;
-                    } else if (decision == thm::PolicyDecision::KEEP_FULL) {
+                    } else if (decision == thm::PolicyDecision::KEEP_FULL ||
+                               (decision == thm::PolicyDecision::KEEP_BACKGROUND &&
+                                wl->throughput_bulk)) {
+                        // Executing bulk work (compiler/render) is protected
+                        // with memory.low rather than a soft cap on its own
+                        // cgroup; reclaim pressure is aimed at throttled idle
+                        // work instead (v3.4-R2 regression fix).
                         protected_active_rss_kb += rss_kb;
                     }
                 }
@@ -1396,6 +1402,8 @@ int main(int argc, char* argv[]) {
 
         // ── (f2) Memory orchestration: kernel-native soft limits ────────────
         // THROTTLE now means a real memory.high write, not just OOM exposure.
+        // The soft limit is scoped to archtitan-throttled.slice only; executing
+        // background work in archtitan-background.slice is never memory-capped.
         // Protected/active work gets memory.soft protection so the kernel
         // reclaims bulk slices first. All writes are change-detected, so a
         // steady state costs zero cgroup syscalls.
@@ -1432,7 +1440,7 @@ int main(int argc, char* argv[]) {
                 applied = bytes;
             };
 
-            apply_high(thm::SLICE_BACKGROUND,
+            apply_high(thm::SLICE_THROTTLED,
                        thm::compute_memory_high_bytes(throttled_bg_rss_kb),
                        applied_bg_mem_high);
             apply_high(thm::SLICE_LATENCY,
@@ -1443,6 +1451,7 @@ int main(int argc, char* argv[]) {
                 protected_active_rss_kb, mem.total_kb);
             apply_low(thm::SLICE_ACTIVE, low_bytes, applied_prot_mem_low);
             apply_low(thm::SLICE_PROTECTED, low_bytes, applied_prot_mem_low);
+            apply_low(thm::SLICE_BACKGROUND, low_bytes, applied_prot_mem_low);
 
             memory_enforcement_active = all_ok;
         }

@@ -78,6 +78,32 @@ bool systemd_session_idle_hint() {
     return false;
 }
 
+// A graphical session exists only if logind reports an active wayland/x11
+// session. Headless multi-user.target (the QEMU A/B harness, CI, servers) has
+// none, so THM may safely treat a long-running bulk workload as unattended.
+bool systemd_graphical_session_active() {
+    std::error_code ec;
+    for (const auto& entry : fs::directory_iterator("/run/systemd/sessions", ec)) {
+        if (!entry.is_regular_file(ec)) continue;
+        const std::string fname = entry.path().filename().string();
+        if (fname.find(".ref") != std::string::npos) continue;
+
+        bool graphical = false;
+        bool active    = false;
+        std::ifstream f(entry.path());
+        std::string line;
+        while (std::getline(f, line)) {
+            if (line == "TYPE=wayland" || line == "TYPE=x11" ||
+                line == "TYPE=wayland,x11")
+                graphical = true;
+            if (line == "ACTIVE=1" || line == "STATE=active")
+                active = true;
+        }
+        if (graphical && active) return true;
+    }
+    return false;
+}
+
 } // namespace
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -163,9 +189,20 @@ long long WorkspaceMonitor::seconds_since_last_activity() const {
 
 bool WorkspaceMonitor::user_unattended(long idle_threshold_s) const {
     if (systemd_session_idle_hint()) return true;
-    // Conservative: if Hyprland IPC is disconnected, assume user is PRESENT
-    // unless systemd explicitly reports idle hint above.
-    if (!connected_.load(std::memory_order_relaxed)) return false;
+
+    const bool ever = ever_connected_.load(std::memory_order_relaxed);
+    const bool now  = connected_.load(std::memory_order_relaxed);
+
+    if (!ever) {
+        // No compositor was ever available. A headless build host has nobody
+        // whose latency needs protecting; an active graphical session without
+        // Hyprland IPC still counts as a user (we only have Hyprland as the
+        // primary live context source).
+        return !systemd_graphical_session_active();
+    }
+
+    // Hyprland IPC was up and dropped: fail safe on the side of interactivity.
+    if (!now) return false;
     return seconds_since_last_activity() >= idle_threshold_s;
 }
 
@@ -248,6 +285,7 @@ bool WorkspaceMonitor::listen_once(const std::string& path) {
     }
 
     connected_ = true;
+    ever_connected_ = true;
     std::cout << "[WS] Listening on " << path << "\n";
 
     char buf[4096];
