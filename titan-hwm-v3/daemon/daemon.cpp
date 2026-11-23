@@ -1766,10 +1766,15 @@ int main(int argc, char* argv[]) {
 
         // ── Sleep remaining tick budget ─────────────────────────────────────
         auto elapsed = std::chrono::steady_clock::now() - tick_start;
-        // Headless bulk-only hosts have no user-facing latency to protect; a
-        // 400 ms tick halves polling cost while keeping pressure response well
-        // inside the 1 s failure mode measured earlier. Desktop stays 200 ms.
-        const int effective_tick_ms = headless_slow_metadata ? 400 : tick_ms;
+        // Headless bulk-only hosts save CPU with a 400 ms tick while memory is
+        // calm. The instant memory pressure leaves NORMAL (or CPU hits
+        // CRITICAL) we snap back to 200 ms so containment/hog response keeps
+        // the R3 memory floor. Desktop/Hyprland always stays at 200 ms.
+        const bool need_fast_tick =
+            pressure != thm::PressureLevel::NORMAL ||
+            sys_pressure.cpu == thm::PressureLevel::CRITICAL;
+        const int effective_tick_ms =
+            (headless_slow_metadata && !need_fast_tick) ? 400 : tick_ms;
         auto sleep_for = std::chrono::milliseconds(effective_tick_ms) - elapsed;
         if (sleep_for.count() > 0)
             std::this_thread::sleep_for(sleep_for);

@@ -112,7 +112,7 @@ ArchTitan provides a suite of native C++ and Qt6 applications built specifically
 * **Validated:** 45/45 unit tests, 8/8 CPU headroom scorecard, and real cgroup RAM-pressure benchmark PASS (`high=18`, `oom_kill=0`).
 * **Next isolation item:** give the latency/game workload its own physical core, the foreground IDE/agent another, and background work the rest — stricter than today’s shared latency/active cpuset. Also next: bind `active_window_class` / `active_window_title` to workload roots and build the dependency/workload graph. I/O and GPU planes remain out of scope.
 
-#### Current THM validation snapshot (v3.4-R4)
+#### Current THM validation snapshot (v3.4-R5)
 
 | Check | Result |
 | :--- | :--- |
@@ -324,31 +324,40 @@ The current tree is validated on real cgroup v2 with the 5 Hz daemon, not only i
 
 Full reports: [`titan-hwm-v3/docs/benchmark-results/`](titan-hwm-v3/docs/benchmark-results/).
 
-### QEMU/KVM re-run against current v3.4 (2026-11-21 → 2026-11-23) — regression fixed, throughput restored
+### QEMU/KVM re-run against current v3.4 (2026-11-21 → 2026-11-23) — regression fixed, daemon cost reduced, memory floor restored
 
 The first re-run with v3.4 exposed a **9.8× compile regression** (1 round at
 468.3 s vs 5 rounds at 47.6 s). It was traced to slice-wide `memory.high`, a
 headless CPU cap that never lifted, and compiler children being frozen as IDLE.
-v3.4-R2 fixed those. v3.4-R3 then removed the residual throughput gap by
-raising the headless bulk-only cgroup weights and throttling only the expensive
-full `/proc` metadata refresh — the 200 ms pressure/stat tick is unchanged.
+v3.4-R2 fixed those; v3.4-R3 restored throughput with headless bulk cgroup
+weights and a slower full-`/proc` metadata refresh.
 
-Final exact-A/B rerun (`A-20261123-111029` vs `B-20261123-111822`):
+v3.4-R4 cut the daemon's own CPU cost on headless hosts by skipping doomed
+`hyprctl` forks, scanning cpufreq only on change/5 s, and publishing telemetry
+at 1 Hz. v3.4-R5 made the headless tick **pressure-aware**: 400 ms while memory
+is calm, snapping back to 200 ms the moment memory pressure leaves NORMAL (or
+CPU goes CRITICAL). Desktop/Hyprland stays 200 ms throughout.
 
-| Metric | THM v3.4-R3 | THM disabled | Original failing run |
+Final exact-A/B rerun (`A-20261123-125441` vs `B-20261123-130153`):
+
+| Metric | THM v3.4-R5 | THM disabled | Original failing run |
 | :--- | :---: | :---: | :---: |
-| Complete compile rounds | **6** | **8** | 1 |
-| Median round wall time | **38.6 s** | **33.1 s** | 468.3 s |
-| Median ratio vs THM off | **1.17×** | 1.00× | 9.84× |
-| THM daemon CPU | **9.64% of one vCPU** | — | 33.68% |
+| Complete compile rounds | **13** | 14 (+1 failed) | 1 |
+| Median round wall time | **20.3 s** | **19.0 s** | 468.3 s |
+| Median ratio vs THM off | **1.07×** | 1.00× | 9.84× |
+| THM daemon CPU | **10.64% of one vCPU** | — | 33.68% |
 | Swap-out pages | **0** | **0** | 401085 |
-| Full-stall seconds | **0.6 s** | **9.2 s** | 18.0 s |
+| Full-stall seconds | **0.5 s** | **7.3 s** | 18.0 s |
+| Min MemAvailable | **658 MB** | 28 MB | — |
 | Kernel OOM kills | 0 | 0 | 0 |
 | Compiler frozen | **no** | — | yes |
 
-The original 9.8× regression is now **1.17×**, and the absolute median is
-**below 50 s** as requested. Only the idle apps and the memory hog were
-contained; no compiler process was frozen.
+The original 9.8× regression stays fixed, the absolute median is **well below
+50 s**, and the 1.07× ratio is essentially parity (arm-order/thermal noise;
+earlier runs were 1.17× and 0.63×). One compile round died without THM; zero
+with THM. The pressure-aware tick keeps daemon CPU low without sacrificing the
+memory floor: 658 MB min MemAvailable and 0.5 s stalls, versus 37 MB and 4.4 s
+with an unconditional 400 ms tick.
 
 Full report:
 [`2026-11-21-v3.4-qemu-ab-regression.md`](titan-hwm-v3/docs/benchmark-results/2026-11-21-v3.4-qemu-ab-regression.md).
