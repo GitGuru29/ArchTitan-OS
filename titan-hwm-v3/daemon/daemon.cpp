@@ -955,6 +955,10 @@ int main(int argc, char* argv[]) {
     bool  prev_headroom_engaged  = false;
     bool  prev_unattended_lift   = false;
     bool  prev_bg_idle           = false;
+    // Headless bulk-only hosts do not need cmdline/exe/cgroup re-read every
+    // second; new PIDs are still fully read on first sight. Set from the
+    // previous tick's demand so the fast path can use it at the top of this one.
+    bool  headless_slow_metadata = false;
     std::string applied_gov      = "unknown";
 
     // Wall time of the previous pressure sample — feeds the per-tick PSI delta
@@ -979,7 +983,9 @@ int main(int argc, char* argv[]) {
 
         // ── (a) Refresh /proc snapshot ──────────────────────────────────────
         // Fast path: one stat read per PID. Full metadata refresh at 1 Hz.
-        const bool full_proc_refresh = (tick_count % 5 == 0) || proc_graph.empty();
+        const int full_refresh_period = headless_slow_metadata ? 25 : 5;
+        const bool full_proc_refresh =
+            (tick_count % full_refresh_period == 0) || proc_graph.empty();
         const auto scan_start = std::chrono::steady_clock::now();
         refresh_proc_graph(proc_graph, full_proc_refresh);
         scan_us_total += std::chrono::duration_cast<std::chrono::microseconds>(
@@ -1491,6 +1497,13 @@ int main(int argc, char* argv[]) {
         // still gets the whole machine; games/benchmarks/data loaders do not.
         const bool unattended_idle = thm::should_lift_unattended_cap(
             raw_unattended, demand);
+
+        headless_slow_metadata =
+            unattended_idle &&
+            !ws_monitor.connected() &&
+            demand.bulk_workloads > 0 &&
+            demand.latency_workloads == 0 &&
+            demand.gpu_feeders == 0;
 
         const int reserve_target = thm::compute_reserved_cores(
             sys_pressure.cpu, online_cpus, unattended_idle, demand);

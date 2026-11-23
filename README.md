@@ -109,14 +109,14 @@ ArchTitan provides a suite of native C++ and Qt6 applications built specifically
 * **Context:** a bounded 30-second recent-focus window keeps a just-left workspace foreground, so fast workspace switches no longer cause immediate downgrades; protection expires cleanly.
 * **CPU plane:** PSI + loadavg + `cpu.stat` + thermal drive `cpu.weight`, `cpu.max`, `cpu.idle`, SMT-aware `cpuset`, governor hints, and input boost. `archtitan-latency.slice` is never capped or idled. **HC-CPU-1:** CPU pressure can change scheduling, never process lifetime — no kill, stop, or freeze.
 * **Memory plane:** real `memory.high` / `memory.low` wiring, fail-closed enforcement gate, unified `pidfd` reclaim signaling with `posix_spawn()` helper execution, browser-safe cgroup freezing, protected-daemon immunity, and orphan thaw sweep. Destructive automatic reclaim stays off unless `THM_ALLOW_DESTRUCTIVE_RECLAIM=1` is explicitly set.
-* **Validated:** 43/43 unit tests, 8/8 CPU headroom scorecard, and real cgroup RAM-pressure benchmark PASS (`high=18`, `oom_kill=0`).
+* **Validated:** 45/45 unit tests, 8/8 CPU headroom scorecard, and real cgroup RAM-pressure benchmark PASS (`high=18`, `oom_kill=0`).
 * **Next isolation item:** give the latency/game workload its own physical core, the foreground IDE/agent another, and background work the rest — stricter than today’s shared latency/active cpuset. Also next: bind `active_window_class` / `active_window_title` to workload roots and build the dependency/workload graph. I/O and GPU planes remain out of scope.
 
-#### Current THM validation snapshot (v3.4-R1)
+#### Current THM validation snapshot (v3.4-R3)
 
 | Check | Result |
 | :--- | :--- |
-| Unit suite (`./build/thm_test_runner`) | **43/43 PASSED** (TC-43 covers bounded Hyprland context) |
+| Unit suite (`./build/thm_test_runner`) | **45/45 PASSED** (TC-44 throttled slice, TC-45 build freeze guard) |
 | CPU headroom A/B (`bench_cpu_headroom --compare`) | **8/8 scorecard**, HC-CPU-1 workers 2/2 alive in both runs |
 | Latency | deadline misses **24.8% → 2.5%**; severe drops **51 → 1** |
 | Background work | ~**90.7%** throughput retained while `cpu.max` is actively throttling |
@@ -324,34 +324,31 @@ The current tree is validated on real cgroup v2 with the 5 Hz daemon, not only i
 
 Full reports: [`titan-hwm-v3/docs/benchmark-results/`](titan-hwm-v3/docs/benchmark-results/).
 
-### QEMU/KVM re-run against current v3.4 (2026-11-21 → 2026-11-22) — regression fixed
+### QEMU/KVM re-run against current v3.4 (2026-11-21 → 2026-11-23) — regression fixed, throughput restored
 
 The first re-run with v3.4 exposed a **9.8× compile regression** (1 round at
-468.3 s vs 5 rounds at 47.6 s). It was traced to three stacked causes, all fixed
-in v3.4-R2:
+468.3 s vs 5 rounds at 47.6 s). It was traced to slice-wide `memory.high`, a
+headless CPU cap that never lifted, and compiler children being frozen as IDLE.
+v3.4-R2 fixed those. v3.4-R3 then removed the residual throughput gap by
+raising the headless bulk-only cgroup weights and throttling only the expensive
+full `/proc` metadata refresh — the 200 ms pressure/stat tick is unchanged.
 
-1. `memory.high` was written slice-wide to `archtitan-background.slice`, which
-   also held executing builds.
-2. Headless QEMU had no Hyprland IPC, so THM conservatively assumed a user was
-   present and kept a 50% `cpu.max` cap on background work.
-3. Short-lived `cc1plus` children looked IDLE and were frozen at HIGH memory
-   pressure, costing throughput without reclaiming the hog's pages.
+Final exact-A/B rerun (`A-20261123-111029` vs `B-20261123-111822`):
 
-Final exact-A/B rerun (`A-20261122-080242` vs `B-20261122-081054`):
-
-| Metric | THM v3.4-R2 | THM disabled | Original failing run |
+| Metric | THM v3.4-R3 | THM disabled | Original failing run |
 | :--- | :---: | :---: | :---: |
-| Complete compile rounds | **3** | **5** | 1 |
-| Median round wall time | **79.9 s** | **50.3 s** | 468.3 s |
+| Complete compile rounds | **6** | **8** | 1 |
+| Median round wall time | **38.6 s** | **33.1 s** | 468.3 s |
+| Median ratio vs THM off | **1.17×** | 1.00× | 9.84× |
+| THM daemon CPU | **9.64% of one vCPU** | — | 33.68% |
 | Swap-out pages | **0** | **0** | 401085 |
-| Full-stall seconds | **0.3 s** | **10.6 s** | 18.0 s |
+| Full-stall seconds | **0.6 s** | **9.2 s** | 18.0 s |
 | Kernel OOM kills | 0 | 0 | 0 |
 | Compiler frozen | **no** | — | yes |
 
-The 9.8× regression is reduced to **1.59×** on median round time. No compiler
-processes were frozen; only the two idle apps and the memory hog were contained.
-The remaining gap is the bounded cost of THM's foreground guardrails in a
-2-vCPU guest, with zero swap and an order-of-magnitude reduction in full stalls.
+The original 9.8× regression is now **1.17×**, and the absolute median is
+**below 50 s** as requested. Only the idle apps and the memory hog were
+contained; no compiler process was frozen.
 
 Full report:
 [`2026-11-21-v3.4-qemu-ab-regression.md`](titan-hwm-v3/docs/benchmark-results/2026-11-21-v3.4-qemu-ab-regression.md).
