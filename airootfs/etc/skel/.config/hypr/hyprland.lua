@@ -31,11 +31,16 @@ local sandboxed = "titan-exec-hook"
 ---- ENVIRONMENT ----
 -----------------------
 
+hl.env("XCURSOR_THEME", "Bibata-Modern-Classic")
 hl.env("XCURSOR_SIZE", "24")
+hl.env("HYPRCURSOR_THEME", "Bibata-Modern-Classic")
+hl.env("HYPRCURSOR_SIZE", "24")
 hl.env("QT_QPA_PLATFORMTHEME", "qt5ct")
 hl.env("WLR_NO_HARDWARE_CURSORS", "1")
 hl.env("WLR_RENDERER_ALLOW_SOFTWARE", "1")
 hl.env("AQ_NO_MODIFIERS", "1")
+hl.env("QSG_RENDER_LOOP", "basic")
+hl.env("QML_DISABLE_DISK_CACHE", "1")
 
 -------------------
 ---- AUTOSTART ----
@@ -46,19 +51,18 @@ hl.on("hyprland.start", function()
     -- There is no hl.spawn() in Hyprland's Lua API -- calling it throws
     -- "attempt to call a nil value" and aborts this whole handler.
 
-    hl.exec_cmd("bash -c 'sleep 2 && waybar'")
-    hl.exec_cmd("bash -c 'sleep 3 && titan-media-hud'")
+    hl.exec_cmd("dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP")
+    hl.exec_cmd("systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP")
+    hl.exec_cmd("hyprctl setcursor Bibata-Modern-Classic 24")
+    hl.exec_cmd("systemctl --user restart xdg-desktop-portal-hyprland 2>/dev/null || true")
+    hl.exec_cmd("titan-shell --daemon")
+    hl.exec_cmd("titan-focus --daemon")
+    hl.exec_cmd("bash -c 'sleep 1 && waybar'")
     hl.exec_cmd("titan-wallpaper-restore")
-    hl.exec_cmd("bash -c 'sleep 3 && titan-quicksettings --daemon'")
-    hl.exec_cmd("bash -c 'sleep 3 && titan-menu --daemon'")
-    hl.exec_cmd("bash -c 'sleep 3 && titan-workspace-hud --daemon'")
-    hl.exec_cmd("bash -c 'sleep 3 && titan-spotlight --daemon'")
     hl.exec_cmd("titan-hotzones")
-    hl.exec_cmd("titan-zone-osd")
     hl.exec_cmd("swayosd-server")
     hl.exec_cmd("/usr/lib/polkit-kde-authentication-agent-1")
     hl.exec_cmd("xdg-user-dirs-update")
-    hl.exec_cmd("bash -c 'sleep 4 && titan-tour --autostart'")
 
     -- Disable screen timeout / DPMS blanking on live ISO
     -- No hypridle daemon is launched -- no idle daemon = no blanking
@@ -146,8 +150,8 @@ superBind(mainMod .. " + C", hl.dsp.exec_cmd(sandboxed .. " code"))             
 superBind(mainMod .. " + X", hl.dsp.exec_cmd(sandboxed .. " " .. terminal .. " -e nano"))  -- Text editor
 hl.bind("CTRL + " .. mainMod .. " + V", hl.dsp.exec_cmd(sandboxed .. " pavucontrol"))  -- Volume mixer
 hl.bind("CTRL + SHIFT + Escape", hl.dsp.exec_cmd(sandboxed .. " " .. terminal .. " -e btop"))  -- Task manager
-superBind(mainMod .. " + comma", hl.dsp.exec_cmd(sandboxed .. " archtitan-settings"))     -- Settings panel shortcut
-superBind(mainMod .. " + I", hl.dsp.exec_cmd("bash -c 'if [ -d /run/archiso ]; then launch-installer; else titan-exec-hook archtitan-settings; fi'"))  -- Installer on Live ISO / Settings on Installed OS
+superBind(mainMod .. " + comma", hl.dsp.exec_cmd("archtitan-settings"))     -- Settings panel shortcut
+superBind(mainMod .. " + I", hl.dsp.exec_cmd("bash -c 'if [ -d /run/archiso ]; then launch-installer; else archtitan-settings; fi'"))  -- Installer on Live ISO / Settings on Installed OS
 superBind(mainMod .. " + F1", hl.dsp.exec_cmd("titan-tour --force"))  -- Interactive Virtual Tour
 
 -- Window Management
@@ -161,6 +165,7 @@ superBind(mainMod .. " + ALT + space", hl.dsp.window.float({ action = "toggle" }
 superBind(mainMod .. " + ALT + Space", hl.dsp.window.float({ action = "toggle" }))
 superBind(mainMod .. " + F", hl.dsp.window.fullscreen({ mode = "fullscreen" }))    -- Fullscreen
 superBind(mainMod .. " + SHIFT + F", hl.dsp.window.fullscreen({ mode = "maximized" })) -- Maximize (fullscreen with gaps)
+superBind(mainMod .. " + ALT + F", hl.dsp.exec_cmd("titan-focus --toggle"))        -- Super+Alt+F: Toggle TitanFocus pill
 superBind(mainMod .. " + P", hl.dsp.layout("togglesplit"))                        -- Super+P: Toggle dwindle split
 superBind(mainMod .. " + SHIFT + P", hl.dsp.exec_cmd("titan-cycle-power"))        -- Super+Shift+P: Cycle power profile
 
@@ -289,7 +294,7 @@ hl.config({
         blur = {
             enabled           = true,
             size              = 8,
-            passes            = 4,
+            passes            = 2,
             new_optimizations = true,
             ignore_opacity    = true,
             noise             = 0.020,
@@ -402,7 +407,7 @@ hl.window_rule({
     name    = "titan-tour-float",
     match   = { class = "^titan-tour$" },
     float   = true,
-    size    = "880 560",
+    size    = "860 540",
     center  = true,
 })
 
@@ -436,7 +441,8 @@ hl.layer_rule({ match = { namespace = "^swaync-control-center$" }, blur = true, 
 hl.layer_rule({ match = { namespace = "^swaync-notification-window$" }, blur = true, ignore_alpha = 0 })
 hl.layer_rule({ match = { namespace = "^titan-quicksettings$" }, blur = true, ignore_alpha = 0 })
 hl.layer_rule({ match = { namespace = "^titan-quicksettings-blur$" }, blur = true, ignore_alpha = 0 })
-hl.layer_rule({ match = { namespace = "^titan-sysmon$" }, blur = true, ignore_alpha = 0 })
+hl.layer_rule({ match = { namespace = "^titan-sysmon$" }, blur = true, ignore_alpha = 0.05 })
+hl.layer_rule({ match = { namespace = "^titan-focus$" }, blur = true, ignore_alpha = 0.05 })
 hl.layer_rule({ match = { namespace = "^titan-menu$" }, blur = true, ignore_alpha = 0 })
 hl.layer_rule({ match = { namespace = "^titan-workspace-hud$" }, blur = true, ignore_alpha = 0 })
 hl.layer_rule({ match = { namespace = "^swayosd$" }, blur = true, ignore_alpha = 0 })
