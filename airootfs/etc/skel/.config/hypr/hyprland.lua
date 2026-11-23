@@ -328,7 +328,6 @@ hl.config({
 
     -- Misc
     misc = {
-        vfr                          = true,
         disable_hyprland_logo        = true,
         disable_splash_rendering     = true,
         animate_manual_resizes       = true,
