@@ -112,7 +112,7 @@ ArchTitan provides a suite of native C++ and Qt6 applications built specifically
 * **Validated:** 45/45 unit tests, 8/8 CPU headroom scorecard, and real cgroup RAM-pressure benchmark PASS (`high=18`, `oom_kill=0`).
 * **Next isolation item:** give the latency/game workload its own physical core, the foreground IDE/agent another, and background work the rest — stricter than today’s shared latency/active cpuset. Also next: bind `active_window_class` / `active_window_title` to workload roots and build the dependency/workload graph. I/O and GPU planes remain out of scope.
 
-#### Current THM validation snapshot (v3.4-R3)
+#### Current THM validation snapshot (v3.4-R4)
 
 | Check | Result |
 | :--- | :--- |
