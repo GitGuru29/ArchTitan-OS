@@ -9,8 +9,6 @@
 #include <csignal>
 #include <iostream>
 
-#include <LayerShellQt/Window>
-
 #include "tourcontroller.h"
 
 int main(int argc, char *argv[])
@@ -23,14 +21,14 @@ int main(int argc, char *argv[])
 
     QGuiApplication app(argc, argv);
     app.setApplicationName("titan-tour");
-    app.setApplicationDisplayName("ArchTitan Virtual Tour");
+    app.setApplicationDisplayName("ArchTitan Tour");
     app.setOrganizationName("ArchTitan");
 
     std::signal(SIGINT, [](int) { QGuiApplication::quit(); });
     std::signal(SIGTERM, [](int) { QGuiApplication::quit(); });
 
     QCommandLineParser parser;
-    parser.setApplicationDescription("ArchTitan Cinematic Virtual Tour & Onboarding");
+    parser.setApplicationDescription("ArchTitan Onboarding Assistant & Virtual Tour");
     parser.addHelpOption();
     parser.addVersionOption();
 
@@ -55,8 +53,7 @@ int main(int argc, char *argv[])
 
     TourController tourCtrl;
 
-    // Ensure child processes (titan-quicksettings, titan-sysmon, titan-spotlight, etc.)
-    // can always resolve libTitanUI.so and ArchTitan.TitanUI QML module
+    // Library paths
     QStringList libDirs = {
         QStringLiteral("/usr/lib"),
         QDir::currentPath() + QStringLiteral("/airootfs/usr/lib"),
@@ -94,20 +91,6 @@ int main(int argc, char *argv[])
 
     auto *window = qobject_cast<QQuickWindow *>(engine.rootObjects().first());
     if (window) {
-        if (QGuiApplication::platformName().contains("wayland", Qt::CaseInsensitive)) {
-            if (auto *layerWindow = LayerShellQt::Window::get(window)) {
-                layerWindow->setLayer(LayerShellQt::Window::LayerOverlay);
-                layerWindow->setAnchors(LayerShellQt::Window::Anchors(
-                    LayerShellQt::Window::AnchorTop |
-                    LayerShellQt::Window::AnchorBottom |
-                    LayerShellQt::Window::AnchorLeft |
-                    LayerShellQt::Window::AnchorRight));
-                layerWindow->setExclusiveZone(-1);
-                layerWindow->setKeyboardInteractivity(
-                    LayerShellQt::Window::KeyboardInteractivityExclusive);
-                layerWindow->setScope("titan-tour");
-            }
-        }
         window->show();
     }
 

@@ -98,3 +98,4 @@ test-swaync.sh
 # draft and compiled output stay local while the proposal is being reviewed.
 docs/titanfocus-plan.typ
 docs/titanfocus-plan.pdf
+bench/logs/

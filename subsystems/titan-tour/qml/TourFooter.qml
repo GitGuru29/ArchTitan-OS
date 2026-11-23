@@ -1,56 +1,34 @@
 import QtQuick
 import QtQuick.Layouts
-import QtQuick.Effects
 import ArchTitan.TitanUI
+import "components"
 
 Item {
     id: root
-    height: 62
+    height: 58
 
     property int currentSlide: 0
-    property int totalSlides: 6
+    property int totalSlides: 5
     signal prevClicked()
     signal nextClicked()
     signal finishClicked()
 
-    MultiEffect {
-        anchors.fill: dockBg
-        source: dockBg
-        shadowEnabled: true
-        shadowColor: "#CC000000"
-        shadowBlur: 0.85
-        shadowVerticalOffset: 8
-    }
-
+    // Top hairline separator
     Rectangle {
-        id: dockBg
-        anchors.fill: parent
-        radius: 31
-        gradient: Gradient {
-            GradientStop { position: 0.0; color: Qt.rgba(TitanTheme.mantle.r, TitanTheme.mantle.g, TitanTheme.mantle.b, 0.94) }
-            GradientStop { position: 1.0; color: Qt.rgba(TitanTheme.base.r, TitanTheme.base.g, TitanTheme.base.b, 0.94) }
-        }
-        border.width: 1
-        border.color: Qt.rgba(1, 1, 1, 0.11)
-
-        // Top Specular Highlight
-        Rectangle {
-            anchors.top: parent.top
-            anchors.topMargin: 1
-            anchors.horizontalCenter: parent.horizontalCenter
-            width: parent.width - 56
-            height: 1
-            color: Qt.rgba(1, 1, 1, 0.16)
-        }
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: 1
+        color: Qt.rgba(1, 1, 1, 0.07)
     }
 
     RowLayout {
         anchors.fill: parent
         anchors.leftMargin: 20
-        anchors.rightMargin: 16
+        anchors.rightMargin: 18
         spacing: 16
 
-        // Left: Startup Toggle (Installed) or Direct Calamares Trigger (Live ISO)
+        // Left: Live ISO Calamares button OR Installed Startup Switch
         RowLayout {
             spacing: 10
             visible: !tourCtrl.isLiveMode
@@ -62,113 +40,202 @@ Item {
                 }
             }
 
-            ColumnLayout {
-                spacing: 0
+            Text {
+                text: "Show on login"
+                color: TitanTheme.textLow
+                font.family: TitanTheme.fontFamily
+                font.pixelSize: 11
+            }
+        }
+
+        // Live ISO Quick Installer Action
+        Rectangle {
+            id: liveInstallBtn
+            visible: tourCtrl.isLiveMode
+            implicitHeight: 32
+            implicitWidth: liveInstallRow.implicitWidth + 20
+            radius: 8
+            color: liveInstallMouse.containsMouse ? Qt.rgba(TitanTheme.warning.r, TitanTheme.warning.g, TitanTheme.warning.b, 0.22)
+                                                 : Qt.rgba(TitanTheme.warning.r, TitanTheme.warning.g, TitanTheme.warning.b, 0.12)
+            border.width: 1
+            border.color: Qt.rgba(TitanTheme.warning.r, TitanTheme.warning.g, TitanTheme.warning.b, 0.45)
+
+            Row {
+                id: liveInstallRow
+                anchors.centerIn: parent
+                spacing: 6
+
                 Text {
-                    text: "Launch Spatial Tour at Login"
+                    text: "\uf019" // Download/Install icon
+                    color: TitanTheme.warning
+                    font.family: TitanTheme.monoFamily
+                    font.pixelSize: 11
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+
+                Text {
+                    text: "Install to Disk"
                     color: TitanTheme.textHigh
                     font.family: TitanTheme.fontFamily
                     font.pixelSize: 12
-                    font.weight: TitanTheme.weightSemiBold
-                }
-                Text {
-                    text: "Re-open anytime via Super+Space -> 'Tour'"
-                    color: TitanTheme.textLow
-                    font.family: TitanTheme.monoFamily
-                    font.pixelSize: 10
+                    font.weight: 600
+                    anchors.verticalCenter: parent.verticalCenter
                 }
             }
-        }
 
-        // Live ISO Quick Install Button
-        TitanButton {
-            visible: tourCtrl.isLiveMode
-            text: "Install ArchTitan OS"
-            glyph: "\uf019"
-            variant: "primary"
-            implicitHeight: 38
-            implicitWidth: 196
-            onClicked: tourCtrl.launchInstaller()
-        }
-
-        Item { Layout.fillWidth: true }
-
-        // Center: Tactile Keyboard Navigation Hints
-        RowLayout {
-            spacing: 12
-
-            Repeater {
-                model: [
-                    { key: "← / →", desc: "Switch Act" },
-                    { key: "1..6",  desc: "Jump" },
-                    { key: "ESC",   desc: "Dismiss" }
-                ]
-
-                delegate: RowLayout {
-                    required property var modelData
-                    spacing: 6
-
-                    Rectangle {
-                        height: 24
-                        width: keyLbl.implicitWidth + 14
-                        radius: 6
-                        color: Qt.rgba(1, 1, 1, 0.05)
-                        border.width: 1
-                        border.color: Qt.rgba(1, 1, 1, 0.12)
-
-                        Text {
-                            id: keyLbl
-                            anchors.centerIn: parent
-                            text: modelData.key
-                            color: TitanTheme.info
-                            font.family: TitanTheme.monoFamily
-                            font.pixelSize: 10
-                            font.weight: Font.Bold
-                        }
-                    }
-
-                    Text {
-                        text: modelData.desc
-                        color: TitanTheme.textLow
-                        font.family: TitanTheme.fontFamily
-                        font.pixelSize: 11
-                    }
+            MouseArea {
+                id: liveInstallMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                    tourCtrl.launchInstaller();
                 }
             }
         }
 
         Item { Layout.fillWidth: true }
 
-        // Right: Previous / Next Act Controls
+        // Center: Keyboard Navigation Hints
+        Row {
+            spacing: 6
+            Layout.alignment: Qt.AlignVCenter
+
+            Keycap {
+                text: "←"
+                implicitHeight: 20
+                implicitWidth: 20
+            }
+            Keycap {
+                text: "→"
+                implicitHeight: 20
+                implicitWidth: 20
+            }
+            Text {
+                text: "Navigate"
+                color: TitanTheme.textLow
+                font.family: TitanTheme.fontFamily
+                font.pixelSize: 11
+                anchors.verticalCenter: parent.verticalCenter
+            }
+
+            Item { width: 8; height: 1 }
+
+            Keycap {
+                text: "ESC"
+                implicitHeight: 20
+            }
+            Text {
+                text: "Close"
+                color: TitanTheme.textLow
+                font.family: TitanTheme.fontFamily
+                font.pixelSize: 11
+                anchors.verticalCenter: parent.verticalCenter
+            }
+        }
+
+        Item { Layout.fillWidth: true }
+
+        // Right: Navigation Buttons (Back & Next / Finish)
         RowLayout {
             spacing: 10
 
-            TitanButton {
-                text: "Previous"
-                glyph: "\uf053"
-                variant: "ghost"
-                enabled: root.currentSlide > 0
-                opacity: enabled ? 1.0 : 0.35
-                implicitHeight: 38
-                implicitWidth: 112
-                onClicked: root.prevClicked()
+            // Back button
+            Rectangle {
+                id: backBtn
+                visible: root.currentSlide > 0
+                implicitHeight: 34
+                implicitWidth: 80
+                radius: 8
+                color: backMouse.pressed ? Qt.rgba(1, 1, 1, 0.12)
+                                         : (backMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(1, 1, 1, 0.04))
+                border.width: 1
+                border.color: Qt.rgba(1, 1, 1, 0.12)
+
+                Text {
+                    anchors.centerIn: parent
+                    text: "Back"
+                    color: TitanTheme.textHigh
+                    font.family: TitanTheme.fontFamily
+                    font.pixelSize: 12
+                    font.weight: Font.Medium
+                }
+
+                MouseArea {
+                    id: backMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        tourCtrl.playSound("tap");
+                        root.prevClicked();
+                    }
+                }
             }
 
-            TitanButton {
-                text: root.currentSlide === root.totalSlides - 1 ? "Enter ArchTitan" : "Next Act"
-                glyph: root.currentSlide === root.totalSlides - 1 ? "\uf00c" : "\uf054"
-                variant: "primary"
-                implicitHeight: 38
-                implicitWidth: root.currentSlide === root.totalSlides - 1 ? 168 : 132
-                onClicked: {
-                    if (root.currentSlide === root.totalSlides - 1) {
-                        root.finishClicked();
-                    } else {
-                        root.nextClicked();
+            // Next / Finish button
+            Rectangle {
+                id: nextBtn
+                property bool isLast: root.currentSlide === root.totalSlides - 1
+
+                implicitHeight: 34
+                implicitWidth: isLast ? 120 : 96
+                radius: 8
+
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop {
+                        position: 0.0
+                        color: nextBtn.isLast ? TitanTheme.accent : Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.85)
+                    }
+                    GradientStop {
+                        position: 1.0
+                        color: nextBtn.isLast ? TitanTheme.teal : TitanTheme.accent
+                    }
+                }
+
+                border.width: 1
+                border.color: Qt.rgba(255, 255, 255, 0.25)
+
+                scale: nextMouse.pressed ? 0.97 : (nextMouse.containsMouse ? 1.02 : 1.0)
+                Behavior on scale { NumberAnimation { duration: 100 } }
+
+                Row {
+                    anchors.centerIn: parent
+                    spacing: 6
+
+                    Text {
+                        text: nextBtn.isLast ? "Get Started" : "Continue"
+                        color: TitanTheme.crust
+                        font.family: TitanTheme.fontFamily
+                        font.pixelSize: 12
+                        font.weight: Font.Bold
+                    }
+
+                    Text {
+                        text: nextBtn.isLast ? "\uf00c" : "\uf054"
+                        color: TitanTheme.crust
+                        font.family: TitanTheme.monoFamily
+                        font.pixelSize: 10
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                }
+
+                MouseArea {
+                    id: nextMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        if (nextBtn.isLast) {
+                            root.finishClicked();
+                        } else {
+                            tourCtrl.playSound("tap");
+                            root.nextClicked();
+                        }
                     }
                 }
             }
         }
     }
 }
-

@@ -846,6 +846,10 @@ int main(int argc, char* argv[]) {
 
     // Governor hint currently applied — feeds compute_governor's hysteresis band
     thm::GovernorHint current_gov = thm::GovernorHint::SCHEDUTIL;
+    // apply_governor() scans every CPU's cpufreq sysfs. Re-check on a hint
+    // change, then only every 25 ticks (~5 s) to catch external edits.
+    thm::GovernorHint last_applied_gov = thm::GovernorHint::SCHEDUTIL;
+    int  last_gov_apply_tick = -100;
 
     // ── Phase 13: Telemetry sidecar ─────────────────────────────────────────
     thm::TelemetryPublisher telemetry;
@@ -993,7 +997,11 @@ int main(int argc, char* argv[]) {
         ++scan_ticks;
 
         // ── (b) Refresh workspace visibility ────────────────────────────────
-        ws_monitor.refresh_visibility();
+        // refresh_visibility() shells out to `hyprctl monitors -j` on every
+        // call. On a headless host that is a doomed popen() five times a second;
+        // skip it entirely until Hyprland IPC has actually connected.
+        if (ws_monitor.connected())
+            ws_monitor.refresh_visibility();
         auto workspaces = ws_monitor.snapshot_workspaces();
 
         // ── (c) Read dual-signal pressure (Memory + CPU) ────────────────────
@@ -1574,8 +1582,12 @@ int main(int argc, char* argv[]) {
                                                            thermally_constrained);
         current_gov = gov;
         if (!dry_run) {
-            const std::string applied = thm::WorkspaceMonitor::apply_governor(gov);
-            if (!applied.empty()) applied_gov = applied;
+            if (gov != last_applied_gov || tick_count - last_gov_apply_tick >= 25) {
+                const std::string applied = thm::WorkspaceMonitor::apply_governor(gov);
+                if (!applied.empty()) applied_gov = applied;
+                last_applied_gov = gov;
+                last_gov_apply_tick = tick_count;
+            }
         } else {
             applied_gov = governor_to_string(gov);
         }
@@ -1631,7 +1643,12 @@ int main(int argc, char* argv[]) {
         }
 
         // ── (i) Publish telemetry snapshot ──────────────────────────────────
-        {
+        // Building the snapshot walks every workload/PID, and publish() serialises
+        // it. In headless bulk mode 1 Hz is plenty for `titan-hwm status`; the
+        // policy/enforcement path above still runs at the full 200 ms tick.
+        const bool publish_snapshot =
+            !headless_slow_metadata || (tick_count % 5 == 0);
+        if (publish_snapshot) {
             thm::TelemetrySnapshot snap;
             snap.timestamp_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                 std::chrono::system_clock::now().time_since_epoch()).count();
@@ -1749,7 +1766,11 @@ int main(int argc, char* argv[]) {
 
         // ── Sleep remaining tick budget ─────────────────────────────────────
         auto elapsed = std::chrono::steady_clock::now() - tick_start;
-        auto sleep_for = std::chrono::milliseconds(tick_ms) - elapsed;
+        // Headless bulk-only hosts have no user-facing latency to protect; a
+        // 400 ms tick halves polling cost while keeping pressure response well
+        // inside the 1 s failure mode measured earlier. Desktop stays 200 ms.
+        const int effective_tick_ms = headless_slow_metadata ? 400 : tick_ms;
+        auto sleep_for = std::chrono::milliseconds(effective_tick_ms) - elapsed;
         if (sleep_for.count() > 0)
             std::this_thread::sleep_for(sleep_for);
     }

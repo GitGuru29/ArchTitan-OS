@@ -4,11 +4,12 @@
         <file>qml/TourWindow.qml</file>
         <file>qml/TourHeader.qml</file>
         <file>qml/TourFooter.qml</file>
-        <file>qml/slides/SlideWelcome.qml</file>
-        <file>qml/slides/SlideKeybinds.qml</file>
-        <file>qml/slides/SlideControlCenter.qml</file>
-        <file>qml/slides/SlideHardware.qml</file>
-        <file>qml/slides/SlideEcosystem.qml</file>
-        <file>qml/slides/SlideLaunch.qml</file>
+        <file>qml/components/Keycap.qml</file>
+        <file>qml/components/HotspotPill.qml</file>
+        <file>qml/slides/StepWelcome.qml</file>
+        <file>qml/slides/StepNavigation.qml</file>
+        <file>qml/slides/StepShortcuts.qml</file>
+        <file>qml/slides/StepHardware.qml</file>
+        <file>qml/slides/StepPersonalize.qml</file>
     </qresource>
 </RCC>
