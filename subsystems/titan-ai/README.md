@@ -8,10 +8,14 @@
 
 TITAN AI gives ArchTitan OS one unified AI/search interface for:
 
-- **ChatGPT / OpenAI** — Chat Completions API
-- **Claude / Anthropic** — Messages API
-- **Gemini / Google** — Generative Language API
+- **Gemini / Google** — Generative Language API (primary)
 - **Google Search** — Gemini `google_search` grounding with inline citations
+- **ChatGPT / OpenAI** — Chat Completions API (API key)
+- **Claude / Anthropic** — Messages API (API key)
+
+Google sign-in is the default onboarding path: Gemini chat and Kitty search work with your
+Google account, and a Gemini API key is only a fallback. ChatGPT and Claude still use their
+own provider API keys; a Google account cannot authenticate those APIs.
 
 The engine is a **C++20 binary** using libcurl and OpenSSL with a small in-tree JSON parser.
 No Python interpreter, pip packages or third-party JSON library are required in the ISO.
@@ -39,27 +43,31 @@ up automatically. To change the shortcut or open a tab instead, edit
 ## CLI quick start
 
 ```sh
-titan-ai setup                       # store API keys in ~/.config/archtitan/titan-ai.json
-titan-ai 'explain btrfs snapshots'   # provider chosen automatically
-titan-ai -p claude 'review this shell script'
-titan-ai -p chatgpt 'write a fish alias for git status'
-titan-ai --all 'compare these two approaches'
+titan-ai setup                       # Google sign-in first; Gemini API key is optional
+titan-ai auth google                 # prompts for your OAuth client ID, then signs you in
+titan-ai docs                        # full Google sign-in guide, also on installed systems
 titan-ai search 'latest Arch Linux news'
+titan-ai 'explain btrfs snapshots'   # Gemini is the default provider
+titan-ai -p gemini 'summarise this topic'
 titan-ai chat                        # interactive session (/provider, /model, /search, /quit)
 ```
+
+`setup` and `auth google` both walk you through the one-time Google Cloud Desktop OAuth
+client ID. That ID is public and stored locally; no secret is shipped in the ISO. If you
+already have a GEMINI_API_KEY, `setup` can store it as a fallback.
 
 Environment variables work too and take precedence over the config file:
 
 ```sh
-export OPENAI_API_KEY='sk-...'
-export ANTHROPIC_API_KEY='sk-ant-...'
 export GEMINI_API_KEY='...'
+export OPENAI_API_KEY='sk-...'       # only for -p chatgpt / openai
+export ANTHROPIC_API_KEY='sk-ant-...' # only for -p claude / anthropic
 ```
 
-For Google sign-in without an API key, see [`docs/GOOGLE_AUTH.md`](docs/GOOGLE_AUTH.md):
+The complete guide also lives in [`docs/GOOGLE_AUTH.md`](docs/GOOGLE_AUTH.md) and is printed
+by `titan-ai docs`:
 
 ```sh
-titan-ai config set google_oauth.client_id '...apps.googleusercontent.com'
 titan-ai auth google            # browser callback (PKCE loopback)
 titan-ai auth google --device   # headless terminal / SSH
 titan-ai auth status
@@ -76,10 +84,10 @@ titan-ai auth status
 | `titan-ai search --links QUERY` | Print only source links |
 | `titan-ai chat` | Interactive multi-turn session |
 | `titan-ai status` | Show providers, models and auth methods |
-| `titan-ai setup` | Interactive key setup (writes a `0600` config) |
+| `titan-ai setup` | Google-sign-in-first setup; optional Gemini API key fallback (`0600` config) |
 | `titan-ai config {show,path,edit,set,unset}` | Manage settings |
-| `titan-ai auth {google,status,logout}` | Google sign-in management |
-| `titan-ai docs` | Print the Google sign-in guide |
+| `titan-ai auth {google,status,logout}` | Google sign-in management (prompts for client ID if needed) |
+| `titan-ai docs` | Print the full Google sign-in and Search guide |
 
 Global options: `-p/--provider`, `-m/--model`, `--system`, `--max-tokens`, `--temperature`,
 `--timeout`, `--all`, `-j/--json`, `--links`. Use `-` to read the prompt from stdin, e.g.
@@ -115,8 +123,9 @@ mode `0600`. A non-secret template ships at
 Environment overrides: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`/`GOOGLE_API_KEY`,
 `TITAN_AI_<PROVIDER>_MODEL`, `OPENAI_BASE_URL`, `ANTHROPIC_BASE_URL`, `GEMINI_BASE_URL`,
 `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CLOUD_PROJECT`, `XDG_CONFIG_HOME`.
-`default_provider: "auto"` picks the first provider with working credentials. For Google,
-an explicit sign-in takes precedence over an API key; set `TITAN_AI_GOOGLE_AUTH=api_key|oauth|adc`
+`default_provider: "auto"` prefers Gemini whenever Google sign-in, an API key or ADC is
+available; `setup`/`auth google` set it to `gemini` explicitly. For Google, an explicit
+sign-in takes precedence over an API key; set `TITAN_AI_GOOGLE_AUTH=api_key|oauth|adc`
 to force one method.
 
 ## Build / integration

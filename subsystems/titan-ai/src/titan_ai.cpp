@@ -266,9 +266,12 @@ static std::string resolve_provider(const tj::Value &cfg, const std::string &req
         if (n) name = *n;
     }
     if (name.empty()) {
+        // Google/Gemini is the default experience: sign-in or an API key wins first.
+        if (has_credentials(cfg, "gemini")) return "gemini";
         for (const auto &p : PROVIDERS)
-            if (has_credentials(cfg, p)) return p;
-        throw TitanError("no API credentials found. Run `titan-ai setup` or set an API key env var.");
+            if (p != "gemini" && has_credentials(cfg, p)) return p;
+        throw TitanError("no credentials found. Sign in with Google (`titan-ai auth google`) "
+                         "or run `titan-ai setup`.");
     }
     if (need_key && !has_credentials(cfg, name)) {
         std::string hint = name == "gemini" ? "`titan-ai auth google`" : "`titan-ai setup`";
@@ -1036,44 +1039,93 @@ static std::string read_secret(const std::string &prompt) {
     return trim(value);
 }
 
+// Prompt for the one thing Google cannot ship inside an OS image: the user's
+// own Desktop-app OAuth client ID. Stored locally with 0600 permissions.
+static std::pair<std::string, std::string> ensure_oauth_client(tj::Value &cfg) {
+    std::string id = env("GOOGLE_CLIENT_ID");
+    if (!id.empty()) return {id, env("GOOGLE_CLIENT_SECRET")};
+    const tj::Value *stored = dig(cfg, {"google_oauth", "client_id"});
+    if (stored && stored->is_string() && !stored->str.empty()) return oauth_client(cfg);
+
+    std::cout << "\n" << cyan("Google sign-in needs an OAuth client ID") << "\n"
+              << dim("  Google does not let an OS ship a shared sign-in secret. Create a free") << "\n"
+              << dim("  Desktop app OAuth client in your Google Cloud project and paste its ID.") << "\n"
+              << dim("  One-time steps: titan-ai docs") << "\n";
+    std::cout << "OAuth client ID (blank to cancel): " << std::flush;
+    std::string entered;
+    std::getline(std::cin, entered);
+    entered = trim(entered);
+    if (entered.empty())
+        throw TitanError("Google sign-in cancelled. Run `titan-ai docs` for the setup steps.");
+    cfg["google_oauth"]["client_id"] = tj::Value::string(entered);
+    std::string secret = read_secret("Client secret (blank for Desktop/public clients): ");
+    if (!secret.empty()) cfg["google_oauth"]["client_secret"] = tj::Value::string(secret);
+    cfg["default_provider"] = tj::Value::string("gemini");
+    save_config(cfg);
+    std::cout << green("✓ Client ID saved to " + config_path().string() + ".") << "\n";
+    return {entered, secret};
+}
+
 static int cmd_setup(Args &, tj::Value &cfg) {
     std::cout << cyan("Titan AI setup") << dim("  (values stay in your user config, never in the ISO)") << "\n";
     if (!dig(cfg, {"providers"})) cfg["providers"] = tj::Value::object();
-    for (const auto &p : PROVIDERS) {
-        std::string current = api_key(cfg, p);
-        std::string key = read_secret(label(p) + " API key (blank to skip, current: " + mask(current) + "): ");
-        if (!key.empty()) cfg["providers"][p]["api_key"] = tj::Value::string(key);
+
+    std::cout << "\n" << cyan("1. Google sign-in (recommended)") << "\n"
+              << dim("   Google account access for Gemini chat and Google Search in Kitty.") << "\n"
+              << dim("   Run `titan-ai docs` for the one-time Google Cloud client setup.") << "\n";
+    std::cout << "Enable Google sign-in now? [Y/n]: " << std::flush;
+    std::string answer;
+    std::getline(std::cin, answer);
+    answer = lower(trim(answer));
+    if (answer.empty() || answer == "y" || answer == "yes") {
+        try {
+            ensure_oauth_client(cfg);
+            std::cout << "Sign in with Google now? [y/N]: " << std::flush;
+            std::getline(std::cin, answer);
+            answer = lower(trim(answer));
+            if (answer == "y" || answer == "yes") {
+                std::cout << "Headless/device flow? [y/N]: " << std::flush;
+                std::getline(std::cin, answer);
+                answer = lower(trim(answer));
+                if (answer == "y" || answer == "yes") auth_google_device(cfg);
+                else auth_google_loopback(cfg);
+            }
+        } catch (const TitanError &e) {
+            std::cout << red(e.what()) << "\n"
+                      << dim("  You can retry with: titan-ai auth google") << "\n";
+        }
+        cfg["default_provider"] = tj::Value::string("gemini");
     }
-    std::string id;
-    std::cout << "Google OAuth client ID for 'Sign in with Google' (blank to skip): " << std::flush;
-    std::getline(std::cin, id);
-    id = trim(id);
-    if (!id.empty()) {
-        cfg["google_oauth"]["client_id"] = tj::Value::string(id);
-        std::string secret = read_secret("Client secret (blank for public/native clients): ");
-        if (!secret.empty()) cfg["google_oauth"]["client_secret"] = tj::Value::string(secret);
+
+    std::cout << "\n" << cyan("2. Gemini API key (optional fallback)") << "\n";
+    std::string current = api_key(cfg, "gemini");
+    std::string key = read_secret("Gemini API key (blank to skip, current: " + mask(current) + "): ");
+    if (!key.empty()) {
+        cfg["providers"]["gemini"]["api_key"] = tj::Value::string(key);
+        cfg["default_provider"] = tj::Value::string("gemini");
     }
-    std::string def;
-    std::cout << "Default provider [auto/openai/claude/gemini] (blank keeps current): " << std::flush;
-    std::getline(std::cin, def);
-    def = trim(def);
-    if (!def.empty()) {
-        normalise_provider(def);
-        cfg["default_provider"] = tj::Value::string(lower(def));
-    }
+    std::cout << dim("  ChatGPT/Claude need their own API keys; this flow focuses on Google/Gemini.") << "\n";
+
     save_config(cfg);
-    std::cout << green("✓ Saved " + config_path().string() + " (mode 0600).") << "\n";
+    std::cout << green("✓ Saved " + config_path().string() + " (mode 0600).") << "\n"
+              << dim("  Next: titan-ai search '...'  or press Ctrl+Shift+S in Kitty") << "\n";
     return 0;
 }
 
 static int cmd_status(const Args &, tj::Value &cfg) {
     std::cout << cyan("TITAN AI status") << "  " << dim("config: " + config_path().string()) << "\n";
+    const tj::Value *def = dig(cfg, {"default_provider"});
+    std::cout << "  " << dim("default provider:") << " "
+              << (def && def->is_string() && !def->str.empty() ? def->str : "auto (Gemini first)")
+              << "\n";
     for (const auto &p : PROVIDERS) {
-        std::string auth = has_credentials(cfg, p) ? "API key" : "not configured";
-        if (p == "gemini" && has_credentials(cfg, p)) {
+        std::string auth = "not configured";
+        if (p == "gemini") {
+            if (fs::exists(oauth_path())) auth = "Google sign-in (primary)";
+            else if (!api_key(cfg, p).empty()) auth = "API key (fallback)";
+            else if (fs::exists(adc_path())) auth = "gcloud ADC";
+        } else if (has_credentials(cfg, p)) {
             auth = "API key";
-            if (fs::exists(oauth_path())) auth = "Google sign-in";
-            else if (fs::exists(adc_path()) && api_key(cfg, p).empty()) auth = "gcloud ADC";
         }
         std::string name = label(p);
         name.resize(24, ' ');
@@ -1158,6 +1210,7 @@ static int cmd_config(const Args &args, tj::Value &cfg) {
 
 static int cmd_auth(const Args &args, tj::Value &cfg) {
     if (args.auth_command == "google") {
+        ensure_oauth_client(cfg);
         if (args.device) auth_google_device(cfg);
         else auth_google_loopback(cfg);
         return 0;
@@ -1173,11 +1226,56 @@ static int cmd_auth(const Args &args, tj::Value &cfg) {
     throw TitanError("usage: titan-ai auth {google|status|logout}");
 }
 
+static void print_google_guide() {
+    std::cout << R"GUIDE(TITAN AI — Google sign-in and Gemini Search
+
+Google sign-in is the primary way to use Gemini chat and Google Search grounding in
+ArchTitan. A Gemini API key is an optional fallback. ChatGPT and Claude need their own
+API keys and are not part of this sign-in flow.
+
+1) ONE-TIME GOOGLE CLOUD SETUP
+   a. Open https://console.cloud.google.com/ and select or create a project.
+   b. Enable "Generative Language API" for that project.
+   c. Google Auth platform -> Audience: External; add your own email under Test users.
+   d. Google Auth platform -> Clients -> Create Client:
+        Application type: Desktop app
+        Name: ArchTitan TITAN AI
+   e. Copy the Client ID (and Client secret, if Google shows one).
+
+2) GIVE IT TO TITAN AI
+   titan-ai auth google            # prompts for the ID if none is stored, then opens a browser
+   titan-ai auth google --device   # headless/SSH: visit the printed URL, enter the code
+   titan-ai status                 # should show "Google sign-in (primary)"
+
+   You can also pre-store the ID:
+   titan-ai config set google_oauth.client_id '...apps.googleusercontent.com'
+
+3) USE IT
+   titan-ai search 'latest Arch Linux news'
+   titan-ai 'explain btrfs snapshots'
+   Press Ctrl+Shift+S in Kitty to open the search window — no command to type.
+
+4) FALLBACK: GEMINI API KEY
+   Get a key from Google AI Studio, then run `titan-ai setup` and paste it at the
+   Gemini API key prompt, or export GEMINI_API_KEY. Search grounding may be billed.
+
+5) TROUBLESHOOTING
+   - "Google hasn't verified this app" is expected for a personal client:
+     choose Advanced -> Continue.
+   - access_denied: make sure your email is listed under Test users.
+   - Redirect URI mismatch: the OAuth client must be a Desktop app (loopback is allowed).
+   - Token expired: run `titan-ai auth google` again; tokens refresh automatically
+     while a refresh token is available.
+
+Nothing secret is shipped in the ISO. The OAuth client ID is public; your tokens and
+API keys stay in ~/.config/archtitan with mode 0600.
+)GUIDE";
+}
+
 static int run(int argc, char **argv) {
     Args args = parse_args(std::vector<std::string>(argv + 1, argv + argc));
     if (args.command == "docs") {
-        std::cout << "Google sign-in guide: subsystems/titan-ai/docs/GOOGLE_AUTH.md\n"
-                  << "Run `titan-ai docs` from the repo to print it in older builds.\n";
+        print_google_guide();
         return 0;
     }
     tj::Value cfg = load_config();

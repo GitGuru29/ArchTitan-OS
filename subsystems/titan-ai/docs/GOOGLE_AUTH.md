@@ -1,14 +1,16 @@
 # Google sign-in for TITAN AI
 
 The C++ `titan-ai` engine (and the Kitty <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd> search
-window that calls it) supports three ways to authorize Gemini and Google Search grounding:
+window that calls it) supports three ways to authorize Gemini and Google Search grounding.
+Google sign-in is the recommended/default path; an API key is a fallback:
 
-| Method | How to enable | Notes |
-|---|---|---|
-| Gemini API key | `titan-ai setup` or `GEMINI_API_KEY` / `GOOGLE_API_KEY` | Easiest. Works for chat and Google Search grounding. |
-| Sign in with Google | `titan-ai auth google` | OAuth authorization code + PKCE via a local browser callback. No API key needed. |
-| gcloud ADC | `gcloud auth application-default login` | Used automatically if a `~/.config/gcloud/application_default_credentials.json` exists. |
+| Priority | Method | How to enable | Notes |
+|---|---|---|---|
+| 1 | Sign in with Google | `titan-ai auth google` (prompts for your OAuth client ID) | OAuth authorization code + PKCE via a local browser callback. No API key needed. |
+| 2 | Gemini API key | `titan-ai setup` or `GEMINI_API_KEY` / `GOOGLE_API_KEY` | Fallback when you cannot or do not want to sign in. |
+| 3 | gcloud ADC | `gcloud auth application-default login` | Used automatically if a `~/.config/gcloud/application_default_credentials.json` exists. |
 
+This guide is also available anywhere with `titan-ai docs` — no repository checkout needed.
 Nothing is baked into the ISO. Tokens are written to
 `$XDG_CONFIG_HOME/archtitan/titan-ai-google.json` (default `~/.config/archtitan/`)
 with mode `0600`. If both a sign-in and an API key exist, the sign-in is used; set
@@ -31,6 +33,9 @@ The CLI requests only these scopes:
 - `https://www.googleapis.com/auth/generative-language.retriever`
 
 ## 2. Give the client ID to TITAN AI
+
+`titan-ai auth google` and `titan-ai setup` ask for this ID interactively if it is not
+stored yet. To pre-store it instead, use either method below.
 
 Either store it in your private config:
 
@@ -71,6 +76,9 @@ Check the result with:
 ```sh
 titan-ai status
 ```
+
+Once signed in, Gemini is the default provider: plain `titan-ai 'question'` and the Kitty
+search window use it automatically. ChatGPT and Claude still require their own API keys.
 
 Revoke and remove the local token with:
 

@@ -93,7 +93,11 @@ class CppEngineTests(unittest.TestCase):
     def setUp(self) -> None:
         self.home = Path(tempfile.mkdtemp(prefix="titan-ai-home-", dir=self.work.name))
         self.env = os.environ.copy()
-        for key in ("OPENAI_API_KEY", "ANTHROPIC_API_KEY", "CLAUDE_API_KEY", "GOOGLE_API_KEY"):
+        for key in (
+            "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "CLAUDE_API_KEY",
+            "GOOGLE_API_KEY", "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET",
+            "GOOGLE_CLOUD_PROJECT",
+        ):
             self.env.pop(key, None)
         self.env.update({
             "HOME": str(self.home), "XDG_CONFIG_HOME": str(self.home),
@@ -102,10 +106,11 @@ class CppEngineTests(unittest.TestCase):
             "TITAN_AI_GOOGLE_AUTH": "api_key", "NO_COLOR": "1",
         })
 
-    def cli(self, *args: str) -> subprocess.CompletedProcess[str]:
+    def cli(self, *args: str, stdin: str = "") -> subprocess.CompletedProcess[str]:
         assert BINARY is not None
         return subprocess.run(
-            [str(BINARY), *args], capture_output=True, text=True, env=self.env, timeout=30
+            [str(BINARY), *args], input=stdin, capture_output=True, text=True,
+            env=self.env, timeout=30,
         )
 
     def test_version_and_status(self) -> None:
@@ -116,6 +121,23 @@ class CppEngineTests(unittest.TestCase):
         self.assertEqual(status.returncode, 0)
         self.assertIn("Gemini (Google)", status.stdout)
         self.assertIn("gemini-2.5-flash", status.stdout)
+        self.assertIn("default provider:", status.stdout)
+        self.assertIn("API key (fallback)", status.stdout)
+
+    def test_docs_are_available_on_installed_systems(self) -> None:
+        result = self.cli("docs")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("Google sign-in", result.stdout)
+        self.assertIn("Generative Language API", result.stdout)
+        self.assertIn("titan-ai auth google", result.stdout)
+
+    def test_auth_google_prompts_for_client_id(self) -> None:
+        result = self.cli("auth", "google")
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("Google sign-in needs an OAuth client ID", result.stdout)
+        self.assertIn("Google sign-in cancelled", result.stderr)
+        self.assertIn("titan-ai docs", result.stderr)
+        self.assertNotIn("No Google OAuth client ID", result.stderr)
 
     def test_config_roundtrip_is_private(self) -> None:
         result = self.cli("config", "set", "models.gemini", "gemini-test")
@@ -133,6 +155,11 @@ class CppEngineTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("Arch Linux was released in 2002.", result.stdout)
         self.assertNotIn("Sources:", result.stdout)
+
+    def test_gemini_is_default_provider(self) -> None:
+        result = self.cli("when was Arch released?")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("Arch Linux was released in 2002.", result.stdout)
 
     def test_grounded_search_has_citations(self) -> None:
         result = self.cli("search", "Arch history")
@@ -162,6 +189,7 @@ class CppEngineTests(unittest.TestCase):
         self.assertTrue(wrapper.stat().st_mode & stat.S_IXUSR)
         self.assertIn("titan-ai", wrapper.read_text())
         self.assertIn("command -v titan-ai", wrapper.read_text())
+        self.assertIn("titan-ai auth google", wrapper.read_text())
         for conf in (
             ROOT / "airootfs/etc/skel/.config/kitty/kitty.conf",
             ROOT / "airootfs/home/archtitan/.config/kitty/kitty.conf",

@@ -36,7 +36,8 @@ while true; do
 
     printf '\n'
     if ! "$ENGINE" search "$query"; then
-        printf '\n\033[31mSearch failed. Check `titan-ai status` in a normal terminal.\033[0m\n'
+        printf '\n\033[31mSearch failed. In a terminal run `titan-ai auth google` or `titan-ai setup`.\033[0m\n'
+        printf '\033[2mHelp: `titan-ai docs`  |  Details: `titan-ai status`\033[0m\n'
     fi
 
     printf '\n\033[2mEnter: new search  |  q: close window\033[0m\n'

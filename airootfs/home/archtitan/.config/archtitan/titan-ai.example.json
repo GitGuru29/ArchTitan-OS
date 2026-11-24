@@ -1,5 +1,5 @@
 {
-  "default_provider": "auto",
+  "default_provider": "gemini",
   "system": "You are Titan AI, a helpful assistant running in the ArchTitan OS terminal. Be concise and clear; use Markdown where it helps.",
   "timeout": 120,
   "max_tokens": 2048,

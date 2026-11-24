@@ -33,4 +33,5 @@ done
 
 echo "✓ titan-ai installed to ${AIROOTFS}/usr/local/bin/titan-ai"
 echo "  Kitty shortcut: Ctrl+Shift+S (search window)"
+echo "  Google sign-in guide: titan-ai docs (works on installed systems)"
 echo "  Tests: python3 -m unittest discover -s subsystems/titan-ai/tests -v"

@@ -3,7 +3,11 @@
 # Launched by `map ctrl+shift+s launch ...` in kitty.conf; the user never types titan-ai.
 set -uo pipefail
 
-ENGINE="${TITAN_AI_ENGINE:-/usr/local/bin/titan-ai}"
+ENGINE="${TITAN_AI_ENGINE:-}"
+if [[ -z "${ENGINE}" ]]; then
+    ENGINE="$(command -v titan-ai || true)"
+fi
+ENGINE="${ENGINE:-/usr/local/bin/titan-ai}"
 MODE="${1:-search}"
 
 printf '\033]0;TITAN AI - Search\007'
@@ -32,7 +36,8 @@ while true; do
 
     printf '\n'
     if ! "$ENGINE" search "$query"; then
-        printf '\n\033[31mSearch failed. Check `titan-ai status` in a normal terminal.\033[0m\n'
+        printf '\n\033[31mSearch failed. In a terminal run `titan-ai auth google` or `titan-ai setup`.\033[0m\n'
+        printf '\033[2mHelp: `titan-ai docs`  |  Details: `titan-ai status`\033[0m\n'
     fi
 
     printf '\n\033[2mEnter: new search  |  q: close window\033[0m\n'
