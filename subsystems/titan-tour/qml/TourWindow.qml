@@ -1,22 +1,25 @@
 import QtQuick
 import QtQuick.Window
 import QtQuick.Layouts
-import QtQuick.Effects
-import ArchTitan.TitanUI
+import "components"
 import "slides"
 
 Window {
-    id: window
-    width: 1920
-    height: 1080
-    visible: false
+    id: rootWindow
+    width: coachMode ? 580 : 960
+    height: coachMode ? 112 : 620
+    visible: true
+    title: "Welcome to ArchTitan"
+    flags: Qt.FramelessWindowHint | Qt.Window
     color: "transparent"
-    title: "ArchTitan Virtual Tour"
-    flags: Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint
 
     property int currentSlide: 0
-    readonly property int totalSlides: 6
+    readonly property int totalSlides: 8
+    property bool coachMode: false
+    property int activeCoachStep: 0
     property real entryProgress: 0.0
+    property real slideFade: 1.0
+    property real slideOffset: 0.0
 
     Component.onCompleted: {
         entryAnim.start();
@@ -26,32 +29,59 @@ Window {
 
     NumberAnimation {
         id: entryAnim
-        target: window
+        target: rootWindow
         property: "entryProgress"
         from: 0.0
         to: 1.0
-        duration: 420
+        duration: 280
         easing.type: Easing.OutCubic
+    }
+
+    ParallelAnimation {
+        id: pageTransitionAnim
+        NumberAnimation {
+            target: rootWindow
+            property: "slideFade"
+            from: 0.25
+            to: 1.0
+            duration: 210
+            easing.type: Easing.OutCubic
+        }
+        NumberAnimation {
+            target: rootWindow
+            property: "slideOffset"
+            from: 14
+            to: 0
+            duration: 220
+            easing.type: Easing.OutCubic
+        }
+    }
+
+    function activeWallpaperUrl() {
+        var list = tourCtrl.wallpapers;
+        for (var i = 0; i < list.length; i++) {
+            if (list[i].path === tourCtrl.selectedWallpaper) {
+                return list[i].url;
+            }
+        }
+        return list.length > 0 ? list[0].url : "";
     }
 
     function goToSlide(idx) {
         if (idx < 0 || idx >= totalSlides || idx === currentSlide) return;
         currentSlide = idx;
-        beaconCanvas.requestPaint();
+        pageTransitionAnim.restart();
     }
 
-    function nextSlide() {
-        if (currentSlide < totalSlides - 1) {
-            tourCtrl.playSound("step");
-            goToSlide(currentSlide + 1);
-        }
+    function enterCoachMode(stepIdx) {
+        activeCoachStep = (typeof stepIdx === "number" && stepIdx >= 0 && stepIdx < 5) ? stepIdx : 0;
+        coachMode = true;
+        tourCtrl.setCoachWindowGeometry(true);
     }
 
-    function prevSlide() {
-        if (currentSlide > 0) {
-            tourCtrl.playSound("step");
-            goToSlide(currentSlide - 1);
-        }
+    function exitCoachMode() {
+        coachMode = false;
+        tourCtrl.setCoachWindowGeometry(false);
     }
 
     function finishAndClose() {
@@ -65,492 +95,140 @@ Window {
         focus: true
 
         Keys.onPressed: function(event) {
-            if (event.key === Qt.Key_Right || event.key === Qt.Key_Space || event.key === Qt.Key_Return) {
-                if (window.currentSlide < window.totalSlides - 1) window.nextSlide();
-                else window.finishAndClose();
+            if (event.key === Qt.Key_Down || event.key === Qt.Key_Right) {
+                if (!rootWindow.coachMode && rootWindow.currentSlide < rootWindow.totalSlides - 1) {
+                    rootWindow.goToSlide(rootWindow.currentSlide + 1);
+                }
                 event.accepted = true;
-            } else if (event.key === Qt.Key_Left || event.key === Qt.Key_Backspace) {
-                window.prevSlide();
+            } else if (event.key === Qt.Key_Up || event.key === Qt.Key_Left) {
+                if (!rootWindow.coachMode && rootWindow.currentSlide > 0) {
+                    rootWindow.goToSlide(rootWindow.currentSlide - 1);
+                }
                 event.accepted = true;
             } else if (event.key === Qt.Key_Escape) {
-                window.finishAndClose();
-                event.accepted = true;
-            } else if (event.key >= Qt.Key_1 && event.key <= Qt.Key_6) {
-                tourCtrl.playSound("step");
-                window.goToSlide(event.key - Qt.Key_1);
+                if (rootWindow.coachMode) {
+                    rootWindow.exitCoachMode();
+                } else {
+                    rootWindow.finishAndClose();
+                }
                 event.accepted = true;
             }
         }
     }
 
-    // 1. Full-Screen Atmospheric Scrim (Dims live desktop while keeping wallpaper changes visible)
+    // ── MODE B: Floating Hands-On Desktop Coach Capsule (580 x 112) ─────────
+    CoachCapsule {
+        visible: rootWindow.coachMode
+        anchors.fill: parent
+        coachStep: rootWindow.activeCoachStep
+        onExpandGuideRequested: rootWindow.exitCoachMode()
+        onCloseRequested: rootWindow.finishAndClose()
+    }
+
+    // ── MODE A: macOS "What's New & Tips" Master–Detail Split Hub (960 x 620)
     Rectangle {
+        id: mainCard
+        visible: !rootWindow.coachMode
         anchors.fill: parent
-        opacity: window.entryProgress
+        radius: 18
+        opacity: rootWindow.entryProgress
+
         gradient: Gradient {
-            GradientStop { position: 0.0; color: Qt.rgba(0.015, 0.025, 0.05, 0.84) }
-            GradientStop { position: 0.5; color: Qt.rgba(0.02, 0.03, 0.06, 0.72) }
-            GradientStop { position: 1.0; color: Qt.rgba(0.015, 0.025, 0.05, 0.86) }
-        }
-    }
-
-    // 2. Vector Targeting Lines Connecting Screen-Edge Beacons to Central Stage
-    Canvas {
-        id: beaconCanvas
-        anchors.fill: parent
-        opacity: window.currentSlide === 1 ? 0.85 : 0.32
-        Behavior on opacity { NumberAnimation { duration: 280 } }
-
-        onPaint: {
-            var ctx = getContext("2d");
-            ctx.clearRect(0, 0, width, height);
-
-            var cx = width / 2;
-            var cy = height / 2;
-
-            var targets = [
-                { x: 160, y: 44,  tx: cx - 380, ty: cy - 280, col: "rgba(99, 102, 241, 0.45)" },
-                { x: cx,  y: 44,  tx: cx,       ty: cy - 280, col: "rgba(167, 139, 250, 0.45)" },
-                { x: width - 160, y: 44, tx: cx + 380, ty: cy - 280, col: "rgba(56, 189, 248, 0.55)" },
-                { x: 140, y: cy,  tx: cx - 530, ty: cy,       col: "rgba(52, 211, 153, 0.45)" },
-                { x: width - 160, y: height - 44, tx: cx + 380, ty: cy + 280, col: "rgba(251, 191, 36, 0.45)" }
-            ];
-
-            ctx.lineWidth = 1.2;
-            ctx.setLineDash([4, 4]);
-
-            for (var i = 0; i < targets.length; i++) {
-                var t = targets[i];
-                ctx.strokeStyle = t.col;
-                ctx.beginPath();
-                ctx.moveTo(t.x, t.y);
-                ctx.lineTo(t.tx, t.ty);
-                ctx.stroke();
-            }
-        }
-    }
-
-    // 3. Full-Screen Peripheral Spatial HUD Beacons (Pointing to Real Desktop Edges)
-    Item {
-        anchors.fill: parent
-        opacity: window.entryProgress
-
-        // Top-Left Beacon: App Menu & Workspaces
-        Rectangle {
-            x: 18
-            y: 14
-            width: 248
-            height: 44
-            radius: 14
-            color: Qt.rgba(TitanTheme.mantle.r, TitanTheme.mantle.g, TitanTheme.mantle.b, 0.92)
-            border.width: window.currentSlide === 1 ? 1.5 : 1
-            border.color: window.currentSlide === 1 ? TitanTheme.accent : Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.45)
-
-            RowLayout {
-                anchors.fill: parent
-                anchors.leftMargin: 12
-                anchors.rightMargin: 12
-                spacing: 10
-
-                Text {
-                    text: "↖"
-                    color: TitanTheme.accent
-                    font.family: TitanTheme.monoFamily
-                    font.pixelSize: 16
-                    font.weight: Font.Black
-                }
-
-                ColumnLayout {
-                    Layout.fillWidth: true
-                    spacing: 0
-                    Text {
-                        text: "APP MENU & WORKSPACES"
-                        color: TitanTheme.textHigh
-                        font.family: TitanTheme.monoFamily
-                        font.pixelSize: 10
-                        font.weight: Font.Bold
-                    }
-                    Text {
-                        text: "Press Super or Click Corner"
-                        color: TitanTheme.accent
-                        font.family: TitanTheme.monoFamily
-                        font.pixelSize: 9
-                    }
-                }
-            }
-
-            MouseArea {
-                anchors.fill: parent
-                cursorShape: Qt.PointingHandCursor
-                onClicked: tourCtrl.toggleMenu()
-            }
+            GradientStop { position: 0.0; color: "#212127" }
+            GradientStop { position: 0.5; color: "#18181D" }
+            GradientStop { position: 1.0; color: "#131317" }
         }
 
-        // Top-Center Beacon: Dynamic Media Island
-        Rectangle {
-            anchors.horizontalCenter: parent.horizontalCenter
-            y: 14
-            width: 256
-            height: 44
-            radius: 22
-            color: Qt.rgba(TitanTheme.mantle.r, TitanTheme.mantle.g, TitanTheme.mantle.b, 0.92)
-            border.width: window.currentSlide === 1 ? 1.5 : 1
-            border.color: window.currentSlide === 1 ? TitanTheme.mauve : Qt.rgba(0.65, 0.55, 0.98, 0.45)
+        border.width: 1
+        border.color: Qt.rgba(1, 1, 1, 0.18)
+        clip: true
 
-            RowLayout {
-                anchors.centerIn: parent
-                spacing: 10
-
-                Text {
-                    text: "\uf001"
-                    color: TitanTheme.mauve
-                    font.family: TitanTheme.monoFamily
-                    font.pixelSize: 13
-                }
-
-                ColumnLayout {
-                    spacing: 0
-                    Text {
-                        text: "DYNAMIC MEDIA ISLAND ↑"
-                        color: TitanTheme.textHigh
-                        font.family: TitanTheme.monoFamily
-                        font.pixelSize: 10
-                        font.weight: Font.Bold
-                    }
-                    Text {
-                        text: "Live MPRIS2 Artwork & Clock"
-                        color: TitanTheme.mauve
-                        font.family: TitanTheme.monoFamily
-                        font.pixelSize: 9
-                    }
-                }
-            }
-
-            MouseArea {
-                anchors.fill: parent
-                cursorShape: Qt.PointingHandCursor
-                onClicked: tourCtrl.testAudio()
-            }
-        }
-
-        // Top-Right Beacon: Stepped Bottleneck Control Center
-        Rectangle {
-            anchors.right: parent.right
-            anchors.rightMargin: 18
-            y: 14
-            width: 266
-            height: 44
-            radius: 14
-            color: Qt.rgba(TitanTheme.mantle.r, TitanTheme.mantle.g, TitanTheme.mantle.b, 0.92)
-            border.width: (window.currentSlide === 1 || window.currentSlide === 3) ? 1.5 : 1
-            border.color: (window.currentSlide === 1 || window.currentSlide === 3) ? TitanTheme.info : Qt.rgba(TitanTheme.info.r, TitanTheme.info.g, TitanTheme.info.b, 0.5)
-
-            RowLayout {
-                anchors.fill: parent
-                anchors.leftMargin: 12
-                anchors.rightMargin: 12
-                spacing: 10
-
-                ColumnLayout {
-                    Layout.fillWidth: true
-                    spacing: 0
-                    Text {
-                        text: "STEPPED CONTROL CENTER"
-                        color: TitanTheme.textHigh
-                        font.family: TitanTheme.monoFamily
-                        font.pixelSize: 10
-                        font.weight: Font.Bold
-                    }
-                    Text {
-                        text: "Super + N // Click to Summon"
-                        color: TitanTheme.info
-                        font.family: TitanTheme.monoFamily
-                        font.pixelSize: 9
-                    }
-                }
-
-                Text {
-                    text: "↗"
-                    color: TitanTheme.info
-                    font.family: TitanTheme.monoFamily
-                    font.pixelSize: 16
-                    font.weight: Font.Black
-                }
-            }
-
-            MouseArea {
-                anchors.fill: parent
-                cursorShape: Qt.PointingHandCursor
-                onClicked: tourCtrl.toggleControlCenter()
-            }
-        }
-
-        // Left-Edge Beacon: Titan System Monitor Cockpit
-        Rectangle {
-            x: 18
-            anchors.verticalCenter: parent.verticalCenter
-            width: 196
-            height: 54
-            radius: 14
-            color: Qt.rgba(TitanTheme.mantle.r, TitanTheme.mantle.g, TitanTheme.mantle.b, 0.92)
-            border.width: (window.currentSlide === 1 || window.currentSlide === 4) ? 1.5 : 1
-            border.color: (window.currentSlide === 1 || window.currentSlide === 4) ? TitanTheme.success : Qt.rgba(TitanTheme.success.r, TitanTheme.success.g, TitanTheme.success.b, 0.45)
-
-            RowLayout {
-                anchors.fill: parent
-                anchors.leftMargin: 12
-                anchors.rightMargin: 12
-                spacing: 10
-
-                Text {
-                    text: "\uf080"
-                    color: TitanTheme.success
-                    font.family: TitanTheme.monoFamily
-                    font.pixelSize: 14
-                }
-
-                ColumnLayout {
-                    Layout.fillWidth: true
-                    spacing: 1
-                    Text {
-                        text: "SYSMON HUD"
-                        color: TitanTheme.textHigh
-                        font.family: TitanTheme.monoFamily
-                        font.pixelSize: 10
-                        font.weight: Font.Bold
-                    }
-                    Text {
-                        text: "Super + M // Telemetry"
-                        color: TitanTheme.success
-                        font.family: TitanTheme.monoFamily
-                        font.pixelSize: 9
-                    }
-                }
-            }
-
-            MouseArea {
-                anchors.fill: parent
-                cursorShape: Qt.PointingHandCursor
-                onClicked: tourCtrl.toggleSysmon()
-            }
-        }
-
-        // Bottom-Right Beacon: Spotlight & Notifications
-        Rectangle {
-            anchors.right: parent.right
-            anchors.rightMargin: 18
-            anchors.bottom: parent.bottom
-            anchors.bottomMargin: 18
-            width: 256
-            height: 44
-            radius: 14
-            color: Qt.rgba(TitanTheme.mantle.r, TitanTheme.mantle.g, TitanTheme.mantle.b, 0.92)
-            border.width: 1
-            border.color: Qt.rgba(TitanTheme.warning.r, TitanTheme.warning.g, TitanTheme.warning.b, 0.45)
-
-            RowLayout {
-                anchors.fill: parent
-                anchors.leftMargin: 12
-                anchors.rightMargin: 12
-                spacing: 10
-
-                Text {
-                    text: "\uf002"
-                    color: TitanTheme.warning
-                    font.family: TitanTheme.monoFamily
-                    font.pixelSize: 13
-                }
-
-                ColumnLayout {
-                    Layout.fillWidth: true
-                    spacing: 0
-                    Text {
-                        text: "TITAN SPOTLIGHT LAUNCHER"
-                        color: TitanTheme.textHigh
-                        font.family: TitanTheme.monoFamily
-                        font.pixelSize: 10
-                        font.weight: Font.Bold
-                    }
-                    Text {
-                        text: "Super + Space // Click to Open"
-                        color: TitanTheme.warning
-                        font.family: TitanTheme.monoFamily
-                        font.pixelSize: 9
-                    }
-                }
-            }
-
-            MouseArea {
-                anchors.fill: parent
-                cursorShape: Qt.PointingHandCursor
-                onClicked: tourCtrl.toggleSpotlight()
-            }
-        }
-    }
-
-    // 4. Central 3-Island Spatial Bento Stage (1060 x 706)
-    Item {
-        id: centralStage
-        anchors.centerIn: parent
-        width: 1060
-        height: 706
-        opacity: window.entryProgress
-        scale: 0.96 + 0.04 * window.entryProgress
-
-        ColumnLayout {
+        // Subtle Behind-Window Wallpaper Vibrancy Bleed
+        Image {
             anchors.fill: parent
-            spacing: 12
+            source: rootWindow.activeWallpaperUrl()
+            fillMode: Image.PreserveAspectCrop
+            opacity: 0.065
+            asynchronous: true
+        }
 
-            // Island 1: Top Floating Command Capsule
-            TourHeader {
-                Layout.fillWidth: true
-                currentSlide: window.currentSlide
-                totalSlides: window.totalSlides
-                onSlideRequested: function(idx) { window.goToSlide(idx); }
-                onCloseClicked: window.finishAndClose()
+        // Top Specular Glass Rim
+        Rectangle {
+            anchors.top: parent.top
+            anchors.topMargin: 1
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: parent.width - 36
+            height: 1
+            gradient: Gradient {
+                orientation: Gradient.Horizontal
+                GradientStop { position: 0.0; color: "transparent" }
+                GradientStop { position: 0.25; color: Qt.rgba(1, 1, 1, 0.22) }
+                GradientStop { position: 0.5; color: Qt.rgba(100/255, 210/255, 255/255, 0.42) }
+                GradientStop { position: 0.75; color: Qt.rgba(1, 1, 1, 0.22) }
+                GradientStop { position: 1.0; color: "transparent" }
+            }
+        }
+
+        RowLayout {
+            anchors.fill: parent
+            spacing: 0
+
+            // ── Left Pane: 244px Frosted Translucent macOS Sidebar ──────────
+            TourSidebar {
+                Layout.fillHeight: true
+                Layout.preferredWidth: 244
+                currentChapter: rootWindow.currentSlide
+                onChapterSelected: function(idx) { rootWindow.goToSlide(idx); }
+                onStartCoachRequested: rootWindow.enterCoachMode(0)
+                onCloseRequested: rootWindow.finishAndClose()
             }
 
-            // Island 2: Main Frosted Bento Stage
+            // ── Right Pane: 716px Editorial Visual Story Canvas ─────────────
             Item {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
+                clip: true
 
-                MultiEffect {
-                    anchors.fill: stageCard
-                    source: stageCard
-                    shadowEnabled: true
-                    shadowColor: "#DD000000"
-                    shadowBlur: 1.0
-                    shadowVerticalOffset: 14
-                }
-
-                Rectangle {
-                    id: stageCard
+                Item {
                     anchors.fill: parent
-                    radius: 26
-                    gradient: Gradient {
-                        GradientStop { position: 0.0; color: Qt.rgba(TitanTheme.mantle.r, TitanTheme.mantle.g, TitanTheme.mantle.b, 0.95) }
-                        GradientStop { position: 1.0; color: Qt.rgba(TitanTheme.base.r, TitanTheme.base.g, TitanTheme.base.b, 0.96) }
-                    }
-                    border.width: 1
-                    border.color: Qt.rgba(1, 1, 1, 0.12)
-                    clip: true
+                    anchors.topMargin: rootWindow.slideOffset
+                    anchors.bottomMargin: -rootWindow.slideOffset
+                    opacity: rootWindow.slideFade
 
-                    // Inner Hairline Border
-                    Rectangle {
+                    StepWelcome {
+                        visible: rootWindow.currentSlide === 0
                         anchors.fill: parent
-                        anchors.margins: 1
-                        radius: 25
-                        color: "transparent"
-                        border.width: 1
-                        border.color: Qt.rgba(1, 1, 1, 0.04)
+                        onJumpToChapter: function(idx) { rootWindow.goToSlide(idx); }
+                        onStartCoachAt: function(cIdx) { rootWindow.enterCoachMode(cIdx); }
                     }
 
-                    // Top Specular Highlight Bar
-                    Rectangle {
-                        anchors.top: parent.top
-                        anchors.topMargin: 1
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        width: parent.width - 80
-                        height: 1
-                        gradient: Gradient {
-                            orientation: Gradient.Horizontal
-                            GradientStop { position: 0.0; color: "transparent" }
-                            GradientStop { position: 0.3; color: Qt.rgba(1, 1, 1, 0.25) }
-                            GradientStop { position: 0.5; color: Qt.rgba(TitanTheme.info.r, TitanTheme.info.g, TitanTheme.info.b, 0.65) }
-                            GradientStop { position: 0.7; color: Qt.rgba(1, 1, 1, 0.25) }
-                            GradientStop { position: 1.0; color: "transparent" }
-                        }
-                    }
-
-                    // Left & Right Glowing Accent Side-Rims
-                    Rectangle {
-                        anchors.left: parent.left
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: 2
-                        height: 140
-                        radius: 1
-                        color: TitanTheme.accent
-                        opacity: 0.75
-                    }
-                    Rectangle {
-                        anchors.right: parent.right
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: 2
-                        height: 140
-                        radius: 1
-                        color: TitanTheme.info
-                        opacity: 0.75
-                    }
-
-                    // Corner Targeting Reticle
-                    TitanReticle {
+                    StepPersonalize {
+                        visible: rootWindow.currentSlide === 1
                         anchors.fill: parent
-                        anchors.margins: 12
-                        color: TitanTheme.accent
-                        bracketLength: 16
-                        bracketThickness: 2
-                        opacity: 0.35
+                        onJumpToChapter: function(idx) { rootWindow.goToSlide(idx); }
                     }
 
-                    // 6-Act Slide Viewport
-                    Item {
+                    StepNavigation {
+                        visible: rootWindow.currentSlide === 2 || rootWindow.currentSlide === 3 || rootWindow.currentSlide === 4 || rootWindow.currentSlide === 6
                         anchors.fill: parent
+                        chapterIndex: rootWindow.currentSlide
+                        onJumpToChapter: function(idx) { rootWindow.goToSlide(idx); }
+                        onStartCoachAt: function(cIdx) { rootWindow.enterCoachMode(cIdx); }
+                    }
 
-                        SlideWelcome {
-                            anchors.fill: parent
-                            visible: opacity > 0.01
-                            opacity: window.currentSlide === 0 ? 1.0 : 0.0
-                            Behavior on opacity { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
-                        }
+                    StepShortcuts {
+                        visible: rootWindow.currentSlide === 5
+                        anchors.fill: parent
+                        onJumpToChapter: function(idx) { rootWindow.goToSlide(idx); }
+                    }
 
-                        SlideControlCenter {
-                            anchors.fill: parent
-                            visible: opacity > 0.01
-                            opacity: window.currentSlide === 1 ? 1.0 : 0.0
-                            Behavior on opacity { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
-                        }
-
-                        SlideKeybinds {
-                            anchors.fill: parent
-                            visible: opacity > 0.01
-                            opacity: window.currentSlide === 2 ? 1.0 : 0.0
-                            Behavior on opacity { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
-                        }
-
-                        SlideEcosystem {
-                            anchors.fill: parent
-                            visible: opacity > 0.01
-                            opacity: window.currentSlide === 3 ? 1.0 : 0.0
-                            Behavior on opacity { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
-                        }
-
-                        SlideHardware {
-                            anchors.fill: parent
-                            visible: opacity > 0.01
-                            opacity: window.currentSlide === 4 ? 1.0 : 0.0
-                            Behavior on opacity { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
-                        }
-
-                        SlideLaunch {
-                            anchors.fill: parent
-                            visible: opacity > 0.01
-                            opacity: window.currentSlide === 5 ? 1.0 : 0.0
-                            Behavior on opacity { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
-                            onFinishTourRequested: window.finishAndClose()
-                        }
+                    StepHardware {
+                        visible: rootWindow.currentSlide === 7
+                        anchors.fill: parent
+                        onFinishRequested: rootWindow.finishAndClose()
+                        onStartCoachAt: function(cIdx) { rootWindow.enterCoachMode(cIdx); }
                     }
                 }
-            }
-
-            // Island 3: Bottom Floating Dock Capsule
-            TourFooter {
-                Layout.fillWidth: true
-                currentSlide: window.currentSlide
-                totalSlides: window.totalSlides
-                onPrevClicked: window.prevSlide()
-                onNextClicked: window.nextSlide()
-                onFinishClicked: window.finishAndClose()
             }
         }
     }

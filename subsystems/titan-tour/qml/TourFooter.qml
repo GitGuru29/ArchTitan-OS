@@ -1,137 +1,162 @@
 import QtQuick
 import QtQuick.Layouts
-import QtQuick.Effects
-import ArchTitan.TitanUI
 
 Item {
     id: root
-    height: 62
+    height: 60
 
     property int currentSlide: 0
-    property int totalSlides: 6
+    property int totalSlides: 5
     signal prevClicked()
     signal nextClicked()
     signal finishClicked()
+    signal slideRequested(int index)
 
-    MultiEffect {
-        anchors.fill: dockBg
-        source: dockBg
-        shadowEnabled: true
-        shadowColor: "#CC000000"
-        shadowBlur: 0.85
-        shadowVerticalOffset: 8
-    }
-
+    // Subtle macOS footer top divider
     Rectangle {
-        id: dockBg
-        anchors.fill: parent
-        radius: 31
-        gradient: Gradient {
-            GradientStop { position: 0.0; color: Qt.rgba(TitanTheme.mantle.r, TitanTheme.mantle.g, TitanTheme.mantle.b, 0.94) }
-            GradientStop { position: 1.0; color: Qt.rgba(TitanTheme.base.r, TitanTheme.base.g, TitanTheme.base.b, 0.94) }
-        }
-        border.width: 1
-        border.color: Qt.rgba(1, 1, 1, 0.11)
-
-        // Top Specular Highlight
-        Rectangle {
-            anchors.top: parent.top
-            anchors.topMargin: 1
-            anchors.horizontalCenter: parent.horizontalCenter
-            width: parent.width - 56
-            height: 1
-            color: Qt.rgba(1, 1, 1, 0.16)
-        }
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: 1
+        color: Qt.rgba(1, 1, 1, 0.06)
     }
 
     RowLayout {
         anchors.fill: parent
-        anchors.leftMargin: 20
-        anchors.rightMargin: 16
+        anchors.leftMargin: 24
+        anchors.rightMargin: 24
         spacing: 16
 
-        // Left: Startup Toggle (Installed) or Direct Calamares Trigger (Live ISO)
-        RowLayout {
-            spacing: 10
+        // ── Left: macOS Checkbox ("Show Welcome Guide at login") or Live Install ──
+        Row {
+            spacing: 8
             visible: !tourCtrl.isLiveMode
+            Layout.alignment: Qt.AlignVCenter
 
-            TitanSwitch {
-                checked: tourCtrl.showOnStartup
-                onToggled: function(state) {
-                    tourCtrl.showOnStartup = state;
+            Rectangle {
+                id: macCheck
+                width: 16
+                height: 16
+                radius: 4
+                anchors.verticalCenter: parent.verticalCenter
+                color: tourCtrl.showOnStartup ? "#0A84FF" : "#2C2C2E"
+                border.width: 1
+                border.color: tourCtrl.showOnStartup ? "#389BFF" : Qt.rgba(1, 1, 1, 0.22)
+
+                Behavior on color { ColorAnimation { duration: 120 } }
+
+                Text {
+                    visible: tourCtrl.showOnStartup
+                    anchors.centerIn: parent
+                    text: "\uf00c"
+                    color: "#FFFFFF"
+                    font.family: "JetBrainsMono Nerd Font"
+                    font.pixelSize: 9
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    anchors.margins: -4
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        tourCtrl.playSound("tap");
+                        tourCtrl.showOnStartup = !tourCtrl.showOnStartup;
+                    }
                 }
             }
 
-            ColumnLayout {
-                spacing: 0
-                Text {
-                    text: "Launch Spatial Tour at Login"
-                    color: TitanTheme.textHigh
-                    font.family: TitanTheme.fontFamily
-                    font.pixelSize: 12
-                    font.weight: TitanTheme.weightSemiBold
-                }
-                Text {
-                    text: "Re-open anytime via Super+Space -> 'Tour'"
-                    color: TitanTheme.textLow
-                    font.family: TitanTheme.monoFamily
-                    font.pixelSize: 10
+            Text {
+                text: "Show Welcome Guide at login"
+                color: "#98989D"
+                font.family: "Inter"
+                font.pixelSize: 12
+                anchors.verticalCenter: parent.verticalCenter
+
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        tourCtrl.playSound("tap");
+                        tourCtrl.showOnStartup = !tourCtrl.showOnStartup;
+                    }
                 }
             }
         }
 
-        // Live ISO Quick Install Button
-        TitanButton {
+        // Live ISO Quick Installer Action
+        Rectangle {
             visible: tourCtrl.isLiveMode
-            text: "Install ArchTitan OS"
-            glyph: "\uf019"
-            variant: "primary"
-            implicitHeight: 38
-            implicitWidth: 196
-            onClicked: tourCtrl.launchInstaller()
+            implicitHeight: 32
+            implicitWidth: liveInstallRow.implicitWidth + 20
+            radius: 8
+            color: liveInstallMouse.containsMouse ? Qt.rgba(10/255, 132/255, 255/255, 0.22)
+                                                  : Qt.rgba(10/255, 132/255, 255/255, 0.14)
+            border.width: 1
+            border.color: "#0A84FF"
+
+            Row {
+                id: liveInstallRow
+                anchors.centerIn: parent
+                spacing: 7
+
+                Text {
+                    text: "\uf019"
+                    color: "#0A84FF"
+                    font.family: "JetBrainsMono Nerd Font"
+                    font.pixelSize: 11
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+
+                Text {
+                    text: "Install ArchTitan to Disk…"
+                    color: "#F5F5F7"
+                    font.family: "Inter"
+                    font.pixelSize: 12
+                    font.weight: 600
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+            }
+
+            MouseArea {
+                id: liveInstallMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: tourCtrl.launchInstaller()
+            }
         }
 
         Item { Layout.fillWidth: true }
 
-        // Center: Tactile Keyboard Navigation Hints
-        RowLayout {
-            spacing: 12
+        // ── Center: macOS Animated Page Indicator Dots ──────────────────────
+        Row {
+            spacing: 7
+            Layout.alignment: Qt.AlignVCenter
 
             Repeater {
-                model: [
-                    { key: "← / →", desc: "Switch Act" },
-                    { key: "1..6",  desc: "Jump" },
-                    { key: "ESC",   desc: "Dismiss" }
-                ]
+                model: root.totalSlides
 
-                delegate: RowLayout {
-                    required property var modelData
-                    spacing: 6
+                Rectangle {
+                    property bool isActive: index === root.currentSlide
+                    width: isActive ? 22 : 7
+                    height: 7
+                    radius: 3.5
+                    color: isActive ? "#0A84FF"
+                                    : (dotMouse.containsMouse ? "#8E8E93" : "#48484A")
 
-                    Rectangle {
-                        height: 24
-                        width: keyLbl.implicitWidth + 14
-                        radius: 6
-                        color: Qt.rgba(1, 1, 1, 0.05)
-                        border.width: 1
-                        border.color: Qt.rgba(1, 1, 1, 0.12)
+                    Behavior on width { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                    Behavior on color { ColorAnimation { duration: 150 } }
 
-                        Text {
-                            id: keyLbl
-                            anchors.centerIn: parent
-                            text: modelData.key
-                            color: TitanTheme.info
-                            font.family: TitanTheme.monoFamily
-                            font.pixelSize: 10
-                            font.weight: Font.Bold
+                    MouseArea {
+                        id: dotMouse
+                        anchors.fill: parent
+                        anchors.margins: -3
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            tourCtrl.playSound("tap");
+                            root.slideRequested(index);
                         }
-                    }
-
-                    Text {
-                        text: modelData.desc
-                        color: TitanTheme.textLow
-                        font.family: TitanTheme.fontFamily
-                        font.pixelSize: 11
                     }
                 }
             }
@@ -139,36 +164,92 @@ Item {
 
         Item { Layout.fillWidth: true }
 
-        // Right: Previous / Next Act Controls
-        RowLayout {
+        // ── Right: macOS Setup Assistant Navigation Buttons ─────────────────
+        Row {
             spacing: 10
+            Layout.alignment: Qt.AlignVCenter
 
-            TitanButton {
-                text: "Previous"
-                glyph: "\uf053"
-                variant: "ghost"
-                enabled: root.currentSlide > 0
-                opacity: enabled ? 1.0 : 0.35
-                implicitHeight: 38
-                implicitWidth: 112
-                onClicked: root.prevClicked()
+            // Secondary macOS Back Button
+            Rectangle {
+                visible: root.currentSlide > 0
+                implicitHeight: 32
+                implicitWidth: 78
+                radius: 7
+                color: backMouse.pressed ? "#444448"
+                                         : (backMouse.containsMouse ? "#3A3A3E" : "#323236")
+                border.width: 1
+                border.color: Qt.rgba(1, 1, 1, 0.14)
+
+                Text {
+                    anchors.centerIn: parent
+                    text: "Back"
+                    color: "#F5F5F7"
+                    font.family: "Inter"
+                    font.pixelSize: 13
+                    font.weight: 500
+                }
+
+                MouseArea {
+                    id: backMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        tourCtrl.playSound("tap");
+                        root.prevClicked();
+                    }
+                }
             }
 
-            TitanButton {
-                text: root.currentSlide === root.totalSlides - 1 ? "Enter ArchTitan" : "Next Act"
-                glyph: root.currentSlide === root.totalSlides - 1 ? "\uf00c" : "\uf054"
-                variant: "primary"
-                implicitHeight: 38
-                implicitWidth: root.currentSlide === root.totalSlides - 1 ? 168 : 132
-                onClicked: {
-                    if (root.currentSlide === root.totalSlides - 1) {
-                        root.finishClicked();
-                    } else {
-                        root.nextClicked();
+            // Primary Apple System Blue Button
+            Rectangle {
+                id: nextBtn
+                property bool isLast: root.currentSlide === root.totalSlides - 1
+
+                implicitHeight: 32
+                implicitWidth: isLast ? 114 : 98
+                radius: 7
+
+                gradient: Gradient {
+                    GradientStop {
+                        position: 0.0
+                        color: nextMouse.pressed ? "#0070E0"
+                                                 : (nextMouse.containsMouse ? "#2894FF" : "#188BFF")
+                    }
+                    GradientStop {
+                        position: 1.0
+                        color: nextMouse.pressed ? "#0062CC"
+                                                 : (nextMouse.containsMouse ? "#0A84FF" : "#007AFF")
+                    }
+                }
+
+                border.width: 1
+                border.color: Qt.rgba(1, 1, 1, 0.25)
+
+                Text {
+                    anchors.centerIn: parent
+                    text: nextBtn.isLast ? "Get Started" : "Continue"
+                    color: "#FFFFFF"
+                    font.family: "Inter"
+                    font.pixelSize: 13
+                    font.weight: 600
+                }
+
+                MouseArea {
+                    id: nextMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        if (nextBtn.isLast) {
+                            root.finishClicked();
+                        } else {
+                            tourCtrl.playSound("tap");
+                            root.nextClicked();
+                        }
                     }
                 }
             }
         }
     }
 }
-

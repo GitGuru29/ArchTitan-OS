@@ -14,22 +14,14 @@
 
 TourController::TourController(QObject *parent)
     : QObject(parent)
-    , m_telemetryTimer(new QTimer(this))
 {
     m_isLiveMode = QFile::exists(QStringLiteral("/run/archiso"));
     m_kernelVersion = QSysInfo::kernelVersion();
 
-    for (int i = 0; i < 36; ++i) {
-        m_cpuHistory.append(0.15);
-    }
-
     detectHardwareInfo();
+    detectPowerProfile();
     resolveAssets();
     loadPreferences();
-    pollTelemetry();
-
-    connect(m_telemetryTimer, &QTimer::timeout, this, &TourController::pollTelemetry);
-    m_telemetryTimer->start(800);
 }
 
 void TourController::setSoundFxEnabled(bool enabled)
@@ -67,7 +59,7 @@ void TourController::playSound(const QString &soundId)
     QString soundFile = QStringLiteral("/usr/share/sounds/ocean/stereo/button-pressed.oga");
     if (soundId == QLatin1String("click") || soundId == QLatin1String("tap")) {
         soundFile = QStringLiteral("/usr/share/sounds/ocean/stereo/button-pressed.oga");
-    } else if (soundId == QLatin1String("chime") || soundId == QLatin1String("success")) {
+    } else if (soundId == QLatin1String("chime") || soundId == QLatin1String("success") || soundId == QLatin1String("complete")) {
         soundFile = QStringLiteral("/usr/share/sounds/ocean/stereo/bell-window-system.oga");
     } else if (soundId == QLatin1String("launch") || soundId == QLatin1String("warp")) {
         soundFile = QStringLiteral("/usr/share/sounds/ocean/stereo/desktop-login.oga");
@@ -102,6 +94,36 @@ void TourController::launchTerminal()
     }
 }
 
+void TourController::launchBrowser()
+{
+    playSound(QStringLiteral("click"));
+    if (!QStandardPaths::findExecutable(QStringLiteral("titanbrowser")).isEmpty()) {
+        QProcess::startDetached(QStringLiteral("titanbrowser"), QStringList());
+    } else if (!QStandardPaths::findExecutable(QStringLiteral("firefox")).isEmpty()) {
+        QProcess::startDetached(QStringLiteral("firefox"), QStringList());
+    } else {
+        QProcess::startDetached(QStringLiteral("xdg-open"), QStringList() << QStringLiteral("https://archtitan.org"));
+    }
+}
+
+void TourController::launchFileManager()
+{
+    playSound(QStringLiteral("click"));
+    if (!QStandardPaths::findExecutable(QStringLiteral("dolphin")).isEmpty()) {
+        QProcess::startDetached(QStringLiteral("dolphin"), QStringList());
+    } else if (!QStandardPaths::findExecutable(QStringLiteral("thunar")).isEmpty()) {
+        QProcess::startDetached(QStringLiteral("thunar"), QStringList());
+    }
+}
+
+void TourController::launchSettings()
+{
+    playSound(QStringLiteral("click"));
+    if (!QStandardPaths::findExecutable(QStringLiteral("archtitan-settings")).isEmpty()) {
+        QProcess::startDetached(QStringLiteral("archtitan-settings"), QStringList());
+    }
+}
+
 void TourController::toggleControlCenter()
 {
     playSound(QStringLiteral("click"));
@@ -126,6 +148,14 @@ void TourController::toggleSysmon()
     }
 }
 
+void TourController::toggleFocus()
+{
+    playSound(QStringLiteral("click"));
+    if (!QStandardPaths::findExecutable(QStringLiteral("titan-focus")).isEmpty()) {
+        QProcess::startDetached(QStringLiteral("titan-focus"), QStringList() << QStringLiteral("--toggle"));
+    }
+}
+
 void TourController::toggleMenu()
 {
     playSound(QStringLiteral("click"));
@@ -133,16 +163,6 @@ void TourController::toggleMenu()
         QProcess::startDetached(QStringLiteral("titan-menu"), QStringList() << QStringLiteral("--toggle"));
     } else {
         toggleSpotlight();
-    }
-}
-
-void TourController::launchWallpaperPicker()
-{
-    playSound(QStringLiteral("click"));
-    if (!QStandardPaths::findExecutable(QStringLiteral("titan-wallpaper-picker")).isEmpty()) {
-        QProcess::startDetached(QStringLiteral("titan-wallpaper-picker"), QStringList());
-    } else if (!QStandardPaths::findExecutable(QStringLiteral("titan-wallpaper-picker-ui")).isEmpty()) {
-        QProcess::startDetached(QStringLiteral("titan-wallpaper-picker-ui"), QStringList());
     }
 }
 
@@ -155,44 +175,54 @@ void TourController::applyWallpaper(const QString &path)
 
     if (!QStandardPaths::findExecutable(QStringLiteral("titan-set-wallpaper")).isEmpty()) {
         QProcess::startDetached(QStringLiteral("titan-set-wallpaper"), QStringList() << path);
-    } else if (!QStandardPaths::findExecutable(QStringLiteral("swww")).isEmpty()) {
-        QProcess::startDetached(QStringLiteral("swww"),
-                                QStringList() << QStringLiteral("img") << path
-                                              << QStringLiteral("--transition-type") << QStringLiteral("grow")
-                                              << QStringLiteral("--transition-duration") << QStringLiteral("0.8"));
+    } else if (!QStandardPaths::findExecutable(QStringLiteral("swaybg")).isEmpty()) {
+        QProcess::startDetached(QStringLiteral("swaybg"), QStringList() << QStringLiteral("-i") << path << QStringLiteral("-m") << QStringLiteral("fill"));
     }
-}
-
-void TourController::launchSettings()
-{
-    playSound(QStringLiteral("click"));
-    if (!QStandardPaths::findExecutable(QStringLiteral("archtitan-settings")).isEmpty()) {
-        QProcess::startDetached(QStringLiteral("archtitan-settings"), QStringList());
-    }
-}
-
-void TourController::testAudio()
-{
-    playSound(QStringLiteral("chime"));
 }
 
 void TourController::setPowerProfile(const QString &profile)
 {
-    if (profile == QLatin1String("efficiency")) {
-        QProcess::startDetached(QStringLiteral("powerprofilesctl"), QStringList() << QStringLiteral("set") << QStringLiteral("power-saver"));
-        QProcess::startDetached(QStringLiteral("titan-hwm"), QStringList() << QStringLiteral("profile") << QStringLiteral("efficiency"));
-    } else if (profile == QLatin1String("performance")) {
-        QProcess::startDetached(QStringLiteral("powerprofilesctl"), QStringList() << QStringLiteral("set") << QStringLiteral("performance"));
-        QProcess::startDetached(QStringLiteral("titan-hwm"), QStringList() << QStringLiteral("profile") << QStringLiteral("performance"));
-    } else {
-        QProcess::startDetached(QStringLiteral("powerprofilesctl"), QStringList() << QStringLiteral("set") << QStringLiteral("balanced"));
-        QProcess::startDetached(QStringLiteral("titan-hwm"), QStringList() << QStringLiteral("profile") << QStringLiteral("balanced"));
+    QString p = profile.toLower();
+    QString targetDaemon = QStringLiteral("balanced");
+    QString targetThm = QStringLiteral("balanced");
+
+    if (p.contains(QLatin1String("eco")) || p.contains(QLatin1String("power")) || p.contains(QLatin1String("saver")) || p.contains(QLatin1String("efficiency"))) {
+        targetDaemon = QStringLiteral("power-saver");
+        targetThm = QStringLiteral("efficiency");
+    } else if (p.contains(QLatin1String("perf"))) {
+        targetDaemon = QStringLiteral("performance");
+        targetThm = QStringLiteral("performance");
+    }
+
+    if (!QStandardPaths::findExecutable(QStringLiteral("powerprofilesctl")).isEmpty()) {
+        QProcess::startDetached(QStringLiteral("powerprofilesctl"), QStringList() << QStringLiteral("set") << targetDaemon);
+    }
+    if (!QStandardPaths::findExecutable(QStringLiteral("titan-hwm")).isEmpty()) {
+        QProcess::startDetached(QStringLiteral("titan-hwm"), QStringList() << QStringLiteral("profile") << targetThm);
+    }
+}
+
+void TourController::setCoachWindowGeometry(bool coachMode)
+{
+    playSound(QStringLiteral("tap"));
+    if (!QStandardPaths::findExecutable(QStringLiteral("hyprctl")).isEmpty()) {
+        if (coachMode) {
+            QProcess::startDetached(
+                QStringLiteral("hyprctl"),
+                QStringList() << QStringLiteral("--batch")
+                              << QStringLiteral("dispatch resizewindowpixel exact 580 112,class:^(titan-tour)$ ; dispatch centerwindow 1"));
+        } else {
+            QProcess::startDetached(
+                QStringLiteral("hyprctl"),
+                QStringList() << QStringLiteral("--batch")
+                              << QStringLiteral("dispatch resizewindowpixel exact 960 620,class:^(titan-tour)$ ; dispatch centerwindow 1"));
+        }
     }
 }
 
 void TourController::finishTour(bool dontShowAgain)
 {
-    playSound(QStringLiteral("chime"));
+    playSound(QStringLiteral("complete"));
     QString configDir = QDir::homePath() + QStringLiteral("/.config/archtitan");
     QDir().mkpath(configDir);
     QString flagPath = configDir + QStringLiteral("/.tour-done");
@@ -214,138 +244,122 @@ void TourController::closeApp()
     QGuiApplication::quit();
 }
 
-void TourController::pollTelemetry()
+void TourController::detectPowerProfile()
 {
-    // 1. CPU Load from /proc/stat
-    QFile statFile(QStringLiteral("/proc/stat"));
-    if (statFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        QString line = QString::fromUtf8(statFile.readLine()).trimmed();
-        if (line.startsWith(QLatin1String("cpu "))) {
-            QStringList parts = line.split(QRegularExpression(QStringLiteral("\\s+")));
-            if (parts.size() >= 8) {
-                qulonglong user = parts[1].toULongLong();
-                qulonglong nice = parts[2].toULongLong();
-                qulonglong system = parts[3].toULongLong();
-                qulonglong idle = parts[4].toULongLong();
-                qulonglong iowait = parts[5].toULongLong();
-                qulonglong irq = parts[6].toULongLong();
-                qulonglong softirq = parts[7].toULongLong();
-
-                qulonglong idleAll = idle + iowait;
-                qulonglong total = user + nice + system + idleAll + irq + softirq;
-
-                if (m_prevTotal > 0 && total > m_prevTotal) {
-                    qulonglong totalDiff = total - m_prevTotal;
-                    qulonglong idleDiff = idleAll - m_prevIdle;
-                    m_cpuUsage = qBound(0.02, static_cast<qreal>(totalDiff - idleDiff) / static_cast<qreal>(totalDiff), 1.0);
-                }
-                m_prevTotal = total;
-                m_prevIdle = idleAll;
+    if (!QStandardPaths::findExecutable(QStringLiteral("powerprofilesctl")).isEmpty()) {
+        QProcess p;
+        p.start(QStringLiteral("powerprofilesctl"), QStringList() << QStringLiteral("get"));
+        if (p.waitForFinished(800)) {
+            QString out = QString::fromUtf8(p.readAllStandardOutput()).trimmed();
+            if (out == QLatin1String("power-saver")) {
+                m_activeProfile = QStringLiteral("power-saver");
+            } else if (out == QLatin1String("performance")) {
+                m_activeProfile = QStringLiteral("performance");
+            } else {
+                m_activeProfile = QStringLiteral("balanced");
             }
         }
     }
-
-    if (m_cpuHistory.size() >= 36) {
-        m_cpuHistory.removeFirst();
-    }
-    m_cpuHistory.append(m_cpuUsage);
-
-    // 2. RAM Usage from /proc/meminfo
-    QFile memFile(QStringLiteral("/proc/meminfo"));
-    if (memFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        qulonglong memTotal = 0;
-        qulonglong memAvail = 0;
-        QTextStream in(&memFile);
-        while (!in.atEnd()) {
-            QString line = in.readLine();
-            if (line.startsWith(QLatin1String("MemTotal:"))) {
-                memTotal = line.split(QRegularExpression(QStringLiteral("\\s+"))).value(1).toULongLong();
-            } else if (line.startsWith(QLatin1String("MemAvailable:"))) {
-                memAvail = line.split(QRegularExpression(QStringLiteral("\\s+"))).value(1).toULongLong();
-                break;
-            }
-        }
-        if (memTotal > 0) {
-            m_ramUsage = qBound(0.05, static_cast<qreal>(memTotal - memAvail) / static_cast<qreal>(memTotal), 1.0);
-        }
-    }
-
-    // 3. Thermal Zone
-    for (int i = 0; i < 6; ++i) {
-        QFile tempFile(QStringLiteral("/sys/class/thermal/thermal_zone%1/temp").arg(i));
-        if (tempFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
-            int raw = QString::fromUtf8(tempFile.readAll()).trimmed().toInt();
-            if (raw > 15000 && raw < 120000) {
-                m_cpuTemp = raw / 1000;
-                break;
-            }
-        }
-    }
-
-    // 4. PSI Memory Pressure (/proc/pressure/memory)
-    QFile psiFile(QStringLiteral("/proc/pressure/memory"));
-    if (psiFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        QString line = QString::fromUtf8(psiFile.readLine());
-        QRegularExpression re(QStringLiteral("avg10=([0-9.]+)"));
-        auto match = re.match(line);
-        if (match.hasMatch()) {
-            m_psiMemory = match.captured(1).toDouble();
-        }
-    }
-
-    emit telemetryChanged();
 }
 
 void TourController::detectHardwareInfo()
 {
+    // CPU detection (use readAll() because procfs files report size 0)
+    int cpuCores = 0;
+    QString detectedCpu;
     QFile cpuinfo(QStringLiteral("/proc/cpuinfo"));
     if (cpuinfo.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        QTextStream in(&cpuinfo);
-        while (!in.atEnd()) {
-            QString line = in.readLine();
-            if (line.startsWith(QLatin1String("model name"), Qt::CaseInsensitive)) {
+        const QStringList lines = QString::fromUtf8(cpuinfo.readAll()).split(QLatin1Char('\n'));
+        for (const QString &line : lines) {
+            if (line.startsWith(QLatin1String("processor"), Qt::CaseInsensitive)) {
+                cpuCores++;
+            } else if (detectedCpu.isEmpty() && line.startsWith(QLatin1String("model name"), Qt::CaseInsensitive)) {
                 int idx = line.indexOf(QLatin1Char(':'));
                 if (idx != -1) {
-                    m_cpuName = line.mid(idx + 1).trimmed();
-                    m_cpuName = m_cpuName.remove(QStringLiteral("(R)"))
-                                         .remove(QStringLiteral("(TM)"))
-                                         .remove(QStringLiteral("CPU"))
-                                         .simplified();
-                    break;
+                    detectedCpu = line.mid(idx + 1).trimmed();
+                    detectedCpu.remove(QStringLiteral("(R)"));
+                    detectedCpu.remove(QStringLiteral("(TM)"));
+                    detectedCpu.remove(QStringLiteral("11th Gen "));
+                    detectedCpu.remove(QStringLiteral("12th Gen "));
+                    detectedCpu.remove(QStringLiteral("13th Gen "));
+                    detectedCpu.remove(QStringLiteral("14th Gen "));
+                    detectedCpu.remove(QStringLiteral("CPU"));
+                    int atIdx = detectedCpu.indexOf(QLatin1Char('@'));
+                    if (atIdx != -1) {
+                        detectedCpu = detectedCpu.left(atIdx).trimmed();
+                    }
+                    detectedCpu = detectedCpu.simplified();
                 }
             }
         }
     }
+    if (!detectedCpu.isEmpty()) {
+        m_cpuName = cpuCores > 0
+            ? QStringLiteral("%1 (%2 Threads)").arg(detectedCpu).arg(cpuCores)
+            : detectedCpu;
+    }
 
+    // RAM detection
     QFile meminfo(QStringLiteral("/proc/meminfo"));
     if (meminfo.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        QTextStream in(&meminfo);
-        while (!in.atEnd()) {
-            QString line = in.readLine();
+        const QStringList lines = QString::fromUtf8(meminfo.readAll()).split(QLatin1Char('\n'));
+        for (const QString &line : lines) {
             if (line.startsWith(QLatin1String("MemTotal:"), Qt::CaseInsensitive)) {
                 QStringList parts = line.split(QRegularExpression(QStringLiteral("\\s+")));
                 if (parts.size() >= 2) {
                     qulonglong kb = parts[1].toULongLong();
                     double gb = static_cast<double>(kb) / (1024.0 * 1024.0);
-                    m_ramTotal = QString::asprintf("%.1f GB", gb);
+                    m_ramTotal = QString::asprintf("%.1f GB Unified / DDR", gb);
                     break;
                 }
             }
         }
     }
 
+    // GPU detection
     QProcess lspci;
     lspci.start(QStringLiteral("bash"), QStringList() << QStringLiteral("-c") << QStringLiteral("lspci | grep -iE 'vga|3d|display' | head -n 1"));
-    if (lspci.waitForFinished(1000)) {
+    if (lspci.waitForFinished(800)) {
         QString out = QString::fromUtf8(lspci.readAllStandardOutput()).trimmed();
-        int idx = out.indexOf(QLatin1Char(':'));
-        if (idx != -1) {
-            QString gpuStr = out.mid(idx + 1).trimmed();
-            int subIdx = gpuStr.indexOf(QLatin1Char(':'));
-            if (subIdx != -1) gpuStr = gpuStr.mid(subIdx + 1).trimmed();
-            if (!gpuStr.isEmpty()) m_gpuName = gpuStr;
+        int ctrlIdx = out.indexOf(QLatin1String("controller:"), 0, Qt::CaseInsensitive);
+        QString gpuStr = (ctrlIdx != -1) ? out.mid(ctrlIdx + 11).trimmed() : out;
+        gpuStr.remove(QRegularExpression(QStringLiteral("\\s*\\(rev [^)]+\\)")));
+
+        // If bracketed marketing name exists (e.g. "Intel Corporation TigerLake-LP GT2 [Iris Xe Graphics]"), extract vendor + bracket
+        QRegularExpression bracketRe(QStringLiteral("\\[([^\\]]+)\\]"));
+        auto match = bracketRe.match(gpuStr);
+        if (match.hasMatch()) {
+            QString model = match.captured(1).trimmed();
+            if (gpuStr.contains(QLatin1String("Intel"), Qt::CaseInsensitive) && !model.contains(QLatin1String("Intel"), Qt::CaseInsensitive)) {
+                m_gpuName = QStringLiteral("Intel ") + model;
+            } else if (gpuStr.contains(QLatin1String("NVIDIA"), Qt::CaseInsensitive) && !model.contains(QLatin1String("NVIDIA"), Qt::CaseInsensitive)) {
+                m_gpuName = QStringLiteral("NVIDIA ") + model;
+            } else if ((gpuStr.contains(QLatin1String("AMD"), Qt::CaseInsensitive) || gpuStr.contains(QLatin1String("ATI"), Qt::CaseInsensitive))
+                       && !model.contains(QLatin1String("AMD"), Qt::CaseInsensitive) && !model.contains(QLatin1String("Radeon"), Qt::CaseInsensitive)) {
+                m_gpuName = QStringLiteral("AMD ") + model;
+            } else {
+                m_gpuName = model;
+            }
+        } else if (!gpuStr.isEmpty()) {
+            m_gpuName = gpuStr;
         }
     }
+
+    // OS Release detection
+    QFile osRel(QStringLiteral("/etc/os-release"));
+    if (osRel.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        const QStringList lines = QString::fromUtf8(osRel.readAll()).split(QLatin1Char('\n'));
+        for (const QString &line : lines) {
+            if (line.startsWith(QLatin1String("PRETTY_NAME="))) {
+                QString val = line.section(QLatin1Char('='), 1).trimmed();
+                val.remove(QLatin1Char('"'));
+                if (!val.isEmpty()) m_osVersion = val;
+                break;
+            }
+        }
+    }
+
+    emit hardwareDetected();
 }
 
 void TourController::resolveAssets()
@@ -363,14 +377,13 @@ void TourController::resolveAssets()
         }
     }
 
+    QString bgRoot;
     QStringList bgDirs = {
         QStringLiteral("/usr/share/backgrounds/archtitan"),
         QDir::currentPath() + QStringLiteral("/airootfs/usr/share/backgrounds/archtitan"),
         QCoreApplication::applicationDirPath() + QStringLiteral("/../../../airootfs/usr/share/backgrounds/archtitan"),
         QCoreApplication::applicationDirPath() + QStringLiteral("/../../airootfs/usr/share/backgrounds/archtitan")
     };
-
-    QString bgRoot;
     for (const QString &d : bgDirs) {
         if (QDir(d).exists()) {
             bgRoot = QFileInfo(d).absoluteFilePath();
@@ -378,15 +391,24 @@ void TourController::resolveAssets()
         }
     }
 
+    // Detect currently set wallpaper
+    QString currentWpFile = QDir::homePath() + QStringLiteral("/.config/archtitan/wallpaper");
+    if (QFile::exists(currentWpFile)) {
+        QFile f(currentWpFile);
+        if (f.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            m_selectedWallpaper = QString::fromUtf8(f.readLine()).trimmed();
+        }
+    }
+
     if (!bgRoot.isEmpty()) {
         struct WallDef { const char *file; const char *label; const char *tag; };
         static const WallDef defs[] = {
-            { "wallpaper.png",                         "Titan Core",      "SAPPHIRE" },
-            { "titan-tokyonight.jpg",                  "Tokyo Night",     "CYBER" },
-            { "titan-mocha.jpg",                       "Catppuccin Mocha","OBSIDIAN" },
-            { "1-nord.png",                            "Arctic Nord",     "GLACIER" },
-            { "watchtower-mountains-and-forests.jpg",  "Watchtower",      "HORIZON" },
-            { "titan-dracula.jpg",                     "Dracula Noir",    "NEON" }
+            { "watchtower-mountains-and-forests.jpg",  "Watchtower",      "LANDSCAPE" },
+            { "titan-mocha.jpg",                       "Titan Mocha",     "OBSIDIAN"  },
+            { "titan-teal.jpg",                        "Titan Teal",      "ACCENT"    },
+            { "titan-rosepine.jpg",                    "Rosé Pine",       "VIBRANT"   },
+            { "titan-blue.jpg",                        "Deep Blue",       "MINIMAL"   },
+            { "1-matte-black.jpg",                     "Matte Black",     "STEALTH"   }
         };
 
         for (const auto &w : defs) {
@@ -404,6 +426,9 @@ void TourController::resolveAssets()
             }
         }
     }
+
+    emit wallpapersChanged();
+    emit selectedWallpaperChanged();
 }
 
 void TourController::loadPreferences()
@@ -413,6 +438,10 @@ void TourController::loadPreferences()
         QSettings s(confPath, QSettings::IniFormat);
         m_soundFxEnabled = s.value(QStringLiteral("soundFxEnabled"), true).toBool();
         m_showOnStartup = s.value(QStringLiteral("showOnStartup"), true).toBool();
+    } else {
+        // By default on installed systems, check if .tour-done exists
+        QString doneFlag = QDir::homePath() + QStringLiteral("/.config/archtitan/.tour-done");
+        m_showOnStartup = !QFile::exists(doneFlag);
     }
 }
 
