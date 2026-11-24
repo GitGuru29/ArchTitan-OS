@@ -73,5 +73,6 @@ fi
 
 echo "✓ titan-ai installed to ${BIN_DIR}/titan-ai"
 echo "✓ Kitty shortcut: Ctrl+Shift+S (restart Kitty to load it)"
+echo "  Guided setup:        titan-ai auth google --setup"
 echo "  Sign in with Google: titan-ai auth google   (prompts for your OAuth client ID)"
 echo "  Full guide:          titan-ai docs"

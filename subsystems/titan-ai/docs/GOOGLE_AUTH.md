@@ -34,8 +34,10 @@ The CLI requests only these scopes:
 
 ## 2. Give the client ID to TITAN AI
 
-`titan-ai auth google` and `titan-ai setup` ask for this ID interactively if it is not
-stored yet. To pre-store it instead, use either method below.
+Run `titan-ai auth google --setup` for a guided walkthrough: it prints the exact console
+links and checklist, optionally opens the console tabs, stores the Client ID, and can sign
+you in immediately. `titan-ai auth google` and `titan-ai setup` also ask for this ID
+interactively if it is not stored yet. To pre-store it instead, use either method below.
 
 Either store it in your private config:
 
@@ -54,6 +56,12 @@ export GOOGLE_CLOUD_PROJECT='your-gcp-project-id' # optional
 ```
 
 ## 3. Sign in
+
+For the full walkthrough, including creating the Desktop app client:
+
+```sh
+titan-ai auth google --setup
+```
 
 On a desktop session (opens the default browser and waits for the loopback callback):
 
@@ -95,10 +103,15 @@ titan-ai -p gemini 'summarise this news topic'   # plain Gemini chat
 ```
 
 Grounding uses the Gemini `google_search` tool. The answer includes `[n]` citation markers and
-a numbered source list. The Kitty shortcut uses exactly the same path: press
-<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd>, type your query at `search>`, and the answer with
-source links appears in the new window. Note that Google bills search grounding requests per
-query on newer Gemini models; see the Gemini API pricing page for current limits.
+a numbered source list; `titan-ai search --links QUERY` prints only the cited URLs. The Kitty
+shortcut uses exactly the same path: press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd>, type
+your query at `search>`, and the answer with source links appears in the new window.
+
+This is the official Google path for new projects. It is **not** a separate free "Google Search
+API": Google closed the Custom Search JSON API to new customers, and scraping search results
+from a CLI breaks Google's terms. Gemini has a limited free tier, and Search grounding may be
+billed separately from plain text generation on some models. Check usage and billing at
+https://aistudio.google.com/app/apikey and https://console.cloud.google.com/apis/dashboard.
 
 ## Troubleshooting
 
