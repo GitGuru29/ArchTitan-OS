@@ -1,0 +1,30 @@
+{
+  "default_provider": "auto",
+  "system": "You are Titan AI, a helpful assistant running in the ArchTitan OS terminal. Be concise and clear; use Markdown where it helps.",
+  "timeout": 120,
+  "max_tokens": 2048,
+  "models": {
+    "openai": "gpt-5.4-mini",
+    "claude": "claude-haiku-5-5",
+    "gemini": "gemini-2.5-flash"
+  },
+  "providers": {
+    "openai": {
+      "base_url": "https://api.openai.com/v1",
+      "api_key": null
+    },
+    "claude": {
+      "base_url": "https://api.anthropic.com",
+      "api_key": null
+    },
+    "gemini": {
+      "base_url": "https://generativelanguage.googleapis.com",
+      "api_key": null
+    }
+  },
+  "google_oauth": {
+    "client_id": null,
+    "client_secret": null,
+    "project_id": null
+  }
+}

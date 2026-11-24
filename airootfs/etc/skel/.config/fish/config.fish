@@ -15,6 +15,9 @@ if status is-interactive
     alias ga='git add'
     alias gp='git push'
     alias gl='git pull'
+
+    # TITAN AI
+    alias ai='titan-ai'
     
     # Docker
     alias d='docker'
