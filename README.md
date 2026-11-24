@@ -234,7 +234,7 @@ Detailed reports live in [`titan-hwm-v3/docs/benchmark-results/`](titan-hwm-v3/d
 
 ### 17. 🚧 Additional Subsystems (In Development)
 * **Auto GPU Switcher** (`subsystems/auto-gpu-switcher/`): Intelligent iGPU/dGPU dynamic switching.
-* **TITAN AI** (`subsystems/titan-ai/`): Context-aware developer assistant.
+* **TITAN AI** (`subsystems/titan-ai/`): Unified C++ assistant — ChatGPT, Claude, Gemini and Google Search grounding via `titan-ai` or <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd> inside Kitty (runtime API keys only).
 * **TITAN Task Manager** (`subsystems/titan-task-manager/`): Advanced scheduling and resource tracking.
 * **TITAN Mirror** (`subsystems/titan-mirror/`): Wayland-native screen mirroring for mobile devices.
 * **TitanFocus** (`subsystems/titan-focus/`): 🚧 Developer work optimization engine — *proposal only, not yet implemented*.
@@ -283,6 +283,7 @@ mindmap
 | <kbd>Super</kbd> + <kbd>M</kbd> | Media HUD | Toggles Dynamic Island media overlay (`titan-media-hud --toggle`) |
 | <kbd>Super</kbd> + <kbd>\\</kbd> / <kbd>Super</kbd> + <kbd>Shift</kbd> + <kbd>\\</kbd> | Wallpaper Picker | Opens grid-based wallpaper selector (`titan-wallpaper-picker`) |
 | <kbd>Super</kbd> + <kbd>Return</kbd> | Terminal | Opens Kitty terminal with Fish shell |
+| <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd> *(inside Kitty)* | TITAN AI Search | Opens a new Kitty window with a search prompt (ChatGPT/Claude/Gemini/Google Search via the C++ engine) |
 | <kbd>Super</kbd> + <kbd>W</kbd> | Titan Browser | Launches first-party sandboxed TitanBrowser |
 | <kbd>Super</kbd> + <kbd>,</kbd> | ArchTitan Settings | Opens unified System Settings panel |
 | <kbd>Super</kbd> + <kbd>E</kbd> | File Manager | Opens Ranger terminal file manager |
@@ -479,7 +480,7 @@ ArchTitan is developed as a modular group project with 4 members. The repository
 | **Titan Boot Ceremony & Splash** | Boot Experience | @GitGuru29 (Lead) | 🟢 Shipped | `airootfs/usr/share/plymouth/themes/` |
 | **BTRFS Snapshot Hook** | Safety Feature | @GitGuru29 (Lead) | 🟢 Shipped | `airootfs/etc/pacman.d/hooks/` |
 | **Auto GPU Switcher** | Subsystem | @GitGuru29 (Lead) | 🟡 In Dev | `subsystems/auto-gpu-switcher/` |
-| **TITAN AI** | Subsystem | @Kaveesha23dil | 🟡 In Dev | `subsystems/titan-ai/` |
+| **TITAN AI** | Subsystem | @Kaveesha23dil | 🟢 Shipped (C++ engine + Kitty shortcut) | `subsystems/titan-ai/` |
 | **TITAN Task Manager** | Subsystem | Anuradhi-Gunawardhana | 🟡 In Dev | `subsystems/titan-task-manager/` |
 | **TITAN Share** | Subsystem | Zumrahassan222 | 🟡 In Dev | `subsystems/titan-share/` |
 | **TITAN Mirror** | Subsystem | Zumrahassan222 | 🟡 In Dev | `subsystems/titan-mirror/` |

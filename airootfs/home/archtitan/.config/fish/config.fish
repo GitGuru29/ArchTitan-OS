@@ -30,6 +30,24 @@ if status is-interactive
     if test "$TERM" = "xterm-kitty"
         alias ssh 'kitten ssh'
     end
+
+    # TITAN AI + convenience aliases
+    alias ai='titan-ai'
+    alias ll='ls -l'
+    alias la='ls -la'
+    alias grep='grep --color=auto'
+    alias update='sudo pacman -Syu'
+    alias install='sudo pacman -S'
+    alias remove='sudo pacman -Rns'
+    alias gs='git status'
+    alias gc='git commit'
+    alias ga='git add'
+    alias gp='git push'
+    alias gl='git pull'
+    alias d='docker'
+    alias dc='docker-compose'
+    alias e='nvim'
+    alias c='code'
 end
 
 # THM help by default

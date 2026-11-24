@@ -15,7 +15,7 @@ This folder contains all subsystems of ArchTitan OS. Each subsystem has an **ide
 | TitanFetch | @GitGuru29 | ✅ Active | [`titan-fetch/`](titan-fetch/) |
 | Titan Sandbox | @GitGuru29 | ✅ Active | [`titan-sandbox/`](titan-sandbox/) |
 | Auto GPU Switcher | @GitGuru29 | 🚧 Planned | [`auto-gpu-switcher/`](auto-gpu-switcher/) |
-| TITAN AI | Teammate | 🚧 In Development | [`titan-ai/`](titan-ai/) |
+| TITAN AI | Teammate | ✅ Active (C++ engine + Kitty shortcut) | [`titan-ai/`](titan-ai/) |
 | TITAN Task Manager | Teammate | 🚧 In Development | [`titan-task-manager/`](titan-task-manager/) |
 | TITAN Share | Teammate | 🚧 In Development | [`titan-share/`](titan-share/) |
 | TITAN Mirror | Teammate | 🚧 In Development | [`titan-mirror/`](titan-mirror/) |
