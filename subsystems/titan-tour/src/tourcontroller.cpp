@@ -246,44 +246,52 @@ void TourController::detectPowerProfile()
 
 void TourController::detectHardwareInfo()
 {
-    // CPU detection
+    // CPU detection (use readAll() because procfs files report size 0)
     int cpuCores = 0;
+    QString detectedCpu;
     QFile cpuinfo(QStringLiteral("/proc/cpuinfo"));
     if (cpuinfo.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        QTextStream in(&cpuinfo);
-        while (!in.atEnd()) {
-            QString line = in.readLine();
+        const QStringList lines = QString::fromUtf8(cpuinfo.readAll()).split(QLatin1Char('\n'));
+        for (const QString &line : lines) {
             if (line.startsWith(QLatin1String("processor"), Qt::CaseInsensitive)) {
                 cpuCores++;
-            }
-            if (line.startsWith(QLatin1String("model name"), Qt::CaseInsensitive) && m_cpuName.contains(QLatin1String("Intel / AMD"))) {
+            } else if (detectedCpu.isEmpty() && line.startsWith(QLatin1String("model name"), Qt::CaseInsensitive)) {
                 int idx = line.indexOf(QLatin1Char(':'));
                 if (idx != -1) {
-                    m_cpuName = line.mid(idx + 1).trimmed();
-                    m_cpuName = m_cpuName.remove(QStringLiteral("(R)"))
-                                         .remove(QStringLiteral("(TM)"))
-                                         .remove(QStringLiteral("CPU"))
-                                         .simplified();
+                    detectedCpu = line.mid(idx + 1).trimmed();
+                    detectedCpu.remove(QStringLiteral("(R)"));
+                    detectedCpu.remove(QStringLiteral("(TM)"));
+                    detectedCpu.remove(QStringLiteral("11th Gen "));
+                    detectedCpu.remove(QStringLiteral("12th Gen "));
+                    detectedCpu.remove(QStringLiteral("13th Gen "));
+                    detectedCpu.remove(QStringLiteral("14th Gen "));
+                    detectedCpu.remove(QStringLiteral("CPU"));
+                    int atIdx = detectedCpu.indexOf(QLatin1Char('@'));
+                    if (atIdx != -1) {
+                        detectedCpu = detectedCpu.left(atIdx).trimmed();
+                    }
+                    detectedCpu = detectedCpu.simplified();
                 }
             }
         }
     }
-    if (cpuCores > 0 && !m_cpuName.isEmpty()) {
-        m_cpuName += QString::asprintf(" (%d Threads)", cpuCores);
+    if (!detectedCpu.isEmpty()) {
+        m_cpuName = cpuCores > 0
+            ? QStringLiteral("%1 (%2 Threads)").arg(detectedCpu).arg(cpuCores)
+            : detectedCpu;
     }
 
     // RAM detection
     QFile meminfo(QStringLiteral("/proc/meminfo"));
     if (meminfo.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        QTextStream in(&meminfo);
-        while (!in.atEnd()) {
-            QString line = in.readLine();
+        const QStringList lines = QString::fromUtf8(meminfo.readAll()).split(QLatin1Char('\n'));
+        for (const QString &line : lines) {
             if (line.startsWith(QLatin1String("MemTotal:"), Qt::CaseInsensitive)) {
                 QStringList parts = line.split(QRegularExpression(QStringLiteral("\\s+")));
                 if (parts.size() >= 2) {
                     qulonglong kb = parts[1].toULongLong();
                     double gb = static_cast<double>(kb) / (1024.0 * 1024.0);
-                    m_ramTotal = QString::asprintf("%.1f GB RAM", gb);
+                    m_ramTotal = QString::asprintf("%.1f GB Unified / DDR", gb);
                     break;
                 }
             }
@@ -295,21 +303,35 @@ void TourController::detectHardwareInfo()
     lspci.start(QStringLiteral("bash"), QStringList() << QStringLiteral("-c") << QStringLiteral("lspci | grep -iE 'vga|3d|display' | head -n 1"));
     if (lspci.waitForFinished(800)) {
         QString out = QString::fromUtf8(lspci.readAllStandardOutput()).trimmed();
-        int idx = out.indexOf(QLatin1Char(':'));
-        if (idx != -1) {
-            QString gpuStr = out.mid(idx + 1).trimmed();
-            int subIdx = gpuStr.indexOf(QLatin1Char(':'));
-            if (subIdx != -1) gpuStr = gpuStr.mid(subIdx + 1).trimmed();
-            if (!gpuStr.isEmpty()) m_gpuName = gpuStr;
+        int ctrlIdx = out.indexOf(QLatin1String("controller:"), 0, Qt::CaseInsensitive);
+        QString gpuStr = (ctrlIdx != -1) ? out.mid(ctrlIdx + 11).trimmed() : out;
+        gpuStr.remove(QRegularExpression(QStringLiteral("\\s*\\(rev [^)]+\\)")));
+
+        // If bracketed marketing name exists (e.g. "Intel Corporation TigerLake-LP GT2 [Iris Xe Graphics]"), extract vendor + bracket
+        QRegularExpression bracketRe(QStringLiteral("\\[([^\\]]+)\\]"));
+        auto match = bracketRe.match(gpuStr);
+        if (match.hasMatch()) {
+            QString model = match.captured(1).trimmed();
+            if (gpuStr.contains(QLatin1String("Intel"), Qt::CaseInsensitive) && !model.contains(QLatin1String("Intel"), Qt::CaseInsensitive)) {
+                m_gpuName = QStringLiteral("Intel ") + model;
+            } else if (gpuStr.contains(QLatin1String("NVIDIA"), Qt::CaseInsensitive) && !model.contains(QLatin1String("NVIDIA"), Qt::CaseInsensitive)) {
+                m_gpuName = QStringLiteral("NVIDIA ") + model;
+            } else if ((gpuStr.contains(QLatin1String("AMD"), Qt::CaseInsensitive) || gpuStr.contains(QLatin1String("ATI"), Qt::CaseInsensitive))
+                       && !model.contains(QLatin1String("AMD"), Qt::CaseInsensitive) && !model.contains(QLatin1String("Radeon"), Qt::CaseInsensitive)) {
+                m_gpuName = QStringLiteral("AMD ") + model;
+            } else {
+                m_gpuName = model;
+            }
+        } else if (!gpuStr.isEmpty()) {
+            m_gpuName = gpuStr;
         }
     }
 
     // OS Release detection
     QFile osRel(QStringLiteral("/etc/os-release"));
     if (osRel.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        QTextStream in(&osRel);
-        while (!in.atEnd()) {
-            QString line = in.readLine();
+        const QStringList lines = QString::fromUtf8(osRel.readAll()).split(QLatin1Char('\n'));
+        for (const QString &line : lines) {
             if (line.startsWith(QLatin1String("PRETTY_NAME="))) {
                 QString val = line.section(QLatin1Char('='), 1).trimmed();
                 val.remove(QLatin1Char('"'));

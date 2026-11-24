@@ -1,82 +1,116 @@
 import QtQuick
 import QtQuick.Layouts
-import ArchTitan.TitanUI
-import "components"
 
 Item {
     id: root
-    height: 58
+    height: 60
 
     property int currentSlide: 0
     property int totalSlides: 5
     signal prevClicked()
     signal nextClicked()
     signal finishClicked()
+    signal slideRequested(int index)
 
-    // Top hairline separator
+    // Subtle macOS footer top divider
     Rectangle {
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
         height: 1
-        color: Qt.rgba(1, 1, 1, 0.07)
+        color: Qt.rgba(1, 1, 1, 0.06)
     }
 
     RowLayout {
         anchors.fill: parent
-        anchors.leftMargin: 20
-        anchors.rightMargin: 18
+        anchors.leftMargin: 24
+        anchors.rightMargin: 24
         spacing: 16
 
-        // Left: Live ISO Calamares button OR Installed Startup Switch
-        RowLayout {
-            spacing: 10
+        // ── Left: macOS Checkbox ("Show Welcome Guide at login") or Live Install ──
+        Row {
+            spacing: 8
             visible: !tourCtrl.isLiveMode
+            Layout.alignment: Qt.AlignVCenter
 
-            TitanSwitch {
-                checked: tourCtrl.showOnStartup
-                onToggled: function(state) {
-                    tourCtrl.showOnStartup = state;
+            Rectangle {
+                id: macCheck
+                width: 16
+                height: 16
+                radius: 4
+                anchors.verticalCenter: parent.verticalCenter
+                color: tourCtrl.showOnStartup ? "#0A84FF" : "#2C2C2E"
+                border.width: 1
+                border.color: tourCtrl.showOnStartup ? "#389BFF" : Qt.rgba(1, 1, 1, 0.22)
+
+                Behavior on color { ColorAnimation { duration: 120 } }
+
+                Text {
+                    visible: tourCtrl.showOnStartup
+                    anchors.centerIn: parent
+                    text: "\uf00c"
+                    color: "#FFFFFF"
+                    font.family: "JetBrainsMono Nerd Font"
+                    font.pixelSize: 9
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    anchors.margins: -4
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        tourCtrl.playSound("tap");
+                        tourCtrl.showOnStartup = !tourCtrl.showOnStartup;
+                    }
                 }
             }
 
             Text {
-                text: "Show on login"
-                color: TitanTheme.textLow
-                font.family: TitanTheme.fontFamily
-                font.pixelSize: 11
+                text: "Show Welcome Guide at login"
+                color: "#98989D"
+                font.family: "Inter"
+                font.pixelSize: 12
+                anchors.verticalCenter: parent.verticalCenter
+
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        tourCtrl.playSound("tap");
+                        tourCtrl.showOnStartup = !tourCtrl.showOnStartup;
+                    }
+                }
             }
         }
 
         // Live ISO Quick Installer Action
         Rectangle {
-            id: liveInstallBtn
             visible: tourCtrl.isLiveMode
             implicitHeight: 32
             implicitWidth: liveInstallRow.implicitWidth + 20
             radius: 8
-            color: liveInstallMouse.containsMouse ? Qt.rgba(TitanTheme.warning.r, TitanTheme.warning.g, TitanTheme.warning.b, 0.22)
-                                                 : Qt.rgba(TitanTheme.warning.r, TitanTheme.warning.g, TitanTheme.warning.b, 0.12)
+            color: liveInstallMouse.containsMouse ? Qt.rgba(10/255, 132/255, 255/255, 0.22)
+                                                  : Qt.rgba(10/255, 132/255, 255/255, 0.14)
             border.width: 1
-            border.color: Qt.rgba(TitanTheme.warning.r, TitanTheme.warning.g, TitanTheme.warning.b, 0.45)
+            border.color: "#0A84FF"
 
             Row {
                 id: liveInstallRow
                 anchors.centerIn: parent
-                spacing: 6
+                spacing: 7
 
                 Text {
-                    text: "\uf019" // Download/Install icon
-                    color: TitanTheme.warning
-                    font.family: TitanTheme.monoFamily
+                    text: "\uf019"
+                    color: "#0A84FF"
+                    font.family: "JetBrainsMono Nerd Font"
                     font.pixelSize: 11
                     anchors.verticalCenter: parent.verticalCenter
                 }
 
                 Text {
-                    text: "Install to Disk"
-                    color: TitanTheme.textHigh
-                    font.family: TitanTheme.fontFamily
+                    text: "Install ArchTitan to Disk…"
+                    color: "#F5F5F7"
+                    font.family: "Inter"
                     font.pixelSize: 12
                     font.weight: 600
                     anchors.verticalCenter: parent.verticalCenter
@@ -88,77 +122,71 @@ Item {
                 anchors.fill: parent
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
-                onClicked: {
-                    tourCtrl.launchInstaller();
+                onClicked: tourCtrl.launchInstaller()
+            }
+        }
+
+        Item { Layout.fillWidth: true }
+
+        // ── Center: macOS Animated Page Indicator Dots ──────────────────────
+        Row {
+            spacing: 7
+            Layout.alignment: Qt.AlignVCenter
+
+            Repeater {
+                model: root.totalSlides
+
+                Rectangle {
+                    property bool isActive: index === root.currentSlide
+                    width: isActive ? 22 : 7
+                    height: 7
+                    radius: 3.5
+                    color: isActive ? "#0A84FF"
+                                    : (dotMouse.containsMouse ? "#8E8E93" : "#48484A")
+
+                    Behavior on width { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                    Behavior on color { ColorAnimation { duration: 150 } }
+
+                    MouseArea {
+                        id: dotMouse
+                        anchors.fill: parent
+                        anchors.margins: -3
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            tourCtrl.playSound("tap");
+                            root.slideRequested(index);
+                        }
+                    }
                 }
             }
         }
 
         Item { Layout.fillWidth: true }
 
-        // Center: Keyboard Navigation Hints
+        // ── Right: macOS Setup Assistant Navigation Buttons ─────────────────
         Row {
-            spacing: 6
+            spacing: 10
             Layout.alignment: Qt.AlignVCenter
 
-            Keycap {
-                text: "←"
-                implicitHeight: 20
-                implicitWidth: 20
-            }
-            Keycap {
-                text: "→"
-                implicitHeight: 20
-                implicitWidth: 20
-            }
-            Text {
-                text: "Navigate"
-                color: TitanTheme.textLow
-                font.family: TitanTheme.fontFamily
-                font.pixelSize: 11
-                anchors.verticalCenter: parent.verticalCenter
-            }
-
-            Item { width: 8; height: 1 }
-
-            Keycap {
-                text: "ESC"
-                implicitHeight: 20
-            }
-            Text {
-                text: "Close"
-                color: TitanTheme.textLow
-                font.family: TitanTheme.fontFamily
-                font.pixelSize: 11
-                anchors.verticalCenter: parent.verticalCenter
-            }
-        }
-
-        Item { Layout.fillWidth: true }
-
-        // Right: Navigation Buttons (Back & Next / Finish)
-        RowLayout {
-            spacing: 10
-
-            // Back button
+            // Secondary macOS Back Button
             Rectangle {
-                id: backBtn
                 visible: root.currentSlide > 0
-                implicitHeight: 34
-                implicitWidth: 80
-                radius: 8
-                color: backMouse.pressed ? Qt.rgba(1, 1, 1, 0.12)
-                                         : (backMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(1, 1, 1, 0.04))
+                implicitHeight: 32
+                implicitWidth: 78
+                radius: 7
+                color: backMouse.pressed ? "#444448"
+                                         : (backMouse.containsMouse ? "#3A3A3E" : "#323236")
                 border.width: 1
-                border.color: Qt.rgba(1, 1, 1, 0.12)
+                border.color: Qt.rgba(1, 1, 1, 0.14)
 
                 Text {
                     anchors.centerIn: parent
                     text: "Back"
-                    color: TitanTheme.textHigh
-                    font.family: TitanTheme.fontFamily
-                    font.pixelSize: 12
-                    font.weight: Font.Medium
+                    color: "#F5F5F7"
+                    font.family: "Inter"
+                    font.pixelSize: 13
+                    font.weight: 500
                 }
 
                 MouseArea {
@@ -173,52 +201,38 @@ Item {
                 }
             }
 
-            // Next / Finish button
+            // Primary Apple System Blue Button
             Rectangle {
                 id: nextBtn
                 property bool isLast: root.currentSlide === root.totalSlides - 1
 
-                implicitHeight: 34
-                implicitWidth: isLast ? 120 : 96
-                radius: 8
+                implicitHeight: 32
+                implicitWidth: isLast ? 114 : 98
+                radius: 7
 
                 gradient: Gradient {
-                    orientation: Gradient.Horizontal
                     GradientStop {
                         position: 0.0
-                        color: nextBtn.isLast ? TitanTheme.accent : Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.85)
+                        color: nextMouse.pressed ? "#0070E0"
+                                                 : (nextMouse.containsMouse ? "#2894FF" : "#188BFF")
                     }
                     GradientStop {
                         position: 1.0
-                        color: nextBtn.isLast ? TitanTheme.teal : TitanTheme.accent
+                        color: nextMouse.pressed ? "#0062CC"
+                                                 : (nextMouse.containsMouse ? "#0A84FF" : "#007AFF")
                     }
                 }
 
                 border.width: 1
-                border.color: Qt.rgba(255, 255, 255, 0.25)
+                border.color: Qt.rgba(1, 1, 1, 0.25)
 
-                scale: nextMouse.pressed ? 0.97 : (nextMouse.containsMouse ? 1.02 : 1.0)
-                Behavior on scale { NumberAnimation { duration: 100 } }
-
-                Row {
+                Text {
                     anchors.centerIn: parent
-                    spacing: 6
-
-                    Text {
-                        text: nextBtn.isLast ? "Get Started" : "Continue"
-                        color: TitanTheme.crust
-                        font.family: TitanTheme.fontFamily
-                        font.pixelSize: 12
-                        font.weight: Font.Bold
-                    }
-
-                    Text {
-                        text: nextBtn.isLast ? "\uf00c" : "\uf054"
-                        color: TitanTheme.crust
-                        font.family: TitanTheme.monoFamily
-                        font.pixelSize: 10
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
+                    text: nextBtn.isLast ? "Get Started" : "Continue"
+                    color: "#FFFFFF"
+                    font.family: "Inter"
+                    font.pixelSize: 13
+                    font.weight: 600
                 }
 
                 MouseArea {

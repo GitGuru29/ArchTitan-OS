@@ -1,15 +1,14 @@
 import QtQuick
 import QtQuick.Window
 import QtQuick.Layouts
-import ArchTitan.TitanUI
 import "slides"
 
 Window {
     id: rootWindow
     width: 860
-    height: 540
+    height: 560
     visible: true
-    title: "ArchTitan Onboarding Tour"
+    title: "Welcome to ArchTitan"
     flags: Qt.FramelessWindowHint | Qt.Window
     color: "transparent"
 
@@ -29,7 +28,7 @@ Window {
         property: "entryProgress"
         from: 0.0
         to: 1.0
-        duration: 300
+        duration: 280
         easing.type: Easing.OutCubic
     }
 
@@ -82,46 +81,37 @@ Window {
         }
     }
 
-    // ── Main Obsidian Glass Card ────────────────────────────────────────────
+    // ── macOS Dark Vibrancy Window Surface ──────────────────────────────────
     Rectangle {
         id: mainCard
         anchors.fill: parent
-        radius: 16
+        radius: 18
         opacity: rootWindow.entryProgress
-        scale: 0.98 + 0.02 * rootWindow.entryProgress
+        scale: 0.985 + 0.015 * rootWindow.entryProgress
 
         gradient: Gradient {
-            GradientStop { position: 0.0; color: Qt.rgba(TitanTheme.mantle.r, TitanTheme.mantle.g, TitanTheme.mantle.b, 0.96) }
-            GradientStop { position: 1.0; color: Qt.rgba(TitanTheme.base.r, TitanTheme.base.g, TitanTheme.base.b, 0.98) }
+            GradientStop { position: 0.0; color: "#202024" }
+            GradientStop { position: 0.45; color: "#1A1A1E" }
+            GradientStop { position: 1.0; color: "#141417" }
         }
 
         border.width: 1
-        border.color: Qt.rgba(1, 1, 1, 0.12)
+        border.color: Qt.rgba(1, 1, 1, 0.16)
         clip: true
 
-        // Inner Hairline Border
-        Rectangle {
-            anchors.fill: parent
-            anchors.margins: 1
-            radius: 15
-            color: "transparent"
-            border.width: 1
-            border.color: Qt.rgba(1, 1, 1, 0.04)
-        }
-
-        // Top Specular Highlight Bar
+        // Top Specular Rim Highlight
         Rectangle {
             anchors.top: parent.top
             anchors.topMargin: 1
             anchors.horizontalCenter: parent.horizontalCenter
-            width: parent.width - 60
+            width: parent.width - 36
             height: 1
             gradient: Gradient {
                 orientation: Gradient.Horizontal
                 GradientStop { position: 0.0; color: "transparent" }
-                GradientStop { position: 0.3; color: Qt.rgba(1, 1, 1, 0.20) }
-                GradientStop { position: 0.5; color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.50) }
-                GradientStop { position: 0.7; color: Qt.rgba(1, 1, 1, 0.20) }
+                GradientStop { position: 0.25; color: Qt.rgba(1, 1, 1, 0.22) }
+                GradientStop { position: 0.5; color: Qt.rgba(1, 1, 1, 0.34) }
+                GradientStop { position: 0.75; color: Qt.rgba(1, 1, 1, 0.22) }
                 GradientStop { position: 1.0; color: "transparent" }
             }
         }
@@ -130,7 +120,7 @@ Window {
             anchors.fill: parent
             spacing: 0
 
-            // Header (52px)
+            // macOS Titlebar with Traffic Lights & Segmented Chapter Bar
             TourHeader {
                 Layout.fillWidth: true
                 currentSlide: rootWindow.currentSlide
@@ -139,23 +129,25 @@ Window {
                 onCloseClicked: rootWindow.finishAndClose()
             }
 
-            // Slide Viewport (430px)
+            // 5-Screen macOS Onboarding Stage
             StackLayout {
                 id: slideStack
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 currentIndex: rootWindow.currentSlide
 
-                StepWelcome {}
+                StepWelcome {
+                    onJumpToSlide: function(idx) { rootWindow.goToSlide(idx); }
+                }
                 StepNavigation {}
                 StepShortcuts {}
-                StepHardware {}
                 StepPersonalize {
                     onFinishRequested: rootWindow.finishAndClose()
                 }
+                StepHardware {}
             }
 
-            // Footer (58px)
+            // macOS Setup Assistant Bottom Bar
             TourFooter {
                 Layout.fillWidth: true
                 currentSlide: rootWindow.currentSlide
@@ -163,6 +155,7 @@ Window {
                 onPrevClicked: rootWindow.prevSlide()
                 onNextClicked: rootWindow.nextSlide()
                 onFinishClicked: rootWindow.finishAndClose()
+                onSlideRequested: function(idx) { rootWindow.goToSlide(idx); }
             }
         }
     }

@@ -17,7 +17,7 @@ Rectangle {
     color: isSelected ? Qt.rgba(hotspotColor.r, hotspotColor.g, hotspotColor.b, 0.22)
                       : (mouseArea.containsMouse ? Qt.rgba(hotspotColor.r, hotspotColor.g, hotspotColor.b, 0.12)
                                                  : Qt.rgba(TitanTheme.surface0.r, TitanTheme.surface0.g, TitanTheme.surface0.b, 0.85))
-    border.width: isSelected ? 1.5 : 1
+    border.width: isSelected ? 2 : 1
     border.color: isSelected ? hotspotColor
                              : (mouseArea.containsMouse ? Qt.rgba(hotspotColor.r, hotspotColor.g, hotspotColor.b, 0.6)
                                                         : Qt.rgba(1, 1, 1, 0.14))

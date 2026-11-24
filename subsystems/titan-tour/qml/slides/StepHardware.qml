@@ -1,6 +1,5 @@
 import QtQuick
 import QtQuick.Layouts
-import ArchTitan.TitanUI
 
 Item {
     id: root
@@ -8,162 +7,170 @@ Item {
     readonly property var profiles: [
         {
             id: "power-saver",
-            title: "Power Saver (Eco)",
-            tag: "SILENT & COOL",
+            title: "Low Power",
+            badge: "Quiet & Cool",
             icon: "\uf06c",
-            color: TitanTheme.success,
-            desc: "Caps aggressive turbo boost spikes, parks idle cores early, and optimizes background daemons for maximum battery endurance."
+            accentColor: "#30D158",
+            desc: "Reduces energy consumption and fan acoustics to maximize battery life during everyday tasks."
         },
         {
             id: "balanced",
-            title: "Balanced (Adaptive)",
-            tag: "DEFAULT // THM v3",
+            title: "Automatic",
+            badge: "Recommended",
             icon: "\uf24e",
-            color: TitanTheme.info,
-            desc: "Continuous PSI memory & CPU regulation. Dynamically scales cgroups v2 weights to ensure the Wayland desktop stays locked at 60-144Hz."
+            accentColor: "#0A84FF",
+            desc: "Intelligently adapts CPU and memory priority so your active window stays smooth under any load."
         },
         {
             id: "performance",
-            title: "Performance",
-            tag: "UNLEASHED BOOST",
+            title: "High Performance",
+            badge: "Max Boost",
             icon: "\uf0e7",
-            color: TitanTheme.warning,
-            desc: "Locks CPU frequency scaling to peak boost states, unlocks maximum thermal limits, and prioritizes GPU render pipelines for heavy compiles & games."
+            accentColor: "#FF9F0A",
+            desc: "Sustains peak processor and graphics clock speeds for heavy compilation and intensive workloads."
         }
     ]
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: 20
-        spacing: 14
+        anchors.topMargin: 14
+        anchors.bottomMargin: 14
+        anchors.leftMargin: 28
+        anchors.rightMargin: 28
+        spacing: 12
 
-        // ── Top: Detected Hardware Header ───────────────────────────────────────
+        // ── Centered macOS Title ────────────────────────────────────────────
         ColumnLayout {
+            Layout.alignment: Qt.AlignHCenter
             spacing: 2
+
             Text {
-                text: "SYSTEM HARDWARE & TELEMETRY"
-                color: TitanTheme.accent
-                font.family: TitanTheme.monoFamily
-                font.pixelSize: 10
+                Layout.alignment: Qt.AlignHCenter
+                text: "Your System, Tuned & Ready"
+                color: "#F5F5F7"
+                font.family: "Inter"
+                font.pixelSize: 22
                 font.weight: Font.Bold
-                font.letterSpacing: 1.0
             }
+
             Text {
-                text: "Hardware auto-detected and managed by the Titan Hardware Manager v3 daemon."
-                color: TitanTheme.textLow
-                font.family: TitanTheme.fontFamily
+                Layout.alignment: Qt.AlignHCenter
+                text: "Review your machine specifications and select an energy mode for your workflow."
+                color: "#98989D"
+                font.family: "Inter"
                 font.pixelSize: 12
             }
         }
 
-        // ── Real Hardware Telemetry Grid (4 Badges) ─────────────────────────────
-        RowLayout {
+        // ── Upper Card: macOS "About This Mac" Style System Overview Card ───
+        Rectangle {
             Layout.fillWidth: true
-            spacing: 10
+            implicitHeight: 96
+            radius: 12
+            color: Qt.rgba(1, 1, 1, 0.045)
+            border.width: 1
+            border.color: Qt.rgba(1, 1, 1, 0.08)
 
-            // CPU Chip
-            Rectangle {
-                Layout.fillWidth: true
-                implicitHeight: 48
-                radius: 8
-                color: Qt.rgba(TitanTheme.surface0.r, TitanTheme.surface0.g, TitanTheme.surface0.b, 0.6)
-                border.width: 1
-                border.color: Qt.rgba(1, 1, 1, 0.08)
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 18
+                anchors.rightMargin: 18
+                spacing: 18
 
-                RowLayout {
-                    anchors.fill: parent
-                    anchors.margins: 10
-                    spacing: 8
-                    Text { text: "\uf2db"; color: TitanTheme.accent; font.family: TitanTheme.monoFamily; font.pixelSize: 14 }
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        spacing: 0
-                        Text { text: "PROCESSOR"; color: TitanTheme.textLow; font.family: TitanTheme.monoFamily; font.pixelSize: 9 }
-                        Text { text: tourCtrl.cpuName; color: TitanTheme.textHigh; font.family: TitanTheme.fontFamily; font.pixelSize: 11; font.weight: 600; elide: Text.ElideRight; Layout.fillWidth: true }
+                // Workstation Squircle Icon
+                Rectangle {
+                    width: 54
+                    height: 54
+                    radius: 13
+                    gradient: Gradient {
+                        GradientStop { position: 0.0; color: "#2C3E50" }
+                        GradientStop { position: 1.0; color: "#1A252F" }
+                    }
+                    border.width: 1
+                    border.color: Qt.rgba(1, 1, 1, 0.20)
+
+                    Image {
+                        anchors.centerIn: parent
+                        width: 30
+                        height: 30
+                        source: tourCtrl.logoUrl
+                        fillMode: Image.PreserveAspectFit
+                        mipmap: true
                     }
                 }
-            }
 
-            // RAM Chip
-            Rectangle {
-                Layout.preferredWidth: 160
-                implicitHeight: 48
-                radius: 8
-                color: Qt.rgba(TitanTheme.surface0.r, TitanTheme.surface0.g, TitanTheme.surface0.b, 0.6)
-                border.width: 1
-                border.color: Qt.rgba(1, 1, 1, 0.08)
+                // OS Brand Title
+                ColumnLayout {
+                    Layout.preferredWidth: 165
+                    spacing: 2
 
-                RowLayout {
-                    anchors.fill: parent
-                    anchors.margins: 10
-                    spacing: 8
-                    Text { text: "\uf080"; color: TitanTheme.teal; font.family: TitanTheme.monoFamily; font.pixelSize: 14 }
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        spacing: 0
-                        Text { text: "SYSTEM RAM"; color: TitanTheme.textLow; font.family: TitanTheme.monoFamily; font.pixelSize: 9 }
-                        Text { text: tourCtrl.ramTotal; color: TitanTheme.textHigh; font.family: TitanTheme.fontFamily; font.pixelSize: 11; font.weight: 600 }
+                    Text {
+                        text: "ArchTitan OS"
+                        color: "#F5F5F7"
+                        font.family: "Inter"
+                        font.pixelSize: 16
+                        font.weight: Font.Bold
+                    }
+
+                    Text {
+                        text: tourCtrl.isLiveMode ? "Live USB Environment" : "Release 2026.11 • 64-bit"
+                        color: "#98989D"
+                        font.family: "Inter"
+                        font.pixelSize: 11
                     }
                 }
-            }
 
-            // GPU Chip
-            Rectangle {
-                Layout.fillWidth: true
-                implicitHeight: 48
-                radius: 8
-                color: Qt.rgba(TitanTheme.surface0.r, TitanTheme.surface0.g, TitanTheme.surface0.b, 0.6)
-                border.width: 1
-                border.color: Qt.rgba(1, 1, 1, 0.08)
-
-                RowLayout {
-                    anchors.fill: parent
-                    anchors.margins: 10
-                    spacing: 8
-                    Text { text: "\uf108"; color: TitanTheme.info; font.family: TitanTheme.monoFamily; font.pixelSize: 14 }
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        spacing: 0
-                        Text { text: "GRAPHICS"; color: TitanTheme.textLow; font.family: TitanTheme.monoFamily; font.pixelSize: 9 }
-                        Text { text: tourCtrl.gpuName; color: TitanTheme.textHigh; font.family: TitanTheme.fontFamily; font.pixelSize: 11; font.weight: 600; elide: Text.ElideRight; Layout.fillWidth: true }
-                    }
+                Rectangle {
+                    width: 1
+                    Layout.fillHeight: true
+                    Layout.topMargin: 14
+                    Layout.bottomMargin: 14
+                    color: Qt.rgba(1, 1, 1, 0.08)
                 }
-            }
 
-            // Kernel Chip
-            Rectangle {
-                Layout.preferredWidth: 160
-                implicitHeight: 48
-                radius: 8
-                color: Qt.rgba(TitanTheme.surface0.r, TitanTheme.surface0.g, TitanTheme.surface0.b, 0.6)
-                border.width: 1
-                border.color: Qt.rgba(1, 1, 1, 0.08)
+                // 2x2 Apple Hardware Spec Grid
+                GridLayout {
+                    Layout.fillWidth: true
+                    columns: 2
+                    columnSpacing: 20
+                    rowSpacing: 8
 
-                RowLayout {
-                    anchors.fill: parent
-                    anchors.margins: 10
-                    spacing: 8
-                    Text { text: "\uf17c"; color: TitanTheme.mauve; font.family: TitanTheme.monoFamily; font.pixelSize: 14 }
+                    // Processor
                     ColumnLayout {
                         Layout.fillWidth: true
-                        spacing: 0
-                        Text { text: "LINUX KERNEL"; color: TitanTheme.textLow; font.family: TitanTheme.monoFamily; font.pixelSize: 9 }
-                        Text { text: tourCtrl.kernelVersion; color: TitanTheme.textHigh; font.family: TitanTheme.fontFamily; font.pixelSize: 11; font.weight: 600; elide: Text.ElideRight; Layout.fillWidth: true }
+                        spacing: 1
+                        Text { text: "Processor"; color: "#8E8E93"; font.family: "Inter"; font.pixelSize: 10 }
+                        Text { text: tourCtrl.cpuName; color: "#F5F5F7"; font.family: "Inter"; font.pixelSize: 12; font.weight: 600; elide: Text.ElideRight; Layout.fillWidth: true }
+                    }
+
+                    // Memory
+                    ColumnLayout {
+                        Layout.preferredWidth: 155
+                        spacing: 1
+                        Text { text: "Memory"; color: "#8E8E93"; font.family: "Inter"; font.pixelSize: 10 }
+                        Text { text: tourCtrl.ramTotal; color: "#F5F5F7"; font.family: "Inter"; font.pixelSize: 12; font.weight: 600 }
+                    }
+
+                    // Graphics
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 1
+                        Text { text: "Graphics"; color: "#8E8E93"; font.family: "Inter"; font.pixelSize: 10 }
+                        Text { text: tourCtrl.gpuName; color: "#F5F5F7"; font.family: "Inter"; font.pixelSize: 12; font.weight: 600; elide: Text.ElideRight; Layout.fillWidth: true }
+                    }
+
+                    // Kernel
+                    ColumnLayout {
+                        Layout.preferredWidth: 155
+                        spacing: 1
+                        Text { text: "Kernel"; color: "#8E8E93"; font.family: "Inter"; font.pixelSize: 10 }
+                        Text { text: tourCtrl.kernelVersion; color: "#F5F5F7"; font.family: "Inter"; font.pixelSize: 12; font.weight: 600; elide: Text.ElideRight; Layout.fillWidth: true }
                     }
                 }
             }
         }
 
-        // ── Performance Profile Selector (Interactive 3 Cards) ──────────────────
-        Text {
-            text: "SELECT PERFORMANCE GOVERNOR"
-            color: TitanTheme.textMid
-            font.family: TitanTheme.monoFamily
-            font.pixelSize: 10
-            font.weight: Font.Bold
-            font.letterSpacing: 0.8
-        }
-
+        // ── Middle: macOS Energy Mode Selector (3 Cards) ────────────────────
         RowLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
@@ -177,73 +184,83 @@ Item {
                     property bool isSelected: tourCtrl.activeProfile === modelData.id
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    radius: 10
-                    color: isSelected ? Qt.rgba(modelData.color.r, modelData.color.g, modelData.color.b, 0.14)
-                                      : (profMouse.containsMouse ? Qt.rgba(TitanTheme.surface1.r, TitanTheme.surface1.g, TitanTheme.surface1.b, 0.6)
-                                                                 : Qt.rgba(TitanTheme.surface0.r, TitanTheme.surface0.g, TitanTheme.surface0.b, 0.45))
-                    border.width: isSelected ? 1.5 : 1
-                    border.color: isSelected ? modelData.color
-                                             : (profMouse.containsMouse ? Qt.rgba(modelData.color.r, modelData.color.g, modelData.color.b, 0.4)
-                                                                        : Qt.rgba(1, 1, 1, 0.08))
+                    radius: 12
 
-                    Behavior on color { ColorAnimation { duration: 150 } }
+                    color: isSelected ? Qt.rgba(10/255, 132/255, 255/255, 0.14)
+                                      : (profMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.075)
+                                                                 : Qt.rgba(1, 1, 1, 0.04))
+                    border.width: isSelected ? 2 : 1
+                    border.color: isSelected ? "#0A84FF" : Qt.rgba(1, 1, 1, 0.08)
+
+                    Behavior on color { ColorAnimation { duration: 140 } }
 
                     ColumnLayout {
                         anchors.fill: parent
-                        anchors.margins: 16
-                        spacing: 10
+                        anchors.margins: 14
+                        spacing: 8
 
                         RowLayout {
                             Layout.fillWidth: true
-                            spacing: 8
+                            spacing: 10
 
                             Rectangle {
-                                width: 28
-                                height: 28
-                                radius: 6
-                                color: Qt.rgba(modelData.color.r, modelData.color.g, modelData.color.b, 0.18)
-                                border.width: 1
-                                border.color: modelData.color
+                                width: 30
+                                height: 30
+                                radius: 7
+                                color: modelData.accentColor
                                 Text {
                                     anchors.centerIn: parent
                                     text: modelData.icon
-                                    color: modelData.color
-                                    font.family: TitanTheme.monoFamily
+                                    color: "#FFFFFF"
+                                    font.family: "JetBrainsMono Nerd Font"
                                     font.pixelSize: 13
                                 }
                             }
 
-                            Text {
-                                text: modelData.title
-                                color: TitanTheme.textHigh
-                                font.family: TitanTheme.fontFamily
-                                font.pixelSize: 13
-                                font.weight: Font.Bold
-                                Layout.fillWidth: true
+                            ColumnLayout {
+                                spacing: 1
+                                Text {
+                                    text: modelData.title
+                                    color: "#F5F5F7"
+                                    font.family: "Inter"
+                                    font.pixelSize: 13
+                                    font.weight: 600
+                                }
+                                Text {
+                                    text: modelData.badge
+                                    color: profCard.isSelected ? "#64D2FF" : "#8E8E93"
+                                    font.family: "Inter"
+                                    font.pixelSize: 10
+                                    font.weight: 500
+                                }
                             }
 
+                            Item { Layout.fillWidth: true }
+
+                            // macOS Radio Indicator
                             Rectangle {
-                                width: 14
-                                height: 14
-                                radius: 7
-                                color: profCard.isSelected ? modelData.color : "transparent"
-                                border.width: 1
-                                border.color: profCard.isSelected ? modelData.color : Qt.rgba(1, 1, 1, 0.25)
-                                Text {
+                                width: 16
+                                height: 16
+                                radius: 8
+                                color: profCard.isSelected ? "#0A84FF" : "transparent"
+                                border.width: 2
+                                border.color: profCard.isSelected ? "#0A84FF" : "#636366"
+
+                                Rectangle {
                                     visible: profCard.isSelected
                                     anchors.centerIn: parent
-                                    text: "\uf00c"
-                                    color: TitanTheme.crust
-                                    font.family: TitanTheme.monoFamily
-                                    font.pixelSize: 8
+                                    width: 6
+                                    height: 6
+                                    radius: 3
+                                    color: "#FFFFFF"
                                 }
                             }
                         }
 
                         Text {
                             text: modelData.desc
-                            color: TitanTheme.textLow
-                            font.family: TitanTheme.fontFamily
+                            color: "#98989D"
+                            font.family: "Inter"
                             font.pixelSize: 11
                             lineHeight: 1.3
                             Layout.fillWidth: true
@@ -257,8 +274,79 @@ Item {
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            tourCtrl.activeProfile = modelData.id;
+                        onClicked: tourCtrl.activeProfile = modelData.id
+                    }
+                }
+            }
+        }
+
+        // ── Bottom Quick Launch Bar ─────────────────────────────────────────
+        Rectangle {
+            Layout.fillWidth: true
+            implicitHeight: 44
+            radius: 10
+            color: Qt.rgba(1, 1, 1, 0.04)
+            border.width: 1
+            border.color: Qt.rgba(1, 1, 1, 0.07)
+
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 14
+                anchors.rightMargin: 12
+                spacing: 10
+
+                Text {
+                    text: "Quick Actions:"
+                    color: "#98989D"
+                    font.family: "Inter"
+                    font.pixelSize: 12
+                    font.weight: 500
+                }
+
+                Item { Layout.fillWidth: true }
+
+                Repeater {
+                    model: [
+                        { label: "Open Terminal",   icon: "\uf120", col: "#30D158", fn: function() { tourCtrl.launchTerminal(); } },
+                        { label: "Web Browser",     icon: "\uf268", col: "#0A84FF", fn: function() { tourCtrl.launchBrowser(); } },
+                        { label: "System Settings", icon: "\uf013", col: "#AEAEB2", fn: function() { tourCtrl.launchSettings(); } }
+                    ]
+
+                    Rectangle {
+                        implicitHeight: 28
+                        implicitWidth: actRow.implicitWidth + 18
+                        radius: 7
+                        color: actMouse.containsMouse ? "#38383D" : "#2A2A2E"
+                        border.width: 1
+                        border.color: Qt.rgba(1, 1, 1, 0.14)
+
+                        Row {
+                            id: actRow
+                            anchors.centerIn: parent
+                            spacing: 6
+                            Text {
+                                text: modelData.icon
+                                color: modelData.col
+                                font.family: "JetBrainsMono Nerd Font"
+                                font.pixelSize: 11
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+                            Text {
+                                text: modelData.label
+                                color: "#F5F5F7"
+                                font.family: "Inter"
+                                font.pixelSize: 11
+                                font.weight: 500
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+                        }
+
+                        MouseArea {
+                            id: actMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: modelData.fn()
                         }
                     }
                 }

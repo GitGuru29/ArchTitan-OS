@@ -1,296 +1,238 @@
 import QtQuick
 import QtQuick.Layouts
-import ArchTitan.TitanUI
 
 Item {
     id: root
+    signal jumpToSlide(int slideIndex)
+
+    readonly property var features: [
+        {
+            icon: "\uf108",
+            gradTop: "#2E9BFF",
+            gradBot: "#0066CC",
+            title: "Fluid Desktop & Control Center",
+            desc: "Workspaces, live media playback, and quick system settings live cleanly along the top edge of your screen.",
+            targetSlide: 1
+        },
+        {
+            icon: "\uf002",
+            gradTop: "#7D7AFF",
+            gradBot: "#4B48C8",
+            title: "Spotlight & Effortless Tiling",
+            desc: "Press Super + Space anytime to launch apps or search files, and tile windows automatically with simple shortcuts.",
+            targetSlide: 2
+        },
+        {
+            icon: "\uf2db",
+            gradTop: "#34D399",
+            gradBot: "#059669",
+            title: "Adaptive Hardware Intelligence",
+            desc: "Continuous CPU and memory protection prioritizes your active window so the desktop stays responsive under heavy load.",
+            targetSlide: 4
+        }
+    ]
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: 24
+        anchors.topMargin: 18
+        anchors.bottomMargin: 16
+        anchors.leftMargin: 48
+        anchors.rightMargin: 48
         spacing: 16
 
-        // ── Hero Section ────────────────────────────────────────────────────────
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: 18
+        // ── Centered Hero Emblem & Title (Apple Welcome Splash Style) ───────
+        ColumnLayout {
+            Layout.alignment: Qt.AlignHCenter
+            spacing: 8
 
-            // Logo with subtle ambient halo
             Item {
-                width: 54
-                height: 54
+                Layout.alignment: Qt.AlignHCenter
+                width: 72
+                height: 72
 
+                // Concentric outer squircle halo
                 Rectangle {
                     anchors.centerIn: parent
-                    width: 50
-                    height: 50
-                    radius: 25
-                    color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.12)
+                    width: 76
+                    height: 76
+                    radius: 20
+                    color: Qt.rgba(10/255, 132/255, 255/255, 0.10)
                     border.width: 1
-                    border.color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.3)
+                    border.color: Qt.rgba(10/255, 132/255, 255/255, 0.22)
                 }
 
-                Image {
+                // macOS App Icon Squircle
+                Rectangle {
                     anchors.centerIn: parent
-                    width: 32
-                    height: 32
-                    source: tourCtrl.logoUrl
-                    fillMode: Image.PreserveAspectFit
-                    mipmap: true
+                    width: 68
+                    height: 68
+                    radius: 17
+                    gradient: Gradient {
+                        GradientStop { position: 0.0; color: "#1E3A8A" }
+                        GradientStop { position: 0.5; color: "#172554" }
+                        GradientStop { position: 1.0; color: "#0B1120" }
+                    }
+                    border.width: 1
+                    border.color: Qt.rgba(1, 1, 1, 0.24)
+
+                    // Top inner specular highlight
+                    Rectangle {
+                        anchors.top: parent.top
+                        anchors.topMargin: 1
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        width: parent.width - 14
+                        height: 1
+                        color: Qt.rgba(1, 1, 1, 0.35)
+                    }
+
+                    Image {
+                        anchors.centerIn: parent
+                        width: 40
+                        height: 40
+                        source: tourCtrl.logoUrl
+                        fillMode: Image.PreserveAspectFit
+                        mipmap: true
+                    }
                 }
             }
 
-            ColumnLayout {
-                Layout.fillWidth: true
-                spacing: 2
+            Text {
+                Layout.alignment: Qt.AlignHCenter
+                text: "Welcome to ArchTitan"
+                color: "#F5F5F7"
+                font.family: "Inter"
+                font.pixelSize: 28
+                font.weight: Font.Bold
+            }
 
-                Text {
-                    text: "Welcome to ArchTitan OS"
-                    color: TitanTheme.textHigh
-                    font.family: TitanTheme.fontFamily
-                    font.pixelSize: 22
-                    font.weight: Font.Bold
-                }
-
-                Text {
-                    text: "A high-velocity, memory-guarded Linux desktop powered by Hyprland and C++20 daemons."
-                    color: TitanTheme.textMid
-                    font.family: TitanTheme.fontFamily
-                    font.pixelSize: 13
-                    Layout.fillWidth: true
-                    wrapMode: Text.WordWrap
-                }
+            Text {
+                Layout.alignment: Qt.AlignHCenter
+                text: "Get acquainted with your new desktop—crafted for effortless speed, fluid multitasking, and quiet intelligence."
+                color: "#98989D"
+                font.family: "Inter"
+                font.pixelSize: 13
+                horizontalAlignment: Text.AlignHCenter
+                Layout.maximumWidth: 560
+                wrapMode: Text.WordWrap
             }
         }
 
-        // ── Live Media Banner (shown only on live ISO) ──────────────────────────
-        Rectangle {
+        // ── 3 Apple "What's New" Feature Rows ───────────────────────────────
+        ColumnLayout {
+            Layout.alignment: Qt.AlignHCenter
             Layout.fillWidth: true
-            implicitHeight: 46
-            radius: 10
-            visible: tourCtrl.isLiveMode
-            color: Qt.rgba(TitanTheme.warning.r, TitanTheme.warning.g, TitanTheme.warning.b, 0.10)
-            border.width: 1
-            border.color: Qt.rgba(TitanTheme.warning.r, TitanTheme.warning.g, TitanTheme.warning.b, 0.35)
+            Layout.maximumWidth: 670
+            spacing: 10
 
-            RowLayout {
-                anchors.fill: parent
-                anchors.leftMargin: 14
-                anchors.rightMargin: 12
-                spacing: 12
-
-                Text {
-                    text: "\uf05a" // Info icon
-                    color: TitanTheme.warning
-                    font.family: TitanTheme.monoFamily
-                    font.pixelSize: 14
-                }
-
-                Text {
-                    text: "Live Media Mode: Test your hardware, audio, and Wi-Fi, or install ArchTitan to your SSD."
-                    color: TitanTheme.textHigh
-                    font.family: TitanTheme.fontFamily
-                    font.pixelSize: 12
-                    font.weight: Font.Medium
-                    Layout.fillWidth: true
-                }
+            Repeater {
+                model: root.features
 
                 Rectangle {
-                    implicitHeight: 28
-                    implicitWidth: liveBtnRow.implicitWidth + 16
-                    radius: 6
-                    color: liveMouse.containsMouse ? Qt.rgba(TitanTheme.warning.r, TitanTheme.warning.g, TitanTheme.warning.b, 0.3)
-                                                   : Qt.rgba(TitanTheme.warning.r, TitanTheme.warning.g, TitanTheme.warning.b, 0.18)
+                    id: featRow
+                    Layout.fillWidth: true
+                    implicitHeight: 68
+                    radius: 12
+                    color: rowMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.075)
+                                                  : Qt.rgba(1, 1, 1, 0.045)
                     border.width: 1
-                    border.color: Qt.rgba(TitanTheme.warning.r, TitanTheme.warning.g, TitanTheme.warning.b, 0.5)
+                    border.color: rowMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.15)
+                                                         : Qt.rgba(1, 1, 1, 0.07)
 
-                    Row {
-                        id: liveBtnRow
-                        anchors.centerIn: parent
-                        spacing: 6
-                        Text {
-                            text: "\uf019"
-                            color: TitanTheme.warning
-                            font.family: TitanTheme.monoFamily
-                            font.pixelSize: 10
-                            anchors.verticalCenter: parent.verticalCenter
+                    Behavior on color { ColorAnimation { duration: 140 } }
+
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: 16
+                        anchors.rightMargin: 16
+                        spacing: 16
+
+                        // macOS Colorful Squircle Icon
+                        Rectangle {
+                            width: 42
+                            height: 42
+                            radius: 10
+                            gradient: Gradient {
+                                GradientStop { position: 0.0; color: modelData.gradTop }
+                                GradientStop { position: 1.0; color: modelData.gradBot }
+                            }
+                            border.width: 1
+                            border.color: Qt.rgba(1, 1, 1, 0.28)
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: modelData.icon
+                                color: "#FFFFFF"
+                                font.family: "JetBrainsMono Nerd Font"
+                                font.pixelSize: 16
+                            }
                         }
-                        Text {
-                            text: "Launch Installer"
-                            color: TitanTheme.textHigh
-                            font.family: TitanTheme.fontFamily
-                            font.pixelSize: 11
-                            font.weight: Font.Bold
-                            anchors.verticalCenter: parent.verticalCenter
+
+                        // Feature Title & Description
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 3
+
+                            Text {
+                                text: modelData.title
+                                color: "#F5F5F7"
+                                font.family: "Inter"
+                                font.pixelSize: 14
+                                font.weight: 600
+                            }
+
+                            Text {
+                                text: modelData.desc
+                                color: "#98989D"
+                                font.family: "Inter"
+                                font.pixelSize: 12
+                                Layout.fillWidth: true
+                                wrapMode: Text.WordWrap
+                            }
+                        }
+
+                        // Subtle Explore Pill
+                        Rectangle {
+                            implicitHeight: 26
+                            implicitWidth: exploreRow.implicitWidth + 16
+                            radius: 13
+                            color: rowMouse.containsMouse ? Qt.rgba(10/255, 132/255, 255/255, 0.20)
+                                                          : Qt.rgba(1, 1, 1, 0.06)
+                            border.width: 1
+                            border.color: rowMouse.containsMouse ? "#0A84FF" : Qt.rgba(1, 1, 1, 0.10)
+
+                            Row {
+                                id: exploreRow
+                                anchors.centerIn: parent
+                                spacing: 5
+
+                                Text {
+                                    text: "Explore"
+                                    color: rowMouse.containsMouse ? "#64D2FF" : "#AEAEB2"
+                                    font.family: "Inter"
+                                    font.pixelSize: 11
+                                    font.weight: 600
+                                }
+
+                                Text {
+                                    text: "›"
+                                    color: rowMouse.containsMouse ? "#64D2FF" : "#AEAEB2"
+                                    font.family: "Inter"
+                                    font.pixelSize: 13
+                                    font.weight: Font.Bold
+                                }
+                            }
                         }
                     }
 
                     MouseArea {
-                        id: liveMouse
+                        id: rowMouse
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: tourCtrl.launchInstaller()
-                    }
-                }
-            }
-        }
-
-        // ── 3 Core Pillars (Bento Cards) ────────────────────────────────────────
-        RowLayout {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            spacing: 14
-
-            // Pillar 1: THM v3
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                radius: 12
-                color: Qt.rgba(TitanTheme.surface0.r, TitanTheme.surface0.g, TitanTheme.surface0.b, 0.6)
-                border.width: 1
-                border.color: Qt.rgba(1, 1, 1, 0.08)
-
-                ColumnLayout {
-                    anchors.fill: parent
-                    anchors.margins: 16
-                    spacing: 8
-
-                    Rectangle {
-                        width: 32
-                        height: 32
-                        radius: 8
-                        color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.16)
-                        border.width: 1
-                        border.color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.35)
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: "\uf2db" // Microchip
-                            color: TitanTheme.accent
-                            font.family: TitanTheme.monoFamily
-                            font.pixelSize: 14
+                        onClicked: {
+                            tourCtrl.playSound("tap");
+                            root.jumpToSlide(modelData.targetSlide);
                         }
-                    }
-
-                    Text {
-                        text: "Titan Hardware Manager"
-                        color: TitanTheme.textHigh
-                        font.family: TitanTheme.fontFamily
-                        font.pixelSize: 13
-                        font.weight: Font.Bold
-                    }
-
-                    Text {
-                        text: "Continuous Linux PSI engine with asymmetric cgroups v2. Reserves 25ms CPU headroom and protects interactive UI from memory thrashing."
-                        color: TitanTheme.textLow
-                        font.family: TitanTheme.fontFamily
-                        font.pixelSize: 11
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        wrapMode: Text.WordWrap
-                    }
-                }
-            }
-
-            // Pillar 2: TitanFocus & Zen
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                radius: 12
-                color: Qt.rgba(TitanTheme.surface0.r, TitanTheme.surface0.g, TitanTheme.surface0.b, 0.6)
-                border.width: 1
-                border.color: Qt.rgba(1, 1, 1, 0.08)
-
-                ColumnLayout {
-                    anchors.fill: parent
-                    anchors.margins: 16
-                    spacing: 8
-
-                    Rectangle {
-                        width: 32
-                        height: 32
-                        radius: 8
-                        color: Qt.rgba(TitanTheme.teal.r, TitanTheme.teal.g, TitanTheme.teal.b, 0.16)
-                        border.width: 1
-                        border.color: Qt.rgba(TitanTheme.teal.r, TitanTheme.teal.g, TitanTheme.teal.b, 0.35)
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: "\uf06e" // Eye / Focus
-                            color: TitanTheme.teal
-                            font.family: TitanTheme.monoFamily
-                            font.pixelSize: 14
-                        }
-                    }
-
-                    Text {
-                        text: "TitanFocus & HUDs"
-                        color: TitanTheme.textHigh
-                        font.family: TitanTheme.fontFamily
-                        font.pixelSize: 13
-                        font.weight: Font.Bold
-                    }
-
-                    Text {
-                        text: "Native C++20 Wayland status overlays, MPRIS dynamic media island, and distraction-free workflow timer summoned with Super+Alt+F."
-                        color: TitanTheme.textLow
-                        font.family: TitanTheme.fontFamily
-                        font.pixelSize: 11
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        wrapMode: Text.WordWrap
-                    }
-                }
-            }
-
-            // Pillar 3: Hyprland Speed
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                radius: 12
-                color: Qt.rgba(TitanTheme.surface0.r, TitanTheme.surface0.g, TitanTheme.surface0.b, 0.6)
-                border.width: 1
-                border.color: Qt.rgba(1, 1, 1, 0.08)
-
-                ColumnLayout {
-                    anchors.fill: parent
-                    anchors.margins: 16
-                    spacing: 8
-
-                    Rectangle {
-                        width: 32
-                        height: 32
-                        radius: 8
-                        color: Qt.rgba(TitanTheme.mauve.r, TitanTheme.mauve.g, TitanTheme.mauve.b, 0.16)
-                        border.width: 1
-                        border.color: Qt.rgba(TitanTheme.mauve.r, TitanTheme.mauve.g, TitanTheme.mauve.b, 0.35)
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: "\uf0e7" // Lightning
-                            color: TitanTheme.mauve
-                            font.family: TitanTheme.monoFamily
-                            font.pixelSize: 14
-                        }
-                    }
-
-                    Text {
-                        text: "Hyprland Tiling"
-                        color: TitanTheme.textHigh
-                        font.family: TitanTheme.fontFamily
-                        font.pixelSize: 13
-                        font.weight: Font.Bold
-                    }
-
-                    Text {
-                        text: "Fluid Wayland compositor with dynamic dwindle tree, multi-workspace routing, and instantaneous fuzzy spotlight launcher with Super+Space."
-                        color: TitanTheme.textLow
-                        font.family: TitanTheme.fontFamily
-                        font.pixelSize: 11
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        wrapMode: Text.WordWrap
                     }
                 }
             }

@@ -1,10 +1,9 @@
 import QtQuick
 import QtQuick.Layouts
-import ArchTitan.TitanUI
 
 Item {
     id: root
-    height: 52
+    height: 48
 
     property int currentSlide: 0
     property int totalSlides: 5
@@ -12,142 +11,197 @@ Item {
     signal closeClicked()
 
     readonly property var steps: [
-        { title: "Welcome",     icon: "\uf015" },
-        { title: "Navigation",  icon: "\uf009" },
-        { title: "Shortcuts",   icon: "\uf11c" },
-        { title: "Hardware",    icon: "\uf2db" },
-        { title: "Personalize", icon: "\uf03e" }
+        { title: "Welcome" },
+        { title: "Desktop Tour" },
+        { title: "Shortcuts" },
+        { title: "Appearance" },
+        { title: "Your System" }
     ]
 
-    // Allow moving the window by dragging the header
+    // Allow moving the window by dragging the titlebar
     DragHandler {
         target: null
         onActiveChanged: {
-            if (active && typeof window !== "undefined") {
-                window.startSystemMove();
+            if (active && typeof rootWindow !== "undefined") {
+                rootWindow.startSystemMove();
             }
         }
     }
 
-    // Bottom hairline separator
+    // Subtle macOS titlebar bottom divider
     Rectangle {
         anchors.bottom: parent.bottom
         anchors.left: parent.left
         anchors.right: parent.right
         height: 1
-        color: Qt.rgba(1, 1, 1, 0.07)
+        color: Qt.rgba(1, 1, 1, 0.06)
     }
 
     RowLayout {
         anchors.fill: parent
         anchors.leftMargin: 18
-        anchors.rightMargin: 14
-        spacing: 16
+        anchors.rightMargin: 18
+        spacing: 12
 
-        // Left: Emblem + OS Title + Live/Release Badge
-        RowLayout {
-            spacing: 10
-
-            Image {
-                width: 22
-                height: 22
-                source: tourCtrl.logoUrl
-                fillMode: Image.PreserveAspectFit
-                mipmap: true
-            }
-
-            Text {
-                text: "ArchTitan"
-                color: TitanTheme.textHigh
-                font.family: TitanTheme.fontFamily
-                font.pixelSize: 13
-                font.weight: Font.Bold
-                font.letterSpacing: 0.5
-            }
-
-            Rectangle {
-                radius: 4
-                implicitHeight: 18
-                implicitWidth: badgeText.implicitWidth + 8
-                color: tourCtrl.isLiveMode ? Qt.rgba(TitanTheme.warning.r, TitanTheme.warning.g, TitanTheme.warning.b, 0.16)
-                                           : Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.16)
-                border.width: 1
-                border.color: tourCtrl.isLiveMode ? Qt.rgba(TitanTheme.warning.r, TitanTheme.warning.g, TitanTheme.warning.b, 0.4)
-                                                  : Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.35)
-
-                Text {
-                    id: badgeText
-                    anchors.centerIn: parent
-                    text: tourCtrl.isLiveMode ? "LIVE MEDIA" : "v2026.11"
-                    color: tourCtrl.isLiveMode ? TitanTheme.warning : TitanTheme.accent
-                    font.family: TitanTheme.monoFamily
-                    font.pixelSize: 9
-                    font.weight: Font.Bold
-                }
-            }
-        }
-
-        Item { Layout.fillWidth: true }
-
-        // Center: Interactive Step Segmented Pills
+        // ── Left: Authentic macOS Traffic Lights ────────────────────────────
         Row {
-            spacing: 6
+            id: trafficRow
+            spacing: 8
             Layout.alignment: Qt.AlignVCenter
 
-            Repeater {
-                model: root.steps
+            property bool groupHovered: closeArea.containsMouse || minArea.containsMouse || maxArea.containsMouse
 
-                Rectangle {
-                    id: stepBtn
-                    property bool isCurrent: index === root.currentSlide
-                    property bool isPast: index < root.currentSlide
+            // Red: Close
+            Rectangle {
+                width: 12
+                height: 12
+                radius: 6
+                color: "#FF5F57"
+                border.width: 1
+                border.color: "#E0443E"
 
-                    implicitHeight: 26
-                    implicitWidth: stepRow.implicitWidth + 14
-                    radius: 13
+                Text {
+                    anchors.centerIn: parent
+                    text: "×"
+                    visible: trafficRow.groupHovered
+                    color: "#4D0000"
+                    font.family: "Inter"
+                    font.pixelSize: 10
+                    font.weight: Font.Bold
+                }
 
-                    color: isCurrent ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.18)
-                                     : (stepMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent")
-                    border.width: 1
-                    border.color: isCurrent ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.45)
-                                            : "transparent"
+                MouseArea {
+                    id: closeArea
+                    anchors.fill: parent
+                    anchors.margins: -3
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        tourCtrl.playSound("click");
+                        root.closeClicked();
+                    }
+                }
+            }
 
-                    Behavior on color { ColorAnimation { duration: 150 } }
+            // Yellow: Reset to Welcome
+            Rectangle {
+                width: 12
+                height: 12
+                radius: 6
+                color: "#FEBC2E"
+                border.width: 1
+                border.color: "#DEA123"
 
-                    Row {
-                        id: stepRow
-                        anchors.centerIn: parent
-                        spacing: 5
+                Text {
+                    anchors.centerIn: parent
+                    text: "−"
+                    visible: trafficRow.groupHovered
+                    color: "#5A3E00"
+                    font.family: "Inter"
+                    font.pixelSize: 10
+                    font.weight: Font.Bold
+                }
 
-                        // Status dot or icon
-                        Rectangle {
-                            width: 6
-                            height: 6
-                            radius: 3
-                            anchors.verticalCenter: parent.verticalCenter
-                            color: stepBtn.isCurrent ? TitanTheme.accent
-                                                     : (stepBtn.isPast ? TitanTheme.success : Qt.rgba(1, 1, 1, 0.25))
-                        }
+                MouseArea {
+                    id: minArea
+                    anchors.fill: parent
+                    anchors.margins: -3
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        tourCtrl.playSound("tap");
+                        root.slideRequested(0);
+                    }
+                }
+            }
+
+            // Green: Advance Slide
+            Rectangle {
+                width: 12
+                height: 12
+                radius: 6
+                color: "#28C840"
+                border.width: 1
+                border.color: "#1AAB29"
+
+                Text {
+                    anchors.centerIn: parent
+                    text: "+"
+                    visible: trafficRow.groupHovered
+                    color: "#004D0D"
+                    font.family: "Inter"
+                    font.pixelSize: 10
+                    font.weight: Font.Bold
+                }
+
+                MouseArea {
+                    id: maxArea
+                    anchors.fill: parent
+                    anchors.margins: -3
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        tourCtrl.playSound("tap");
+                        root.slideRequested((root.currentSlide + 1) % root.totalSlides);
+                    }
+                }
+            }
+        }
+
+        Item { Layout.fillWidth: true }
+
+        // ── Center: macOS Segmented Navigation Bar ──────────────────────────
+        Rectangle {
+            implicitHeight: 30
+            implicitWidth: navRow.implicitWidth + 6
+            radius: 8
+            color: Qt.rgba(1, 1, 1, 0.05)
+            border.width: 1
+            border.color: Qt.rgba(1, 1, 1, 0.07)
+
+            Row {
+                id: navRow
+                anchors.centerIn: parent
+                spacing: 2
+
+                Repeater {
+                    model: root.steps
+
+                    Rectangle {
+                        id: segPill
+                        property bool isCurrent: index === root.currentSlide
+
+                        implicitHeight: 24
+                        implicitWidth: segLabel.implicitWidth + 22
+                        radius: 6
+
+                        color: isCurrent ? "#3A3A3E"
+                                         : (segMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.05) : "transparent")
+                        border.width: isCurrent ? 0.5 : 0
+                        border.color: Qt.rgba(1, 1, 1, 0.14)
+
+                        Behavior on color { ColorAnimation { duration: 140 } }
 
                         Text {
+                            id: segLabel
+                            anchors.centerIn: parent
                             text: modelData.title
-                            color: stepBtn.isCurrent ? TitanTheme.accent
-                                                     : (stepBtn.isPast ? TitanTheme.textHigh : TitanTheme.textLow)
-                            font.family: TitanTheme.fontFamily
-                            font.pixelSize: 11
-                            font.weight: stepBtn.isCurrent ? Font.Bold : Font.Medium
-                            anchors.verticalCenter: parent.verticalCenter
+                            color: segPill.isCurrent ? "#F5F5F7"
+                                                     : (segMouse.containsMouse ? "#D1D1D6" : "#8E8E93")
+                            font.family: "Inter"
+                            font.pixelSize: 12
+                            font.weight: segPill.isCurrent ? 600 : 500
                         }
-                    }
 
-                    MouseArea {
-                        id: stepMouse
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            tourCtrl.playSound("tap");
-                            root.slideRequested(index);
+                        MouseArea {
+                            id: segMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                tourCtrl.playSound("tap");
+                                root.slideRequested(index);
+                            }
                         }
                     }
                 }
@@ -156,36 +210,31 @@ Item {
 
         Item { Layout.fillWidth: true }
 
-        // Right: Window Close Button (Circle with X)
-        Rectangle {
-            id: closeBtn
-            width: 28
-            height: 28
-            radius: 14
-            color: closeMouse.pressed ? Qt.rgba(TitanTheme.danger.r, TitanTheme.danger.g, TitanTheme.danger.b, 0.25)
-                                      : (closeMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.1) : Qt.rgba(1, 1, 1, 0.04))
-            border.width: 1
-            border.color: closeMouse.containsMouse ? Qt.rgba(TitanTheme.danger.r, TitanTheme.danger.g, TitanTheme.danger.b, 0.3)
-                                                   : Qt.rgba(1, 1, 1, 0.08)
+        // ── Right: Subtle Sound Toggle & Close Pill ─────────────────────────
+        Row {
+            spacing: 8
+            Layout.alignment: Qt.AlignVCenter
 
-            Behavior on color { ColorAnimation { duration: 120 } }
+            Rectangle {
+                width: 26
+                height: 26
+                radius: 6
+                color: sfxMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
 
-            Text {
-                anchors.centerIn: parent
-                text: "\uf00d" // Times / close icon
-                color: closeMouse.containsMouse ? TitanTheme.danger : TitanTheme.textLow
-                font.family: TitanTheme.monoFamily
-                font.pixelSize: 11
-            }
+                Text {
+                    anchors.centerIn: parent
+                    text: tourCtrl.soundFxEnabled ? "\uf028" : "\uf026"
+                    color: tourCtrl.soundFxEnabled ? "#98989D" : "#636366"
+                    font.family: "JetBrainsMono Nerd Font"
+                    font.pixelSize: 12
+                }
 
-            MouseArea {
-                id: closeMouse
-                anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: {
-                    tourCtrl.playSound("click");
-                    root.closeClicked();
+                MouseArea {
+                    id: sfxMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: tourCtrl.soundFxEnabled = !tourCtrl.soundFxEnabled
                 }
             }
         }

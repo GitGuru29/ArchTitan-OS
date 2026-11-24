@@ -1,5 +1,4 @@
 import QtQuick
-import ArchTitan.TitanUI
 
 Rectangle {
     id: root
@@ -7,33 +6,52 @@ Rectangle {
     property string text: ""
     property bool isAccent: false
 
-    implicitWidth: Math.max(26, label.implicitWidth + 12)
+    implicitWidth: Math.max(26, label.implicitWidth + 14)
     implicitHeight: 24
     radius: 6
 
-    color: isAccent ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.18)
-                    : Qt.rgba(TitanTheme.surface1.r, TitanTheme.surface1.g, TitanTheme.surface1.b, 0.75)
-    border.width: 1
-    border.color: isAccent ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.45)
-                           : Qt.rgba(1, 1, 1, 0.12)
+    gradient: Gradient {
+        GradientStop {
+            position: 0.0
+            color: root.isAccent ? "#1E3A5F" : "#3A3A3E"
+        }
+        GradientStop {
+            position: 1.0
+            color: root.isAccent ? "#152944" : "#2C2C30"
+        }
+    }
 
-    // Subtle bottom keycap shadow line
+    border.width: 1
+    border.color: root.isAccent ? "#3B82F6" : Qt.rgba(1, 1, 1, 0.16)
+
+    // Top inner keycap sheen
     Rectangle {
-        anchors.bottom: parent.bottom
+        anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.margins: 1
         height: 1
         radius: 1
-        color: Qt.rgba(0, 0, 0, 0.35)
+        color: Qt.rgba(1, 1, 1, 0.18)
+    }
+
+    // Bottom 3D bevel edge
+    Rectangle {
+        anchors.bottom: parent.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: 2
+        radius: 3
+        color: Qt.rgba(0, 0, 0, 0.45)
     }
 
     Text {
         id: label
         anchors.centerIn: parent
-        text: root.text
-        color: root.isAccent ? TitanTheme.accent : TitanTheme.textHigh
-        font.family: TitanTheme.monoFamily
+        anchors.verticalCenterOffset: -0.5
+        text: root.text === "SUPER" ? "⌘ Super" : root.text
+        color: root.isAccent ? "#64D2FF" : "#F5F5F7"
+        font.family: "Inter"
         font.pixelSize: 11
         font.weight: 600
     }
