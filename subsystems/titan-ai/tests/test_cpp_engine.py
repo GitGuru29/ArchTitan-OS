@@ -25,6 +25,16 @@ class GeminiHandler(BaseHTTPRequestHandler):
     def do_POST(self) -> None:  # noqa: N802 - BaseHTTPRequestHandler API
         length = int(self.headers.get("Content-Length", "0"))
         payload = json.loads(self.rfile.read(length) or b"{}")
+        if "quota-error" in json.dumps(payload):
+            body = json.dumps({
+                "error": {"code": 429, "message": "quota exceeded", "status": "RESOURCE_EXHAUSTED"}
+            }).encode()
+            self.send_response(429)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            return
         grounded = "tools" in payload
         candidate = {
             "content": {
@@ -131,6 +141,8 @@ class CppEngineTests(unittest.TestCase):
         self.assertIn("Generative Language API", result.stdout)
         self.assertIn("titan-ai auth google", result.stdout)
         self.assertIn("--setup", result.stdout)
+        self.assertIn("ABOUT GOOGLE SEARCH AND COST", result.stdout)
+        self.assertIn("Custom Search JSON", result.stdout)
 
     def test_auth_google_prompts_for_client_id(self) -> None:
         result = self.cli("auth", "google")
@@ -177,6 +189,13 @@ class CppEngineTests(unittest.TestCase):
         self.assertIn("[1]", result.stdout)
         self.assertIn("Sources:", result.stdout)
         self.assertIn("https://archlinux.org/about/", result.stdout)
+
+    def test_search_quota_error_explains_billing(self) -> None:
+        result = self.cli("search", "quota-error")
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("HTTP 429", result.stderr)
+        self.assertIn("Gemini Search grounding uses your Gemini/Cloud quota", result.stderr)
+        self.assertIn("aistudio.google.com/app/apikey", result.stderr)
 
     def test_links_only(self) -> None:
         result = self.cli("search", "--links", "Arch history")

@@ -192,4 +192,7 @@ subsystems/titan-ai/
 - Config and token files are created with `0600` in a `0700` directory.
 - `titan-ai config show` masks secrets.
 - API calls go directly from the user's session to the provider over HTTPS.
-- Search grounding may be billed by Google; check your provider quotas.
+- Search uses Gemini `google_search` grounding — the official Google path for new projects.
+  Gemini has a limited free tier; grounding may be billed separately. Google's Custom Search
+  JSON API is closed to new customers, and scraping search results is not used. Check quota
+  at https://aistudio.google.com/app/apikey and https://console.cloud.google.com/apis/dashboard.

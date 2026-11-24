@@ -973,9 +973,18 @@ static int cmd_search(const Args &args, tj::Value &cfg, const std::string &promp
         if (requested) provider = *requested;
     }
     if (provider != "gemini") throw TitanError("Google Search grounding is only available through Gemini (-p gemini)");
-    Result r = call_gemini(prompt, {}, options_for(args, cfg), cfg, args.model, true);
-    print_result(r, args.json, true, args.links);
-    return 0;
+    try {
+        Result r = call_gemini(prompt, {}, options_for(args, cfg), cfg, args.model, true);
+        print_result(r, args.json, true, args.links);
+        return 0;
+    } catch (const HttpError &e) {
+        if (e.status == 403 || e.status == 429)
+            std::cerr << dim("hint: Gemini Search grounding uses your Gemini/Cloud quota. "
+                             "Check https://aistudio.google.com/app/apikey and "
+                             "https://console.cloud.google.com/apis/dashboard; grounding "
+                             "may be billed separately on some models.") << "\n";
+        throw;
+    }
 }
 
 static int cmd_chat(const Args &args, tj::Value &cfg) {
@@ -1344,9 +1353,22 @@ API keys and are not part of this sign-in flow.
 
 4) FALLBACK: GEMINI API KEY
    Get a key from Google AI Studio, then run `titan-ai setup` and paste it at the
-   Gemini API key prompt, or export GEMINI_API_KEY. Search grounding may be billed.
+   Gemini API key prompt, or export GEMINI_API_KEY.
 
-5) TROUBLESHOOTING
+5) ABOUT GOOGLE SEARCH AND COST
+   `titan-ai search` uses Gemini's google_search grounding — the official Google
+   path for new projects. It returns an AI answer with real Google citations.
+   It is NOT a separate free "Google Search API": Google closed Custom Search JSON
+   API to new customers, and raw search scraping breaks Google's terms.
+
+   Gemini has a limited free tier; search grounding may be billed separately from
+   plain text generation on some models. Check quota and billing here:
+     https://aistudio.google.com/app/apikey
+     https://console.cloud.google.com/apis/dashboard
+
+   `titan-ai search --links QUERY` prints only the cited source URLs.
+
+6) TROUBLESHOOTING
    - "Google hasn't verified this app" is expected for a personal client:
      choose Advanced -> Continue.
    - access_denied: make sure your email is listed under Test users.
