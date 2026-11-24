@@ -216,6 +216,7 @@ int main(int argc, char *argv[])
     context->setContextProperty("systemCtrl", &systemCtrl);
     context->setContextProperty("networkCtrl", &netCtrl);
     context->setContextProperty("bluetoothCtrl", &btCtrl);
+    context->setContextProperty("btCtrl", &btCtrl);
     context->setContextProperty("audioCtrl", &audioCtrl);
     context->setContextProperty("nightLightCtrl", &nightCtrl);
     context->setContextProperty("notifServer", &notifServer);

@@ -105,8 +105,16 @@ public:
     // Detect the ActivityState of a single process.
     // Updates node.activity and node.idle_count in-place.
     // prev_children: the child set from the previous scan (used to detect change).
+    // Parse utime+stime from a full /proc/<pid>/stat line. Returns -1 on
+    // malformed input. Shared with the daemon's cached /proc refresh so the
+    // stat file is read once per tick, not once per consumer.
+    static long parse_cpu_ticks(const std::string& stat_line);
+
+    // `sampled_ticks` is the value already read by the daemon's refresh. When
+    // >= 0 it is used directly; -1 keeps the standalone fallback read.
     void detect(ProcessNode& node,
-                const std::vector<pid_t>& prev_children);
+                const std::vector<pid_t>& prev_children,
+                long sampled_ticks = -1);
 
     // Aggregate ActivityState across all PIDs of a workload.
     // A workload is EXECUTING if ANY member is EXECUTING.

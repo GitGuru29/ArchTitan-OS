@@ -36,6 +36,10 @@ struct TelemetryWorkload {
     long        mem_kb       = 0;     // summed RSS of member PIDs
     float       cpu_pct      = 0.0f;  // summed CPU% of member PIDs
     bool        observed     = false; // telemetry-only (no enforcement authority)
+    // v3.3 intent — shows why a workload landed in a particular CPU slice.
+    bool        latency_critical = false;
+    bool        throughput_bulk  = false;
+    bool        gpu_feeding      = false;
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -54,7 +58,7 @@ struct UnmanagedProc {
 // TelemetrySnapshot — full daemon state for one tick.
 // ─────────────────────────────────────────────────────────────────────────────
 struct TelemetrySnapshot {
-    std::string version     = "3.1.0";
+    std::string version     = "3.3.0";
     long long   timestamp_ms = 0;     // wall clock (epoch ms)
     long long   uptime_seconds = 0;
 
@@ -66,16 +70,48 @@ struct TelemetrySnapshot {
     long        mem_total_kb     = 0;
     long        mem_available_kb = 0;
 
-    // CPU pressure — telemetry only (HC-CPU-1: never drives a kill decision)
+    // Kernel-native memory orchestration (v3.3-R2)
+    long        background_memory_high_bytes = 0; // 0 == max
+    long        latency_memory_high_bytes    = 0; // 0 == max
+    long        protected_memory_low_bytes   = 0; // 0 == no protection
+    bool        memory_enforcement_active    = false;
+    bool        enforcement_degraded          = false;
+    bool        destructive_reclaim_enabled   = false;
+
+    // CPU pressure & asymmetric scheduling (HC-CPU-1: scheduling/headroom only, never kills)
+    std::string cpu_pressure_level       = "NORMAL";
+    std::string composite_pressure_level = "NORMAL";
     bool        cpu_psi_valid    = false;
     float       cpu_psi_avg10    = 0.0f;
     float       cpu_psi_avg60    = 0.0f;
     float       cpu_psi_avg300   = 0.0f;
+    float       cpu_psi_inst     = -1.0f; // per-tick PSI delta (-1 = unavailable)
     float       load1            = 0.0f;
     float       load5            = 0.0f;
     float       load15           = 0.0f;
+    float       load_ratio       = 0.0f;
+    int         online_cpus      = 1;
     int         runnable_procs   = 0;
     int         total_procs      = 0;
+    int         protected_cpu_weight   = 2000;
+    int         active_cpu_weight      = 500;
+    int         latency_cpu_weight     = 450;
+    int         background_cpu_weight  = 50;
+    float       background_cpu_max_pct = 100.0f;
+    bool        cpu_headroom_engaged   = false;
+    int         reserved_headroom_cores = 0; // v3.4 adaptive reservation (logical CPUs)
+    bool        smt_isolation_active    = false; // v3.5 whole-core placement in effect
+    int         isolated_physical_cores = 0;
+    std::string latency_cpuset;                  // e.g. "0,4,1,5"
+    std::string background_cpuset;               // e.g. "2,3,6,7"
+    bool        input_feedforward_active = false; // v3.6 short boost after real input
+    long        input_age_ms             = -1;    // age of last observed event
+    bool        background_cpu_idle    = false;
+    bool        unattended_lift        = false;
+    float       cpu_temp_c             = 0.0f;
+    unsigned long long bg_nr_periods   = 0;
+    unsigned long long bg_nr_throttled = 0;
+    unsigned long long bg_throttled_usec = 0;
 
     // Orchestration
     std::string governor = "schedutil";      // powersave|schedutil|performance

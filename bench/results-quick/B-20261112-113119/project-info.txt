@@ -1,0 +1,1 @@
+GENERATED_PROJECT dir=/bench/proj tus=6 chains=12 depth=512

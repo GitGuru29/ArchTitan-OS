@@ -11,13 +11,20 @@
 #include <algorithm>
 
 NetworkManager::NetworkManager(QObject *parent) : QObject(parent) {
-    refreshStatus();
-    scanNetworks();
+    m_connectedSsid = QStringLiteral("Disconnected");
+    m_isConnected = false;
+    m_wifiEnabled = true;
 
-    // Periodic auto-poll timer every 3 seconds
+    // Defer initial status refresh and network scan so constructor returns in <1ms
+    QTimer::singleShot(100, this, [this]() {
+        refreshStatus();
+        scanNetworks();
+    });
+
+    // Periodic auto-poll timer every 4 seconds
     m_pollTimer = new QTimer(this);
     connect(m_pollTimer, &QTimer::timeout, this, &NetworkManager::refreshStatus);
-    m_pollTimer->start(3000);
+    m_pollTimer->start(4000);
 
     // Periodic speed & ping timer every 1 second (Started on-demand)
     m_speedTimer = new QTimer(this);

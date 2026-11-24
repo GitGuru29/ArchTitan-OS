@@ -16,6 +16,7 @@
 // =============================================================================
 #include "../core/types.hpp"
 #include "../core/protected_registry.hpp"
+#include "../core/signal_utils.hpp"
 #include "../workload/ownership_graph.hpp"
 #include "../workload/workload_manager.hpp"
 #include "../classifier/fusion_classifier.hpp"
@@ -25,6 +26,8 @@
 #include "../enforcement/cgroup_controller.hpp"
 #include "../enforcement/enforcement_plane.hpp"
 #include "../resources/pressure_level.hpp"
+#include "../resources/smt_topology.hpp"
+#include "../resources/input_feedforward.hpp"
 #include "../ipc/workspace_monitor.hpp"
 #include "../ipc/telemetry_publisher.hpp"
 #include "../ipc/command_server.hpp"
@@ -39,8 +42,10 @@
 #include <algorithm>
 #include <sstream>
 #include <deque>
+#include <unordered_set>
 #include <iomanip>
 #include <ctime>
+#include <cstdlib>
 #include <unordered_set>
 #include <unistd.h>
 #include <sys/stat.h>
@@ -154,7 +159,7 @@ static pid_t resolve_tree_root(
                 break;
             }
             const auto& p = pit->second;
-            if (p.uid < 1000) break;
+            if (p.uid != uid || (uid < 1000 && p.ppid <= 2)) break;
             if (is_session_manager_comm(p.comm)) break;
             if (is_desktop_infra_comm(p.comm)) break;
             bool same_scope = has_scope && !p.cgroup.empty() && p.cgroup == scope;
@@ -171,7 +176,7 @@ static pid_t resolve_tree_root(
         // ensure best is not a session manager
         if (auto bit = graph.find(best); bit != graph.end()) {
             if (is_session_manager_comm(bit->second.comm)) return pid;
-            if (bit->second.uid < 1000) return pid;
+            if (bit->second.uid != uid) return pid;
         }
         return best;
     }
@@ -186,7 +191,7 @@ static pid_t resolve_tree_root(
         auto pit = graph.find(parent);
         if (pit == graph.end()) break;
         const auto& p = pit->second;
-        if (p.uid < 1000) break;
+        if (p.uid != uid || (uid < 1000 && p.ppid <= 2)) break;
         if (is_session_manager_comm(p.comm)) break;
         if (is_desktop_infra_comm(p.comm)) break;
         root = parent;
@@ -211,11 +216,37 @@ static std::string wall_clock_hms() {
 // ─────────────────────────────────────────────────────────────────────────────
 static std::string format_status(const thm::TelemetrySnapshot& s) {
     std::ostringstream o;
+    o << std::fixed << std::setprecision(1);
     o << "Titan Hardware Manager v" << s.version << "\n";
     o << "  Uptime:          " << s.uptime_seconds << "s\n";
-    o << "  Pressure:        " << s.pressure_level
+    o << "  Memory pressure: " << s.pressure_level
       << "  (PSI some " << s.psi_some_avg10
       << "% / full " << s.psi_full_avg10 << "%)\n";
+    o << "  CPU pressure:    " << s.cpu_pressure_level
+      << "  (PSI some " << s.cpu_psi_avg10
+      << "%, load_ratio " << std::setprecision(2) << s.load_ratio
+      << " across " << s.online_cpus << " CPUs)\n";
+    o << std::setprecision(1);
+    o << "  Slice weights:   P:" << s.protected_cpu_weight
+      << " / A:" << s.active_cpu_weight
+      << " / L:" << s.latency_cpu_weight
+      << " / B:" << s.background_cpu_weight << "\n";
+    o << "  BG headroom cap: ";
+    if (s.cpu_headroom_engaged)
+        o << s.background_cpu_max_pct << "%"
+          << (s.background_cpu_idle ? " + cpu.idle" : "")
+          << " (25ms CFS period, " << s.reserved_headroom_cores
+          << " core(s) reserved)\n";
+    if (s.smt_isolation_active)
+        o << "  SMT isolation:  " << s.isolated_physical_cores
+          << " physical core(s) | latency[" << s.latency_cpuset
+          << "] bg[" << s.background_cpuset << "]\n";
+    if (s.input_feedforward_active)
+        o << "Input boost:    active (last event " << s.input_age_ms << " ms ago)\n";
+    else if (s.unattended_lift)
+        o << "100.0% (auto-lifted: user idle >60s)\n";
+    else
+        o << "max (unconstrained)\n";
     o << "  Memory used:     " << s.mem_used_pct << "%"
       << "  (" << (s.mem_available_kb / 1024) << " MB free of "
       << (s.mem_total_kb / 1024) << " MB)\n";
@@ -318,18 +349,54 @@ static std::string format_top(const thm::TelemetrySnapshot& s, size_t n) {
 static std::string format_pressure(const thm::TelemetrySnapshot& s) {
     std::ostringstream o;
     o << std::fixed << std::setprecision(2);
-    o << "Pressure level:  " << s.pressure_level << "\n";
+    o << "Memory pressure: " << s.pressure_level << "\n";
+    o << "CPU pressure:    " << s.cpu_pressure_level
+      << "  (composite: " << s.composite_pressure_level << ")\n";
     o << "Memory PSI:      some " << s.psi_some_avg10
       << "%   full " << s.psi_full_avg10 << "%  (avg10)\n";
     o << "CPU PSI:         ";
-    if (s.cpu_psi_valid)
+    if (s.cpu_psi_valid) {
         o << "some " << s.cpu_psi_avg10 << "%  (avg60 "
           << s.cpu_psi_avg60 << "%, avg300 " << s.cpu_psi_avg300 << "%)";
-    else
+        if (s.cpu_psi_inst >= 0.0f)
+            o << "  tick=" << s.cpu_psi_inst << "%";
+    } else {
         o << "unavailable (/proc/pressure/cpu missing)";
+    }
     o << "\n";
     o << "Load average:    " << s.load1 << " " << s.load5 << " " << s.load15
-      << "   (" << s.runnable_procs << " runnable / " << s.total_procs << ")\n";
+      << "   (ratio " << s.load_ratio << " across " << s.online_cpus << " CPUs, "
+      << s.runnable_procs << " runnable / " << s.total_procs << ")\n";
+    o << "Slice weights:   protected=" << s.protected_cpu_weight
+      << "  active=" << s.active_cpu_weight
+      << "  latency=" << s.latency_cpu_weight
+      << "  background=" << s.background_cpu_weight << "\n";
+    o << "BG headroom cap: ";
+    if (s.cpu_headroom_engaged)
+        o << std::setprecision(1) << s.background_cpu_max_pct << "%  (25ms CFS period)"
+          << (s.background_cpu_idle ? "  cpu.idle=1" : "")
+          << "  reserved=" << s.reserved_headroom_cores << " core(s)\n";
+    if (s.smt_isolation_active)
+        o << "SMT isolation:  " << s.isolated_physical_cores
+          << " core(s) | latency[" << s.latency_cpuset
+          << "] bg[" << s.background_cpuset << "]\n";
+    if (s.input_feedforward_active)
+        o << "Input boost:    active (last event " << s.input_age_ms << " ms ago)\n";
+    else if (s.unattended_lift)
+        o << "max (auto-lifted: user idle >60s)\n";
+    else
+        o << "max (unconstrained)\n";
+    if (s.bg_nr_periods > 0) {
+        o << "BG throttling:   " << s.bg_nr_throttled << " / " << s.bg_nr_periods
+          << " periods throttled  ("
+          << std::setprecision(1)
+          << (100.0 * static_cast<double>(s.bg_nr_throttled) /
+              static_cast<double>(s.bg_nr_periods))
+          << "%), " << (s.bg_throttled_usec / 1000) << " ms lost\n";
+    }
+    o << std::setprecision(2);
+    if (s.cpu_temp_c > 0.0f)
+        o << "CPU temp:        " << std::setprecision(1) << s.cpu_temp_c << " C\n" << std::setprecision(2);
     o << "Memory used:     " << s.mem_used_pct << "%  ("
       << (s.mem_available_kb / 1024) << " MB free of "
       << (s.mem_total_kb / 1024) << " MB)\n";
@@ -363,8 +430,8 @@ static std::string format_pressure(const thm::TelemetrySnapshot& s) {
         o << "RAM used >= 50% -> MODERATE\n";
     else
         o << "all memory signals below thresholds -> NORMAL\n";
-    o << "Note:            CPU pressure is telemetry-only; it can never "
-         "produce RECLAIM (HC-CPU-1).\n";
+    o << "Note:            CPU pressure drives cpu.weight + cpu.max headroom only; "
+         "it can never produce FREEZE or RECLAIM (HC-CPU-1).\n";
     return o.str();
 }
 
@@ -475,106 +542,127 @@ static std::string format_explain(const thm::TelemetrySnapshot& s,
 // ─────────────────────────────────────────────────────────────────────────────
 // Build a fresh /proc snapshot (like v2 MemoryGraph::build())
 // ─────────────────────────────────────────────────────────────────────────────
-static void refresh_proc_graph(std::unordered_map<pid_t, thm::ProcessNode>& graph) {
-    graph.clear();
+// Cheap per-tick fields: one /proc/<pid>/stat read gives comm, state, ppid and
+// the utime+stime snapshot also consumed by ExecutionDetector.
+static bool read_stat_fields(const std::string& d, thm::ProcessNode& n) {
+    std::ifstream sf("/proc/" + d + "/stat");
+    std::string line;
+    if (!std::getline(sf, line)) return false;
+
+    size_t lp = line.find('('), rp = line.rfind(')');
+    if (lp == std::string::npos || rp == std::string::npos || rp <= lp) return false;
+    n.comm = line.substr(lp + 1, rp - lp - 1);
+    std::istringstream iss(line.substr(rp + 2));
+    iss >> n.proc_state >> n.ppid;
+
+    const long ticks = thm::ExecutionDetector::parse_cpu_ticks(line);
+    if (ticks >= 0) n.cpu_ticks = ticks;
+    return true;
+}
+
+// Expensive fields, needed only for new PIDs and refreshed at 1 Hz. Cached on
+// ProcessNode between full scans: cmdline/exe/cgroup/uid/sid do not change at
+// 5 Hz for the vast majority of processes.
+static void read_full_fields(const std::string& d, thm::ProcessNode& n) {
+    {
+        std::ifstream cf("/proc/" + d + "/cmdline", std::ios::binary);
+        std::string raw;
+        std::getline(cf, raw, '\0');
+        auto slash = raw.rfind('/');
+        n.cmdline = (slash != std::string::npos) ? raw.substr(slash + 1) : raw;
+    }
+    {
+        std::ifstream mf("/proc/" + d + "/statm");
+        long total_pages = 0, rss_pages = 0;
+        if (mf >> total_pages >> rss_pages)
+            n.rss_kb = rss_pages * 4; // 4 KB pages
+    }
+    {
+        struct stat st{};
+        if (::stat(("/proc/" + d).c_str(), &st) == 0)
+            n.uid = st.st_uid;
+    }
+    {
+        pid_t sid = ::getsid(n.pid);
+        if (sid >= 0) n.sid = sid;
+    }
+    {
+        char buf[4096];
+        const std::string exe_link = "/proc/" + d + "/exe";
+        ssize_t elen = readlink(exe_link.c_str(), buf, sizeof(buf) - 1);
+        if (elen > 0) {
+            buf[elen] = '\0';
+            std::string es(buf);
+            auto spd = es.find(" (deleted)");
+            if (spd != std::string::npos) es = es.substr(0, spd);
+            n.exe = std::move(es);
+        }
+    }
+    {
+        std::ifstream cf("/proc/" + d + "/cgroup");
+        std::string line;
+        while (std::getline(cf, line)) {
+            if (line.find(".scope") != std::string::npos ||
+                line.find("app.slice") != std::string::npos ||
+                line.find("user.slice") != std::string::npos) {
+                auto colon = line.rfind(':');
+                if (colon != std::string::npos && colon + 1 < line.size()) {
+                    n.cgroup = line.substr(colon + 1);
+                    break;
+                }
+            }
+        }
+        if (n.cgroup.empty()) {
+            cf.clear();
+            cf.seekg(0);
+            std::string last;
+            while (std::getline(cf, line)) {
+                auto colon = line.rfind(':');
+                if (colon != std::string::npos && colon + 1 < line.size())
+                    last = line.substr(colon + 1);
+            }
+            n.cgroup = last;
+        }
+    }
+}
+
+static void refresh_proc_graph(std::unordered_map<pid_t, thm::ProcessNode>& graph,
+                               bool full_refresh) {
+    // Directory enumeration is the only unavoidable per-tick /proc walk. All
+    // per-PID file reads below are gated by full_refresh for known PIDs.
+    std::vector<pid_t> live;
     for (const auto& entry : fs::directory_iterator("/proc")) {
         if (!entry.is_directory()) continue;
         const std::string d = entry.path().filename().string();
         if (!std::all_of(d.begin(), d.end(), ::isdigit)) continue;
         pid_t pid = 0;
         try { pid = static_cast<pid_t>(std::stoi(d)); } catch (...) { continue; }
-        if (pid <= 1) continue;
+        if (pid > 1) live.push_back(pid);
+    }
 
-        thm::ProcessNode n;
+    const std::unordered_set<pid_t> live_set(live.begin(), live.end());
+    for (auto it = graph.begin(); it != graph.end();) {
+        if (live_set.count(it->first) == 0) it = graph.erase(it);
+        else ++it;
+    }
+
+    for (pid_t pid : live) {
+        const std::string d = std::to_string(pid);
+        const bool is_new = (graph.find(pid) == graph.end());
+        thm::ProcessNode n = is_new ? thm::ProcessNode{} : graph[pid];
         n.pid = pid;
 
-        // Read comm, state, ppid from /proc/<pid>/stat
-        std::ifstream sf("/proc/" + d + "/stat");
-        std::string line;
-        if (std::getline(sf, line)) {
-            size_t lp = line.find('('), rp = line.rfind(')');
-            if (lp != std::string::npos && rp != std::string::npos) {
-                n.comm = line.substr(lp + 1, rp - lp - 1);
-                std::istringstream iss(line.substr(rp + 2));
-                iss >> n.proc_state >> n.ppid;
-            }
+        // A process that vanished between readdir and here is dropped.
+        if (!read_stat_fields(d, n)) {
+            if (!is_new) graph.erase(pid);
+            continue;
         }
-
-        // Read cmdline
-        {
-            std::ifstream cf("/proc/" + d + "/cmdline", std::ios::binary);
-            std::string raw;
-            std::getline(cf, raw, '\0');
-            auto slash = raw.rfind('/');
-            n.cmdline = (slash != std::string::npos) ? raw.substr(slash + 1) : raw;
-        }
-
-        // Read RSS from /proc/<pid>/statm (field 2, pages)
-        {
-            std::ifstream mf("/proc/" + d + "/statm");
-            long total_pages = 0, rss_pages = 0;
-            if (mf >> total_pages >> rss_pages)
-                n.rss_kb = rss_pages * 4; // 4 KB pages
-        }
-
-        // Ownership — one stat() syscall on /proc/<pid> gives the real UID.
-        // Used to keep observation mode scoped to interactive user apps.
-        {
-            struct stat st{};
-            if (::stat(("/proc/" + d).c_str(), &st) == 0)
-                n.uid = st.st_uid;
-        }
-
-        // Session ID for grouping
-        {
-            pid_t sid = ::getsid(pid);
-            if (sid >= 0) n.sid = sid;
-        }
-
-        // Exe + cgroup for smarter rooting/classification
-        {
-            char buf[4096];
-            std::string exe_link = "/proc/" + d + "/exe";
-            ssize_t elen = readlink(exe_link.c_str(), buf, sizeof(buf) - 1);
-            if (elen > 0) {
-                buf[elen] = '\0';
-                std::string es(buf);
-                auto spd = es.find(" (deleted)");
-                if (spd != std::string::npos) es = es.substr(0, spd);
-                n.exe = std::move(es);
-            }
-        }
-        {
-            std::ifstream cf("/proc/" + d + "/cgroup");
-            std::string line;
-            while (std::getline(cf, line)) {
-                if (line.find(".scope") != std::string::npos ||
-                    line.find("app.slice") != std::string::npos ||
-                    line.find("user.slice") != std::string::npos) {
-                    auto colon = line.rfind(':');
-                    if (colon != std::string::npos && colon + 1 < line.size()) {
-                        n.cgroup = line.substr(colon + 1);
-                        break;
-                    }
-                }
-            }
-            if (n.cgroup.empty()) {
-                cf.clear();
-                cf.seekg(0);
-                std::string last;
-                while (std::getline(cf, line)) {
-                    auto colon = line.rfind(':');
-                    if (colon != std::string::npos && colon + 1 < line.size())
-                        last = line.substr(colon + 1);
-                }
-                n.cgroup = last;
-            }
-        }
-
+        if (is_new || full_refresh) read_full_fields(d, n);
         graph[pid] = std::move(n);
     }
 
-    // Build child lists
+    // Build child lists (clear first: graph entries are reused now).
+    for (auto& [pid, node] : graph) { (void)pid; node.children.clear(); }
     for (auto& [pid, node] : graph) {
         if (node.ppid > 0 && graph.count(node.ppid))
             graph[node.ppid].children.push_back(pid);
@@ -611,8 +699,9 @@ static int startup_thaw_sweep() {
         if (proc_uid != my_uid) continue;      // not ours
         if (state != 'T' && state != 't') continue; // not stopped
 
-        // Issue SIGCONT to recover from previous crash
-        if (::kill(pid, SIGCONT) == 0) {
+        // Issue SIGCONT to recover from previous crash. Use the shared pidfd
+        // path so a recycled PID cannot receive another process's SIGCONT.
+        if (thm::signal_process(pid, SIGCONT) == thm::SignalResult::Signaled) {
             std::cout << "[THM] Startup thaw: sent SIGCONT to frozen PID " << pid << "\n";
             ++thawed;
         }
@@ -665,6 +754,15 @@ int main(int argc, char* argv[]) {
 
     // ── Configuration ────────────────────────────────────────────────────────
     const int tick_ms = 200; // 5 Hz tick rate
+
+    // v3.3-R3: destructive reclaim stays off until a real RAM-exhaustion
+    // benchmark proves the whole freeze/reclaim lifecycle. Opt in explicitly
+    // with THM_ALLOW_DESTRUCTIVE_RECLAIM=1.
+    const char* reclaim_env = std::getenv("THM_ALLOW_DESTRUCTIVE_RECLAIM");
+    const bool allow_destructive_reclaim =
+        reclaim_env != nullptr && std::string(reclaim_env) == "1";
+    if (allow_destructive_reclaim)
+        std::cout << "[THM] WARNING: destructive reclaim explicitly enabled.\n";
 
     // ── Phase 0: Protected Domain Registry ──────────────────────────────────
     thm::ProtectedRegistry registry;
@@ -725,6 +823,26 @@ int main(int argc, char* argv[]) {
 
     // ── Previous child sets for execution detection ─────────────────────────
     std::unordered_map<pid_t, std::vector<pid_t>> prev_children;
+
+    // CPU% from the PREVIOUS tick, available while classifying new processes
+    // (ExecutionDetector runs later in the tick, so node.cpu_pct is still 0
+    // during classification on a freshly rebuilt graph).
+    std::unordered_map<pid_t, float> last_cpu_pct;
+
+    // Slice currently assigned to each observed workload. Avoids rewriting
+    // cgroup.procs for every PID on every tick in steady state.
+    std::unordered_map<uint32_t, const char*> observed_slices;
+
+    // v3.4: 3-tick-confirmed adaptive headroom; avoids cpu.max flapping.
+    thm::AdaptiveHeadroomTracker headroom_tracker;
+
+    // v3.5: physical-core topology, discovered once when online_cpus is known.
+    thm::SmtTopology smt_topo;
+    thm::CpuIsolationState isolation_state;
+
+    // v3.6: non-blocking evdev monitor + 1.2 s input boost latch.
+    thm::InputDeviceMonitor input_monitor;
+    thm::InputFeedForwardTracker input_tracker;
 
     // Governor hint currently applied — feeds compute_governor's hysteresis band
     thm::GovernorHint current_gov = thm::GovernorHint::SCHEDUTIL;
@@ -828,7 +946,24 @@ int main(int argc, char* argv[]) {
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     std::cout << "[THM] Entering main tick loop (" << tick_ms << "ms interval)\n";
 
+    // Dual-signal CPU pressure controller: 15 ticks x 200ms = 3.0s release hysteresis
+    thm::CpuPressureController cpu_pressure_ctrl(15);
+    const int online_cpus        = thm::read_online_cpus();
+    float cpu_temp_c             = 0.0f;
+    bool  thermally_constrained  = false;
+    thm::PressureLevel prev_cpu_level  = thm::PressureLevel::NORMAL;
+    bool  prev_headroom_engaged  = false;
+    bool  prev_unattended_lift   = false;
+    bool  prev_bg_idle           = false;
+    std::string applied_gov      = "unknown";
+
+    // Wall time of the previous pressure sample — feeds the per-tick PSI delta
+    // fast path. Measured, not assumed: the tick can overrun under load.
+    auto last_pressure_ts = std::chrono::steady_clock::now();
+
     int tick_count = 0;
+    long long scan_us_total = 0;
+    int scan_ticks = 0;
     while (!g_shutdown) {
         if (max_ticks > 0 && ++tick_count > max_ticks) {
             std::cout << "[THM] Reached target tick count (" << max_ticks << "). Exiting cleanly.\n";
@@ -837,21 +972,38 @@ int main(int argc, char* argv[]) {
 
         auto tick_start = std::chrono::steady_clock::now();
 
+        // Cgroup health is the authority for any action that changes process
+        // state. If the hierarchy is not delegated, fall back to observation
+        // rather than issuing signals THM cannot safely audit.
+        const bool cgroup_ok = !dry_run && cgroup.hierarchy_healthy();
+
         // ── (a) Refresh /proc snapshot ──────────────────────────────────────
-        refresh_proc_graph(proc_graph);
+        // Fast path: one stat read per PID. Full metadata refresh at 1 Hz.
+        const bool full_proc_refresh = (tick_count % 5 == 0) || proc_graph.empty();
+        const auto scan_start = std::chrono::steady_clock::now();
+        refresh_proc_graph(proc_graph, full_proc_refresh);
+        scan_us_total += std::chrono::duration_cast<std::chrono::microseconds>(
+            std::chrono::steady_clock::now() - scan_start).count();
+        ++scan_ticks;
 
         // ── (b) Refresh workspace visibility ────────────────────────────────
         ws_monitor.refresh_visibility();
         auto workspaces = ws_monitor.snapshot_workspaces();
 
-        // ── (c) Read pressure ───────────────────────────────────────────────
-        thm::MemInfo    mem = thm::read_meminfo();
-        thm::PSIStats   psi = thm::read_memory_psi();
+        // ── (c) Read dual-signal pressure (Memory + CPU) ────────────────────
+        thm::MemInfo     mem     = thm::read_meminfo();
+        thm::PSIStats    psi     = thm::read_memory_psi();
         thm::CpuPSIStats cpu_psi = thm::read_cpu_psi();
         thm::LoadAverage loadavg = thm::read_loadavg();
-        // HC-CPU-1: compute_pressure() intentionally receives memory signals
-        // only. CPU pressure is read for telemetry but never escalates.
-        thm::PressureLevel pressure = thm::compute_pressure(mem, psi);
+        const auto pressure_now = std::chrono::steady_clock::now();
+        const long long pressure_elapsed_us =
+            std::chrono::duration_cast<std::chrono::microseconds>(
+                pressure_now - last_pressure_ts).count();
+        last_pressure_ts = pressure_now;
+        thm::SystemPressure sys_pressure = cpu_pressure_ctrl.evaluate(
+            mem, psi, cpu_psi, loadavg, online_cpus, pressure_elapsed_us);
+        // HC-CPU-1: memory plane receives strictly memory_plane_pressure(sys_pressure)
+        thm::PressureLevel pressure = thm::memory_plane_pressure(sys_pressure);
 
         // ── (d) Classify + assign new processes (observation-aware) ─────────
         // Counters feed the telemetry `processes` block and `titan-hwm scan`,
@@ -859,6 +1011,8 @@ int main(int argc, char* argv[]) {
         int processes_seen      = 0;
         int processes_protected = 0;
         int processes_assigned  = 0;
+        std::vector<pid_t> protected_pids;
+        protected_pids.reserve(64);
 
         // Cap observed workloads so a pathological fork storm cannot turn the
         // telemetry into an unbounded registry.
@@ -873,6 +1027,7 @@ int main(int argc, char* argv[]) {
             ++processes_seen;
             if (registry.is_protected(pid, node.comm)) {
                 ++processes_protected;
+                protected_pids.push_back(pid);
                 continue; // skip protected
             }
 
@@ -903,18 +1058,28 @@ int main(int argc, char* argv[]) {
                         auto ws_it = workspaces.find(ws_id);
                         if (ws_it != workspaces.end()) title = ws_it->second.active_window_title;
                         auto result = classifier.classify(pid, title, proc_graph);
-                        if (result.type != thm::WorkloadType::NEUTRAL) {
+                        // Intent alone can promote an observed workload: games
+                        // and headless training jobs have no window title, so
+                        // their WorkloadType often stays NEUTRAL.
+                        const bool has_intent = result.latency_critical ||
+                                                result.throughput_bulk ||
+                                                result.gpu_feeding;
+                        if (result.type != thm::WorkloadType::NEUTRAL || has_intent) {
                             wl->type          = result.type;
                             wl->confidence    = result.confidence;
                             wl->is_building   = result.is_building;
                             wl->has_lsp       = result.has_lsp;
                             wl->latency_sensitive = result.latency_sensitive;
                             wl->is_browser_root   = result.is_browser_root;
+                            wl->latency_critical  = result.latency_critical;
+                            wl->throughput_bulk   = result.throughput_bulk;
+                            wl->gpu_feeding       = result.gpu_feeding;
                             if (wl->observed) {
                                 std::cout << "[THM] Promoted observed workload " << wl->id
                                           << " (" << wl->root_cmdline << ") to "
                                           << thm::to_string(result.type) << "\n";
                                 wl->observed = false;
+                                observed_slices.erase(wl->id);
                             }
                             wl->root_cmdline  = node.cmdline;
                             wl->is_reclassifiable = false; // reset until next drift
@@ -956,7 +1121,12 @@ int main(int argc, char* argv[]) {
             }
 
             auto result = classifier.classify(pid, title, proc_graph);
-            if (result.type != thm::WorkloadType::NEUTRAL) {
+            // v3.3: a game / renderer / training job is worth managing even if
+            // no classic WorkloadType was inferred — the flags carry the intent.
+            const bool has_intent = result.latency_critical ||
+                                    result.throughput_bulk ||
+                                    result.gpu_feeding;
+            if (result.type != thm::WorkloadType::NEUTRAL || has_intent) {
                 thm::Workload wl;
                 wl.id               = next_workload_id++;
                 wl.type             = result.type;
@@ -965,6 +1135,9 @@ int main(int argc, char* argv[]) {
                 wl.is_building      = result.is_building;
                 wl.latency_sensitive = result.latency_sensitive;
                 wl.is_browser_root  = result.is_browser_root;  // HC-05/06
+                wl.latency_critical = result.latency_critical;
+                wl.throughput_bulk  = result.throughput_bulk;
+                wl.gpu_feeding      = result.gpu_feeding;
                 wl.is_reclassifiable = true;                   // HC-10: all new workloads eligible
                 wl.root_pid         = pid;
                 wl.root_cmdline     = node.cmdline.empty() ? node.comm
@@ -985,9 +1158,20 @@ int main(int argc, char* argv[]) {
                 if (root != pid)
                     continue;
 
-                // Only interactive user processes. Kernel threads and system
-                // daemons stay unmanaged by design.
-                if (node.uid < 1000) continue;
+                // Only interactive user processes or sustained high-CPU user-space
+                // jobs (e.g. sudo build/benchmark). Kernel threads (ppid==2 or
+                // empty cmdline) and system daemons stay unmanaged by design.
+                if (node.cgroup.find("archtitan-bench-") != std::string::npos) continue;
+                // Use the previous tick's measured CPU%: the current graph was
+                // just rebuilt, so node.cpu_pct is still zero here until
+                // ExecutionDetector runs later in this tick.
+                auto cpu_it = last_cpu_pct.find(pid);
+                const float prev_cpu_pct =
+                    (cpu_it == last_cpu_pct.end()) ? 0.0f : cpu_it->second;
+                const bool high_cpu_userspace =
+                    (pid > 2 && node.ppid > 2 && !node.cmdline.empty() &&
+                     prev_cpu_pct >= 50.0f);
+                if (node.uid < 1000 && !high_cpu_userspace) continue;
                 if (is_session_manager_comm(node.comm) ||
                     is_desktop_infra_comm(node.comm)) continue;
                 if (observed_count >= kMaxObserved) continue;
@@ -1040,8 +1224,11 @@ int main(int argc, char* argv[]) {
         // ── (e) Detect execution state per process + aggregate ──────────────
         for (auto& [pid, node] : proc_graph) {
             auto& prev = prev_children[pid];
-            detector.detect(node, prev);
+            // stat was already read by refresh_proc_graph this tick; passing
+            // the ticks avoids a second open/read per PID in the detector.
+            detector.detect(node, prev, node.cpu_ticks);
             prev = node.children; // snapshot for next tick
+            last_cpu_pct[pid] = node.cpu_pct; // reused by classification next tick
         }
 
         // ── (f) Drive state machine + evaluate policy + enforce ─────────────
@@ -1052,9 +1239,26 @@ int main(int argc, char* argv[]) {
             if (wl) all_workloads[id] = *wl;
         }
 
+        // v3.3-R2: aggregate RSS by memory-orchestration role. Hyprland IPC
+        // focus/visibility has already driven the state machine and policy by
+        // this point, so these are the *live* foreground/background sets.
+        long throttled_bg_rss_kb     = 0;
+        long throttled_latency_rss_kb = 0;
+        long protected_active_rss_kb = 0;
+
         for (uint32_t id : workload_mgr.all_ids()) {
             auto* wl = workload_mgr.get(id);
             if (!wl || wl->state == thm::WorkloadState::TERMINATED) continue;
+
+            // Fresh aggregate CPU% (ExecutionDetector ran in step (e)). This is
+            // the demand signal used by the governor and the observed-workload
+            // slice arbiter, so it must be computed before both.
+            float wl_cpu_pct = 0.0f;
+            for (pid_t p : wl->pids) {
+                auto pit = proc_graph.find(p);
+                if (pit != proc_graph.end()) wl_cpu_pct += pit->second.cpu_pct;
+            }
+            wl->cpu_pct = wl_cpu_pct;
 
             // Find workspace state
             static const thm::WorkspaceState default_ws{};
@@ -1068,12 +1272,40 @@ int main(int argc, char* argv[]) {
             // Drive state machine
             workload_mgr.tick(*wl, *ws, activity, pressure);
 
-            // Observation-only workloads have no enforcement authority. Skip
-            // the policy plane entirely: no cgroup moves, no signals, no
-            // governor contribution. This is belt-and-braces on top of the
-            // PolicyEngine guard.
-            if (wl->observed)
+            // Observation-only workloads never enter the memory/signal policy
+            // plane (no FREEZE, no RECLAIM, no memory.high throttle — TC-14/15).
+            // Under CPU pressure (>= MODERATE), however, actively executing
+            // observed workloads are assigned to SLICE_ACTIVE (if focused) or
+            // SLICE_BACKGROUND (if unfocused/headless) so unclassified CPU hogs
+            // still respect asymmetric cpu.weight and the CPU headroom cap.
+            if (wl->observed) {
+                // Unclassified but real CPU work (game, render, training) joins
+                // the managed hierarchy immediately instead of waiting for CPU
+                // pressure to reach MODERATE. No signal is ever involved.
+                bool to_active = false;
+                if (!dry_run &&
+                    thm::observed_slice_assignment(*wl, *ws, activity, to_active)) {
+                    bool in_bench = false;
+                    for (pid_t p : wl->pids) {
+                        auto pit = proc_graph.find(p);
+                        if (pit != proc_graph.end() &&
+                            pit->second.cgroup.find("archtitan-bench-") != std::string::npos) {
+                            in_bench = true;
+                            break;
+                        }
+                    }
+                    if (!in_bench) {
+                        const char* target = to_active ? thm::SLICE_ACTIVE
+                                                       : thm::SLICE_BACKGROUND;
+                        auto assigned = observed_slices.find(wl->id);
+                        if (assigned == observed_slices.end() || assigned->second != target) {
+                            if (cgroup.move_to_slice(wl->pids, target))
+                                observed_slices[wl->id] = target;
+                        }
+                    }
+                }
                 continue;
+            }
 
             // Evaluate policy
             thm::PolicyDecision decision = policy.evaluate(*wl, *ws, activity,
@@ -1088,6 +1320,19 @@ int main(int argc, char* argv[]) {
                 std::cout << "[DRY-RUN] Workload " << wl->id << " (" << wl->pids.size()
                           << " PIDs) -> Decision: " << (d_idx >= 0 && d_idx <= 4 ? dec_names[d_idx] : "UNKNOWN") << "\n";
             } else {
+                // Fail-closed gate: never signal or kill when cgroups are not
+                // writable, and require an explicit opt-in for RECLAIM.
+                const thm::PolicyDecision effective =
+                    thm::sanitize_decision(decision, cgroup_ok,
+                                           allow_destructive_reclaim);
+                if (effective != decision) {
+                    std::cerr << "[THM] Downgraded "
+                              << thm::to_string(decision) << " -> "
+                              << thm::to_string(effective)
+                              << " for workload " << wl->id << "\n";
+                }
+                decision = effective;
+
                 auto record_action = [&](thm::PolicyDecision d) {
                     const std::string dec = thm::to_string(d);
                     const bool changed = (dec != last_action ||
@@ -1122,19 +1367,204 @@ int main(int argc, char* argv[]) {
                         decision == thm::PolicyDecision::FREEZE) {
                         record_action(decision);
                     }
+
+                    // Feed the memory-orchestration math with this workload's
+                    // live RSS. RECLAIM is intentionally excluded: a job that
+                    // is being torn down must not receive a soft limit.
+                    long rss_kb = 0;
+                    for (pid_t p : wl->pids) {
+                        auto pit = proc_graph.find(p);
+                        if (pit != proc_graph.end()) rss_kb += pit->second.rss_kb;
+                    }
+                    if (decision == thm::PolicyDecision::THROTTLE) {
+                        if (wl->latency_critical || wl->gpu_feeding)
+                            throttled_latency_rss_kb += rss_kb;
+                        else
+                            throttled_bg_rss_kb += rss_kb;
+                    } else if (decision == thm::PolicyDecision::KEEP_FULL ||
+                               (decision == thm::PolicyDecision::KEEP_BACKGROUND &&
+                                wl->throughput_bulk)) {
+                        // Executing bulk work (compiler/render) is protected
+                        // with memory.low rather than a soft cap on its own
+                        // cgroup; reclaim pressure is aimed at throttled idle
+                        // work instead (v3.4-R2 regression fix).
+                        protected_active_rss_kb += rss_kb;
+                    }
                 }
             }
         }
 
+        // Periodically keep protected daemons (Hyprland, pipewire, wireplumber,
+        // waybar, dbus-broker, titan-shell, titan-focus) pinned in SLICE_PROTECTED.
+        if (!dry_run && (tick_count % 25 == 1) && !protected_pids.empty()) {
+            cgroup.move_to_slice(protected_pids, thm::SLICE_PROTECTED);
+        }
+
+        // ── (f2) Memory orchestration: kernel-native soft limits ────────────
+        // THROTTLE now means a real memory.high write, not just OOM exposure.
+        // The soft limit is scoped to archtitan-throttled.slice only; executing
+        // background work in archtitan-background.slice is never memory-capped.
+        // Protected/active work gets memory.soft protection so the kernel
+        // reclaims bulk slices first. All writes are change-detected, so a
+        // steady state costs zero cgroup syscalls.
+        long applied_bg_mem_high    = 0;
+        long applied_lat_mem_high   = 0;
+        long applied_prot_mem_low   = 0;
+        bool memory_enforcement_active = false;
+
+        if (cgroup_ok) {
+            static std::unordered_map<std::string, long> last_mem_high;
+            static std::unordered_map<std::string, long> last_mem_low;
+            bool all_ok = true;
+
+            auto apply_high = [&](const char* slice, long bytes, long& applied) {
+                auto it = last_mem_high.find(slice);
+                if (it == last_mem_high.end() || it->second != bytes) {
+                    if (cgroup.set_memory_high(slice, bytes)) {
+                        last_mem_high[slice] = bytes;
+                    } else {
+                        all_ok = false;
+                    }
+                }
+                applied = bytes;
+            };
+            auto apply_low = [&](const char* slice, long bytes, long& applied) {
+                auto it = last_mem_low.find(slice);
+                if (it == last_mem_low.end() || it->second != bytes) {
+                    if (cgroup.set_memory_low(slice, bytes)) {
+                        last_mem_low[slice] = bytes;
+                    } else {
+                        all_ok = false;
+                    }
+                }
+                applied = bytes;
+            };
+
+            apply_high(thm::SLICE_THROTTLED,
+                       thm::compute_memory_high_bytes(throttled_bg_rss_kb),
+                       applied_bg_mem_high);
+            apply_high(thm::SLICE_LATENCY,
+                       thm::compute_memory_high_bytes(throttled_latency_rss_kb),
+                       applied_lat_mem_high);
+
+            const long low_bytes = thm::compute_memory_low_bytes(
+                protected_active_rss_kb, mem.total_kb);
+            apply_low(thm::SLICE_ACTIVE, low_bytes, applied_prot_mem_low);
+            apply_low(thm::SLICE_PROTECTED, low_bytes, applied_prot_mem_low);
+            apply_low(thm::SLICE_BACKGROUND, low_bytes, applied_prot_mem_low);
+
+            memory_enforcement_active = all_ok;
+        }
+
+        // ── (f3) CPU arbitration plane (HC-CPU-1: scheduling/headroom only) ─
+        // Raw presence is refined after workload demand is collected: a game
+        // or GPU feeder with no recent input is still real foreground demand.
+        const bool raw_unattended = ws_monitor.user_unattended(thm::UNATTENDED_IDLE_SECONDS);
+        if (!smt_topo.valid()) smt_topo = thm::read_smt_topology(online_cpus);
+
+        // v3.6: real keyboard/mouse activity grants a short, bounded boost
+        // before PSI sees contention. In dry-run no devices are read.
+        const auto tick_now = thm::InputFeedForwardTracker::Clock::now();
+        const bool input_now = !dry_run && input_monitor.poll();
+        const bool input_hot = input_tracker.observe(input_now, tick_now);
+        thm::InputBoost input_boost;
+        input_boost.active = input_hot;
+
+        // v3.4: adaptive headroom from real workload demand. All signals are
+        // descriptive; only cpu.max/quota / cpuset is ever changed by this path.
+        thm::CpuDemandHint demand;
+        demand.cpu_temp_c   = cpu_temp_c; // sampled every 5 ticks in step (g)
+        demand.smt_siblings = smt_topo.has_smt();
+        for (uint32_t id : workload_mgr.all_ids()) {
+            const thm::Workload* wl = workload_mgr.get(id);
+            if (!wl || wl->observed) continue;
+            if (wl->state != thm::WorkloadState::ACTIVE &&
+                wl->state != thm::WorkloadState::BACKGROUND_EXECUTING) continue;
+            demand.foreground_cpu_pct += wl->cpu_pct;
+            if (wl->latency_critical) ++demand.latency_workloads;
+            if (wl->gpu_feeding)      ++demand.gpu_feeders;
+            if (wl->throughput_bulk)  ++demand.bulk_workloads;
+        }
+
+        // v3.7: an unattended interactive/GPU workload must not trip the
+        // "nobody is here" escape hatch. Bulk-only work (an unattended build)
+        // still gets the whole machine; games/benchmarks/data loaders do not.
+        const bool unattended_idle = thm::should_lift_unattended_cap(
+            raw_unattended, demand);
+
+        const int reserve_target = thm::compute_reserved_cores(
+            sys_pressure.cpu, online_cpus, unattended_idle, demand);
+        const int reserve_applied = headroom_tracker.update(
+            reserve_target, sys_pressure.cpu, unattended_idle);
+
+        thm::CpuSlicePolicy cpu_policy = dry_run
+            ? thm::compute_cpu_slice_policy(sys_pressure.cpu, online_cpus,
+                                            unattended_idle, &demand, reserve_applied)
+            : enforcement.apply_cpu_pressure_policy(sys_pressure.cpu, online_cpus,
+                                                    unattended_idle, &demand,
+                                                    reserve_applied, &input_boost);
+        if (dry_run && input_boost.active)
+            thm::apply_input_boost(cpu_policy, input_boost, online_cpus);
+
+        // v3.5: v3.3 intent plus SMT topology decide which physical cores the
+        // latency slices own. The bulk slice loses those cores' siblings so a
+        // compiler cannot steal execution units from a game / dataloader.
+        if (!dry_run) {
+            isolation_state = enforcement.apply_smt_isolation(
+                smt_topo, demand, sys_pressure.cpu, unattended_idle);
+        }
+
+        thm::CpuSliceStat bg_cpu_stat;
+        cgroup.read_cpu_stat(thm::SLICE_BACKGROUND, bg_cpu_stat);
+
+        if (sys_pressure.cpu != prev_cpu_level ||
+            cpu_policy.headroom_engaged != prev_headroom_engaged ||
+            cpu_policy.unattended_lift != prev_unattended_lift ||
+            cpu_policy.background_idle != prev_bg_idle) {
+            std::lock_guard<std::mutex> lk(snap_mutex);
+            std::ostringstream line;
+            line << wall_clock_hms()
+                 << "  cpu_pressure=" << thm::to_string(sys_pressure.cpu)
+                 << "  psi=" << std::fixed << std::setprecision(1) << sys_pressure.cpu_some_avg10 << "%";
+            if (sys_pressure.cpu_some_inst >= 0.0f)
+                line << " (tick " << std::setprecision(1) << sys_pressure.cpu_some_inst << "%)";
+            line << "  load_ratio=" << std::setprecision(2) << sys_pressure.load_ratio
+                 << "  weights=" << cpu_policy.protected_weight << "/"
+                 << cpu_policy.active_weight << "/" << cpu_policy.background_weight
+                 << "  bg_cap=" << (cpu_policy.headroom_engaged
+                                        ? (std::to_string(static_cast<int>(cpu_policy.background_max_pct)) + "%")
+                                        : (cpu_policy.unattended_lift ? "max(unattended)" : "max"))
+                 << (cpu_policy.background_idle ? " +idle" : "")
+                 << "  reserved=" << cpu_policy.reserved_cores;
+            decision_log.push_back(line.str());
+            if (decision_log.size() > kMaxDecisionLog)
+                decision_log.pop_front();
+            prev_cpu_level        = sys_pressure.cpu;
+            prev_headroom_engaged = cpu_policy.headroom_engaged;
+            prev_unattended_lift  = cpu_policy.unattended_lift;
+            prev_bg_idle          = cpu_policy.background_idle;
+        }
+
         // ── (g) Governor update ─────────────────────────────────────────────
+        // Sample thermal zones every 5 ticks (~1s) to veto PERFORMANCE under heat.
+        if (tick_count % 5 == 1) {
+            cpu_temp_c = thm::read_cpu_temp_c();
+            thermally_constrained = (cpu_temp_c >= 80.0f);
+        }
+
         // Prune reclaimed/exited worklets so the registry stays bounded to live
         // processes (unbounded registry retention is a slow memory leak).
         workload_mgr.prune_dead();
         auto gov = thm::WorkspaceMonitor::compute_governor(all_workloads, pressure,
-                                                           current_gov);
+                                                           current_gov,
+                                                           sys_pressure.cpu,
+                                                           thermally_constrained);
         current_gov = gov;
         if (!dry_run) {
-            thm::WorkspaceMonitor::apply_governor(gov);
+            const std::string applied = thm::WorkspaceMonitor::apply_governor(gov);
+            if (!applied.empty()) applied_gov = applied;
+        } else {
+            applied_gov = governor_to_string(gov);
         }
 
         // ── (h) Clean up dead processes ─────────────────────────────────────
@@ -1146,6 +1576,7 @@ int main(int argc, char* argv[]) {
             ownership.remove(pid);
             detector.remove_baseline(pid);
             prev_children.erase(pid);
+            last_cpu_pct.erase(pid);
         }
 
         // Drop exited members from each workload's pid list so it reflects the
@@ -1183,6 +1614,7 @@ int main(int argc, char* argv[]) {
         }
         for (uint32_t wl_id : expired) {
             workload_mgr.remove(wl_id);
+            observed_slices.erase(wl_id);
         }
 
         // ── (i) Publish telemetry snapshot ──────────────────────────────────
@@ -1198,17 +1630,47 @@ int main(int argc, char* argv[]) {
             snap.mem_used_pct    = mem.used_pct();
             snap.mem_total_kb     = mem.total_kb;
             snap.mem_available_kb = mem.available_kb;
+            snap.background_memory_high_bytes = applied_bg_mem_high;
+            snap.latency_memory_high_bytes    = applied_lat_mem_high;
+            snap.protected_memory_low_bytes   = applied_prot_mem_low;
+            snap.memory_enforcement_active    = memory_enforcement_active;
+            snap.enforcement_degraded         = !cgroup_ok && !dry_run;
+            snap.destructive_reclaim_enabled  = allow_destructive_reclaim;
+            snap.cpu_pressure_level       = thm::to_string(sys_pressure.cpu);
+            snap.composite_pressure_level = thm::to_string(sys_pressure.composite);
             snap.cpu_psi_valid  = cpu_psi.valid;
             snap.cpu_psi_avg10  = cpu_psi.some_avg10;
             snap.cpu_psi_avg60  = cpu_psi.some_avg60;
             snap.cpu_psi_avg300 = cpu_psi.some_avg300;
+            snap.cpu_psi_inst   = sys_pressure.cpu_some_inst;
             snap.load1          = loadavg.load1;
             snap.load5          = loadavg.load5;
             snap.load15         = loadavg.load15;
+            snap.load_ratio     = sys_pressure.load_ratio;
+            snap.online_cpus    = online_cpus;
             snap.runnable_procs = loadavg.running;
             snap.total_procs    = loadavg.total;
+            snap.protected_cpu_weight   = cpu_policy.protected_weight;
+            snap.active_cpu_weight      = cpu_policy.active_weight;
+            snap.background_cpu_weight  = cpu_policy.background_weight;
+            snap.latency_cpu_weight     = cpu_policy.latency_weight;
+            snap.background_cpu_max_pct = cpu_policy.background_max_pct;
+            snap.cpu_headroom_engaged   = cpu_policy.headroom_engaged;
+            snap.reserved_headroom_cores = cpu_policy.reserved_cores;
+            snap.smt_isolation_active    = isolation_state.active;
+            snap.isolated_physical_cores = isolation_state.reserved_physical_cores;
+            snap.latency_cpuset          = isolation_state.latency_cpus;
+            snap.background_cpuset       = isolation_state.background_cpus;
+            snap.input_feedforward_active = input_hot;
+            snap.input_age_ms             = input_tracker.age_ms(tick_now);
+            snap.background_cpu_idle    = cpu_policy.background_idle;
+            snap.unattended_lift        = cpu_policy.unattended_lift;
+            snap.cpu_temp_c             = cpu_temp_c;
+            snap.bg_nr_periods          = bg_cpu_stat.nr_periods;
+            snap.bg_nr_throttled        = bg_cpu_stat.nr_throttled;
+            snap.bg_throttled_usec      = bg_cpu_stat.throttled_usec;
 
-            snap.governor        = governor_to_string(current_gov);
+            snap.governor        = applied_gov;
             snap.workload_count  = static_cast<int>(workload_mgr.all_ids().size());
             snap.processes_seen      = processes_seen;
             snap.processes_protected = processes_protected;
@@ -1241,18 +1703,17 @@ int main(int argc, char* argv[]) {
                 tw.state        = thm::to_string(wl->state);
                 tw.pid_count    = static_cast<int>(wl->pids.size());
                 tw.observed     = wl->observed;
+                tw.latency_critical = wl->latency_critical;
+                tw.throughput_bulk  = wl->throughput_bulk;
+                tw.gpu_feeding      = wl->gpu_feeding;
 
-                long  mem_kb  = 0;
-                float cpu_pct = 0.0f;
+                long mem_kb = 0;
                 for (pid_t p : wl->pids) {
                     auto it = proc_graph.find(p);
-                    if (it != proc_graph.end()) {
-                        mem_kb  += it->second.rss_kb;
-                        cpu_pct += it->second.cpu_pct;
-                    }
+                    if (it != proc_graph.end()) mem_kb += it->second.rss_kb;
                 }
                 tw.mem_kb  = mem_kb;
-                tw.cpu_pct = cpu_pct;
+                tw.cpu_pct = wl->cpu_pct; // computed once in step (f)
 
                 if (wl->observed) snap.observed_workloads++;
                 else              snap.classified_workloads++;
@@ -1281,6 +1742,10 @@ int main(int argc, char* argv[]) {
     }
 
     // ── Shutdown ────────────────────────────────────────────────────────────
+    if (scan_ticks > 0)
+        std::cout << "[THM] /proc refresh: " << (scan_us_total / scan_ticks)
+                  << " us/tick avg over " << scan_ticks << " ticks ("
+                  << proc_graph.size() << " PIDs)\n";
     std::cout << "\n[THM] Shutdown initiated.\n";
 
     // Thaw all frozen processes before exiting

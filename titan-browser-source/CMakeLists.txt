@@ -16,8 +16,6 @@ qt_add_executable(titanbrowser
     src/browser.h
     src/tabwidget.cpp
     src/tabwidget.h
-    src/newtabwidget.cpp
-    src/newtabwidget.h
     src/settingswidget.cpp
     src/settingswidget.h
     src/addressbar.cpp

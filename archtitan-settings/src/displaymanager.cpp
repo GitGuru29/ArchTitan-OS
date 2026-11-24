@@ -4,9 +4,17 @@
 #include <QDir>
 #include <QTextStream>
 #include <QTimer>
+#include <QJsonDocument>
+#include <QJsonArray>
+#include <QJsonObject>
 
 DisplayManager::DisplayManager(QObject *parent) : QObject(parent) {
-    // Read initial brightness
+    m_resolution = QStringLiteral("1920x1080");
+    m_refreshRate = 60.0;
+    m_scaleFactor = 1.0;
+    m_brightness = 80;
+
+    // Fast sysfs read for brightness
     QFile bf(findBacklightPath() + "/brightness");
     QFile mf(findBacklightPath() + "/max_brightness");
     if (bf.open(QIODevice::ReadOnly) && mf.open(QIODevice::ReadOnly)) {
@@ -15,36 +23,35 @@ DisplayManager::DisplayManager(QObject *parent) : QObject(parent) {
         if (max > 0) m_brightness = cur * 100 / max;
     }
 
-    // Read resolution via hyprctl
-    QProcess p;
-    p.start("bash", {"-c", "hyprctl monitors -j 2>/dev/null | python3 -c \"import sys,json; m=json.load(sys.stdin)[0]; print(f'{m[\\\"width\\\"]}x{m[\\\"height\\\"]}')\" 2>/dev/null || echo '1920x1080'"});
-    p.waitForFinished(1000);
-    m_resolution = p.readAllStandardOutput().trimmed();
-    if (m_resolution.isEmpty()) m_resolution = "1920x1080";
+    // Defer hyprctl query so constructor finishes in < 1ms
+    QTimer::singleShot(50, this, [this]() {
+        QProcess p;
+        p.start("bash", {"-c", "hyprctl monitors -j 2>/dev/null"});
+        if (p.waitForFinished(500)) {
+            const QByteArray out = p.readAllStandardOutput().trimmed();
+            const QJsonDocument doc = QJsonDocument::fromJson(out);
+            if (doc.isArray() && !doc.array().isEmpty()) {
+                const QJsonObject mon = doc.array().first().toObject();
+                int w = mon.value("width").toInt(1920);
+                int h = mon.value("height").toInt(1080);
+                m_resolution = QString("%1x%2").arg(w).arg(h);
+                emit resolutionChanged();
 
-    QProcess rf;
-    rf.start("bash", {"-c", "hyprctl monitors -j 2>/dev/null | python3 -c \"import sys,json; m=json.load(sys.stdin)[0]; print(m['refreshRate'])\" 2>/dev/null || echo '60'"});
-    rf.waitForFinished(1000);
-    m_refreshRate = rf.readAllStandardOutput().trimmed().toDouble();
-    if (m_refreshRate < 1.0) m_refreshRate = 60.0;
+                double rr = mon.value("refreshRate").toDouble(60.0);
+                if (rr >= 1.0) {
+                    m_refreshRate = rr;
+                    emit refreshRateChanged();
+                }
 
-    // Read the *current* Hyprland scale so our slider initialises to the real value
-    // and doesn't overwrite it on startup.
-    QProcess sf;
-    sf.start("bash", {"-c",
-        "hyprctl monitors -j 2>/dev/null | python3 -c "
-        "\"import sys,json; m=json.load(sys.stdin)[0]; print(m['scale'])\" 2>/dev/null || echo '1'"
+                double s = mon.value("scale").toDouble(1.0);
+                if (s >= 0.5 && s <= 3.0) {
+                    m_scaleFactor = s;
+                    emit scaleFactorChanged();
+                }
+            }
+        }
+        m_initialized = true;
     });
-    sf.waitForFinished(1000);
-    QString scaleStr = sf.readAllStandardOutput().trimmed();
-    if (!scaleStr.isEmpty()) {
-        double s = scaleStr.toDouble();
-        if (s >= 0.5 && s <= 3.0) m_scaleFactor = s;
-    }
-
-    // Defer the initialized flag so QML bindings during the first frame
-    // don't trigger live hyprctl / system calls.
-    QTimer::singleShot(0, this, [this]{ m_initialized = true; });
 }
 
 QString DisplayManager::findBacklightPath() const {
@@ -77,7 +84,7 @@ void DisplayManager::setNightLightTemp(int v) {
     if (m_nightLightTemp == v) return;
     m_nightLightTemp = v;
     if (m_nightLightEnabled)
-        QProcess::startDetached("wlsunset", {"-T", QString::number(v)});
+        applyNightLight();
     emit nightLightTempChanged();
 }
 
@@ -85,9 +92,21 @@ bool DisplayManager::nightLightEnabled() const { return m_nightLightEnabled; }
 void DisplayManager::setNightLightEnabled(bool v) {
     if (m_nightLightEnabled == v) return;
     m_nightLightEnabled = v;
-    if (v) QProcess::startDetached("wlsunset", {"-T", QString::number(m_nightLightTemp)});
-    else   QProcess::startDetached("pkill", {"wlsunset"});
+    applyNightLight();
     emit nightLightEnabledChanged();
+}
+
+void DisplayManager::applyNightLight() {
+    // ArchTitan ships hyprsunset (not wlsunset). hyprsunset is a long-running
+    // daemon, so stop any previous instance before starting with the new
+    // temperature — otherwise temperature changes stack multiple instances.
+    if (!m_nightLightEnabled) {
+        QProcess::startDetached("bash", {"-c", "pkill -x hyprsunset 2>/dev/null || true"});
+        return;
+    }
+    QProcess::startDetached("bash", {"-c",
+        QStringLiteral("pkill -x hyprsunset 2>/dev/null; exec hyprsunset -t %1")
+            .arg(m_nightLightTemp)});
 }
 
 QString DisplayManager::resolution() const { return m_resolution; }

@@ -1,0 +1,400 @@
+Nov 12 06:02:24 archiso audit: PROCTITLE proctitle="(systemd)"
+Nov 12 06:02:24 archiso audit: BPF prog-id=72 op=LOAD
+Nov 12 06:02:24 archiso audit[787]: SYSCALL arch=c000003e syscall=321 success=yes exit=10 a0=5 a1=7ffec7be6560 a2=a8 a3=2 items=0 ppid=1 pid=787 auid=0 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=2 comm="systemd" exe="/usr/lib/systemd/systemd" key=(null)
+Nov 12 06:02:24 archiso audit: PROCTITLE proctitle="(systemd)"
+Nov 12 06:02:24 archiso audit: BPF prog-id=72 op=UNLOAD
+Nov 12 06:02:24 archiso audit[787]: SYSCALL arch=c000003e syscall=3 success=yes exit=0 a0=a a1=0 a2=0 a3=0 items=0 ppid=1 pid=787 auid=0 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=2 comm="systemd" exe="/usr/lib/systemd/systemd" key=(null)
+Nov 12 06:02:24 archiso audit: PROCTITLE proctitle="(systemd)"
+Nov 12 06:02:24 archiso audit: BPF prog-id=73 op=LOAD
+Nov 12 06:02:24 archiso audit[787]: SYSCALL arch=c000003e syscall=321 success=yes exit=11 a0=5 a1=7ffec7be61f0 a2=94 a3=7f815fd0d0e0 items=0 ppid=1 pid=787 auid=0 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=2 comm="systemd" exe="/usr/lib/systemd/systemd" key=(null)
+Nov 12 06:02:24 archiso audit: PROCTITLE proctitle="(systemd)"
+Nov 12 06:02:24 archiso audit: BPF prog-id=73 op=UNLOAD
+Nov 12 06:02:24 archiso audit[787]: SYSCALL arch=c000003e syscall=3 success=yes exit=0 a0=b a1=0 a2=0 a3=0 items=0 ppid=1 pid=787 auid=0 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=2 comm="systemd" exe="/usr/lib/systemd/systemd" key=(null)
+Nov 12 06:02:24 archiso audit: PROCTITLE proctitle="(systemd)"
+Nov 12 06:02:24 archiso audit: BPF prog-id=74 op=LOAD
+Nov 12 06:02:24 archiso audit[787]: SYSCALL arch=c000003e syscall=321 success=yes exit=11 a0=5 a1=7ffec7be6320 a2=a8 a3=7f815fd0d0e0 items=0 ppid=1 pid=787 auid=0 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=2 comm="systemd" exe="/usr/lib/systemd/systemd" key=(null)
+Nov 12 06:02:24 archiso audit: PROCTITLE proctitle="(systemd)"
+Nov 12 06:02:24 archiso audit: BPF prog-id=74 op=UNLOAD
+Nov 12 06:02:24 archiso audit[787]: SYSCALL arch=c000003e syscall=3 success=yes exit=0 a0=b a1=0 a2=0 a3=0 items=0 ppid=1 pid=787 auid=0 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=2 comm="systemd" exe="/usr/lib/systemd/systemd" key=(null)
+Nov 12 06:02:24 archiso audit: PROCTITLE proctitle="(systemd)"
+Nov 12 06:02:24 archiso audit: BPF prog-id=75 op=LOAD
+Nov 12 06:02:24 archiso audit[787]: SYSCALL arch=c000003e syscall=321 success=yes exit=11 a0=5 a1=7ffec7be6520 a2=a8 a3=7f815fd0d0e0 items=0 ppid=1 pid=787 auid=0 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=2 comm="systemd" exe="/usr/lib/systemd/systemd" key=(null)
+Nov 12 06:02:24 archiso audit: PROCTITLE proctitle="(systemd)"
+Nov 12 06:02:24 archiso audit: BPF prog-id=76 op=LOAD
+Nov 12 06:02:24 archiso audit[787]: SYSCALL arch=c000003e syscall=321 success=yes exit=12 a0=5 a1=7ffec7be6520 a2=a8 a3=7f815fd0d0e0 items=0 ppid=1 pid=787 auid=0 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=2 comm="systemd" exe="/usr/lib/systemd/systemd" key=(null)
+Nov 12 06:02:24 archiso audit: PROCTITLE proctitle="(systemd)"
+Nov 12 06:02:24 archiso audit: BPF prog-id=75 op=UNLOAD
+Nov 12 06:02:24 archiso audit[787]: SYSCALL arch=c000003e syscall=3 success=yes exit=0 a0=b a1=0 a2=0 a3=0 items=0 ppid=1 pid=787 auid=0 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=2 comm="systemd" exe="/usr/lib/systemd/systemd" key=(null)
+Nov 12 06:02:24 archiso audit: PROCTITLE proctitle="(systemd)"
+Nov 12 06:02:24 archiso audit: BPF prog-id=76 op=UNLOAD
+Nov 12 06:02:24 archiso audit[787]: SYSCALL arch=c000003e syscall=3 success=yes exit=0 a0=c a1=0 a2=0 a3=0 items=0 ppid=1 pid=787 auid=0 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=2 comm="systemd" exe="/usr/lib/systemd/systemd" key=(null)
+Nov 12 06:02:24 archiso audit: PROCTITLE proctitle="(systemd)"
+Nov 12 06:02:24 archiso audit: BPF prog-id=77 op=LOAD
+Nov 12 06:02:24 archiso audit[787]: SYSCALL arch=c000003e syscall=321 success=yes exit=10 a0=5 a1=7ffec7be6500 a2=a8 a3=2 items=0 ppid=1 pid=787 auid=0 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=2 comm="systemd" exe="/usr/lib/systemd/systemd" key=(null)
+Nov 12 06:02:24 archiso audit: PROCTITLE proctitle="(systemd)"
+Nov 12 06:02:24 archiso audit: BPF prog-id=77 op=UNLOAD
+Nov 12 06:02:24 archiso audit[787]: SYSCALL arch=c000003e syscall=3 success=yes exit=0 a0=a a1=0 a2=0 a3=0 items=0 ppid=1 pid=787 auid=0 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=2 comm="systemd" exe="/usr/lib/systemd/systemd" key=(null)
+Nov 12 06:02:24 archiso audit: PROCTITLE proctitle="(systemd)"
+Nov 12 06:02:24 archiso audit: BPF prog-id=78 op=LOAD
+Nov 12 06:02:24 archiso audit[787]: SYSCALL arch=c000003e syscall=321 success=yes exit=12 a0=5 a1=7ffec7be63b0 a2=a8 a3=5 items=0 ppid=1 pid=787 auid=0 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=2 comm="systemd" exe="/usr/lib/systemd/systemd" key=(null)
+Nov 12 06:02:24 archiso audit: PROCTITLE proctitle="(systemd)"
+Nov 12 06:02:24 archiso audit: BPF prog-id=78 op=UNLOAD
+Nov 12 06:02:24 archiso audit[787]: SYSCALL arch=c000003e syscall=3 success=yes exit=0 a0=c a1=0 a2=0 a3=0 items=0 ppid=1 pid=787 auid=0 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=2 comm="systemd" exe="/usr/lib/systemd/systemd" key=(null)
+Nov 12 06:02:24 archiso audit: PROCTITLE proctitle="(systemd)"
+Nov 12 06:02:24 archiso audit: BPF prog-id=79 op=LOAD
+Nov 12 06:02:24 archiso audit[787]: SYSCALL arch=c000003e syscall=321 success=yes exit=11 a0=5 a1=7ffec7be6380 a2=a8 a3=2 items=0 ppid=1 pid=787 auid=0 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=2 comm="systemd" exe="/usr/lib/systemd/systemd" key=(null)
+Nov 12 06:02:24 archiso audit: PROCTITLE proctitle="(systemd)"
+Nov 12 06:02:24 archiso audit: BPF prog-id=79 op=UNLOAD
+Nov 12 06:02:24 archiso audit[787]: SYSCALL arch=c000003e syscall=3 success=yes exit=0 a0=b a1=0 a2=0 a3=0 items=0 ppid=1 pid=787 auid=0 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=2 comm="systemd" exe="/usr/lib/systemd/systemd" key=(null)
+Nov 12 06:02:24 archiso audit: PROCTITLE proctitle="(systemd)"
+Nov 12 06:02:24 archiso audit: BPF prog-id=80 op=LOAD
+Nov 12 06:02:24 archiso audit[787]: SYSCALL arch=c000003e syscall=321 success=yes exit=11 a0=5 a1=7ffec7be64c0 a2=a8 a3=7f815fd0d0e0 items=0 ppid=1 pid=787 auid=0 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=2 comm="systemd" exe="/usr/lib/systemd/systemd" key=(null)
+Nov 12 06:02:24 archiso audit: PROCTITLE proctitle="(systemd)"
+Nov 12 06:02:24 archiso audit: BPF prog-id=81 op=LOAD
+Nov 12 06:02:24 archiso audit[787]: SYSCALL arch=c000003e syscall=321 success=yes exit=13 a0=5 a1=7ffec7be6370 a2=a8 a3=2 items=0 ppid=1 pid=787 auid=0 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=2 comm="systemd" exe="/usr/lib/systemd/systemd" key=(null)
+Nov 12 06:02:24 archiso audit: PROCTITLE proctitle="(systemd)"
+Nov 12 06:02:24 archiso audit: BPF prog-id=81 op=UNLOAD
+Nov 12 06:02:24 archiso audit[787]: SYSCALL arch=c000003e syscall=3 success=yes exit=0 a0=d a1=0 a2=0 a3=0 items=0 ppid=1 pid=787 auid=0 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=2 comm="systemd" exe="/usr/lib/systemd/systemd" key=(null)
+Nov 12 06:02:24 archiso audit: PROCTITLE proctitle="(systemd)"
+Nov 12 06:02:24 archiso audit: BPF prog-id=82 op=LOAD
+Nov 12 06:02:24 archiso audit[787]: SYSCALL arch=c000003e syscall=321 success=yes exit=12 a0=5 a1=7ffec7be64c0 a2=a8 a3=7f815fd0d0e0 items=0 ppid=1 pid=787 auid=0 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=2 comm="systemd" exe="/usr/lib/systemd/systemd" key=(null)
+Nov 12 06:02:24 archiso audit: PROCTITLE proctitle="(systemd)"
+Nov 12 06:02:24 archiso audit: BPF prog-id=80 op=UNLOAD
+Nov 12 06:02:24 archiso audit[787]: SYSCALL arch=c000003e syscall=3 success=yes exit=0 a0=b a1=0 a2=0 a3=0 items=0 ppid=1 pid=787 auid=0 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=2 comm="systemd" exe="/usr/lib/systemd/systemd" key=(null)
+Nov 12 06:02:24 archiso audit: PROCTITLE proctitle="(systemd)"
+Nov 12 06:02:24 archiso audit: BPF prog-id=82 op=UNLOAD
+Nov 12 06:02:24 archiso audit[787]: SYSCALL arch=c000003e syscall=3 success=yes exit=0 a0=c a1=0 a2=0 a3=0 items=0 ppid=1 pid=787 auid=0 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=2 comm="systemd" exe="/usr/lib/systemd/systemd" key=(null)
+Nov 12 06:02:24 archiso audit: PROCTITLE proctitle="(systemd)"
+Nov 12 06:02:24 archiso audit: BPF prog-id=83 op=LOAD
+Nov 12 06:02:24 archiso audit[787]: SYSCALL arch=c000003e syscall=321 success=yes exit=9 a0=5 a1=7ffec7be65f0 a2=a8 a3=2 items=0 ppid=1 pid=787 auid=0 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=2 comm="systemd" exe="/usr/lib/systemd/systemd" key=(null)
+Nov 12 06:02:24 archiso audit: PROCTITLE proctitle="(systemd)"
+Nov 12 06:02:24 archiso audit: BPF prog-id=83 op=UNLOAD
+Nov 12 06:02:24 archiso audit[787]: SYSCALL arch=c000003e syscall=3 success=yes exit=0 a0=9 a1=0 a2=0 a3=0 items=0 ppid=1 pid=787 auid=0 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=2 comm="systemd" exe="/usr/lib/systemd/systemd" key=(null)
+Nov 12 06:02:24 archiso audit: PROCTITLE proctitle="(systemd)"
+Nov 12 06:02:24 archiso audit: BPF prog-id=84 op=LOAD
+Nov 12 06:02:24 archiso audit[787]: SYSCALL arch=c000003e syscall=321 success=yes exit=10 a0=5 a1=7ffec7be65b0 a2=a8 a3=7f815fd0d0e0 items=0 ppid=1 pid=787 auid=0 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=2 comm="systemd" exe="/usr/lib/systemd/systemd" key=(null)
+Nov 12 06:02:24 archiso audit: PROCTITLE proctitle="(systemd)"
+Nov 12 06:02:24 archiso audit: BPF prog-id=84 op=UNLOAD
+Nov 12 06:02:24 archiso audit[787]: SYSCALL arch=c000003e syscall=3 success=yes exit=0 a0=a a1=0 a2=0 a3=0 items=0 ppid=1 pid=787 auid=0 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=2 comm="systemd" exe="/usr/lib/systemd/systemd" key=(null)
+Nov 12 06:02:24 archiso audit: PROCTITLE proctitle="(systemd)"
+Nov 12 06:02:24 archiso audit[711]: USER_AUTH pid=711 uid=0 auid=4294967295 ses=4294967295 msg='op=PAM:authentication grantors=pam_shells,pam_faillock,pam_permit,pam_faillock acct="root" exe="/usr/bin/login" hostname=archiso addr=? terminal=/dev/ttyS0 res=success'
+Nov 12 06:02:24 archiso login[711]: pam_unix(login:auth): user [root] has blank password; authenticated without it
+Nov 12 06:02:24 archiso audit[711]: USER_ACCT pid=711 uid=0 auid=4294967295 ses=4294967295 msg='op=PAM:accounting grantors=pam_access,pam_unix,pam_permit,pam_time acct="root" exe="/usr/bin/login" hostname=archiso addr=? terminal=/dev/ttyS0 res=success'
+Nov 12 06:02:24 archiso audit[711]: CRED_ACQ pid=711 uid=0 auid=4294967295 ses=4294967295 msg='op=PAM:setcred grantors=pam_shells,pam_faillock,pam_permit,pam_faillock acct="root" exe="/usr/bin/login" hostname=archiso addr=? terminal=/dev/ttyS0 res=success'
+Nov 12 06:02:24 archiso audit[711]: SYSCALL arch=c000003e syscall=1 success=yes exit=1 a0=4 a1=7ffedee3ed30 a2=1 a3=0 items=0 ppid=1 pid=711 auid=0 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=ttyS0 ses=3 comm="login" exe="/usr/bin/login" key=(null)
+Nov 12 06:02:24 archiso audit: PROCTITLE proctitle=2F62696E2F6C6F67696E002D2D
+Nov 12 06:02:24 archiso login[711]: pam_unix(login:session): session opened for user root(uid=0) by root(uid=0)
+Nov 12 06:02:24 archiso systemd-logind[600]: New session '3' of user 'root' with class 'user-early' and type 'tty'.
+Nov 12 06:02:25 archiso systemd[787]: Queued start job for default target Main User Target.
+Nov 12 06:02:25 archiso systemd[787]: Created slice User Application Slice.
+Nov 12 06:02:25 archiso systemd[787]: Created slice User Core Session Slice.
+Nov 12 06:02:25 archiso systemd[787]: Reached target Paths.
+Nov 12 06:02:25 archiso systemd[787]: Reached target Timers.
+Nov 12 06:02:25 archiso systemd[787]: Starting D-Bus User Message Bus Socket...
+Nov 12 06:02:25 archiso systemd[787]: Listening on GnuPG network certificate management daemon.
+Nov 12 06:02:25 archiso systemd[787]: Listening on GnuPG cryptographic agent and passphrase cache (access for web browsers).
+Nov 12 06:02:25 archiso systemd[787]: Listening on GnuPG cryptographic agent and passphrase cache (restricted).
+Nov 12 06:02:25 archiso systemd[787]: Listening on GnuPG cryptographic agent (ssh-agent emulation).
+Nov 12 06:02:25 archiso systemd[787]: Listening on GnuPG cryptographic agent and passphrase cache.
+Nov 12 06:02:25 archiso systemd[787]: Listening on GnuPG public key management service.
+Nov 12 06:02:25 archiso systemd[787]: Listening on p11-kit server.
+Nov 12 06:02:25 archiso systemd[787]: PipeWire PulseAudio skipped, unmet condition check ConditionUser=!root
+Nov 12 06:02:25 archiso systemd[787]: PipeWire Multimedia System Sockets skipped, unmet condition check ConditionUser=!root
+Nov 12 06:02:25 archiso systemd[787]: Listening on Query the User Interactively for a Password.
+Nov 12 06:02:25 archiso systemd[787]: Listening on Disk Image Download Service Socket.
+Nov 12 06:02:25 archiso systemd[787]: Listening on Journal Log Access Socket.
+Nov 12 06:02:25 archiso systemd[787]: Listening on Virtual Machine and Container Registration Service Socket.
+Nov 12 06:02:25 archiso systemd[787]: Listening on Simple File System Backed Storage Provider.
+Nov 12 06:02:25 archiso systemd[787]: Listening on D-Bus User Message Bus Socket.
+Nov 12 06:02:25 archiso systemd[787]: Reached target Sockets.
+Nov 12 06:02:25 archiso systemd[787]: Starting D-Bus User Message Bus...
+Nov 12 06:02:25 archiso dbus-broker-launch[818]: Service file '/usr/share/dbus-1/services/org.erikreider.swaync.service' is not named after the D-Bus name 'org.freedesktop.Notifications'.
+Nov 12 06:02:25 archiso systemd[787]: Started D-Bus User Message Bus.
+Nov 12 06:02:25 archiso dbus-broker-launch[818]: Policy to allow eavesdropping in /usr/share/dbus-1/session.conf +31: Eavesdropping is deprecated and ignored
+Nov 12 06:02:25 archiso dbus-broker-launch[818]: Policy to allow eavesdropping in /usr/share/dbus-1/session.conf +33: Eavesdropping is deprecated and ignored
+Nov 12 06:02:25 archiso systemd[787]: Reached target Basic System.
+Nov 12 06:02:25 archiso systemd[787]: PipeWire Multimedia Service skipped, unmet condition check ConditionUser=!root
+Nov 12 06:02:25 archiso systemd[787]: wireplumber.service: Bound to unit pipewire.service, but unit isn't active.
+Nov 12 06:02:25 archiso systemd[787]: Dependency failed for Multimedia Service Session Manager.
+Nov 12 06:02:25 archiso systemd[787]: wireplumber.service: Job wireplumber.service/start failed with result 'dependency'.
+Nov 12 06:02:25 archiso audit[1]: SERVICE_START pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=user@0 comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+Nov 12 06:02:25 archiso systemd[787]: PipeWire PulseAudio skipped, unmet condition check ConditionUser=!root
+Nov 12 06:02:25 archiso systemd[787]: Reached target Main User Target.
+Nov 12 06:02:25 archiso systemd[787]: Startup finished in 1.495s.
+Nov 12 06:02:25 archiso systemd[1]: Started User Manager for UID 0.
+Nov 12 06:02:25 archiso systemd[1]: Started Session 1 of User root.
+Nov 12 06:02:25 archiso systemd[1]: Started Session 3 of User root.
+Nov 12 06:02:25 archiso audit[770]: USER_START pid=770 uid=0 auid=0 ses=1 msg='op=PAM:session_open grantors=pam_loginuid,pam_keyinit,pam_systemd_home,pam_limits,pam_unix,pam_permit,pam_lastlog2,pam_mail,pam_umask,pam_systemd,pam_env acct="root" exe="/usr/bin/login" hostname=archiso addr=? terminal=/dev/tty1 res=success'
+Nov 12 06:02:25 archiso audit[770]: CRED_REFR pid=770 uid=0 auid=0 ses=1 msg='op=PAM:setcred grantors=pam_shells,pam_faillock,pam_permit,pam_env,pam_faillock acct="root" exe="/usr/bin/login" hostname=archiso addr=? terminal=/dev/tty1 res=success'
+Nov 12 06:02:25 archiso audit[711]: USER_START pid=711 uid=0 auid=0 ses=3 msg='op=PAM:session_open grantors=pam_loginuid,pam_keyinit,pam_systemd_home,pam_limits,pam_unix,pam_permit,pam_lastlog2,pam_mail,pam_umask,pam_systemd,pam_env acct="root" exe="/usr/bin/login" hostname=archiso addr=? terminal=/dev/ttyS0 res=success'
+Nov 12 06:02:25 archiso dbus-broker-launch[818]: Ready
+Nov 12 06:02:25 archiso audit[711]: CRED_REFR pid=711 uid=0 auid=0 ses=3 msg='op=PAM:setcred grantors=pam_shells,pam_faillock,pam_permit,pam_faillock acct="root" exe="/usr/bin/login" hostname=archiso addr=? terminal=/dev/ttyS0 res=success'
+Nov 12 06:02:25 archiso login[770]: ROOT LOGIN ON tty1
+Nov 12 06:02:25 archiso login[711]: DIALUP AT ttyS0 BY root
+Nov 12 06:02:25 archiso login[711]: ROOT LOGIN ON ttyS0
+Nov 12 06:02:25 archiso pacman-key[689]: gpg: directory '/etc/pacman.d/gnupg/openpgp-revocs.d' created
+Nov 12 06:02:26 archiso pacman-key[689]: gpg: revocation certificate stored as '/etc/pacman.d/gnupg/openpgp-revocs.d/D293C42B3766D697F2F5F1AF51AC81BCC421F8C8.rev'
+Nov 12 06:02:26 archiso pacman-key[689]: gpg: Done
+Nov 12 06:02:26 archiso pacman-key[598]: ==> Updating trust database...
+Nov 12 06:02:26 archiso pacman-key[830]: gpg: marginals needed: 3  completes needed: 1  trust model: pgp
+Nov 12 06:02:26 archiso pacman-key[830]: gpg: depth: 0  valid:   1  signed:   0  trust: 0-, 0q, 0n, 0m, 0f, 1u
+Nov 12 06:02:26 archiso pacman-key[832]: ==> Appending keys from archlinux.gpg...
+Nov 12 06:02:31 archiso systemd-resolved[476]: Using degraded feature set TCP instead of UDP for DNS server 10.0.2.3.
+Nov 12 06:02:31 archiso systemd-resolved[476]: Using degraded feature set UDP instead of TCP for DNS server 10.0.2.3.
+Nov 12 06:02:32 archiso kernel: EXT4-fs (vdb): mounted filesystem ca6c415c-e300-4bef-acf7-db3a5c2d5ca2 r/w with ordered data mode. Quota mode: none.
+Nov 12 06:02:33 archiso systemd[1]: Stopping Titan Hardware Manager v3 (ArchTitan Workload Daemon)...
+Nov 12 06:02:33 archiso titan-hwm-daemon[603]: [THM] Shutdown initiated.
+Nov 12 06:02:33 archiso titan-hwm-daemon[603]: [THM] Clean shutdown complete.
+Nov 12 06:02:33 archiso systemd[1]: titan-hwm.service: Deactivated successfully.
+Nov 12 06:02:33 archiso systemd[1]: Stopped Titan Hardware Manager v3 (ArchTitan Workload Daemon).
+Nov 12 06:02:33 archiso audit[1]: SERVICE_STOP pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=titan-hwm comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+Nov 12 06:02:33 archiso systemd[1]: titan-hwm.service: Consumed 8.251s CPU time over 18.347s wall clock time, 4.5M memory peak.
+Nov 12 06:02:33 archiso kernel: kauditd_printk_skb: 103 callbacks suppressed
+Nov 12 06:02:33 archiso kernel: audit: type=1131 audit(1794463353.223:114): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=titan-hwm comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+Nov 12 06:02:33 archiso systemd[1]: Reload requested from client PID 1001 ('systemctl') (unit session-3.scope)...
+Nov 12 06:02:33 archiso systemd[1]: Reloading...
+Nov 12 06:02:33 archiso systemd-resolved[476]: Using degraded feature set TCP instead of UDP for DNS server 10.0.2.3.
+Nov 12 06:02:33 archiso systemd-resolved[476]: Using degraded feature set UDP instead of TCP for DNS server 10.0.2.3.
+Nov 12 06:02:33 archiso systemd-resolved[476]: Using degraded feature set TCP instead of UDP for DNS server 10.0.2.3.
+Nov 12 06:02:33 archiso systemd-resolved[476]: Using degraded feature set UDP instead of TCP for DNS server 10.0.2.3.
+Nov 12 06:02:33 archiso systemd-resolved[476]: Using degraded feature set TCP instead of UDP for DNS server 10.0.2.3.
+Nov 12 06:02:33 archiso systemd-resolved[476]: Using degraded feature set UDP instead of TCP for DNS server 10.0.2.3.
+Nov 12 06:02:33 archiso systemd-resolved[476]: Using degraded feature set TCP instead of UDP for DNS server 10.0.2.3.
+Nov 12 06:02:33 archiso systemd-resolved[476]: Using degraded feature set UDP instead of TCP for DNS server 10.0.2.3.
+Nov 12 06:02:33 archiso systemd-resolved[476]: Using degraded feature set TCP instead of UDP for DNS server 10.0.2.3.
+Nov 12 06:02:33 archiso systemd-resolved[476]: Using degraded feature set UDP instead of TCP for DNS server 10.0.2.3.
+Nov 12 06:02:35 archiso systemd[1]: /etc/systemd/system/archtitan.slice:8: Support for option CPUAccounting= has been removed and it is ignored
+Nov 12 06:02:35 archiso systemd[1]: /etc/systemd/system/archtitan.slice:17: Delegate= setting not supported for this unit type, ignoring.
+Nov 12 06:02:35 archiso systemd[1]: Reloading finished in 2360 ms.
+Nov 12 06:02:35 archiso audit: BPF prog-id=85 op=LOAD
+Nov 12 06:02:35 archiso audit: BPF prog-id=50 op=UNLOAD
+Nov 12 06:02:35 archiso audit: BPF prog-id=86 op=LOAD
+Nov 12 06:02:35 archiso audit: BPF prog-id=87 op=LOAD
+Nov 12 06:02:35 archiso kernel: audit: type=1334 audit(1794463355.722:115): prog-id=85 op=LOAD
+Nov 12 06:02:35 archiso kernel: audit: type=1334 audit(1794463355.722:116): prog-id=50 op=UNLOAD
+Nov 12 06:02:35 archiso audit: BPF prog-id=51 op=UNLOAD
+Nov 12 06:02:35 archiso audit: BPF prog-id=52 op=UNLOAD
+Nov 12 06:02:35 archiso kernel: audit: type=1334 audit(1794463355.723:117): prog-id=86 op=LOAD
+Nov 12 06:02:35 archiso kernel: audit: type=1334 audit(1794463355.724:118): prog-id=87 op=LOAD
+Nov 12 06:02:35 archiso kernel: audit: type=1334 audit(1794463355.725:119): prog-id=51 op=UNLOAD
+Nov 12 06:02:35 archiso kernel: audit: type=1334 audit(1794463355.725:120): prog-id=52 op=UNLOAD
+Nov 12 06:02:35 archiso audit: BPF prog-id=88 op=LOAD
+Nov 12 06:02:35 archiso audit: BPF prog-id=66 op=UNLOAD
+Nov 12 06:02:35 archiso kernel: audit: type=1334 audit(1794463355.741:121): prog-id=88 op=LOAD
+Nov 12 06:02:35 archiso kernel: audit: type=1334 audit(1794463355.741:122): prog-id=66 op=UNLOAD
+Nov 12 06:02:35 archiso audit: BPF prog-id=89 op=LOAD
+Nov 12 06:02:35 archiso kernel: audit: type=1334 audit(1794463355.742:123): prog-id=89 op=LOAD
+Nov 12 06:02:35 archiso audit: BPF prog-id=90 op=LOAD
+Nov 12 06:02:35 archiso audit: BPF prog-id=67 op=UNLOAD
+Nov 12 06:02:35 archiso audit: BPF prog-id=68 op=UNLOAD
+Nov 12 06:02:35 archiso audit: BPF prog-id=91 op=LOAD
+Nov 12 06:02:35 archiso audit: BPF prog-id=44 op=UNLOAD
+Nov 12 06:02:35 archiso audit: BPF prog-id=92 op=LOAD
+Nov 12 06:02:35 archiso audit: BPF prog-id=93 op=LOAD
+Nov 12 06:02:35 archiso audit: BPF prog-id=45 op=UNLOAD
+Nov 12 06:02:35 archiso audit: BPF prog-id=46 op=UNLOAD
+Nov 12 06:02:35 archiso audit: BPF prog-id=94 op=LOAD
+Nov 12 06:02:35 archiso audit: BPF prog-id=43 op=UNLOAD
+Nov 12 06:02:35 archiso audit: BPF prog-id=95 op=LOAD
+Nov 12 06:02:35 archiso audit: BPF prog-id=63 op=UNLOAD
+Nov 12 06:02:35 archiso audit: BPF prog-id=96 op=LOAD
+Nov 12 06:02:35 archiso audit: BPF prog-id=97 op=LOAD
+Nov 12 06:02:35 archiso audit: BPF prog-id=64 op=UNLOAD
+Nov 12 06:02:35 archiso audit: BPF prog-id=65 op=UNLOAD
+Nov 12 06:02:35 archiso audit: BPF prog-id=98 op=LOAD
+Nov 12 06:02:35 archiso audit: BPF prog-id=53 op=UNLOAD
+Nov 12 06:02:35 archiso audit: BPF prog-id=99 op=LOAD
+Nov 12 06:02:35 archiso audit: BPF prog-id=22 op=UNLOAD
+Nov 12 06:02:35 archiso audit: BPF prog-id=100 op=LOAD
+Nov 12 06:02:35 archiso audit: BPF prog-id=101 op=LOAD
+Nov 12 06:02:35 archiso audit: BPF prog-id=23 op=UNLOAD
+Nov 12 06:02:35 archiso audit: BPF prog-id=24 op=UNLOAD
+Nov 12 06:02:35 archiso audit: BPF prog-id=102 op=LOAD
+Nov 12 06:02:35 archiso audit: BPF prog-id=49 op=UNLOAD
+Nov 12 06:02:35 archiso audit: BPF prog-id=103 op=LOAD
+Nov 12 06:02:35 archiso audit: BPF prog-id=62 op=UNLOAD
+Nov 12 06:02:35 archiso audit: BPF prog-id=104 op=LOAD
+Nov 12 06:02:35 archiso audit: BPF prog-id=61 op=UNLOAD
+Nov 12 06:02:35 archiso audit: BPF prog-id=105 op=LOAD
+Nov 12 06:02:35 archiso audit: BPF prog-id=19 op=UNLOAD
+Nov 12 06:02:35 archiso audit: BPF prog-id=106 op=LOAD
+Nov 12 06:02:35 archiso audit: BPF prog-id=107 op=LOAD
+Nov 12 06:02:35 archiso audit: BPF prog-id=20 op=UNLOAD
+Nov 12 06:02:35 archiso audit: BPF prog-id=21 op=UNLOAD
+Nov 12 06:02:35 archiso audit: BPF prog-id=108 op=LOAD
+Nov 12 06:02:35 archiso audit: BPF prog-id=109 op=LOAD
+Nov 12 06:02:35 archiso audit: BPF prog-id=47 op=UNLOAD
+Nov 12 06:02:35 archiso audit: BPF prog-id=48 op=UNLOAD
+Nov 12 06:02:38 archiso systemd[1]: Reload requested from client PID 1076 ('systemctl') (unit session-3.scope)...
+Nov 12 06:02:38 archiso systemd[1]: Reloading...
+Nov 12 06:02:40 archiso systemd[1]: /etc/systemd/system/archtitan.slice:8: Support for option CPUAccounting= has been removed and it is ignored
+Nov 12 06:02:40 archiso systemd[1]: /etc/systemd/system/archtitan.slice:17: Delegate= setting not supported for this unit type, ignoring.
+Nov 12 06:02:41 archiso systemd[1]: Reloading finished in 2256 ms.
+Nov 12 06:02:41 archiso audit: BPF prog-id=110 op=LOAD
+Nov 12 06:02:41 archiso kernel: kauditd_printk_skb: 41 callbacks suppressed
+Nov 12 06:02:41 archiso kernel: audit: type=1334 audit(1794463361.096:165): prog-id=110 op=LOAD
+Nov 12 06:02:41 archiso audit: BPF prog-id=85 op=UNLOAD
+Nov 12 06:02:41 archiso audit: BPF prog-id=111 op=LOAD
+Nov 12 06:02:41 archiso kernel: audit: type=1334 audit(1794463361.097:166): prog-id=85 op=UNLOAD
+Nov 12 06:02:41 archiso kernel: audit: type=1334 audit(1794463361.097:167): prog-id=111 op=LOAD
+Nov 12 06:02:41 archiso audit: BPF prog-id=112 op=LOAD
+Nov 12 06:02:41 archiso audit: BPF prog-id=86 op=UNLOAD
+Nov 12 06:02:41 archiso audit: BPF prog-id=87 op=UNLOAD
+Nov 12 06:02:41 archiso kernel: audit: type=1334 audit(1794463361.097:168): prog-id=112 op=LOAD
+Nov 12 06:02:41 archiso kernel: audit: type=1334 audit(1794463361.099:169): prog-id=86 op=UNLOAD
+Nov 12 06:02:41 archiso kernel: audit: type=1334 audit(1794463361.099:170): prog-id=87 op=UNLOAD
+Nov 12 06:02:41 archiso audit: BPF prog-id=113 op=LOAD
+Nov 12 06:02:41 archiso kernel: audit: type=1334 audit(1794463361.118:171): prog-id=113 op=LOAD
+Nov 12 06:02:41 archiso audit: BPF prog-id=88 op=UNLOAD
+Nov 12 06:02:41 archiso audit: BPF prog-id=114 op=LOAD
+Nov 12 06:02:41 archiso kernel: audit: type=1334 audit(1794463361.118:172): prog-id=88 op=UNLOAD
+Nov 12 06:02:41 archiso kernel: audit: type=1334 audit(1794463361.119:173): prog-id=114 op=LOAD
+Nov 12 06:02:41 archiso audit: BPF prog-id=115 op=LOAD
+Nov 12 06:02:41 archiso kernel: audit: type=1334 audit(1794463361.121:174): prog-id=115 op=LOAD
+Nov 12 06:02:41 archiso audit: BPF prog-id=89 op=UNLOAD
+Nov 12 06:02:41 archiso audit: BPF prog-id=90 op=UNLOAD
+Nov 12 06:02:41 archiso audit: BPF prog-id=116 op=LOAD
+Nov 12 06:02:41 archiso audit: BPF prog-id=91 op=UNLOAD
+Nov 12 06:02:41 archiso audit: BPF prog-id=117 op=LOAD
+Nov 12 06:02:41 archiso audit: BPF prog-id=118 op=LOAD
+Nov 12 06:02:41 archiso audit: BPF prog-id=92 op=UNLOAD
+Nov 12 06:02:41 archiso audit: BPF prog-id=93 op=UNLOAD
+Nov 12 06:02:41 archiso audit: BPF prog-id=119 op=LOAD
+Nov 12 06:02:41 archiso audit: BPF prog-id=94 op=UNLOAD
+Nov 12 06:02:41 archiso audit: BPF prog-id=120 op=LOAD
+Nov 12 06:02:41 archiso audit: BPF prog-id=95 op=UNLOAD
+Nov 12 06:02:41 archiso audit: BPF prog-id=121 op=LOAD
+Nov 12 06:02:41 archiso audit: BPF prog-id=122 op=LOAD
+Nov 12 06:02:41 archiso audit: BPF prog-id=96 op=UNLOAD
+Nov 12 06:02:41 archiso audit: BPF prog-id=97 op=UNLOAD
+Nov 12 06:02:41 archiso audit: BPF prog-id=123 op=LOAD
+Nov 12 06:02:41 archiso audit: BPF prog-id=98 op=UNLOAD
+Nov 12 06:02:41 archiso audit: BPF prog-id=124 op=LOAD
+Nov 12 06:02:41 archiso audit: BPF prog-id=99 op=UNLOAD
+Nov 12 06:02:41 archiso audit: BPF prog-id=125 op=LOAD
+Nov 12 06:02:41 archiso audit: BPF prog-id=126 op=LOAD
+Nov 12 06:02:41 archiso audit: BPF prog-id=100 op=UNLOAD
+Nov 12 06:02:41 archiso audit: BPF prog-id=101 op=UNLOAD
+Nov 12 06:02:41 archiso audit: BPF prog-id=127 op=LOAD
+Nov 12 06:02:41 archiso audit: BPF prog-id=102 op=UNLOAD
+Nov 12 06:02:41 archiso audit: BPF prog-id=128 op=LOAD
+Nov 12 06:02:41 archiso audit: BPF prog-id=103 op=UNLOAD
+Nov 12 06:02:41 archiso audit: BPF prog-id=129 op=LOAD
+Nov 12 06:02:41 archiso audit: BPF prog-id=104 op=UNLOAD
+Nov 12 06:02:41 archiso audit: BPF prog-id=130 op=LOAD
+Nov 12 06:02:41 archiso audit: BPF prog-id=105 op=UNLOAD
+Nov 12 06:02:41 archiso audit: BPF prog-id=131 op=LOAD
+Nov 12 06:02:41 archiso audit: BPF prog-id=132 op=LOAD
+Nov 12 06:02:41 archiso audit: BPF prog-id=106 op=UNLOAD
+Nov 12 06:02:41 archiso audit: BPF prog-id=107 op=UNLOAD
+Nov 12 06:02:41 archiso audit: BPF prog-id=133 op=LOAD
+Nov 12 06:02:41 archiso audit: BPF prog-id=134 op=LOAD
+Nov 12 06:02:41 archiso audit: BPF prog-id=108 op=UNLOAD
+Nov 12 06:02:41 archiso audit: BPF prog-id=109 op=UNLOAD
+Nov 12 06:02:43 archiso kernel: Adding 2097148k swap on /bench/swapfile.  Priority:5 extents:6 across:2326524k 
+Nov 12 06:02:46 archiso audit[1]: SERVICE_STOP pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=systemd-hostnamed comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+Nov 12 06:02:46 archiso kernel: kauditd_printk_skb: 40 callbacks suppressed
+Nov 12 06:02:46 archiso systemd[1]: systemd-hostnamed.service: Deactivated successfully.
+Nov 12 06:02:46 archiso kernel: audit: type=1131 audit(1794463366.961:215): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=systemd-hostnamed comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+Nov 12 06:02:46 archiso audit: BPF prog-id=113 op=UNLOAD
+Nov 12 06:02:46 archiso kernel: audit: type=1334 audit(1794463366.982:216): prog-id=113 op=UNLOAD
+Nov 12 06:02:47 archiso systemd-resolved[476]: Using degraded feature set TCP instead of UDP for DNS server 10.0.2.3.
+Nov 12 06:02:47 archiso systemd-resolved[476]: Using degraded feature set UDP instead of TCP for DNS server 10.0.2.3.
+Nov 12 06:02:47 archiso systemd-resolved[476]: Using degraded feature set TCP instead of UDP for DNS server 10.0.2.3.
+Nov 12 06:02:47 archiso systemd-resolved[476]: Using degraded feature set UDP instead of TCP for DNS server 10.0.2.3.
+Nov 12 06:03:03 archiso systemd-resolved[476]: Using degraded feature set TCP instead of UDP for DNS server 10.0.2.3.
+Nov 12 06:03:03 archiso systemd-resolved[476]: Using degraded feature set UDP instead of TCP for DNS server 10.0.2.3.
+Nov 12 06:03:03 archiso systemd-resolved[476]: Using degraded feature set TCP instead of UDP for DNS server 10.0.2.3.
+Nov 12 06:03:03 archiso systemd-resolved[476]: Using degraded feature set UDP instead of TCP for DNS server 10.0.2.3.
+Nov 12 06:03:03 archiso systemd-resolved[476]: Using degraded feature set TCP instead of UDP for DNS server 10.0.2.3.
+Nov 12 06:03:03 archiso systemd-resolved[476]: Using degraded feature set UDP instead of TCP for DNS server 10.0.2.3.
+Nov 12 06:03:03 archiso systemd-resolved[476]: Using degraded feature set TCP instead of UDP for DNS server 10.0.2.3.
+Nov 12 06:03:03 archiso systemd-resolved[476]: Using degraded feature set UDP instead of TCP for DNS server 10.0.2.3.
+Nov 12 06:03:03 archiso systemd-resolved[476]: Using degraded feature set TCP instead of UDP for DNS server 10.0.2.3.
+Nov 12 06:03:03 archiso systemd-resolved[476]: Using degraded feature set UDP instead of TCP for DNS server 10.0.2.3.
+Nov 12 06:03:04 archiso pacman-key[832]: ==> Locally signing trusted keys in keyring...
+Nov 12 06:03:09 archiso pacman-key[832]:   -> Locally signed 5 keys.
+Nov 12 06:03:09 archiso pacman-key[832]: ==> Importing owner trust values...
+Nov 12 06:03:09 archiso pacman-key[1422]: gpg: setting ownertrust to 4
+Nov 12 06:03:09 archiso pacman-key[1422]: gpg: setting ownertrust to 4
+Nov 12 06:03:09 archiso pacman-key[1422]: gpg: setting ownertrust to 4
+Nov 12 06:03:09 archiso pacman-key[1422]: gpg: inserting ownertrust of 4
+Nov 12 06:03:09 archiso pacman-key[1422]: gpg: setting ownertrust to 4
+Nov 12 06:03:09 archiso pacman-key[832]: ==> Disabling revoked keys in keyring...
+Nov 12 06:03:12 archiso pacman-key[832]:   -> Disabled 38 keys.
+Nov 12 06:03:12 archiso pacman-key[832]: ==> Updating trust database...
+Nov 12 06:03:12 archiso pacman-key[1568]: gpg: Note: third-party key signatures using the SHA1 algorithm are rejected
+Nov 12 06:03:12 archiso pacman-key[1568]: gpg: (use option "--allow-weak-key-signatures" to override)
+Nov 12 06:03:12 archiso pacman-key[1568]: gpg: marginals needed: 3  completes needed: 1  trust model: pgp
+Nov 12 06:03:13 archiso pacman-key[1568]: gpg: depth: 0  valid:   1  signed:   5  trust: 0-, 0q, 0n, 0m, 0f, 1u
+Nov 12 06:03:13 archiso pacman-key[1568]: gpg: depth: 1  valid:   5  signed:  88  trust: 0-, 0q, 0n, 5m, 0f, 0u
+Nov 12 06:03:13 archiso pacman-key[1568]: gpg: depth: 2  valid:  78  signed:  18  trust: 78-, 0q, 0n, 0m, 0f, 0u
+Nov 12 06:03:13 archiso pacman-key[1568]: gpg: next trustdb check due at 2026-12-31
+Nov 12 06:03:13 archiso systemd[1]: Finished Initializes Pacman keyring.
+Nov 12 06:03:13 archiso audit[1]: SERVICE_START pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=pacman-init comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+Nov 12 06:03:13 archiso kernel: audit: type=1130 audit(1794463393.662:217): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=pacman-init comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+Nov 12 06:03:13 archiso systemd[1]: Reached target Multi-User System.
+Nov 12 06:03:13 archiso systemd[1]: Startup finished in 6.968s (kernel) + 1min 45.472s (userspace) = 1min 52.441s.
+Nov 12 06:03:19 archiso systemd-resolved[476]: Using degraded feature set TCP instead of UDP for DNS server 10.0.2.3.
+Nov 12 06:03:19 archiso systemd-resolved[476]: Using degraded feature set UDP instead of TCP for DNS server 10.0.2.3.
+Nov 12 06:03:20 archiso gpg-agent[684]: socket is now serviced by another server
+Nov 12 06:03:20 archiso gpg-agent[684]: this process is useless - shutting down
+Nov 12 06:03:24 archiso gpg-agent[684]: gpg-agent (GnuPG) 2.4.9 stopped
+Nov 12 06:03:24 archiso systemd[1]: gpg-agent@etc-pacman.d-gnupg.service: Deactivated successfully.
+Nov 12 06:03:24 archiso systemd[1]: gpg-agent@etc-pacman.d-gnupg.service: Consumed 7.831s CPU time over 1min 8.462s wall clock time, 3M memory peak.
+Nov 12 06:03:24 archiso audit[1]: SERVICE_STOP pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=gpg-agent@etc-pacman.d-gnupg comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+Nov 12 06:03:24 archiso kernel: audit: type=1131 audit(1794463404.891:218): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=gpg-agent@etc-pacman.d-gnupg comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+Nov 12 06:03:33 archiso systemd-resolved[476]: Using degraded feature set TCP instead of UDP for DNS server 10.0.2.3.
+Nov 12 06:03:33 archiso systemd-resolved[476]: Using degraded feature set UDP instead of TCP for DNS server 10.0.2.3.
+Nov 12 06:03:33 archiso systemd-resolved[476]: Using degraded feature set TCP instead of UDP for DNS server 10.0.2.3.
+Nov 12 06:03:33 archiso systemd-resolved[476]: Using degraded feature set UDP instead of TCP for DNS server 10.0.2.3.
+Nov 12 06:03:33 archiso systemd-resolved[476]: Using degraded feature set TCP instead of UDP for DNS server 10.0.2.3.
+Nov 12 06:03:34 archiso systemd-resolved[476]: Using degraded feature set UDP instead of TCP for DNS server 10.0.2.3.
+Nov 12 06:03:34 archiso systemd-resolved[476]: Using degraded feature set TCP instead of UDP for DNS server 10.0.2.3.
+Nov 12 06:03:34 archiso systemd-resolved[476]: Using degraded feature set UDP instead of TCP for DNS server 10.0.2.3.
+Nov 12 06:03:34 archiso systemd-resolved[476]: Using degraded feature set TCP instead of UDP for DNS server 10.0.2.3.
+Nov 12 06:03:34 archiso systemd-resolved[476]: Using degraded feature set UDP instead of TCP for DNS server 10.0.2.3.
+Nov 12 06:04:04 archiso systemd-resolved[476]: Using degraded feature set TCP instead of UDP for DNS server 10.0.2.3.
+Nov 12 06:04:04 archiso systemd-resolved[476]: Using degraded feature set UDP instead of TCP for DNS server 10.0.2.3.
+Nov 12 06:04:04 archiso systemd-resolved[476]: Using degraded feature set TCP instead of UDP for DNS server 10.0.2.3.
+Nov 12 06:04:04 archiso systemd-resolved[476]: Using degraded feature set UDP instead of TCP for DNS server 10.0.2.3.
+Nov 12 06:04:04 archiso systemd-resolved[476]: Using degraded feature set TCP instead of UDP for DNS server 10.0.2.3.
+Nov 12 06:04:04 archiso systemd-resolved[476]: Using degraded feature set UDP instead of TCP for DNS server 10.0.2.3.
+Nov 12 06:04:04 archiso systemd-resolved[476]: Using degraded feature set TCP instead of UDP for DNS server 10.0.2.3.
+Nov 12 06:04:04 archiso systemd-resolved[476]: Using degraded feature set UDP instead of TCP for DNS server 10.0.2.3.
+Nov 12 06:04:04 archiso systemd-resolved[476]: Using degraded feature set TCP instead of UDP for DNS server 10.0.2.3.
+Nov 12 06:04:04 archiso systemd-resolved[476]: Using degraded feature set UDP instead of TCP for DNS server 10.0.2.3.
+Nov 12 06:04:23 archiso systemd-resolved[476]: Using degraded feature set TCP instead of UDP for DNS server 10.0.2.3.
+Nov 12 06:04:23 archiso systemd-resolved[476]: Using degraded feature set UDP instead of TCP for DNS server 10.0.2.3.
+Nov 12 06:04:23 archiso systemd-resolved[476]: Using degraded feature set TCP instead of UDP for DNS server 10.0.2.3.
+Nov 12 06:04:23 archiso systemd-resolved[476]: Using degraded feature set UDP instead of TCP for DNS server 10.0.2.3.
+Nov 12 06:04:34 archiso systemd-resolved[476]: Using degraded feature set TCP instead of UDP for DNS server 10.0.2.3.
+Nov 12 06:04:34 archiso systemd-resolved[476]: Using degraded feature set UDP instead of TCP for DNS server 10.0.2.3.
+Nov 12 06:04:34 archiso systemd-resolved[476]: Using degraded feature set TCP instead of UDP for DNS server 10.0.2.3.
+Nov 12 06:04:34 archiso systemd-resolved[476]: Using degraded feature set UDP instead of TCP for DNS server 10.0.2.3.
+Nov 12 06:04:34 archiso systemd-resolved[476]: Using degraded feature set TCP instead of UDP for DNS server 10.0.2.3.
+Nov 12 06:04:34 archiso systemd-resolved[476]: Using degraded feature set UDP instead of TCP for DNS server 10.0.2.3.
+Nov 12 06:04:34 archiso systemd-resolved[476]: Using degraded feature set TCP instead of UDP for DNS server 10.0.2.3.
+Nov 12 06:04:34 archiso systemd-resolved[476]: Using degraded feature set UDP instead of TCP for DNS server 10.0.2.3.
+Nov 12 06:04:34 archiso systemd-resolved[476]: Using degraded feature set TCP instead of UDP for DNS server 10.0.2.3.
+Nov 12 06:04:34 archiso systemd-resolved[476]: Using degraded feature set UDP instead of TCP for DNS server 10.0.2.3.
+Nov 12 06:05:04 archiso systemd-resolved[476]: Using degraded feature set TCP instead of UDP for DNS server 10.0.2.3.
+Nov 12 06:05:04 archiso systemd-resolved[476]: Using degraded feature set UDP instead of TCP for DNS server 10.0.2.3.
+Nov 12 06:05:04 archiso systemd-resolved[476]: Using degraded feature set TCP instead of UDP for DNS server 10.0.2.3.
+Nov 12 06:05:04 archiso systemd-resolved[476]: Using degraded feature set UDP instead of TCP for DNS server 10.0.2.3.
+Nov 12 06:05:04 archiso systemd-resolved[476]: Using degraded feature set TCP instead of UDP for DNS server 10.0.2.3.
+Nov 12 06:05:04 archiso systemd-resolved[476]: Using degraded feature set UDP instead of TCP for DNS server 10.0.2.3.
+Nov 12 06:05:04 archiso systemd-resolved[476]: Using degraded feature set TCP instead of UDP for DNS server 10.0.2.3.
+Nov 12 06:05:04 archiso systemd-resolved[476]: Using degraded feature set UDP instead of TCP for DNS server 10.0.2.3.
+Nov 12 06:05:04 archiso systemd-resolved[476]: Using degraded feature set TCP instead of UDP for DNS server 10.0.2.3.
+Nov 12 06:05:04 archiso systemd-resolved[476]: Using degraded feature set UDP instead of TCP for DNS server 10.0.2.3.
+Nov 12 06:05:34 archiso systemd-resolved[476]: Using degraded feature set TCP instead of UDP for DNS server 10.0.2.3.
+Nov 12 06:05:34 archiso systemd-resolved[476]: Using degraded feature set UDP instead of TCP for DNS server 10.0.2.3.
+Nov 12 06:05:34 archiso systemd-resolved[476]: Using degraded feature set TCP instead of UDP for DNS server 10.0.2.3.
+Nov 12 06:05:34 archiso systemd-resolved[476]: Using degraded feature set UDP instead of TCP for DNS server 10.0.2.3.
+Nov 12 06:05:35 archiso systemd-resolved[476]: Using degraded feature set TCP instead of UDP for DNS server 10.0.2.3.
+Nov 12 06:05:35 archiso systemd-resolved[476]: Using degraded feature set UDP instead of TCP for DNS server 10.0.2.3.
+Nov 12 06:05:35 archiso systemd-resolved[476]: Using degraded feature set TCP instead of UDP for DNS server 10.0.2.3.
+Nov 12 06:05:35 archiso systemd-resolved[476]: Using degraded feature set UDP instead of TCP for DNS server 10.0.2.3.
+Nov 12 06:05:35 archiso systemd-resolved[476]: Using degraded feature set TCP instead of UDP for DNS server 10.0.2.3.
+Nov 12 06:05:35 archiso systemd-resolved[476]: Using degraded feature set UDP instead of TCP for DNS server 10.0.2.3.

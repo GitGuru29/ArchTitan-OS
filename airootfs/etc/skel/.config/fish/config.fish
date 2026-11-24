@@ -1,9 +1,38 @@
+# ArchTitan OS — fish shell, mirroring the host terminal experience.
 if status is-interactive
-    # Commands to run in interactive sessions can go here
-    starship init fish | source
-    
+    # No greeting
+    set fish_greeting
+
+    # Use starship
+    function starship_transient_prompt_func
+        starship module character
+    end
+    if test "$TERM" != "linux"
+        starship init fish | source
+        enable_transience
+    end
+
+    # Apply the host-style terminal palette (OSC sequences) so prompts stay
+    # consistent in terminals that do not read ~/.config/kitty/current-theme.conf.
+    if test -f ~/.config/kitty/sequences.txt
+        cat ~/.config/kitty/sequences.txt
+    end
+
     # Aliases
-    alias ls='ls --color=auto'
+    # kitty doesn't clear properly so we need to do this weird printing
+    alias clear "printf '\033[2J\033[3J\033[1;1H'"
+    alias celar "printf '\033[2J\033[3J\033[1;1H'"
+    alias claer "printf '\033[2J\033[3J\033[1;1H'"
+    alias pamcan pacman
+    if test "$TERM" != "linux"
+        alias ls 'eza --icons=auto'
+    end
+    if test "$TERM" = "xterm-kitty"
+        alias ssh 'kitten ssh'
+    end
+
+    # TITAN AI + convenience aliases
+    alias ai='titan-ai'
     alias ll='ls -l'
     alias la='ls -la'
     alias grep='grep --color=auto'
@@ -15,15 +44,8 @@ if status is-interactive
     alias ga='git add'
     alias gp='git push'
     alias gl='git pull'
-
-    # TITAN AI
-    alias ai='titan-ai'
-    
-    # Docker
     alias d='docker'
     alias dc='docker-compose'
-    
-    # Editor
     alias e='nvim'
     alias c='code'
 end

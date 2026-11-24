@@ -1,12 +1,13 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls.Basic
-import ArchTitanSettings
 import ArchTitan.TitanUI
+import ArchTitanSettings
 
 Item {
     id: pageRoot
-    anchors.fill: parent
+    Layout.fillWidth: true
+    Layout.fillHeight: true
 
     property color textHigh: TitanTheme.textHigh
     property color textMid:  TitanTheme.textMid

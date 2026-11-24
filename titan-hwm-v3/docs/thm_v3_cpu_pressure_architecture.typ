@@ -159,6 +159,30 @@ To prevent false-positives on bursty single-threaded spikes, CPU PSI is correlat
 $ "LoadRatio" = frac("load1", N_("online_cpus")) $
 When `"cpu_some_avg10" >= 25.0%` AND `"LoadRatio" > 1.25`, the system is in true multi-threaded CPU contention.
 
+== 2.3 Per-Tick PSI Delta: The Fast Path
+`avg10` is a 10-second exponentially weighted average. That is excellent for
+stability, but it means a build storm that starts right now is invisible to the
+policy engine for several seconds. The `total=` field on the same PSI line is a
+monotonic microsecond counter, so its change over one 200 ms tick gives the
+instantaneous stall percentage:
+
+$ "InstPSI" = 100 times frac(Delta "total", Delta "wall") $
+
+THM computes this delta in `CpuPressureController::evaluate()` and feeds a
+two-sample minimum to the classifier. Two samples (~400 ms) are enough to reject
+a lone scheduling blip, while a real multi-threaded storm escalates before the
+compositor can drop frames. The same delta accelerates release: after a build
+exits, the cap is removed in ~3 s instead of waiting for `avg10` to decay for up
+to 10 s.
+
+#table(
+  columns: (1.5fr, 1.5fr, 2.8fr),
+  [Signal], [Reaction Time], [Role],
+  [`some avg10`], [~10 s EWMA], [Authoritative sustained-pressure classification],
+  [`total=` delta], [~200 ms], [Fast escalation + fast release; two-sample filtered],
+  [`loadavg` running], [instant], [Contention gate; prevents single-core false positives],
+)
+
 = 3. Proposed Multi-Signal Engine Architecture
 
 == 3.1 Decoupling Pressure: The `SystemPressure` Struct
@@ -258,6 +282,23 @@ The policy engine must distinguish *who* is creating the CPU pressure:
 2. *Background Demands Compute* (`wl.state == BACKGROUND_EXECUTING`):
    - Example: A background daemon or build runs in workspace 4 while user browses in workspace 1.
    - *Action*: Background slice gets capped with `cpu.max` and `cpu.weight = 10`. Desktop remains fluid at 144 Hz.
+
+== 4.4 Lever 4: CRITICAL `cpu.idle` and Governor Availability
+At `CRITICAL`, THM reserves two cores instead of one and additionally writes
+`cpu.idle=1` to the background slice. This is the cgroup-v2 equivalent of
+demoting background work to `SCHED_IDLE`: a build still consumes otherwise-idle
+capacity, but it cannot add wake-up latency to the compositor or audio thread.
+Both settings are cleared automatically when pressure drops, and skipped when
+the user is unattended so an overnight build still gets the whole machine.
+
+Frequency management must not assume that `schedutil` exists. `intel_pstate`
+and `amd-pstate` commonly expose only `performance` and `powersave`; writing
+`schedutil` there fails with `EINVAL` and silently leaves the governor untouched.
+THM therefore reads `scaling_available_governors` per policy and maps the
+abstract hint onto a supported governor, then programs the matching
+`energy_performance_preference` (`performance`, `balance_performance`, `power`)
+when the platform exposes HWP/EPP. The telemetry snapshot reports the governor
+that was actually applied, not the hint.
 
 = 5. Concrete Code Implementation Plan
 

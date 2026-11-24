@@ -2,7 +2,7 @@
 // titan-hwm-v3/tests/test_runner.cpp
 // Real OS-Level Test Suite for Titan Hardware Manager v3 (THM v3)
 //
-// Validates all 10 core architectural test cases on real Linux OS primitives:
+// Validates 45 architectural test cases on real Linux OS primitives:
 //   TC-1:  Gradle / Background Build Survival
 //   TC-2:  AI Agent Workload Survival & Execution Authority
 //   TC-3:  Idle IDE Aging, Throttling & Freeze under Pressure
@@ -16,6 +16,13 @@
 //   TC-11: Governor Pressure Authority & Hysteresis (regression, ISSUE-05)
 //   TC-12: Protected-PID Guard on SIGKILL Escalation (regression, ISSUE-13)
 //   TC-13: Browser Collateral Guard vs. Hard-Block Separation
+//   TC-39: AGING Pressure-Relief Downgrade (v3.3-R1)
+//   TC-40: Memory Orchestration Math (v3.3-R2)
+//   TC-41: Fail-Closed Decision Gate (v3.3-R3)
+//   TC-42: Shared pidfd Signal Path (v3.3-R5)
+//   TC-43: Hyprland Recent-Focus Context (v3.4-R1)
+//   TC-44: Throttled Slice Isolation (v3.4-R2)
+//   TC-45: Build Toolchain Never Frozen (v3.4-R2)
 // =============================================================================
 
 #include "../core/types.hpp"
@@ -28,10 +35,14 @@
 #include "../policy/reclaim_engine.hpp"
 #include "../enforcement/cgroup_controller.hpp"
 #include "../enforcement/enforcement_plane.hpp"
+#include "../core/signal_utils.hpp"
+#include "../resources/smt_topology.hpp"
+#include "../resources/input_feedforward.hpp"
 #include "../resources/pressure_level.hpp"
 #include "../ipc/workspace_monitor.hpp"
 #include "../ipc/telemetry_publisher.hpp"
 
+#include <cmath>
 #include <iostream>
 #include <iomanip>
 #include <fstream>
@@ -1010,7 +1021,11 @@ void test_tc11_governor_pressure_authority() {
     wl_i.state = thm::WorkloadState::IDLE;
     idle[502] = wl_i;
 
-    const auto G = thm::WorkspaceMonitor::compute_governor;
+    const auto G = [](const std::unordered_map<uint32_t, thm::Workload>& w,
+                      thm::PressureLevel p,
+                      thm::GovernorHint c) {
+        return thm::WorkspaceMonitor::compute_governor(w, p, c);
+    };
     using H = thm::GovernorHint;
     using P = thm::PressureLevel;
 
@@ -1744,8 +1759,1404 @@ void test_tc18_hyprland_late_start_reconnect() {
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
+// TC-19: HC-CPU-1 Invariant Proof (CPU Pressure Never Kills/Freezes)
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc19_hc_cpu_1_invariant() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(19, "HC-CPU-1 Invariant Proof",
+                    "CRITICAL CPU pressure with NORMAL RAM never triggers FREEZE or RECLAIM");
+
+    thm::CpuPressureController ctrl(3);
+    thm::MemInfo mem;
+    mem.total_kb     = 32L * 1024 * 1024;
+    mem.available_kb = 25L * 1024 * 1024; // ~78% free -> NORMAL
+    thm::PSIStats mem_psi{true, 0.0f, 0.0f};
+    thm::CpuPSIStats cpu_psi{true, 80.0f, 65.0f, 40.0f};
+    thm::LoadAverage load{32.0f, 20.0f, 12.0f, 16, 400};
+
+    const thm::SystemPressure sp = ctrl.evaluate(mem, mem_psi, cpu_psi, load, 8);
+    const thm::PressureLevel mem_chan = thm::memory_plane_pressure(sp);
+
+    pid_t build_pid = fork_cpu_burner("cargo build --release -j16");
+    thm::ProtectedRegistry registry;
+    thm::PolicyEngine policy;
+
+    thm::Workload wl;
+    wl.id           = 919;
+    wl.type         = thm::WorkloadType::SYSTEM_DEV;
+    wl.state        = thm::WorkloadState::BACKGROUND_EXECUTING;
+    wl.is_building  = true;
+    wl.root_pid     = build_pid;
+    wl.pids         = {build_pid};
+
+    thm::WorkspaceState ws;
+    ws.id         = 2;
+    ws.is_focused = false;
+    ws.is_visible = false;
+
+    const auto dec = policy.evaluate(wl, ws, thm::ActivityState::EXECUTING, mem_chan, registry);
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    const char st = read_proc_state(build_pid);
+    safe_reap(build_pid);
+
+    const bool cpu_crit  = (sp.cpu == thm::PressureLevel::CRITICAL);
+    const bool mem_norm  = (mem_chan == thm::PressureLevel::NORMAL);
+    const bool keep_bg   = (dec == thm::PolicyDecision::KEEP_BACKGROUND);
+    const bool alive_run = (st == 'R' || st == 'S');
+    const bool passed    = cpu_crit && mem_norm && keep_bg && alive_run;
+
+    std::cout << "[HC-CPU-1] cpu=" << thm::to_string(sp.cpu)
+              << " mem_chan=" << thm::to_string(mem_chan)
+              << " decision=" << thm::to_string(dec)
+              << " build_state=" << st << "\n";
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-19: HC-CPU-1 Invariant",
+                         "CRITICAL CPU pressure never kills/freezes",
+                         passed,
+                         std::string("cpu=CRITICAL, mem=NORMAL, dec=") + thm::to_string(dec) + ", state=" + st,
+                         ms});
+    std::cout << (passed ? ">>> PASS: HC-CPU-1 invariant upheld.\n" : ">>> FAIL!\n");
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-20: Dual-Window CPU Hysteresis
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc20_cpu_dual_window_hysteresis() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(20, "Dual-Window CPU Hysteresis",
+                    "Immediate climb to HIGH; requires 3 consecutive cool ticks <15% to release");
+
+    thm::CpuPressureController ctrl(3);
+    thm::MemInfo mem{16L * 1024 * 1024, 12L * 1024 * 1024, 0, 0};
+    thm::PSIStats mem_psi{true, 0.0f, 0.0f};
+
+    thm::CpuPSIStats high_psi{true, 35.0f, 20.0f, 10.0f};
+    thm::LoadAverage high_la{16.0f, 10.0f, 6.0f, 8, 200}; // load_ratio=2.0 on 8 CPUs
+    const auto s1 = ctrl.evaluate(mem, mem_psi, high_psi, high_la, 8);
+    const bool escalated = (s1.cpu == thm::PressureLevel::HIGH);
+
+    thm::CpuPSIStats cool_psi{true, 10.0f, 12.0f, 10.0f};
+    thm::LoadAverage cool_la{2.0f, 4.0f, 4.0f, 1, 200}; // load_ratio=0.25 -> raw NORMAL
+    const auto c1 = ctrl.evaluate(mem, mem_psi, cool_psi, cool_la, 8);
+    const auto c2 = ctrl.evaluate(mem, mem_psi, cool_psi, cool_la, 8);
+    const bool held_two = (c1.cpu == thm::PressureLevel::HIGH &&
+                           c2.cpu == thm::PressureLevel::HIGH);
+
+    const auto c3 = ctrl.evaluate(mem, mem_psi, cool_psi, cool_la, 8);
+    const bool released_three = (c3.cpu == thm::PressureLevel::NORMAL);
+
+    // Spike only (high PSI, low load ratio < 1.0) must NOT escalate
+    thm::CpuPressureController ctrl2(3);
+    thm::LoadAverage low_ratio_la{2.0f, 2.0f, 2.0f, 1, 200}; // ratio 0.25
+    const auto spike = ctrl2.evaluate(mem, mem_psi, high_psi, low_ratio_la, 8);
+    const bool spike_ignored = (spike.cpu == thm::PressureLevel::NORMAL);
+
+    const bool passed = escalated && held_two && released_three && spike_ignored;
+    std::cout << "[Hysteresis] climb=" << thm::to_string(s1.cpu)
+              << " cool1=" << thm::to_string(c1.cpu)
+              << " cool2=" << thm::to_string(c2.cpu)
+              << " cool3=" << thm::to_string(c3.cpu)
+              << " single_thread_spike=" << thm::to_string(spike.cpu) << "\n";
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-20: CPU Dual-Window Hysteresis",
+                         "Immediate climb + 3-tick release hold + LoadRatio gate",
+                         passed,
+                         "climb=HIGH, hold(2)=HIGH, release(3)=NORMAL, spike=NORMAL",
+                         ms});
+    std::cout << (passed ? ">>> PASS: CPU hysteresis verified.\n" : ">>> FAIL!\n");
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-21: Dynamic Weights & 25 ms CFS cpu.max Math
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc21_cpu_slice_policy_math() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(21, "Dynamic Weights & 25ms cpu.max Math",
+                    "Asymmetric weights and HIGH(N-1)/CRITICAL(N-2) 25ms headroom across core counts");
+
+    const auto p_norm = thm::compute_cpu_slice_policy(thm::PressureLevel::NORMAL, 16, false);
+    const auto p_mod  = thm::compute_cpu_slice_policy(thm::PressureLevel::MODERATE, 16, false);
+    const auto p_h16  = thm::compute_cpu_slice_policy(thm::PressureLevel::HIGH, 16, false);
+    const auto p_c8   = thm::compute_cpu_slice_policy(thm::PressureLevel::CRITICAL, 8, false);
+    const auto p_h2   = thm::compute_cpu_slice_policy(thm::PressureLevel::HIGH, 2, false);
+    const auto p_h1   = thm::compute_cpu_slice_policy(thm::PressureLevel::HIGH, 1, false);
+
+    const bool norm_ok = (p_norm.active_weight == 500 && p_norm.background_weight == 50 &&
+                          p_norm.background_quota_us == 0 && !p_norm.headroom_engaged);
+    const bool mod_ok  = (p_mod.active_weight == 800 && p_mod.background_weight == 25 &&
+                          p_mod.background_quota_us == 0);
+    const bool h16_ok  = (p_h16.protected_weight == 2000 && p_h16.active_weight == 1000 &&
+                          p_h16.background_weight == 10 && p_h16.period_us == 25000 &&
+                          p_h16.background_quota_us == 375000 &&
+                          std::fabs(p_h16.background_max_pct - 93.75f) < 0.05f &&
+                          p_h16.headroom_engaged && !p_h16.background_idle);
+    const bool c8_ok   = (p_c8.protected_weight == 5000 && p_c8.background_quota_us == 150000 &&
+                          std::fabs(p_c8.background_max_pct - 75.0f) < 0.05f &&
+                          p_c8.headroom_engaged && p_c8.background_idle);
+    const bool h2_ok   = (p_h2.background_quota_us == 25000 &&
+                          std::fabs(p_h2.background_max_pct - 50.0f) < 0.05f);
+    const bool h1_ok   = (p_h1.background_quota_us == 18750 &&
+                          std::fabs(p_h1.background_max_pct - 75.0f) < 0.05f);
+
+    const bool passed = norm_ok && mod_ok && h16_ok && c8_ok && h2_ok && h1_ok;
+    std::cout << "[Policy] N=16 HIGH: quota=" << p_h16.background_quota_us << "/" << p_h16.period_us
+              << " (" << p_h16.background_max_pct << "%) "
+              << " N=8 CRIT: quota=" << p_c8.background_quota_us
+              << " idle=" << (p_c8.background_idle ? 1 : 0)
+              << " N=2: " << p_h2.background_quota_us
+              << " N=1: " << p_h1.background_quota_us << "\n";
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-21: cgroup cpu.max & Weights Math",
+                         "Asymmetric bias + HIGH(N-1)/CRITICAL(N-2) cpu.max + cpu.idle",
+                         passed,
+                         "16c=375000(93.75%), 8c CRIT=150000(75%)+idle, 2c=25000, 1c=18750",
+                         ms});
+    std::cout << (passed ? ">>> PASS: cpu.max and weight policy verified.\n" : ">>> FAIL!\n");
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-22: Unattended Idle Auto-Lift
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc22_unattended_idle_autolift() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(22, "Unattended Idle Auto-Lift",
+                    "Away-from-desk idle >=60s lifts cpu.max to 100% while keeping weights biased");
+
+    const auto away = thm::compute_cpu_slice_policy(thm::PressureLevel::HIGH, 16, true);
+    const auto back = thm::compute_cpu_slice_policy(thm::PressureLevel::HIGH, 16, false);
+
+    const bool lifted_ok = (away.background_quota_us == 0 && away.unattended_lift &&
+                            !away.headroom_engaged &&
+                            away.active_weight == 1000 && away.background_weight == 10 &&
+                            std::fabs(away.background_max_pct - 100.0f) < 0.01f);
+    const bool reengaged = (back.background_quota_us == 375000 && !back.unattended_lift &&
+                            back.headroom_engaged);
+    const bool passed = lifted_ok && reengaged;
+
+    std::cout << "[AutoLift] idle->quota=" << away.background_quota_us
+              << " lift=" << away.unattended_lift
+              << " active_wt=" << away.active_weight
+              << " | return->quota=" << back.background_quota_us
+              << " engaged=" << back.headroom_engaged << "\n";
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-22: Unattended Idle Auto-Lift",
+                         "cpu.max lifts at idle and re-engages immediately on return",
+                         passed,
+                         "idle->max (100%, 1000:10), active->375000 (engaged)",
+                         ms});
+    std::cout << (passed ? ">>> PASS: unattended idle auto-lift verified.\n" : ">>> FAIL!\n");
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-23: Telemetry Contract v3.3 (CPU + Memory Orchestration Fields)
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc23_cpu_telemetry_contract_v32() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(23, "Telemetry Contract v3.3",
+                    "Telemetry JSON emits CPU, headroom, and kernel-memory orchestration state");
+
+    thm::TelemetrySnapshot s;
+    s.version                  = "3.3.0";
+    s.pressure_level           = "NORMAL";
+    s.cpu_pressure_level       = "HIGH";
+    s.composite_pressure_level = "HIGH";
+    s.cpu_psi_valid            = true;
+    s.cpu_psi_avg10            = 38.5f;
+    s.cpu_psi_inst             = 72.25f;
+    s.load1                    = 16.0f;
+    s.load_ratio               = 2.0f;
+    s.online_cpus              = 8;
+    s.protected_cpu_weight     = 2000;
+    s.active_cpu_weight        = 1000;
+    s.latency_cpu_weight       = 950;
+    s.background_cpu_weight    = 10;
+    s.background_cpu_max_pct   = 87.5f;
+    s.cpu_headroom_engaged     = true;
+    s.reserved_headroom_cores  = 1;
+    s.smt_isolation_active     = true;
+    s.isolated_physical_cores  = 2;
+    s.latency_cpuset           = "0,1,4,5";
+    s.background_cpuset        = "2,3,6,7";
+    s.input_feedforward_active = true;
+    s.input_age_ms             = 42;
+    s.background_cpu_idle      = true;
+    s.unattended_lift          = false;
+    s.bg_nr_periods            = 400;
+    s.bg_nr_throttled          = 37;
+    s.bg_throttled_usec        = 125000;
+    s.background_memory_high_bytes = 100663296;
+    s.latency_memory_high_bytes    = 50331648;
+    s.protected_memory_low_bytes   = 33554432;
+    s.memory_enforcement_active    = true;
+    s.enforcement_degraded         = false;
+    s.destructive_reclaim_enabled  = false;
+
+    const std::string json = thm::serialize_snapshot(s);
+    const char* needles[] = {
+        "\"version\":\"3.3.0\"",
+        "\"pressure\":\"HIGH\"",
+        "\"composite_pressure\":\"HIGH\"",
+        "\"psi_some_inst\":72.25",
+        "\"load_ratio\":2.0",
+        "\"online_cpus\":8",
+        "\"protected_weight\":2000",
+        "\"active_weight\":1000",
+        "\"latency_weight\":950",
+        "\"background_weight\":10",
+        "\"background_cpu_max_pct\":87.5",
+        "\"headroom_engaged\":true",
+        "\"reserved_cores\":1",
+        "\"smt_isolation\":true",
+        "\"isolated_cores\":2",
+        "\"latency_cpuset\":\"0,1,4,5\"",
+        "\"background_cpuset\":\"2,3,6,7\"",
+        "\"input_feedforward\":true",
+        "\"input_age_ms\":42",
+        "\"background_idle\":true",
+        "\"unattended_lift\":false",
+        "\"bg_nr_throttled\":37",
+        "\"bg_throttled_usec\":125000",
+        "\"bg_memory_high_bytes\":100663296",
+        "\"latency_memory_high_bytes\":50331648",
+        "\"protected_memory_low_bytes\":33554432",
+        "\"memory_enforcement\":true",
+        "\"enforcement_degraded\":false",
+        "\"destructive_reclaim_enabled\":false",
+    };
+
+    bool passed = true;
+    for (const char* n : needles) {
+        if (json.find(n) == std::string::npos) {
+            std::cout << "[JSON] MISS " << n << "\n";
+            passed = false;
+        }
+    }
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-23: Telemetry Contract v3.3",
+                         "v3.3 CPU, headroom, and memory orchestration fields serialized cleanly",
+                         passed,
+                         std::string("checked 30 fields incl. SMT cpusets/memory.high/memory.low, bytes=") + std::to_string(json.size()),
+                         ms});
+    std::cout << (passed ? ">>> PASS: v3.3 telemetry contract verified.\n" : ">>> FAIL!\n");
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-24: Instantaneous PSI Fast Path
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc24_instant_psi_fast_path() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(24, "Instantaneous PSI Fast Path",
+                    "Per-tick PSI delta escalates in ~400ms; a lone blip is filtered; release uses delta");
+
+    thm::MemInfo mem{16L * 1024 * 1024, 14L * 1024 * 1024, 0, 0};
+    thm::PSIStats mem_psi{true, 0.0f, 0.0f};
+    thm::LoadAverage crit_la{24.0f, 12.0f, 8.0f, 24, 400}; // load_ratio=3.0, runq ~2.875
+
+    // avg10 stays 0 (kernel EWMA has not reacted yet); only the 200ms delta is
+    // high. First call primes the counter, next two sustained samples escalate.
+    thm::CpuPressureController ctrl(3);
+    thm::CpuPSIStats p1{true, 0.0f, 0.0f, 0.0f, 1'000'000ULL};
+    const auto s1 = ctrl.evaluate(mem, mem_psi, p1, crit_la, 8, 200'000);
+    thm::CpuPSIStats p2{true, 0.0f, 0.0f, 0.0f, 1'240'000ULL}; // 60% of 200ms
+    const auto s2 = ctrl.evaluate(mem, mem_psi, p2, crit_la, 8, 200'000);
+    thm::CpuPSIStats p3{true, 0.0f, 0.0f, 0.0f, 1'480'000ULL};
+    const auto s3 = ctrl.evaluate(mem, mem_psi, p3, crit_la, 8, 200'000);
+
+    const bool primed_normal = (s1.cpu == thm::PressureLevel::NORMAL);
+    const bool still_normal  = (s2.cpu == thm::PressureLevel::NORMAL);
+    const bool fast_crit     = (s3.cpu == thm::PressureLevel::CRITICAL);
+
+    // A single high tick followed by a quiet one must not engage the cap.
+    thm::CpuPressureController spike_ctrl(3);
+    thm::CpuPSIStats q1{true, 0.0f, 0.0f, 0.0f, 2'000'000ULL};
+    const auto q1s = spike_ctrl.evaluate(mem, mem_psi, q1, crit_la, 8, 200'000);
+    thm::CpuPSIStats q2{true, 0.0f, 0.0f, 0.0f, 2'120'000ULL}; // one 60% blip
+    const auto q2s = spike_ctrl.evaluate(mem, mem_psi, q2, crit_la, 8, 200'000);
+    thm::CpuPSIStats q3{true, 0.0f, 0.0f, 0.0f, 2'120'000ULL}; // quiet again
+    const auto q3s = spike_ctrl.evaluate(mem, mem_psi, q3, crit_la, 8, 200'000);
+    const bool blip_ignored = (q1s.cpu == thm::PressureLevel::NORMAL &&
+                               q2s.cpu == thm::PressureLevel::NORMAL &&
+                               q3s.cpu == thm::PressureLevel::NORMAL);
+
+    // Release: avg10=20 (would pass the HIGH release threshold of 15 only after
+    // 10s), but the per-tick delta is 0, so 3 cool ticks release immediately.
+    thm::CpuPressureController rel_ctrl(3);
+    thm::CpuPSIStats hi{true, 35.0f, 20.0f, 10.0f, 5'000'000ULL};
+    thm::LoadAverage hi_la{16.0f, 10.0f, 6.0f, 16, 300};
+    const auto h = rel_ctrl.evaluate(mem, mem_psi, hi, hi_la, 8, 200'000);
+    thm::CpuPSIStats cooling{true, 20.0f, 18.0f, 12.0f, 5'000'000ULL};
+    const auto r1 = rel_ctrl.evaluate(mem, mem_psi, cooling, hi_la, 8, 200'000);
+    const auto r2 = rel_ctrl.evaluate(mem, mem_psi, cooling, hi_la, 8, 200'000);
+    const auto r3 = rel_ctrl.evaluate(mem, mem_psi, cooling, hi_la, 8, 200'000);
+    const bool release_fast = (h.cpu  == thm::PressureLevel::HIGH &&
+                               r1.cpu == thm::PressureLevel::HIGH &&
+                               r2.cpu == thm::PressureLevel::HIGH &&
+                               r3.cpu == thm::PressureLevel::MODERATE);
+
+    const bool passed = primed_normal && still_normal && fast_crit && blip_ignored && release_fast;
+    std::cout << "[InstantPSI] prime=" << thm::to_string(s1.cpu)
+              << " second=" << thm::to_string(s2.cpu)
+              << " third=" << thm::to_string(s3.cpu)
+              << " blip=" << thm::to_string(q3s.cpu)
+              << " release=" << thm::to_string(r3.cpu) << "\n";
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-24: Instantaneous PSI Fast Path",
+                         "2-sample PSI delta escalation + blip rejection + fast release",
+                         passed,
+                         "0%->60% tick: NORMAL/NORMAL/CRITICAL, blip=NORMAL, release=MODERATE",
+                         ms});
+    std::cout << (passed ? ">>> PASS: instantaneous PSI fast path verified.\n" : ">>> FAIL!\n");
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-25: Governor Availability Translation
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc25_governor_availability_translation() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(25, "Governor Availability Translation",
+                    "Hints map onto intel_pstate (no schedutil) and schedutil-capable kernels");
+
+    using H = thm::GovernorHint;
+    const std::string pstate   = "performance powersave";
+    const std::string classic  = "conservative ondemand userspace powersave performance schedutil";
+    const std::string epp      = "default performance balance_performance balance_power power";
+
+    const bool p_perf = thm::choose_scaling_governor(H::PERFORMANCE, pstate) == "performance";
+    const bool p_bal  = thm::choose_scaling_governor(H::SCHEDUTIL,   pstate) == "powersave";
+    const bool p_save = thm::choose_scaling_governor(H::POWERSAVE,   pstate) == "powersave";
+    const bool c_bal  = thm::choose_scaling_governor(H::SCHEDUTIL,   classic) == "schedutil";
+    const bool c_perf = thm::choose_scaling_governor(H::PERFORMANCE, classic) == "performance";
+
+    const bool e_perf = thm::choose_energy_preference(H::PERFORMANCE, epp) == "performance";
+    const bool e_bal  = thm::choose_energy_preference(H::SCHEDUTIL,   epp) == "balance_performance";
+    const bool e_save = thm::choose_energy_preference(H::POWERSAVE,   epp) == "power";
+
+    const bool passed = p_perf && p_bal && p_save && c_bal && c_perf &&
+                        e_perf && e_bal && e_save;
+    std::cout << "[Governor] pstate perf=" << thm::choose_scaling_governor(H::PERFORMANCE, pstate)
+              << " bal=" << thm::choose_scaling_governor(H::SCHEDUTIL, pstate)
+              << " classic bal=" << thm::choose_scaling_governor(H::SCHEDUTIL, classic)
+              << " epp bal=" << thm::choose_energy_preference(H::SCHEDUTIL, epp) << "\n";
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-25: Governor Availability",
+                         "Unsupported schedutil falls back without failing every tick",
+                         passed,
+                         "intel_pstate: perf/powersave/powersave + EPP bias, classic: schedutil",
+                         ms});
+    std::cout << (passed ? ">>> PASS: governor translation verified.\n" : ">>> FAIL!\n");
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-26: CRITICAL Reserves A Second Core + cpu.idle
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc26_critical_extra_headroom_and_idle() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(26, "CRITICAL Extra Headroom",
+                    "CRITICAL reserves N-2 cores and sets cpu.idle; unattended lift clears both");
+
+    const auto high8 = thm::compute_cpu_slice_policy(thm::PressureLevel::HIGH, 8, false);
+    const auto crit8 = thm::compute_cpu_slice_policy(thm::PressureLevel::CRITICAL, 8, false);
+    const auto crit2 = thm::compute_cpu_slice_policy(thm::PressureLevel::CRITICAL, 2, false);
+    const auto crit1 = thm::compute_cpu_slice_policy(thm::PressureLevel::CRITICAL, 1, false);
+    const auto away  = thm::compute_cpu_slice_policy(thm::PressureLevel::CRITICAL, 8, true);
+
+    const bool high_ok = (high8.background_quota_us == 175000 && !high8.background_idle);
+    const bool crit_ok = (crit8.background_quota_us == 150000 && crit8.background_idle &&
+                          std::fabs(crit8.background_max_pct - 75.0f) < 0.05f);
+    const bool two_ok  = (crit2.background_quota_us == 25000 && crit2.background_idle);
+    const bool one_ok  = (crit1.background_quota_us == 18750 && crit1.background_idle);
+    const bool away_ok = (away.background_quota_us == 0 && !away.headroom_engaged &&
+                          !away.background_idle && away.unattended_lift);
+
+    const bool passed = high_ok && crit_ok && two_ok && one_ok && away_ok;
+    std::cout << "[Policy] HIGH8=" << high8.background_quota_us
+              << " CRIT8=" << crit8.background_quota_us
+              << " CRIT2=" << crit2.background_quota_us
+              << " CRIT1=" << crit1.background_quota_us
+              << " idle=" << (crit8.background_idle ? 1 : 0)
+              << " away_lift=" << (away.unattended_lift ? 1 : 0) << "\n";
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-26: CRITICAL Extra Headroom",
+                         "N-2 quota + cpu.idle at CRITICAL, cleared when unattended",
+                         passed,
+                         "HIGH8=7c, CRIT8=6c+idle, CRIT2=1c, CRIT1=75%, away=max",
+                         ms});
+    std::cout << (passed ? ">>> PASS: CRITICAL headroom policy verified.\n" : ">>> FAIL!\n");
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-27: Observed Heavy Workload Is Real Governor Demand
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc27_observed_heavy_demand() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(27, "Observed Heavy Demand",
+                    "Unclassified game/render/training CPU load never selects POWERSAVE");
+
+    // A Blender render or game that the classifier has not seen yet: focused,
+    // observed, using several cores. It must keep the governor at SCHEDUTIL at
+    // NORMAL pressure and earn a boost once CPU pressure becomes MODERATE.
+    std::unordered_map<uint32_t, thm::Workload> heavy;
+    thm::Workload wl_heavy;
+    wl_heavy.id = 901;
+    wl_heavy.observed = true;
+    wl_heavy.state = thm::WorkloadState::ACTIVE;
+    wl_heavy.cpu_pct = 300.0f;
+    heavy[901] = wl_heavy;
+
+    const auto gov_calm = thm::WorkspaceMonitor::compute_governor(
+        heavy, thm::PressureLevel::NORMAL, thm::GovernorHint::SCHEDUTIL,
+        thm::PressureLevel::NORMAL);
+    const auto gov_contended = thm::WorkspaceMonitor::compute_governor(
+        heavy, thm::PressureLevel::NORMAL, thm::GovernorHint::SCHEDUTIL,
+        thm::PressureLevel::MODERATE);
+
+    // An observed but idle window must still allow POWERSAVE.
+    std::unordered_map<uint32_t, thm::Workload> idle;
+    thm::Workload wl_idle;
+    wl_idle.id = 902;
+    wl_idle.observed = true;
+    wl_idle.state = thm::WorkloadState::ACTIVE;
+    wl_idle.cpu_pct = 0.0f;
+    idle[902] = wl_idle;
+    const auto gov_idle = thm::WorkspaceMonitor::compute_governor(
+        idle, thm::PressureLevel::NORMAL, thm::GovernorHint::SCHEDUTIL,
+        thm::PressureLevel::NORMAL);
+
+    const bool passed =
+        (gov_calm == thm::GovernorHint::SCHEDUTIL) &&
+        (gov_contended == thm::GovernorHint::PERFORMANCE) &&
+        (gov_idle == thm::GovernorHint::POWERSAVE);
+    auto gov_name = [](thm::GovernorHint h) -> const char* {
+        switch (h) {
+            case thm::GovernorHint::PERFORMANCE: return "PERFORMANCE";
+            case thm::GovernorHint::POWERSAVE:   return "POWERSAVE";
+            default:                             return "SCHEDUTIL";
+        }
+    };
+    std::cout << "[Governor] observed heavy=" << gov_name(gov_calm)
+              << " contended=" << gov_name(gov_contended)
+              << " idle=" << gov_name(gov_idle) << "\n";
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-27: Observed Heavy Demand",
+                         "Unclassified heavy CPU work drives governor demand, idle windows do not",
+                         passed,
+                         "heavy=SCHEDUTIL, contended=PERFORMANCE, idle=POWERSAVE",
+                         ms});
+    std::cout << (passed ? ">>> PASS: observed demand verified.\n" : ">>> FAIL!\n");
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-28: Observed Workloads Join Slices Without Waiting For CPU Pressure
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc28_observed_slice_assignment() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(28, "Observed Slice Assignment",
+                    "Real unclassified CPU work is arbitrated at NORMAL pressure, no signals");
+
+    thm::WorkspaceState focused;
+    focused.is_focused = true;
+    focused.is_visible = true;
+    thm::WorkspaceState away;
+
+    thm::Workload heavy;
+    heavy.observed = true;
+    heavy.state = thm::WorkloadState::ACTIVE;
+    heavy.cpu_pct = 250.0f;
+
+    bool active_focused = false;
+    const bool assign_focused = thm::observed_slice_assignment(
+        heavy, focused, thm::ActivityState::EXECUTING, active_focused);
+    bool active_away = false;
+    const bool assign_away = thm::observed_slice_assignment(
+        heavy, away, thm::ActivityState::EXECUTING, active_away);
+
+    thm::Workload idle;
+    idle.observed = true;
+    idle.state = thm::WorkloadState::IDLE;
+    idle.cpu_pct = 0.0f;
+    bool ignored = false;
+    const bool assign_idle = thm::observed_slice_assignment(
+        idle, focused, thm::ActivityState::IDLE, ignored);
+
+    thm::Workload classified = heavy;
+    classified.observed = false;
+    bool ignored2 = false;
+    const bool assign_classified = thm::observed_slice_assignment(
+        classified, focused, thm::ActivityState::EXECUTING, ignored2);
+
+    const bool passed = assign_focused && active_focused &&
+                        assign_away && !active_away &&
+                        !assign_idle && !assign_classified;
+    std::cout << "[Slice] focused=" << (assign_focused && active_focused ? "ACTIVE" : "no")
+              << " away=" << (assign_away && !active_away ? "BACKGROUND" : "no")
+              << " idle=" << (assign_idle ? "moved" : "skipped")
+              << " classified=" << (assign_classified ? "moved" : "skipped") << "\n";
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-28: Observed Slice Assignment",
+                         "Unclassified heavy work joins ACTIVE/BACKGROUND slices at NORMAL pressure",
+                         passed,
+                         "focused=ACTIVE, unfocused=BACKGROUND, idle/classified=skipped",
+                         ms});
+    std::cout << (passed ? ">>> PASS: observed slice arbitration verified.\n" : ">>> FAIL!\n");
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
 // Main Test Harness Entry Point
 // ═════════════════════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-29: v3.3 Workload Intent Classification
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc29_workload_intent_classification() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(29, "Workload Intent Classification",
+                    "Games, renderers and training jobs get explicit CPU slice intent");
+
+    thm::ClassifierConfig cfg;
+    thm::FusionClassifier fc(cfg);
+    const std::string train_cmd = "python3 /home/u/project/train.py --epochs 20";
+    const std::string lint_cmd  = "python3 tools/lint.py";
+
+    thm::ClassificationResult game, render, training, plain_python;
+    fc.detect_intent(cfg, "steam",   ::getpid(), game);
+    fc.detect_intent(cfg, "blender", ::getpid(), render);
+    fc.detect_intent(cfg, "python3", ::getpid(), training, &train_cmd);
+    fc.detect_intent(cfg, "python3", ::getpid(), plain_python, &lint_cmd);
+
+    const bool passed =
+        game.latency_critical && game.latency_sensitive &&
+        render.throughput_bulk && !render.latency_critical &&
+        training.gpu_feeding && training.throughput_bulk &&
+        !plain_python.gpu_feeding && !plain_python.throughput_bulk &&
+        !plain_python.latency_critical;
+
+    std::cout << "[Intent] game=" << (game.latency_critical ? "LATENCY" : "-")
+              << " render=" << (render.throughput_bulk ? "BULK" : "-")
+              << " train=" << (training.gpu_feeding ? "GPU_FEED" : "-")
+              << " plain_python=" << (plain_python.gpu_feeding ? "GPU_FEED" : "-") << "\n";
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-29: Workload Intent Classification",
+                         "Game/render/training intent detected; ordinary python unaffected",
+                         passed,
+                         "game=LATENCY, render=BULK, train=GPU_FEED, plain=none", ms});
+    std::cout << (passed ? ">>> PASS: workload intent verified.\n" : ">>> FAIL!\n");
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-30: v3.3 Policy Protection For Intent Workloads
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc30_intent_policy_guard() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(30, "Intent Policy Guard",
+                    "Background games stay full, GPU dataloaders are never frozen or reclaimed");
+
+    thm::ProtectedRegistry registry;
+    thm::PolicyEngine policy;
+    thm::WorkspaceState away; // unfocused, not visible
+
+    thm::Workload game;
+    game.id = 903;
+    game.latency_critical = true;
+    game.state = thm::WorkloadState::BACKGROUND_EXECUTING;
+    game.pids = {::getpid()};
+    auto game_decision = policy.evaluate(game, away, thm::ActivityState::IDLE,
+                                         thm::PressureLevel::CRITICAL, registry);
+
+    thm::Workload train;
+    train.id = 904;
+    train.gpu_feeding = true;
+    train.state = thm::WorkloadState::BACKGROUND_EXECUTING;
+    train.pids = {::getpid()};
+    auto train_high = policy.evaluate(train, away, thm::ActivityState::IDLE,
+                                      thm::PressureLevel::HIGH, registry);
+    auto train_critical = policy.evaluate(train, away, thm::ActivityState::IDLE,
+                                          thm::PressureLevel::CRITICAL, registry);
+
+    const bool passed =
+        game_decision == thm::PolicyDecision::KEEP_FULL &&
+        train_high != thm::PolicyDecision::FREEZE &&
+        train_high != thm::PolicyDecision::RECLAIM &&
+        train_critical == thm::PolicyDecision::THROTTLE;
+
+    std::cout << "[Policy] game@CRITICAL=" << thm::to_string(game_decision)
+              << " train@HIGH=" << thm::to_string(train_high)
+              << " train@CRITICAL=" << thm::to_string(train_critical) << "\n";
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-30: Intent Policy Guard",
+                         "Latency-critical kept full at CRITICAL; GPU feeder never frozen",
+                         passed,
+                         "game=KEEP_FULL, train@HIGH=KEEP_BACKGROUND, train@CRITICAL=THROTTLE",
+                         ms});
+    std::cout << (passed ? ">>> PASS: intent policy guard verified.\n" : ">>> FAIL!\n");
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-31: v3.3 Latency Slice Routing & Weights
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc31_latency_slice_policy() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(31, "Latency Slice Routing",
+                    "Latency intent uses uncapped slice; bulk still uses capped background slice");
+
+    thm::Workload game, train, bulk;
+    game.latency_critical = true;
+    train.gpu_feeding = true;
+    bulk.throughput_bulk = true;
+
+    const std::string s_game  = thm::slice_for_intent(game,  thm::PolicyDecision::KEEP_BACKGROUND);
+    const std::string s_train = thm::slice_for_intent(train, thm::PolicyDecision::THROTTLE);
+    const std::string s_bulk  = thm::slice_for_intent(bulk,  thm::PolicyDecision::KEEP_BACKGROUND);
+
+    const auto normal = thm::compute_cpu_slice_policy(
+        thm::PressureLevel::NORMAL, 8, false);
+    const auto high = thm::compute_cpu_slice_policy(
+        thm::PressureLevel::HIGH, 8, false);
+    const auto critical = thm::compute_cpu_slice_policy(
+        thm::PressureLevel::CRITICAL, 8, false);
+
+    const bool passed =
+        s_game == thm::SLICE_LATENCY && s_train == thm::SLICE_LATENCY &&
+        s_bulk == thm::SLICE_BACKGROUND &&
+        normal.latency_weight == 450 && !normal.background_idle &&
+        high.latency_weight == 950 && high.latency_weight > high.background_weight &&
+        high.headroom_engaged && !high.background_idle &&
+        critical.latency_weight == 1000 && critical.background_idle;
+
+    std::cout << "[Slice] game=" << s_game << " train=" << s_train
+              << " bulk=" << s_bulk
+              << " weights(HIGH): L=" << high.latency_weight
+              << " B=" << high.background_weight << "\n";
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-31: Latency Slice Routing",
+                         "Latency slice is weighted but never capped or idled",
+                         passed,
+                         "game/train=archtitan-latency.slice, bulk=background, L(HIGH)=950",
+                         ms});
+    std::cout << (passed ? ">>> PASS: latency slice routing verified.\n" : ">>> FAIL!\n");
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-32: v3.4 Adaptive Headroom From Real Workload Demand
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc32_adaptive_headroom() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(32, "Adaptive Headroom",
+                    "Reservation grows with game/dataloader/foreground demand, capped and thermal-aware");
+
+    const thm::CpuDemandHint empty;
+    const int legacy_high = thm::compute_reserved_cores(
+        thm::PressureLevel::HIGH, 8, false, empty);
+    const int legacy_crit = thm::compute_reserved_cores(
+        thm::PressureLevel::CRITICAL, 8, false, empty);
+
+    thm::CpuDemandHint game;
+    game.latency_workloads = 1;
+    const int game_reserve = thm::compute_reserved_cores(
+        thm::PressureLevel::HIGH, 8, false, game);
+
+    thm::CpuDemandHint game_trainer = game;
+    game_trainer.gpu_feeders = 1;
+    const int both_reserve = thm::compute_reserved_cores(
+        thm::PressureLevel::HIGH, 8, false, game_trainer);
+
+    thm::CpuDemandHint smt = game_trainer;
+    smt.smt_siblings = true;
+    const int smt_reserve = thm::compute_reserved_cores(
+        thm::PressureLevel::HIGH, 8, false, smt);
+
+    thm::CpuDemandHint hot = game_trainer;
+    hot.cpu_temp_c = 85.0f;
+    const int hot_reserve = thm::compute_reserved_cores(
+        thm::PressureLevel::HIGH, 8, false, hot);
+
+    thm::CpuDemandHint saturated;
+    saturated.foreground_cpu_pct = 700.0f; // 7 cores' worth on an 8-core box
+    const int saturated_reserve = thm::compute_reserved_cores(
+        thm::PressureLevel::HIGH, 8, false, saturated);
+
+    // The policy must actually change cpu.max, not just report a number.
+    const auto fixed_policy = thm::compute_cpu_slice_policy(
+        thm::PressureLevel::HIGH, 8, false, &empty);
+    const auto game_policy = thm::compute_cpu_slice_policy(
+        thm::PressureLevel::HIGH, 8, false, &game);
+
+    const bool passed =
+        legacy_high == 1 && legacy_crit == 2 &&
+        game_reserve == 2 && both_reserve == 3 && smt_reserve == 4 &&
+        hot_reserve == 2 && saturated_reserve == 2 &&
+        fixed_policy.background_quota_us == 175000 &&
+        game_policy.background_quota_us == 150000 &&
+        game_policy.reserved_cores == 2;
+
+    std::cout << "[Headroom] legacy=" << legacy_high << "/" << legacy_crit
+              << " game=" << game_reserve << " game+train=" << both_reserve
+              << " SMT=" << smt_reserve << " hot=" << hot_reserve
+              << " saturated=" << saturated_reserve
+              << " quota(ms)=" << fixed_policy.background_quota_us << "->"
+              << game_policy.background_quota_us << "\n";
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-32: Adaptive Headroom",
+                         "Demand-aware reservation with SMT/thermal caps changes cpu.max",
+                         passed,
+                         "game=2, game+train=3, SMT=4, hot=2, quota 175000->150000us",
+                         ms});
+    std::cout << (passed ? ">>> PASS: adaptive headroom verified.\n" : ">>> FAIL!\n");
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-33: Headroom Hysteresis (No cpu.max Flapping)
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc33_headroom_hysteresis() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(33, "Headroom Hysteresis",
+                    "A new reservation needs 3 stable ticks; transitions reset immediately");
+
+    thm::AdaptiveHeadroomTracker tracker;
+    const int a = tracker.update(1, thm::PressureLevel::HIGH, false);
+    const int b = tracker.update(2, thm::PressureLevel::HIGH, false);
+    const int c = tracker.update(2, thm::PressureLevel::HIGH, false);
+    const int d = tracker.update(2, thm::PressureLevel::HIGH, false);
+    const int e = tracker.update(1, thm::PressureLevel::HIGH, false); // aborted rise
+    const int f = tracker.update(2, thm::PressureLevel::HIGH, false); // back to current
+    const int g = tracker.update(0, thm::PressureLevel::MODERATE, false); // immediate
+
+    const bool passed = a == 1 && b == 1 && c == 1 && d == 2 &&
+                        e == 2 && f == 2 && g == 0;
+
+    std::cout << "[Hysteresis] ticks=" << a << b << c << d
+              << " aborted=" << e << " restored=" << f
+              << " transition=" << g << "\n";
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-33: Headroom Hysteresis",
+                         "Reservation changes only after 3 stable ticks; pressure jumps apply at once",
+                         passed, "1,1,1,2 then aborted->2, transition->0", ms});
+    std::cout << (passed ? ">>> PASS: headroom hysteresis verified.\n" : ">>> FAIL!\n");
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-34: v3.5 SMT Topology & Whole-Core cpuset Planning
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc34_smt_isolation() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(34, "SMT Whole-Core Isolation",
+                    "On 4c/8t, reserve whole physical cores for latency work and exclude their siblings from BG");
+
+    const auto parsed = thm::parse_cpu_list("0-1,4,7");
+    const bool parse_ok = (parsed == std::vector<int>{0, 1, 4, 7});
+
+    // 4 physical cores, each with two logical threads: 0/4, 1/5, 2/6, 3/7.
+    thm::SmtTopology topo;
+    topo.logical_cpus = 8;
+    topo.core_id = {0, 1, 2, 3, 0, 1, 2, 3};
+    const auto groups = topo.core_groups();
+    const bool groups_ok = groups.size() == 4 &&
+        groups[0] == (std::vector<int>{0, 4}) &&
+        groups[3] == (std::vector<int>{3, 7}) && topo.has_smt();
+
+    const auto one = thm::plan_smt_isolation(
+        topo, 1, 0, thm::PressureLevel::HIGH, false);
+    const auto both = thm::plan_smt_isolation(
+        topo, 1, 1, thm::PressureLevel::HIGH, false);
+    // Intent alone engages isolation: a game at MODERATE pressure still must
+    // not share execution units with a background compiler on its SMT sibling.
+    const auto cool = thm::plan_smt_isolation(
+        topo, 2, 0, thm::PressureLevel::MODERATE, false);
+    const auto away = thm::plan_smt_isolation(
+        topo, 2, 0, thm::PressureLevel::CRITICAL, true);
+
+    const bool passed = parse_ok && groups_ok &&
+        one.active && one.reserved_physical_cores == 1 &&
+        thm::format_cpu_list(one.latency_ids) == "0,4" &&
+        thm::format_cpu_list(one.background_ids) == "1,2,3,5,6,7" &&
+        both.active && both.reserved_physical_cores == 2 &&
+        thm::format_cpu_list(both.latency_ids) == "0,1,4,5" &&
+        thm::format_cpu_list(both.background_ids) == "2,3,6,7" &&
+        cool.active && cool.reserved_physical_cores == 2 && !away.active;
+
+    std::cout << "[SMT] 1 job: latency[" << thm::format_cpu_list(one.latency_ids)
+              << "] bg[" << thm::format_cpu_list(one.background_ids) << "]\n"
+              << "[SMT] 2 jobs: latency[" << thm::format_cpu_list(both.latency_ids)
+              << "] bg[" << thm::format_cpu_list(both.background_ids) << "]\n";
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-34: SMT Whole-Core Isolation",
+                         "Latency work owns whole physical cores; BG excludes every reserved sibling",
+                         passed,
+                         "game=1 core {0,4}, game+dataloader=2 cores {0,1,4,5}, BG={2,3,6,7}",
+                         ms});
+    std::cout << (passed ? ">>> PASS: SMT isolation planning verified.\n" : ">>> FAIL!\n");
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-35: v3.6 Input Feed-Forward
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc35_input_feedforward() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(35, "Input Feed-Forward",
+                    "Real key/pointer input arms a bounded 1.2 s foreground boost");
+
+    struct input_event key{}, rel{}, power{}, release{};
+    key.type = EV_KEY;  key.code = KEY_A;   key.value = 1;
+    rel.type = EV_REL;  rel.code = REL_X;   rel.value = 5;
+    power.type = EV_KEY; power.code = KEY_POWER; power.value = 1;
+    release.type = EV_KEY; release.code = KEY_A; release.value = 0;
+
+    const bool filter_ok = thm::is_user_input_event(key) &&
+                           thm::is_user_input_event(rel) &&
+                           !thm::is_user_input_event(power) &&
+                           !thm::is_user_input_event(release);
+
+    using Clock = thm::InputFeedForwardTracker::Clock;
+    const auto t_base = Clock::now();
+    thm::InputFeedForwardTracker tracker;
+    const bool a = tracker.observe(true, t_base);
+    const bool b = tracker.observe(false, t_base + std::chrono::milliseconds(600));
+    const bool c = tracker.observe(false, t_base + std::chrono::milliseconds(1300));
+
+    thm::InputBoost boost;
+    boost.active = true;
+    auto normal = thm::compute_cpu_slice_policy(thm::PressureLevel::NORMAL, 8, false);
+    thm::apply_input_boost(normal, boost, 8);
+    auto high = thm::compute_cpu_slice_policy(thm::PressureLevel::HIGH, 8, false);
+    thm::apply_input_boost(high, boost, 8);
+    auto away = thm::compute_cpu_slice_policy(thm::PressureLevel::HIGH, 8, true);
+    thm::apply_input_boost(away, boost, 8);
+
+    const bool boost_ok =
+        normal.headroom_engaged && normal.reserved_cores == 1 &&
+        normal.background_quota_us == 175000 &&
+        normal.active_weight == 900 && normal.latency_weight == 850 &&
+        high.reserved_cores == 2 && high.background_quota_us == 150000 &&
+        high.active_weight == 1400 && high.latency_weight == 1350 &&
+        high.background_weight == 10 && // penalty floored, never zero
+        !away.headroom_engaged && away.background_quota_us == 0;
+
+    const bool passed = filter_ok && a && b && !c && boost_ok;
+
+    std::cout << "[Input] filter=" << filter_ok << " latch=" << a << b << c
+              << " normal_quota=" << normal.background_quota_us
+              << " high_quota=" << high.background_quota_us << "\n";
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-35: Input Feed-Forward",
+                         "Evdev filter, 1.2 s self-expiring latch, bounded weight/cap boost",
+                         passed,
+                         "key/mouse=yes power/release=no, latch 1->1->0, quota 175000/150000us",
+                         ms});
+    std::cout << (passed ? ">>> PASS: input feed-forward verified.\n" : ">>> FAIL!\n");
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-36: Cached /proc stat parsing
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc36_proc_stat_parse() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(36, "Cached /proc Stat Parse",
+                    "One stat read per tick feeds both graph state and ExecutionDetector");
+
+    // pid (comm with spaces) state ppid pgrp sid tty tpgid flags minflt cminflt
+    // majflt cmajflt utime stime ...
+    const std::string good =
+        "4242 (my weird proc) S 1 4242 4242 0 -1 4194560 100 0 5 0 1234 56 0 0";
+    const std::string truncated = "4242 (proc) S 1 100 0";
+    const long ticks = thm::ExecutionDetector::parse_cpu_ticks(good);
+    const long bad = thm::ExecutionDetector::parse_cpu_ticks(truncated);
+
+    const bool passed = (ticks == 1290) && (bad == -1);
+    std::cout << "[Proc] utime+stime=" << ticks << " malformed=" << bad << "\n";
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-36: Cached /proc Stat Parse",
+                         "Shared parser handles spaces in comm and rejects truncated stat lines",
+                         passed, "utime 1234 + stime 56 = 1290 ticks", ms});
+    std::cout << (passed ? ">>> PASS: cached stat parsing verified.\n" : ">>> FAIL!\n");
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-37: Standalone game/benchmark engine intent
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc37_standalone_game_intent() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(37, "Standalone Game Engine Intent",
+                    "Unigine Superposition is latency-critical even with no launcher parent");
+
+    thm::ClassifierConfig cfg;
+    thm::FusionClassifier fc(cfg);
+    const std::string unrelated = "random-background-tool";
+
+    thm::ClassificationResult sp, sp_cli, unigine, other;
+    fc.detect_intent(cfg, "superposition",        ::getpid(), sp);
+    fc.detect_intent(cfg, "superposition_cli",    ::getpid(), sp_cli);
+    fc.detect_intent(cfg, "unigine",              ::getpid(), unigine);
+    fc.detect_intent(cfg, unrelated,              ::getpid(), other);
+
+    const bool passed =
+        sp.latency_critical && sp.latency_sensitive &&
+        sp_cli.latency_critical && sp_cli.latency_sensitive &&
+        unigine.latency_critical && unigine.latency_sensitive &&
+        !other.latency_critical;
+
+    std::cout << "[GameEngine] superposition=" << (sp.latency_critical ? "LATENCY" : "-")
+              << " cli=" << (sp_cli.latency_critical ? "LATENCY" : "-")
+              << " unigine=" << (unigine.latency_critical ? "LATENCY" : "-")
+              << " unrelated=" << (other.latency_critical ? "LATENCY" : "-") << "\n";
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-37: Standalone Game Engine Intent",
+                         "Unigine/Superposition executables get latency slice; unrelated tools do not",
+                         passed,
+                         "superposition/cli/unigine=LATENCY, unrelated=none", ms});
+    std::cout << (passed ? ">>> PASS: standalone game intent verified.\n" : ">>> FAIL!\n");
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-38: Unattended interactive-workload cap guard
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc38_unattended_game_cap_guard() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(38, "Unattended Game Cap Guard",
+                    "A hands-free game/GPU feeder keeps the cap; a lone build still lifts it");
+
+    thm::CpuDemandHint game, feeder, bulk;
+    game.latency_workloads = 1;
+    game.foreground_cpu_pct = 100.0f;
+    feeder.gpu_feeders = 1;
+    feeder.foreground_cpu_pct = 80.0f;
+    bulk.bulk_workloads = 2;
+    bulk.foreground_cpu_pct = 160.0f;
+
+    const auto p_game   = thm::compute_cpu_slice_policy(
+        thm::PressureLevel::CRITICAL, 8, true, &game);
+    const auto p_feeder = thm::compute_cpu_slice_policy(
+        thm::PressureLevel::HIGH, 8, true, &feeder);
+    const auto p_bulk   = thm::compute_cpu_slice_policy(
+        thm::PressureLevel::HIGH, 8, true, &bulk);
+
+    const bool passed =
+        !thm::should_lift_unattended_cap(true, game) &&
+        !thm::should_lift_unattended_cap(true, feeder) &&
+        thm::should_lift_unattended_cap(true, bulk) &&
+        !p_game.unattended_lift && p_game.headroom_engaged &&
+        p_game.background_quota_us > 0 &&
+        !p_feeder.unattended_lift && p_feeder.headroom_engaged &&
+        p_feeder.background_quota_us > 0 &&
+        p_bulk.unattended_lift && p_bulk.background_quota_us == 0;
+
+    std::cout << "[Unattended] game lift=" << p_game.unattended_lift
+              << " quota=" << p_game.background_quota_us
+              << " | feeder lift=" << p_feeder.unattended_lift
+              << " | bulk lift=" << p_bulk.unattended_lift << "\n";
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-38: Unattended Game Cap Guard",
+                         "Interactive demand suppresses lift; bulk-only unattended work still lifts",
+                         passed,
+                         "game/feeder=cap engaged, bulk=max (100%)", ms});
+    std::cout << (passed ? ">>> PASS: unattended game cap guard verified.\n" : ">>> FAIL!\n");
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-39: AGING Pressure-Relief Downgrade
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc39_aging_pressure_relief() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(39, "AGING Pressure-Relief Downgrade",
+                    "AGING returns to IDLE when memory pressure falls below MODERATE");
+
+    thm::WorkloadManager mgr;
+
+    thm::Workload wl;
+    wl.id                 = 301;
+    wl.root_pid           = ::getpid();
+    wl.type               = thm::WorkloadType::SYSTEM_DEV;
+    wl.state              = thm::WorkloadState::IDLE;
+    wl.created_at         = thm::ms_clock::now() - std::chrono::minutes(10);
+    wl.last_active        = thm::ms_clock::now() - std::chrono::minutes(10);
+    wl.last_executing     = thm::ms_clock::now() - std::chrono::minutes(10);
+    mgr.add(wl);
+
+    thm::WorkspaceState unfocused;
+    unfocused.id        = 7;
+    unfocused.is_focused = false;
+    unfocused.is_visible = false;
+
+    // Enter AGING under sustained HIGH memory pressure. Age is kept between
+    // the 5-minute soft and 15-minute hard decay thresholds so the workload
+    // does not jump straight to RECLAIMABLE.
+    for (int i = 0; i < 3; ++i)
+        mgr.tick(*mgr.get(301), unfocused, thm::ActivityState::IDLE,
+                 thm::PressureLevel::HIGH);
+    const bool entered = (mgr.get(301)->state == thm::WorkloadState::AGING);
+
+    // Pressure relief: NORMAL must downgrade back to IDLE.
+    mgr.tick(*mgr.get(301), unfocused, thm::ActivityState::IDLE,
+             thm::PressureLevel::NORMAL);
+    const bool relieved = (mgr.get(301)->state == thm::WorkloadState::IDLE);
+
+    // A single HIGH tick must re-qualify through the state machine again.
+    mgr.tick(*mgr.get(301), unfocused, thm::ActivityState::IDLE,
+             thm::PressureLevel::HIGH);
+    const bool requalified = (mgr.get(301)->state == thm::WorkloadState::AGING);
+
+    // Hyprland focus still wins over pressure and rescues immediately.
+    thm::WorkspaceState focused;
+    focused.id         = 7;
+    focused.is_focused = true;
+    mgr.tick(*mgr.get(301), focused, thm::ActivityState::IDLE,
+             thm::PressureLevel::HIGH);
+    const bool focus_ok = (mgr.get(301)->state == thm::WorkloadState::ACTIVE);
+
+    const bool passed = entered && relieved && requalified && focus_ok;
+
+    std::cout << "[WorkloadManager] entered=" << (entered ? "yes" : "no")
+              << ", relieved=" << (relieved ? "yes" : "no")
+              << ", requalified=" << (requalified ? "yes" : "no")
+              << ", focus-rescue=" << (focus_ok ? "yes" : "no") << "\n";
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-39: AGING Pressure-Relief Downgrade",
+                         "Pressure relief returns AGING to IDLE; Hyprland focus still rescues",
+                         passed,
+                         "HIGH->AGING, NORMAL->IDLE, HIGH->AGING, focus->ACTIVE", ms});
+    std::cout << (passed ? ">>> PASS: AGING pressure relief verified.\n" : ">>> FAIL!\n");
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-40: Memory orchestration math
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc40_memory_orchestration_math() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(40, "Memory Orchestration Math",
+                    "memory.high = 75% RSS with floor; memory.low capped at half of RAM");
+
+    constexpr long k16MiB = 16L * 1024 * 1024;
+    constexpr long k1GiB  = 1024L * 1024 * 1024;
+    constexpr long k2GiB  = 2L * 1024 * 1024 * 1024;
+    constexpr long k8GiB  = 8L * 1024 * 1024 * 1024;
+
+    const long high_none  = thm::compute_memory_high_bytes(0);
+    const long high_small = thm::compute_memory_high_bytes(1024);
+    const long high_1gib  = thm::compute_memory_high_bytes(1024 * 1024);
+    const long low_none   = thm::compute_memory_low_bytes(0, 16 * 1024 * 1024);
+    const long low_2gib   = thm::compute_memory_low_bytes(2 * 1024 * 1024,
+                                                          16 * 1024 * 1024);
+    const long low_capped = thm::compute_memory_low_bytes(20 * 1024 * 1024,
+                                                          16 * 1024 * 1024);
+
+    const bool passed =
+        (high_none  == 0) &&
+        (high_small == k16MiB) &&
+        (high_1gib  == (k1GiB * 75) / 100) &&
+        (low_none   == 0) &&
+        (low_2gib   == k2GiB) &&
+        (low_capped == k8GiB);
+
+    std::cout << "[Memory] high(0)=" << high_none
+              << ", high(1MiB RSS)=" << high_small
+              << ", high(1GiB RSS)=" << high_1gib
+              << ", low(2GiB/16GiB)=" << low_2gib
+              << ", low(20GiB/16GiB)=" << low_capped << "\n";
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-40: Memory Orchestration Math",
+                         "memory.high soft cap and memory.low protection are bounded and safe",
+                         passed,
+                         "high=0/16MiB/0.75GiB, low=0/2GiB/8GiB cap", ms});
+    std::cout << (passed ? ">>> PASS: memory orchestration math verified.\n" : ">>> FAIL!\n");
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-41: Fail-Closed Decision Gate
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc41_fail_closed_gate() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(41, "Fail-Closed Decision Gate",
+                    "Unhealthy cgroups block FREEZE/RECLAIM; RECLAIM needs explicit opt-in");
+
+    using thm::PolicyDecision;
+    const bool healthy = true;
+    const bool broken  = false;
+    const bool opt_in  = true;
+    const bool no_opt  = false;
+
+    const bool a = thm::sanitize_decision(PolicyDecision::RECLAIM, healthy, no_opt)
+                   == PolicyDecision::FREEZE;
+    const bool b = thm::sanitize_decision(PolicyDecision::RECLAIM, healthy, opt_in)
+                   == PolicyDecision::RECLAIM;
+    const bool c = thm::sanitize_decision(PolicyDecision::RECLAIM, broken, opt_in)
+                   == PolicyDecision::KEEP_BACKGROUND;
+    const bool d = thm::sanitize_decision(PolicyDecision::FREEZE, broken, opt_in)
+                   == PolicyDecision::KEEP_BACKGROUND;
+    const bool e = thm::sanitize_decision(PolicyDecision::THROTTLE, broken, no_opt)
+                   == PolicyDecision::THROTTLE;
+    const bool f = thm::sanitize_decision(PolicyDecision::KEEP_FULL, broken, no_opt)
+                   == PolicyDecision::KEEP_FULL;
+
+    const bool passed = a && b && c && d && e && f;
+
+    std::cout << "[Gate] reclaim->freeze(no opt)=" << (a ? "yes" : "no")
+              << ", reclaim kept(opt)=" << (b ? "yes" : "no")
+              << ", broken->background(reclaim)=" << (c ? "yes" : "no")
+              << ", broken->background(freeze)=" << (d ? "yes" : "no") << "\n";
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-41: Fail-Closed Decision Gate",
+                         "No signals without writable cgroups; no kill without opt-in",
+                         passed,
+                         "reclaim->freeze, broken->background, throttle preserved", ms});
+    std::cout << (passed ? ">>> PASS: fail-closed gate verified.\n" : ">>> FAIL!\n");
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-42: Shared pidfd signal path
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc42_shared_pidfd_signal_path() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(42, "Shared pidfd Signal Path",
+                    "All enforcement paths use one pidfd-backed signal_process() helper");
+
+    const pid_t self = ::getpid();
+    const bool self_signalled =
+        (thm::signal_process(self, 0) == thm::SignalResult::Signaled);
+    const bool self_alive = thm::process_alive(self);
+
+    pid_t child = ::fork();
+    if (child == 0) _exit(0);
+    int status = 0;
+    if (child > 0) ::waitpid(child, &status, 0);
+
+    const bool gone_reported =
+        (child > 0 && thm::signal_process(child, 0) == thm::SignalResult::Gone);
+    const bool dead_not_alive = (child > 0 && !thm::process_alive(child));
+
+    const bool passed = self_signalled && self_alive && gone_reported && dead_not_alive;
+
+    std::cout << "[Signal] self=signalled/alive, reaped child="
+              << (gone_reported ? "gone" : "unexpected") << "\n";
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-42: Shared pidfd Signal Path",
+                         "pidfd delivery reports Gone for recycled/reaped PIDs",
+                         passed,
+                         "signal 0 to self + reaped child, liveness probe", ms});
+    std::cout << (passed ? ">>> PASS: shared pidfd signal path verified.\n" : ">>> FAIL!\n");
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-43: Hyprland recent-focus workload context
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc43_recent_focus_context() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(43, "Hyprland Recent-Focus Context",
+                    "Hyprland focus events protect a workspace for 30s after the user leaves");
+
+    thm::ProtectedRegistry registry;
+    thm::PolicyEngine       policy;
+    thm::WorkloadManager    mgr;
+
+    thm::Workload wl;
+    wl.id              = 501;
+    wl.root_pid        = ::getpid();
+    wl.type            = thm::WorkloadType::SYSTEM_DEV;
+    wl.state           = thm::WorkloadState::IDLE;
+    wl.created_at      = thm::ms_clock::now() - std::chrono::minutes(10);
+    wl.last_active     = thm::ms_clock::now() - std::chrono::minutes(10);
+    wl.last_executing  = thm::ms_clock::now() - std::chrono::minutes(10);
+    mgr.add(wl);
+
+    thm::WorkspaceState ws;
+    ws.id            = 3;
+    ws.is_focused    = false;
+    ws.is_visible    = false;
+    ws.last_focused  = thm::ms_clock::now() - std::chrono::seconds(10);
+
+    const bool context_ok = ws.context_active();
+
+    // A recently-left workspace still behaves like foreground context.
+    mgr.tick(*mgr.get(501), ws, thm::ActivityState::IDLE,
+             thm::PressureLevel::MODERATE);
+    const bool state_active =
+        (mgr.get(501)->state == thm::WorkloadState::ACTIVE);
+
+    const auto decision = policy.evaluate(*mgr.get(501), ws,
+                                          thm::ActivityState::IDLE,
+                                          thm::PressureLevel::MODERATE,
+                                          registry);
+    const bool policy_ok = (decision == thm::PolicyDecision::KEEP_FULL);
+
+    // After the bounded window, the same unfocused workspace is no longer
+    // foreground context and the workload ages normally under pressure.
+    ws.last_focused = thm::ms_clock::now() -
+                      std::chrono::seconds(thm::kRecentFocusWindowS + 5);
+    const bool aged_out = !ws.context_active();
+
+    mgr.tick(*mgr.get(501), ws, thm::ActivityState::IDLE,
+             thm::PressureLevel::MODERATE); // ACTIVE -> IDLE
+    mgr.tick(*mgr.get(501), ws, thm::ActivityState::IDLE,
+             thm::PressureLevel::MODERATE); // IDLE -> AGING
+    const bool degraded =
+        (mgr.get(501)->state == thm::WorkloadState::AGING);
+
+    const bool passed = context_ok && state_active && policy_ok &&
+                        aged_out && degraded;
+
+    std::cout << "[Context] recent=" << (context_ok ? "yes" : "no")
+              << ", state=" << (state_active ? "ACTIVE" : "unexpected")
+              << ", decision=" << thm::to_string(decision)
+              << ", aged_out=" << (aged_out ? "yes" : "no")
+              << ", degraded=" << (degraded ? "yes" : "no") << "\n";
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-43: Hyprland Recent-Focus Context",
+                         "Recent IPC focus acts as foreground context, then expires cleanly",
+                         passed,
+                         "focus 10s->ACTIVE/KEEP_FULL, 35s->AGING", ms});
+    std::cout << (passed ? ">>> PASS: Hyprland recent-focus context verified.\n" : ">>> FAIL!\n");
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-44: Throttled slice isolation (v3.4-R2)
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc44_throttled_slice_isolation() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(44, "Throttled Slice Isolation",
+                    "memory.high scope never caps executing background builds");
+
+    thm::Workload build, idle, feeder;
+    build.throughput_bulk = true;
+    build.state           = thm::WorkloadState::BACKGROUND_EXECUTING;
+    idle.state            = thm::WorkloadState::IDLE;
+    feeder.gpu_feeding    = true;
+
+    const std::string build_bg =
+        thm::slice_for_intent(build, thm::PolicyDecision::KEEP_BACKGROUND);
+    const std::string build_thr =
+        thm::slice_for_intent(build, thm::PolicyDecision::THROTTLE);
+    const std::string idle_thr =
+        thm::slice_for_intent(idle, thm::PolicyDecision::THROTTLE);
+    const std::string feeder_thr =
+        thm::slice_for_intent(feeder, thm::PolicyDecision::THROTTLE);
+    const std::string decision_thr =
+        thm::slice_for_decision(thm::PolicyDecision::THROTTLE);
+
+    const long high = thm::compute_memory_high_bytes(1024 * 1024);
+    const bool passed =
+        build_bg == thm::SLICE_BACKGROUND &&
+        build_thr == thm::SLICE_THROTTLED &&
+        idle_thr == thm::SLICE_THROTTLED &&
+        feeder_thr == thm::SLICE_LATENCY &&
+        decision_thr == thm::SLICE_THROTTLED &&
+        build_bg != build_thr &&
+        high > 0;
+
+    std::cout << "[Memory] executing-bg=" << build_bg
+              << " throttled=" << build_thr
+              << " decision=" << decision_thr
+              << " feeder=" << feeder_thr << "\n";
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-44: Throttled Slice Isolation",
+                         "memory.high moved off executing background work into dedicated slice",
+                         passed,
+                         "bg=archtitan-background, throttle=archtitan-throttled, latency unchanged",
+                         ms});
+    std::cout << (passed ? ">>> PASS: throttled slice isolation verified.\n" : ">>> FAIL!\n");
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-45: Build Toolchain Never Frozen (v3.4-R2)
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc45_bulk_build_never_frozen() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(45, "Build Toolchain Never Frozen",
+                    "compiler children are bulk work: throttled, never stopped");
+
+    thm::ClassifierConfig cfg;
+    thm::ClassificationResult classified;
+    thm::FusionClassifier::detect_intent(cfg, "cc1plus", 0, classified);
+
+    thm::ProtectedRegistry registry;
+    thm::PolicyEngine policy;
+    thm::Workload build;
+    build.id              = 902;
+    build.root_pid        = ::getpid();
+    build.pids            = {::getpid()};
+    build.type            = thm::WorkloadType::SYSTEM_DEV;
+    build.state           = thm::WorkloadState::IDLE; // short-lived children look idle
+    build.throughput_bulk = true;
+
+    thm::WorkspaceState ws;
+    ws.id = 7;
+    ws.is_focused = false;
+    ws.is_visible = false;
+
+    const auto d_norm = policy.evaluate(build, ws, thm::ActivityState::IDLE,
+                                        thm::PressureLevel::NORMAL, registry);
+    const auto d_high = policy.evaluate(build, ws, thm::ActivityState::IDLE,
+                                        thm::PressureLevel::HIGH, registry);
+    const auto d_crit = policy.evaluate(build, ws, thm::ActivityState::IDLE,
+                                        thm::PressureLevel::CRITICAL, registry);
+
+    const bool passed =
+        classified.throughput_bulk &&
+        d_norm == thm::PolicyDecision::KEEP_BACKGROUND &&
+        d_high == thm::PolicyDecision::KEEP_BACKGROUND &&
+        d_crit == thm::PolicyDecision::KEEP_BACKGROUND;
+
+    std::cout << "[Build] cc1plus bulk=" << classified.throughput_bulk
+              << " decisions=" << thm::to_string(d_norm) << "/"
+              << thm::to_string(d_high) << "/" << thm::to_string(d_crit) << "\n";
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-45: Build Toolchain Never Frozen",
+                         "compiler processes classified bulk; no FREEZE at any memory level",
+                         passed,
+                         "cc1plus=bulk, HIGH/CRITICAL=KEEP_BACKGROUND, memory.low protected",
+                         ms});
+    std::cout << (passed ? ">>> PASS: build toolchain freeze guard verified.\n" : ">>> FAIL!\n");
+}
+
 int main() {
     std::cout << "\n╔══════════════════════════════════════════════════════════════════════════════╗\n";
     std::cout << "║        THM v3 Real OS-Level Architectural Test Suite                         ║\n";
@@ -1770,6 +3181,33 @@ int main() {
     test_tc16_telemetry_contract();
     test_tc17_measured_cpu_percent();
     test_tc18_hyprland_late_start_reconnect();
+    test_tc19_hc_cpu_1_invariant();
+    test_tc20_cpu_dual_window_hysteresis();
+    test_tc21_cpu_slice_policy_math();
+    test_tc22_unattended_idle_autolift();
+    test_tc23_cpu_telemetry_contract_v32();
+    test_tc24_instant_psi_fast_path();
+    test_tc25_governor_availability_translation();
+    test_tc26_critical_extra_headroom_and_idle();
+    test_tc27_observed_heavy_demand();
+    test_tc28_observed_slice_assignment();
+    test_tc29_workload_intent_classification();
+    test_tc30_intent_policy_guard();
+    test_tc31_latency_slice_policy();
+    test_tc32_adaptive_headroom();
+    test_tc33_headroom_hysteresis();
+    test_tc34_smt_isolation();
+    test_tc35_input_feedforward();
+    test_tc36_proc_stat_parse();
+    test_tc37_standalone_game_intent();
+    test_tc38_unattended_game_cap_guard();
+    test_tc39_aging_pressure_relief();
+    test_tc40_memory_orchestration_math();
+    test_tc41_fail_closed_gate();
+    test_tc42_shared_pidfd_signal_path();
+    test_tc43_recent_focus_context();
+    test_tc44_throttled_slice_isolation();
+    test_tc45_bulk_build_never_frozen();
 
     // Summary Table
     std::cout << "\n════════════════════════════════════════════════════════════════════════════════\n";

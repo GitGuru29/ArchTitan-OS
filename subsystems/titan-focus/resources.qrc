@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/">
+        <file>qml/FocusRoot.qml</file>
+        <file>qml/FocusPill.qml</file>
+        <file>qml/BreakOverlay.qml</file>
+    </qresource>
+</RCC>
