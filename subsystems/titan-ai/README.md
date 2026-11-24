@@ -44,6 +44,7 @@ up automatically. To change the shortcut or open a tab instead, edit
 
 ```sh
 titan-ai setup                       # Google sign-in first; Gemini API key is optional
+titan-ai auth google --setup         # guided Desktop-app client setup + sign-in
 titan-ai auth google                 # prompts for your OAuth client ID, then signs you in
 titan-ai docs                        # full Google sign-in guide, also on installed systems
 titan-ai search 'latest Arch Linux news'
@@ -86,7 +87,7 @@ titan-ai auth status
 | `titan-ai status` | Show providers, models and auth methods |
 | `titan-ai setup` | Google-sign-in-first setup; optional Gemini API key fallback (`0600` config) |
 | `titan-ai config {show,path,edit,set,unset}` | Manage settings |
-| `titan-ai auth {google,status,logout}` | Google sign-in management (prompts for client ID if needed) |
+| `titan-ai auth {google,status,logout}` | Google sign-in management (`--setup` guide, `--device` headless) |
 | `titan-ai docs` | Print the full Google sign-in and Search guide |
 
 Global options: `-p/--provider`, `-m/--model`, `--system`, `--max-tokens`, `--temperature`,

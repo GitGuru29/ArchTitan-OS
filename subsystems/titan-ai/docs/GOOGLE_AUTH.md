@@ -34,8 +34,10 @@ The CLI requests only these scopes:
 
 ## 2. Give the client ID to TITAN AI
 
-`titan-ai auth google` and `titan-ai setup` ask for this ID interactively if it is not
-stored yet. To pre-store it instead, use either method below.
+Run `titan-ai auth google --setup` for a guided walkthrough: it prints the exact console
+links and checklist, optionally opens the console tabs, stores the Client ID, and can sign
+you in immediately. `titan-ai auth google` and `titan-ai setup` also ask for this ID
+interactively if it is not stored yet. To pre-store it instead, use either method below.
 
 Either store it in your private config:
 
@@ -54,6 +56,12 @@ export GOOGLE_CLOUD_PROJECT='your-gcp-project-id' # optional
 ```
 
 ## 3. Sign in
+
+For the full walkthrough, including creating the Desktop app client:
+
+```sh
+titan-ai auth google --setup
+```
 
 On a desktop session (opens the default browser and waits for the loopback callback):
 

@@ -130,6 +130,7 @@ class CppEngineTests(unittest.TestCase):
         self.assertIn("Google sign-in", result.stdout)
         self.assertIn("Generative Language API", result.stdout)
         self.assertIn("titan-ai auth google", result.stdout)
+        self.assertIn("--setup", result.stdout)
 
     def test_auth_google_prompts_for_client_id(self) -> None:
         result = self.cli("auth", "google")
@@ -138,6 +139,15 @@ class CppEngineTests(unittest.TestCase):
         self.assertIn("Google sign-in cancelled", result.stderr)
         self.assertIn("titan-ai docs", result.stderr)
         self.assertNotIn("No Google OAuth client ID", result.stderr)
+
+    def test_auth_google_setup_guide(self) -> None:
+        result = self.cli("auth", "google", "--setup", stdin="n\n")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("Google sign-in guided setup", result.stdout)
+        self.assertIn("Desktop app", result.stdout)
+        self.assertIn("console.developers.google.com/auth/clients", result.stdout)
+        self.assertIn("Generative Language API", result.stdout)
+        self.assertIn("Google sign-in cancelled", result.stdout)
 
     def test_config_roundtrip_is_private(self) -> None:
         result = self.cli("config", "set", "models.gemini", "gemini-test")

@@ -819,7 +819,7 @@ struct Args {
     int max_tokens = 0;
     bool has_temp = false;
     double temperature = 0, timeout = 0;
-    bool all = false, json = false, links = false, device = false;
+    bool all = false, json = false, links = false, device = false, auth_setup = false;
     std::vector<std::string> prompt;
     std::string auth_command, config_command, key, value;
 };
@@ -836,10 +836,14 @@ static void usage() {
                  "      --timeout N       request timeout in seconds\n"
                  "      --all             ask every configured provider\n"
                  "  -j, --json            print the full JSON response\n\n"
+                 "auth options:\n"
+                 "  --device              use the device-code flow (headless/SSH)\n"
+                 "  --setup               guided Google Cloud Desktop-app client setup\n\n"
                  "examples:\n"
                  "  titan-ai 'explain btrfs snapshots'\n"
                  "  titan-ai -p claude 'review this script'\n"
                  "  titan-ai search 'latest Arch Linux news'\n"
+                 "  titan-ai auth google --setup\n"
                  "  titan-ai chat\n";
 }
 
@@ -889,6 +893,7 @@ static Args parse_args(const std::vector<std::string> &raw) {
         else if (token == "-j" || token == "--json") args.json = true;
         else if (token == "--links") args.links = true;
         else if (token == "--device") args.device = true;
+        else if (token == "--setup") args.auth_setup = true;
         else if (token == "-") { /* stdin marker, handled in run */ }
         else if (token[0] == '-') throw TitanError("unknown option '" + token + "'");
         else if (args.command.empty()) args.command = token;
@@ -1208,8 +1213,89 @@ static int cmd_config(const Args &args, tj::Value &cfg) {
     throw TitanError("usage: titan-ai config {show|path|edit|set KEY VALUE|unset KEY}");
 }
 
+static void guide_google_setup(const Args &args, tj::Value &cfg) {
+    std::cout << cyan("Google sign-in guided setup") << "\n"
+              << dim("  This is not an app to install — it is a one-time 'Desktop app' OAuth client")
+              << "\n"
+              << dim("  in your own Google Cloud account. No secret goes into the ISO.") << "\n\n";
+
+    std::cout << cyan("Step 1 — Sign in to Google Cloud") << "\n"
+              << "  Use the Gmail you want Gemini/Search tied to:\n"
+              << "  https://console.cloud.google.com/\n\n";
+    std::cout << cyan("Step 2 — Create or select a project") << "\n"
+              << "  Suggested name: archtitan-ai. Select it in the top project bar.\n\n";
+    std::cout << cyan("Step 3 — Enable the API") << "\n"
+              << "  https://console.developers.google.com/apis/library\n"
+              << "  Search 'Gemini API' (older name: 'Generative Language API') -> Enable.\n\n";
+    std::cout << cyan("Step 4 — Configure the consent screen") << "\n"
+              << "  Google Auth platform -> Branding: name 'ArchTitan TITAN AI', your emails.\n"
+              << "  Audience -> External; add your Gmail under Test users.\n"
+              << "  Data Access -> add these scopes:\n"
+              << "    https://www.googleapis.com/auth/cloud-platform\n"
+              << "    https://www.googleapis.com/auth/generative-language.retriever\n"
+              << "  Publishing status 'Testing' is fine; you'll see an unverified warning.\n\n";
+    std::cout << cyan("Step 5 — Create the Desktop app client") << "\n"
+              << "  https://console.developers.google.com/auth/clients\n"
+              << "  Create client -> Application type: Desktop app\n"
+              << "  Name: ArchTitan TITAN AI -> Create -> copy the Client ID.\n\n";
+    std::cout << dim("  Loopback redirect (http://127.0.0.1:<port>/oauth2callback) is automatic;")
+              << "\n"
+              << dim("  you do not need to type a redirect URI anywhere.") << "\n\n";
+
+    std::cout << "Open the console and Clients page now? [Y/n]: " << std::flush;
+    std::string answer;
+    std::getline(std::cin, answer);
+    answer = lower(trim(answer));
+    if (answer.empty() || answer == "y" || answer == "yes") {
+        try_open("https://console.cloud.google.com/");
+        try_open("https://console.developers.google.com/auth/clients");
+        std::cout << dim("  Opened two tabs. Return here after copying the Client ID.\n\n");
+    }
+
+    try {
+        ensure_oauth_client(cfg);
+    } catch (const TitanError &e) {
+        std::cout << dim(std::string("  ") + e.what()) << "\n";
+        return;
+    }
+
+    std::cout << "Google Cloud project ID (optional, for billing headers; blank to skip): " << std::flush;
+    std::string project;
+    std::getline(std::cin, project);
+    project = trim(project);
+    if (!project.empty()) {
+        cfg["google_oauth"]["project_id"] = tj::Value::string(project);
+        save_config(cfg);
+    }
+
+    std::cout << "Sign in with Google now? [Y/n]: " << std::flush;
+    std::getline(std::cin, answer);
+    answer = lower(trim(answer));
+    if (answer.empty() || answer == "y" || answer == "yes") {
+        bool use_device = args.device;
+        if (!use_device) {
+            std::cout << "Headless/device flow? [y/N]: " << std::flush;
+            std::getline(std::cin, answer);
+            answer = lower(trim(answer));
+            use_device = (answer == "y" || answer == "yes");
+        }
+        if (use_device) auth_google_device(cfg);
+        else auth_google_loopback(cfg);
+        std::cout << green("✓ Google sign-in stored.") << "\n";
+    }
+
+    std::cout << "\n" << green("✓ Google sign-in setup complete.") << "\n"
+              << dim("  Verify:  titan-ai status") << "\n"
+              << dim("  Search:  titan-ai search 'latest Arch Linux news'") << "\n"
+              << dim("  Kitty:   Ctrl+Shift+S") << "\n";
+}
+
 static int cmd_auth(const Args &args, tj::Value &cfg) {
     if (args.auth_command == "google") {
+        if (args.auth_setup) {
+            guide_google_setup(args, cfg);
+            return 0;
+        }
         ensure_oauth_client(cfg);
         if (args.device) auth_google_device(cfg);
         else auth_google_loopback(cfg);
@@ -1243,6 +1329,7 @@ API keys and are not part of this sign-in flow.
    e. Copy the Client ID (and Client secret, if Google shows one).
 
 2) GIVE IT TO TITAN AI
+   titan-ai auth google --setup    # guided checklist, opens console tabs, stores the ID
    titan-ai auth google            # prompts for the ID if none is stored, then opens a browser
    titan-ai auth google --device   # headless/SSH: visit the printed URL, enter the code
    titan-ai status                 # should show "Google sign-in (primary)"
