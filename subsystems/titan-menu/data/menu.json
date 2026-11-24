@@ -101,7 +101,7 @@
       "icon": "\uf013",
       "children": [
         { "id": "settings-app", "title": "ArchTitan Settings", "hint": "Appearance, power, security", "icon": "\uf013",
-          "keys": "Super+,", "requires": "archtitan-settings", "exec": "titan-exec-hook archtitan-settings" },
+          "keys": "Super+,", "requires": "archtitan-settings", "exec": "archtitan-settings" },
         { "id": "audio", "title": "Audio", "hint": "Volume mixer", "icon": "\uf028",
           "keys": "Super+Ctrl+V", "requires": "pavucontrol", "exec": "titan-exec-hook pavucontrol" },
         { "id": "network", "title": "Network", "hint": "Wi-Fi and connections (nmtui)", "icon": "\uf1eb",
@@ -141,7 +141,7 @@
         { "id": "sc-fm", "title": "File Manager", "hint": "Open Ranger file manager", "icon": "\uf07b",
           "keys": "Super+E", "exec": "titan-exec-hook kitty -e ranger" },
         { "id": "sc-settings", "title": "ArchTitan Settings", "hint": "Open settings panel", "icon": "\uf013",
-          "keys": "Super+,", "exec": "titan-exec-hook archtitan-settings" },
+          "keys": "Super+,", "exec": "archtitan-settings" },
         { "id": "sc-qs", "title": "Quick Settings", "hint": "Toggles & notification center", "icon": "\uf1de",
           "keys": "Super+N", "exec": "titan-quicksettings --toggle" },
         { "id": "sc-media", "title": "Media Island HUD", "hint": "Playback controls & info", "icon": "\uf001",

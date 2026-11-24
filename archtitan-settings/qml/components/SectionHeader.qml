@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
-import ArchTitanSettings
 import ArchTitan.TitanUI
+import ArchTitanSettings
 
 Item {
     property string text: ""

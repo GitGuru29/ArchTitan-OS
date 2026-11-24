@@ -9,11 +9,13 @@ Rectangle {
     property string text: ""
     property string glyph: ""
     property string variant: "primary"
+    property bool primary: variant === "primary"
+    property color accentColor: TitanTheme.accent
 
     signal clicked()
 
-    readonly property bool _primary:   variant === "primary"
-    readonly property bool _secondary: variant === "secondary"
+    readonly property bool _primary:   primary && variant === "primary"
+    readonly property bool _secondary: !primary || variant === "secondary"
     readonly property bool _ghost:     variant === "ghost"
     readonly property bool _danger:    variant === "danger"
 
@@ -24,9 +26,9 @@ Rectangle {
     activeFocusOnTab: true
 
     color: {
-        if (_primary)   return tap.pressed ? TitanTheme.accentPressed
-                            : hover.hovered ? TitanTheme.accentHover
-                            : TitanTheme.accent
+        if (_primary)   return tap.pressed ? Qt.darker(root.accentColor, 1.15)
+                            : hover.hovered ? Qt.lighter(root.accentColor, 1.1)
+                            : root.accentColor
         if (_danger)    return tap.pressed ? TitanTheme.dangerPressed
                             : hover.hovered ? TitanTheme.dangerHover
                             : TitanTheme.danger

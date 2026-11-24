@@ -74,17 +74,6 @@ void WallpaperManager::scanWallpapers() {
     emit wallpaperListChanged();
 }
 
-void WallpaperManager::openFilePicker() {
-    // kdialog or zenity portal
-    QProcess p;
-    p.start("bash", {"-c", "kdialog --getopenfilename ~ 'Images (*.png *.jpg *.jpeg *.webp)' 2>/dev/null || zenity --file-selection --file-filter='Images | *.png *.jpg *.jpeg *.webp' 2>/dev/null"});
-    p.waitForFinished(60000);
-    QString chosen = p.readAllStandardOutput().trimmed();
-    if (!chosen.isEmpty() && QFile::exists(chosen)) {
-        setCurrentWallpaper(chosen);
-    }
-}
-
 void WallpaperManager::launchPicker() {
     QString bin = QStandardPaths::findExecutable("titan-wallpaper-picker");
     if (bin.isEmpty()) bin = QStringLiteral("/usr/local/bin/titan-wallpaper-picker");

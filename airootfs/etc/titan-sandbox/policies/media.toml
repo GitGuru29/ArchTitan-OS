@@ -14,6 +14,7 @@ ro_paths = [
     "/etc/ssl/certs",
     "/etc/resolv.conf", "/etc/nsswitch.conf",
     "/etc/passwd", "/etc/group", "/etc/localtime",
+    "/run/user",
     "/proc/self",
     # Media files are accessed via explicit bind-mounts set at launch time
     # (titan-sandboxd sets TITAN_SANDBOX_APP_DIR to the user's media folder)

@@ -21,6 +21,7 @@
     ],
 
     "modules-right": [
+        "custom/focus-ring",
         "custom/titan-hwm",
         "custom/cava",
         "group/capture",
@@ -261,6 +262,17 @@
             "network",
             "bluetooth"
         ]
+    },
+
+    // ── RIGHT: TitanFocus, HWM, Capture, Clock, QuickSettings ──
+
+    "custom/focus-ring": {
+        "exec"          : "titan-focus --waybar",
+        "return-type"   : "json",
+        "interval"      : 5,
+        "on-click"      : "titan-focus --toggle",
+        "on-click-right": "titan-focus --snooze 15",
+        "tooltip"       : true
     },
 
     "custom/notification": {

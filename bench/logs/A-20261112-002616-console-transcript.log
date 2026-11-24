@@ -1,0 +1,37 @@
+/init: line 7: memdiskfind: not found
+P+q6E616D65\[18t7[32766;32766H[6n8[!p]104\[0m[?7h[1G[0J]3008;start=3e98779218174dde948e423419228354;user=root;hostname=archiso;machineid=b1687d83292546d3af797870eb4d66e3;bootid=66ac8a4b55ea41df95ac1e01a73f1860;pid=1;pidfdid=1;comm=systemd;type=boot\[!p]104\[0m[?7h[1G[0J7[32766;32766H[6n8[!p]104\[0m[?7h[1G[0J7[32766;32766H[6n8]3008;start=b948a54818ef466fab07a439b17a7048;user=root;hostname=archiso;machineid=b1687d83292546d3af797870eb4d66e3;bootid=66ac8a4b55ea41df95ac1e01a73f1860;pid=558;pidfdid=341;comm=(temd-firstboot);servicename=systemd-firstboot.service;invocationid=1aed218d35d54a96a20187ba498322bb;type=service\[!p]104\[0m[?7h[1G[0J7[32766;32766H[6n8[!p]104\[0m[?7h[1G[0J7[32766;32766H[6n8]3008;start=11def16b70c54ed9ae4b813a934d42cb;user=root;hostname=archiso;machineid=b1687d83292546d3af797870eb4d66e3;bootid=66ac8a4b55ea41df95ac1e01a73f1860;pid=752;pidfdid=459;comm=(agetty);servicename=serial-getty@ttyS0.service;invocationid=7b80da26b4e24ef1b17997e24b379c8a;type=service\P+q6E616D65\
+033[1m033[38;2;137;180;250m  ArchTitan OS 033[0m — Linux 7.2.14-arch1-1 (archiso)
+033[2m033[38;2;166;173;200m  Titan shell · tty ttyS0 · 18:58:25033[0m
+archiso login: root
+To install [38;2;23;147;209mArch Linux[0m follow the installation guide:
+https://wiki.archlinux.org/title/Installation_guide
+
+For Wi-Fi, authenticate to the wireless network using the [35miwctl[0m utility.
+For mobile broadband (WWAN) modems, connect with the [35mmmcli[0m utility.
+Ethernet, WLAN and WWAN interfaces using DHCP should work automatically.
+
+After connecting to the internet, the installation guide can be accessed
+via the convenience script [35mInstallation_guide[0m.
+
+[41m [41m [41m [40m [44m [40m [41m [46m [45m [41m [46m [43m [41m [44m [45m [40m [44m [40m [41m [44m [41m [41m [46m [42m [41m [44m [43m [41m [45m [40m [40m [44m [40m [41m [44m [42m [41m [46m [44m [41m [46m [47m [0m
+echo __LOGIN_OK__$((41+1))
+]3008;start=d104f7c30aa344a295a5dfd898ad1423;user=root;hostname=archiso;machineid=b1687d83292546d3af797870eb4d66e3;bootid=66ac8a4b55ea41df95ac1e01a73f1860;pid=752;pidfdid=459;comm=login;targetuser=root;sessionid=2;type=session\fish: Unknown command: fastfetch
+~/.config/fish/config.fish (line 3): 
+    fastfetch
+    ^~~~~~~~^
+from sourcing file ~/.config/fish/config.fish
+	called during startup
+[?u[>0q]11;?\[?1049hP+q696e646e\P+q71756572792d6f732d6e616d65\[?1049l[0cwarning: fish could not read response to Primary Device Attribute query after waiting for 10 seconds. This is often due to a missing feature in your terminal. See 'help terminal-compatibility' or 'man fish-terminal-compatibility'. This fish process will no longer wait for outstanding queries, which disables some optional features.
+Welcome to fish, the friendly interactive shell
+Type [32mhelp[m for instructions on how to use fish
+]7;file://archiso/root]0;~\[m]11;?\[6n[0c[?2004h[?2031h[>4;1m=[K]133;A;click_events=1\[J
+[K[38;2;0;210;255m[1;48;2;0;210;255;38;2;11;14;20m 󰣇 TITAN [0m[48;2;30;38;56;38;2;0;210;255m[1;38;2;205;214;244m  ~ [0m[48;2;17;22;34;38;2;30;38;56m[0m[38;2;17;22;34m[0m 
+[38;2;0;210;255m◆[0m  ]133;B\[K[3Ce[4Cc[5Cho [8C__LOGIN_OK__$((41+1)[28C)[29C
+fish: command substitutions not allowed in command position. Try var=(your-cmd) $var ...
+echo __LOGIN_OK__$((41+1))
+                   ^~~~~^
+[2m⏎[m                                                                               ⏎ [K[K]133;A;click_events=1\[J
+[K[38;2;0;210;255m[1;48;2;0;210;255;38;2;11;14;20m 󰣇 TITAN [0m[48;2;30;38;56;38;2;0;210;255m[1;38;2;205;214;244m  ~ [0m[48;2;17;22;34;38;2;30;38;56m[0m[38;2;17;22;34m[0m 
+[38;2;0;210;255m◆[0m  ]133;B\echo __LOGIN_OK__$((41+1))[K[29C[?2004l[?2031l[>4;0m>]0;~\[m[?2004h[?2031h[>4;1m=[A[A[K]133;A;click_events=1\[J
+[K[38;2;0;210;255m[1;48;2;0;210;255;38;2;11;14;20m 󰣇 TITAN [0m[48;2;30;38;56;38;2;0;210;255m[1;38;2;205;214;244m  ~ [0m[48;2;17;22;34;38;2;30;38;56m[0m[38;2;17;22;34m[0m 
+[38;2;0;210;255m◆[0m  ]133;B\echo __LOGIN_OK__$((41+1))[J[29C[26Decho [36m__LOGIN_OK__[96m$([91m(41+1)[96m)[39m[29C

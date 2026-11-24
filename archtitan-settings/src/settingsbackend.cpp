@@ -197,43 +197,73 @@ void SettingsBackend::applySecurity() {
     m_settings.setValue("security/lockscreenRingColor", m_lockscreenRingColor);
     m_settings.sync();
 
-    updateSwayidleConfig();
+    updateIdleConfig();
 
     qDebug() << "[SettingsBackend] Security Applied";
     emit settingsSaved();
 }
 
-void SettingsBackend::updateSwayidleConfig() {
+void SettingsBackend::updateIdleConfig() {
     QProcess::startDetached("bash", {"-c", "hyprctl keyword decoration:screen_shader '' 2>/dev/null"});
 
-    QString swaylockCmd = "swaylock -f";
-    if (m_lockscreenBlur) {
-        swaylockCmd += " --effect-blur 7x5";
-    }
-    if (m_lockscreenRingColor != "default") {
-        swaylockCmd += " --ring-color " + m_lockscreenRingColor + " --inside-color 00000000 --line-color 00000000 --separator-color 00000000";
+    // ArchTitan ships hypridle (not swayidle), with its config at
+    // ~/.config/hypr/hypridle.conf. Generate listeners using the same
+    // `hyprctl dispatch dpms off/on` syntax as the shipped skel config.
+    QString lockCmd = QStringLiteral("swaylock -f");
+    if (m_lockscreenBlur)
+        lockCmd += QStringLiteral(" --effect-blur 7x5");
+    if (m_lockscreenRingColor != QStringLiteral("default")) {
+        lockCmd += QStringLiteral(" --ring-color ") + m_lockscreenRingColor
+                 + QStringLiteral(" --inside-color 00000000 --line-color 00000000 --separator-color 00000000");
     }
 
-    QString swayidleConfig = QString(
-        "timeout %1 'hyprctl dispatch dpmsoff%2' resume 'hyprctl dispatch dpmson'\n"
-        "timeout %3 'systemctl suspend'\n"
-        "before-sleep '%4'\n"
-    ).arg(m_screenTimeout).arg(m_lockOnScreenOff ? QString("; ") + swaylockCmd : "").arg(m_suspendTimeout).arg(swaylockCmd);
+    QString conf = QStringLiteral(
+        "general {\n"
+        "    lock_cmd = %1\n"
+        "    before_sleep_cmd = %1\n"
+        "    after_sleep_cmd = hyprctl dispatch dpms on\n"
+        "    ignore_dbus_inhibit = false\n"
+        "}\n"
+    ).arg(lockCmd);
 
+    // Screen blanking. The UI uses 99999 as the "Never" sentinel.
+    if (m_screenTimeout < 99999) {
+        QString onTimeout = QStringLiteral("hyprctl dispatch dpms off");
+        if (m_lockOnScreenOff)
+            onTimeout += QStringLiteral("; ") + lockCmd + QStringLiteral(" &");
+        // hypridle option keys use hyphens, not underscores.
+        conf += QStringLiteral("\nlistener {\n    timeout = %1\n    on-timeout = %2\n    on-resume = hyprctl dispatch dpms on\n}\n")
+                    .arg(m_screenTimeout).arg(onTimeout);
+    }
+
+    // Suspend
+    if (m_suspendTimeout < 99999) {
+        conf += QStringLiteral("\nlistener {\n    timeout = %1\n    on-timeout = systemctl suspend\n}\n")
+                    .arg(m_suspendTimeout);
+    }
+
+    // Autolock
     if (m_autolockEnabled) {
-        swayidleConfig += QString("timeout %1 '%2'\n").arg(m_autolockDelay).arg(swaylockCmd);
+        conf += QStringLiteral("\nlistener {\n    timeout = %1\n    on-timeout = %2 &\n}\n")
+                    .arg(m_autolockDelay).arg(lockCmd);
     }
 
-    QFile idleConf(QDir::homePath() + "/.config/swayidle/config");
+    const QString hyprDir = QDir::homePath() + QStringLiteral("/.config/hypr");
+    QDir().mkpath(hyprDir);
+    QFile idleConf(hyprDir + QStringLiteral("/hypridle.conf"));
     if (idleConf.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        QTextStream(&idleConf) << swayidleConfig;
+        QTextStream(&idleConf) << conf;
         idleConf.close();
+    } else {
+        qWarning() << "[SettingsBackend] could not write hypridle.conf";
     }
-    QProcess::startDetached("bash", {"-c", "pkill swayidle 2>/dev/null; command -v swayidle >/dev/null && swayidle -w &"});
 
-    if (!m_autolockEnabled) {
-        QProcess::startDetached("pkill", {"swayidle"});
-    }
+    // hypridle is deliberately not autostarted on the live session; start it
+    // here so the configured idle policy actually takes effect.
+    QProcess::startDetached(QStringLiteral("bash"), {
+        QStringLiteral("-c"),
+        QStringLiteral("pkill -x hypridle 2>/dev/null || true; command -v hypridle >/dev/null && hypridle >/dev/null 2>&1 &")
+    });
 }
 
 void SettingsBackend::resetToDefaults() {
@@ -282,7 +312,7 @@ void SettingsBackend::applyPowerProfileNow(const QString &profile)
     }
 }
 
-// Apply screen-off timeout immediately — persists and rewrites swayidle config.
+// Apply screen-off timeout immediately — persists and rewrites hypridle config.
 void SettingsBackend::applyScreenTimeoutNow(int seconds)
 {
     if (m_screenTimeout != seconds) {
@@ -292,13 +322,12 @@ void SettingsBackend::applyScreenTimeoutNow(int seconds)
     m_settings.setValue(QStringLiteral("power/screenTimeout"), seconds);
     m_settings.sync();
 
-    // Rewrite swayidle config with the new screen timeout
-    updateSwayidleConfig();
+    updateIdleConfig();
 
     qDebug() << "[SettingsBackend] Screen timeout applied:" << seconds << "s";
 }
 
-// Apply suspend timeout immediately — persists and rewrites swayidle config.
+// Apply suspend timeout immediately — persists and rewrites hypridle config.
 void SettingsBackend::applySuspendTimeoutNow(int seconds)
 {
     if (m_suspendTimeout != seconds) {
@@ -308,14 +337,9 @@ void SettingsBackend::applySuspendTimeoutNow(int seconds)
     m_settings.setValue(QStringLiteral("power/suspendTimeout"), seconds);
     m_settings.sync();
 
-    // "Never" sentinel (99999) — just kill swayidle so suspend never fires
-    if (seconds >= 99999) {
-        QProcess::startDetached(QStringLiteral("pkill"), {QStringLiteral("swayidle")});
-        qDebug() << "[SettingsBackend] Suspend disabled (Never)";
-        return;
-    }
-
-    updateSwayidleConfig();
+    // "Never" sentinel (99999) is handled inside updateIdleConfig() by simply
+    // omitting the suspend listener; other idle policies stay active.
+    updateIdleConfig();
 
     qDebug() << "[SettingsBackend] Suspend timeout applied:" << seconds << "s";
 }

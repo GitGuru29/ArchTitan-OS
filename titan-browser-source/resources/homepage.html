@@ -5,11 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Titan Browser</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
-        rel="stylesheet">
+    <!-- Fonts are intentionally system-local: remote Google Fonts cost memory
+         and add a network round-trip on every startpage load. -->
     <style>
         /* ═══════════════════════════════════════════════════════════════════════
            TITAN BROWSER — CINEMATIC OBSIDIAN GLOW DASHBOARD
@@ -51,7 +48,7 @@
             background-image:
                 radial-gradient(ellipse at 50% 30%, rgba(14, 165, 233, 0.15) 0%, transparent 65%),
                 radial-gradient(circle at 50% 100%, rgba(2, 6, 23, 0.8) 0%, transparent 60%),
-                url('background.png');
+                url('background.jpg');
             background-size: cover;
             background-position: center center;
             background-repeat: no-repeat;
@@ -84,7 +81,6 @@
             background: var(--bg-glass-rail);
             border: 1px solid var(--border-glass);
             border-radius: var(--radius-md);
-            backdrop-filter: blur(24px);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -405,7 +401,6 @@
             padding: 11px 22px;
             display: flex;
             align-items: center;
-            backdrop-filter: blur(24px);
             transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 16px rgba(56, 189, 248, 0.12);
             position: relative;
@@ -489,7 +484,6 @@
             align-items: center;
             gap: 6px;
             cursor: pointer;
-            backdrop-filter: blur(16px);
             transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
@@ -522,7 +516,6 @@
             border-radius: var(--radius-md);
             background: var(--bg-glass-card);
             border: 1px solid var(--border-glass);
-            backdrop-filter: blur(18px);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -581,7 +574,6 @@
             flex-direction: column;
             gap: 5px;
             max-width: 290px;
-            backdrop-filter: blur(20px);
             position: relative;
             box-shadow: -4px 8px 28px rgba(0, 0, 0, 0.55);
         }
@@ -641,7 +633,6 @@
             flex-direction: column;
             gap: 10px;
             width: 270px;
-            backdrop-filter: blur(20px);
             box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
         }
 
@@ -707,7 +698,6 @@
             width: 100vw;
             height: 100vh;
             background: rgba(0, 0, 0, 0.75);
-            backdrop-filter: blur(12px);
             display: none;
             align-items: center;
             justify-content: center;
@@ -1287,7 +1277,6 @@
                     background: rgba(8, 20, 48, 0.95); border: 1px solid rgba(56, 189, 248, 0.4);
                     border-radius: 8px; color: #ffffff; font-size: 12px; font-weight: 600;
                     padding: 8px 16px; z-index: 200; box-shadow: 0 10px 30px rgba(0,0,0,0.8);
-                    font-family: 'Outfit', sans-serif; backdrop-filter: blur(16px);
                     transition: opacity 0.2s ease;
                 `;
                 document.body.appendChild(t);
@@ -1300,12 +1289,29 @@
 
         /* 6. Hardware HUD Live Animation (Handled by C++ Bridge) */
 
-        /* 7. Ambient Bioluminescent Water Sparkles */
+        /* 7. Ambient Bioluminescent Water Sparkles (CPU-friendly) */
+        // TitanBrowser runs WebEngine with --disable-gpu (SwiftShader). A
+        // full-screen 60fps canvas with per-shape shadowBlur pegs the CPU and
+        // makes the whole desktop stutter, so cache one glow sprite, halve the
+        // particle count and cap the frame rate to ~20fps.
         const canvas = document.getElementById('sparkCanvas');
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext('2d', { alpha: true });
         let width = canvas.width = window.innerWidth;
         let height = canvas.height = window.innerHeight;
         let sparks = [];
+        let lastFrame = 0;
+        const FRAME_MS = 50;
+
+        // Pre-rendered glow — no shadowBlur per particle per frame.
+        const glow = document.createElement('canvas');
+        glow.width = glow.height = 32;
+        const gctx = glow.getContext('2d');
+        const grad = gctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+        grad.addColorStop(0, 'rgba(56, 189, 248, 1)');
+        grad.addColorStop(0.35, 'rgba(56, 189, 248, 0.45)');
+        grad.addColorStop(1, 'rgba(56, 189, 248, 0)');
+        gctx.fillStyle = grad;
+        gctx.fillRect(0, 0, 32, 32);
 
         window.addEventListener('resize', () => {
             width = canvas.width = window.innerWidth;
@@ -1315,7 +1321,7 @@
 
         function initSparks() {
             sparks = [];
-            const count = Math.min(40, Math.floor(width / 40));
+            const count = Math.min(24, Math.floor(width / 60));
             for (let i = 0; i < count; i++) {
                 sparks.push({
                     x: Math.random() * width,
@@ -1329,8 +1335,12 @@
         }
         initSparks();
 
-        function renderSparks() {
-            if (document.hidden) return;
+        function renderSparks(now) {
+            requestAnimationFrame(renderSparks);
+            if (document.hidden || !document.hasFocus()) return;
+            if (now - lastFrame < FRAME_MS) return;
+            lastFrame = now;
+
             ctx.clearRect(0, 0, width, height);
             for (let i = 0; i < sparks.length; i++) {
                 const s = sparks[i];
@@ -1340,16 +1350,13 @@
                 if (s.x > width) s.x = 0;
                 if (s.y < height * 0.45) s.y = height * 0.9;
                 if (s.y > height) s.y = height * 0.5;
-                ctx.beginPath();
-                ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(56, 189, 248, ${s.alpha})`;
-                ctx.shadowColor = '#38bdf8';
-                ctx.shadowBlur = 8;
-                ctx.fill();
+                ctx.globalAlpha = s.alpha;
+                const size = 8 + s.r * 6;
+                ctx.drawImage(glow, s.x - size / 2, s.y - size / 2, size, size);
             }
-            requestAnimationFrame(renderSparks);
+            ctx.globalAlpha = 1;
         }
-        renderSparks();
+        requestAnimationFrame(renderSparks);
 
         /* 8. Preserved C++ Bridge APIs */
         window.updateShieldStats = function (b) { showToast(`TitanShield: ${b} blocked`); };

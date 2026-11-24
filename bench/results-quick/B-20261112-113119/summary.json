@@ -1,0 +1,18 @@
+{
+  "arm": "B",
+  "min_memavail_mb": 49,
+  "min_memavail_ts": 1794463497800,
+  "peak_psi_mem_some": 30.55,
+  "peak_psi_mem_full": 24.11,
+  "psi_full_stall_seconds": 4.7,
+  "peak_swapused_mb": 305,
+  "pswpin_total": 0,
+  "pswpout_total": 28,
+  "pgmajfault_total": 1767526,
+  "hog_max_rss_mb": 2721,
+  "hog_frozen_samples": 0,
+  "idle_frozen_samples": 0,
+  "collector_tick_ms_max": 621,
+  "thm_alive": 0,
+  "oom_kills": 0
+}

@@ -1,8 +1,8 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls.Basic
-import ArchTitanSettings
 import ArchTitan.TitanUI
+import ArchTitanSettings
 
 ScrollView {
     id: root

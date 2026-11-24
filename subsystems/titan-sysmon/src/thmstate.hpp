@@ -33,6 +33,13 @@ struct ThmState
     int      observedWorkloads   = 0;    // telemetry-only
     double   cpuPsiSome      = 0.0;      // /proc/pressure/cpu some avg10
     double   load1           = 0.0;
+    QString  cpuPressureLevel = QStringLiteral("NORMAL");
+    double   loadRatio       = 0.0;
+    int      activeCpuWeight = 500;
+    int      backgroundCpuWeight = 50;
+    double   backgroundCpuMaxPct = 100.0;
+    bool     cpuHeadroomEngaged = false;
+    bool     unattendedLift  = false;
     int      processesSeen      = 0;
     int      processesProtected = 0;
     int      processesAssigned  = 0;

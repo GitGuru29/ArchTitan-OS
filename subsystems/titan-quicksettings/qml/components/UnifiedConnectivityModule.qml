@@ -30,18 +30,33 @@ Rectangle {
 
     readonly property bool wifiOn: (typeof networkCtrl !== "undefined" && networkCtrl) ? networkCtrl.wifiEnabled : true
     readonly property string wifiSubtitle: {
-        if (typeof networkCtrl === "undefined" || !networkCtrl) return "ArchTitan-5G";
+        if (typeof networkCtrl === "undefined" || !networkCtrl) return "Not Connected";
         if (!networkCtrl.wifiEnabled) return "Off";
-        var ssid = networkCtrl.activeSsid;
-        return (ssid && ssid.length > 0) ? ssid : "ArchTitan-5G";
+        if (networkCtrl.isConnecting) return "Connecting...";
+        if (networkCtrl.connected && networkCtrl.ssid && networkCtrl.ssid !== "Not connected" && networkCtrl.ssid !== "Disabled") {
+            return networkCtrl.ssid;
+        }
+        return "Not Connected";
     }
 
-    readonly property bool btOn: (typeof btCtrl !== "undefined" && btCtrl) ? btCtrl.bluetoothEnabled : true
+    readonly property bool btOn: {
+        var ctrl = (typeof bluetoothCtrl !== "undefined" && bluetoothCtrl) ? bluetoothCtrl :
+                   ((typeof btCtrl !== "undefined" && btCtrl) ? btCtrl : null);
+        if (!ctrl) return false;
+        return (typeof ctrl.powered !== "undefined") ? ctrl.powered :
+               ((typeof ctrl.bluetoothEnabled !== "undefined") ? ctrl.bluetoothEnabled : false);
+    }
     readonly property string btSubtitle: {
-        if (typeof btCtrl === "undefined" || !btCtrl) return "Connected";
-        if (!btCtrl.bluetoothEnabled) return "Off";
-        var dev = btCtrl.connectedDeviceName;
-        return (dev && dev.length > 0) ? dev : "Connected";
+        var ctrl = (typeof bluetoothCtrl !== "undefined" && bluetoothCtrl) ? bluetoothCtrl :
+                   ((typeof btCtrl !== "undefined" && btCtrl) ? btCtrl : null);
+        if (!ctrl) return "Not Connected";
+        var on = (typeof ctrl.powered !== "undefined") ? ctrl.powered :
+                 ((typeof ctrl.bluetoothEnabled !== "undefined") ? ctrl.bluetoothEnabled : false);
+        if (!on) return "Off";
+        if (typeof ctrl.connected !== "undefined" && !ctrl.connected) return "Not Connected";
+        var dev = (typeof ctrl.statusText !== "undefined") ? ctrl.statusText :
+                  ((typeof ctrl.connectedDeviceName !== "undefined") ? ctrl.connectedDeviceName : "");
+        return (dev && dev.length > 0 && dev !== "Not connected" && dev !== "Off") ? dev : (ctrl.connected ? "Connected" : "Not Connected");
     }
 
     ColumnLayout {
@@ -195,8 +210,10 @@ Rectangle {
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
                             if (typeof rootWindow !== "undefined" && rootWindow.inPlaceEditMode) return;
-                            if (typeof btCtrl !== "undefined" && btCtrl)
-                                btCtrl.toggleBluetooth();
+                            var ctrl = (typeof bluetoothCtrl !== "undefined" && bluetoothCtrl) ? bluetoothCtrl :
+                                       ((typeof btCtrl !== "undefined" && btCtrl) ? btCtrl : null);
+                            if (ctrl)
+                                ctrl.toggleBluetooth();
                         }
                     }
                 }

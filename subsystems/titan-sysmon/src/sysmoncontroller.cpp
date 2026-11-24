@@ -504,3 +504,8 @@ void SysmonController::sampleThm()
 
     pushHistory(m_thmPressureHistory, m_memPressure);
 }
+
+QString SysmonController::thmWeightRatio() const
+{
+    return QStringLiteral("%1:%2").arg(m_thm.activeCpuWeight).arg(m_thm.backgroundCpuWeight);
+}

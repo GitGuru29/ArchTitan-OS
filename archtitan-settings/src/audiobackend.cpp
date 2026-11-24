@@ -5,6 +5,7 @@
 #include <QVariant>
 #include <QDir>
 #include <QSettings>
+#include <QStandardPaths>
 
 AudioBackend::AudioBackend(QObject *parent) : QObject(parent) {
     m_debounceTimer.setSingleShot(true);
@@ -35,49 +36,47 @@ AudioBackend::AudioBackend(QObject *parent) : QObject(parent) {
     // Subscribe to PulseAudio/PipeWire events so we don't have to poll
     m_monitorProcess.start("pactl", {"subscribe"});
 
-    // Start/Restart cava for real-time equalizer
-    auto startCava = [this]() {
-        m_cavaProcess.kill();
-        m_cavaProcess.waitForFinished(500);
-
-        QFile cavaConf("/tmp/archtitan-cava.conf");
-        if (cavaConf.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
-            QTextStream ts(&cavaConf);
-            ts << "[general]\nbars = 24\nframerate = 60\n"
-               << "[output]\nmethod = raw\nraw_target = /dev/stdout\ndata_format = ascii\nascii_max_range = 100\n";
-            cavaConf.close();
-        }
-        m_cavaProcess.start("cava", {"-p", "/tmp/archtitan-cava.conf"});
-    };
-
-    connect(&m_cavaProcess, &QProcess::readyReadStandardOutput, this, [this]() {
-        while (m_cavaProcess.canReadLine()) {
-            QString line = QString::fromUtf8(m_cavaProcess.readLine()).trimmed();
-            if (line.isEmpty()) continue;
-            QStringList parts = line.split(';', Qt::SkipEmptyParts);
-            QVariantList levels;
-            for (const QString &p : parts) {
-                levels.append(p.toInt());
+    // Start cava for real-time equalizer only if installed
+    if (!QStandardPaths::findExecutable("cava").isEmpty()) {
+        auto startCava = [this]() {
+            if (m_cavaProcess.state() != QProcess::NotRunning) {
+                m_cavaProcess.terminate();
             }
-            if (levels.size() == 24) {
-                m_eqLevels = levels;
-                emit eqLevelsChanged();
+
+            QFile cavaConf("/tmp/archtitan-cava.conf");
+            if (cavaConf.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+                QTextStream ts(&cavaConf);
+                ts << "[general]\nbars = 24\nframerate = 60\n"
+                   << "[output]\nmethod = raw\nraw_target = /dev/stdout\ndata_format = ascii\nascii_max_range = 100\n";
+                cavaConf.close();
             }
-        }
-    });
+            m_cavaProcess.start("cava", {"-p", "/tmp/archtitan-cava.conf"});
+        };
 
-    // Auto-restart Cava if it exits (e.g., when PipeWire service is restarted)
-    connect(&m_cavaProcess, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this, [this, startCava]() {
-        QTimer::singleShot(1000, this, startCava);
-    });
+        connect(&m_cavaProcess, &QProcess::readyReadStandardOutput, this, [this]() {
+            while (m_cavaProcess.canReadLine()) {
+                QString line = QString::fromUtf8(m_cavaProcess.readLine()).trimmed();
+                if (line.isEmpty()) continue;
+                QStringList parts = line.split(';', Qt::SkipEmptyParts);
+                QVariantList levels;
+                for (const QString &p : parts) {
+                    levels.append(p.toInt());
+                }
+                if (levels.size() == 24) {
+                    m_eqLevels = levels;
+                    emit eqLevelsChanged();
+                }
+            }
+        });
 
-    startCava();
-
+        startCava();
+    }
 
     // Initialize 24 empty bars
     for (int i=0; i<24; i++) m_eqLevels.append(0);
 
-    sync();
+    // Defer initial sync to keep constructor instant
+    QTimer::singleShot(50, this, &AudioBackend::sync);
 }
 
 void AudioBackend::sync() {

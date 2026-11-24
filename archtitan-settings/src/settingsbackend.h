@@ -135,7 +135,7 @@ private:
     void loadSettings();
     void loadThemeState();
     void scanThemes();
-    void updateSwayidleConfig();
+    void updateIdleConfig();
     bool applyPowerProfileDBus(const QString &profile);
 
 private slots:

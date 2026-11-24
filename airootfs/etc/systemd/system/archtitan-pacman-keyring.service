@@ -1,0 +1,17 @@
+[Unit]
+Description=ArchTitan First-Boot Pacman Keyring Initialization
+ConditionPathExists=!/run/archiso
+ConditionPathExists=!/etc/pacman.d/gnupg/trustdb.gpg
+After=local-fs.target haveged.service
+Before=archlinux-keyring-wkd-sync.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/mkdir -p /etc/pacman.d/gnupg
+ExecStart=/usr/bin/chmod 755 /etc/pacman.d/gnupg
+ExecStart=/usr/bin/pacman-key --init
+ExecStart=/usr/bin/pacman-key --populate archlinux
+
+[Install]
+WantedBy=multi-user.target

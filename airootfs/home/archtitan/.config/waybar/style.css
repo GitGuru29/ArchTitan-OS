@@ -126,6 +126,7 @@ window#waybar.hidden {
 #hardware,
 #custom-git-hud.active,
 #custom-titan-center,
+#custom-focus-ring,
 #custom-titan-hwm,
 #custom-cava.playing,
 #capture,
@@ -150,6 +151,7 @@ window#waybar.hidden {
 #hardware:hover,
 #custom-git-hud.active:hover,
 #custom-titan-center:hover,
+#custom-focus-ring:hover,
 #custom-titan-hwm:hover,
 #custom-cava.playing:hover,
 #capture:hover,
@@ -847,4 +849,33 @@ tooltip label {
     padding: 8px 14px;
     font-size: 11.5px;
     font-weight: 500;
+}
+
+/* ── TitanFocus Ring Pill ─────────────────────────────────────── */
+#custom-focus-ring {
+    padding: 0 10px;
+    margin-right: 6px;
+    color: @text-mid;
+    font-weight: 600;
+}
+
+#custom-focus-ring.deep-focus {
+    color: @accent;
+    border-color: @accent-border;
+}
+
+#custom-focus-ring.break {
+    color: @success;
+}
+
+#custom-focus-ring.dnd {
+    color: @mauve;
+}
+
+#custom-focus-ring.snoozed {
+    color: @warning;
+}
+
+#custom-focus-ring.offline {
+    color: @text-low;
 }

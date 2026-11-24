@@ -65,8 +65,15 @@ ThmState ThmReader::read(const QString &path)
     s.observedWorkloads   = o.value(QStringLiteral("observed_workloads")).toInt();
 
     const QJsonObject cpu = o.value(QStringLiteral("cpu")).toObject();
-    s.cpuPsiSome = cpu.value(QStringLiteral("psi_some_avg10")).toDouble();
-    s.load1      = cpu.value(QStringLiteral("load1")).toDouble();
+    s.cpuPsiSome          = cpu.value(QStringLiteral("psi_some_avg10")).toDouble();
+    s.load1               = cpu.value(QStringLiteral("load1")).toDouble();
+    s.cpuPressureLevel    = cpu.value(QStringLiteral("pressure")).toString(QStringLiteral("NORMAL"));
+    s.loadRatio           = cpu.value(QStringLiteral("load_ratio")).toDouble();
+    s.activeCpuWeight     = cpu.value(QStringLiteral("active_weight")).toInt(500);
+    s.backgroundCpuWeight = cpu.value(QStringLiteral("background_weight")).toInt(50);
+    s.backgroundCpuMaxPct = cpu.value(QStringLiteral("background_cpu_max_pct")).toDouble(100.0);
+    s.cpuHeadroomEngaged  = cpu.value(QStringLiteral("headroom_engaged")).toBool();
+    s.unattendedLift      = cpu.value(QStringLiteral("unattended_lift")).toBool();
 
     const QJsonObject procs = o.value(QStringLiteral("processes")).toObject();
     s.processesSeen      = procs.value(QStringLiteral("seen")).toInt();

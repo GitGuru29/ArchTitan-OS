@@ -30,6 +30,19 @@ enum class GovernorHint {
     PERFORMANCE,    // any build executing OR latency-sensitive workload active
 };
 
+// Translate a hint into a governor name that the kernel actually offers.
+// `available` is the verbatim contents of scaling_available_governors.
+// Exposed for tests: intel_pstate exposes "performance powersave" only, so the
+// old unconditional "schedutil" write failed EINVAL and governor management was
+// a silent no-op on most modern laptops.
+std::string choose_scaling_governor(GovernorHint hint,
+                                    const std::string& available);
+
+// Translate a hint into an energy_performance_preference (intel_pstate/amd-pstate
+// HWP). Returns "" when the desired preference is not available.
+std::string choose_energy_preference(GovernorHint hint,
+                                     const std::string& available);
+
 // Callback type for workspace events
 using WorkspaceCallback = std::function<void(int workspace_id, bool is_focused)>;
 using WindowCallback    = std::function<void(int workspace_id,
@@ -64,6 +77,18 @@ public:
     // ── State queries ────────────────────────────────────────────────────────
     int  focused_workspace() const { return focused_ws_.load(); }
 
+    // ── User presence ────────────────────────────────────────────────────────
+    // Best-effort "is anyone at the machine" signal for the unattended-build
+    // auto-lift. Hyprland exposes no keystroke events, so this tracks the user-
+    // driven compositor events (workspace / focus / window open-close-move /
+    // fullscreen). Conservative on IPC loss: if Hyprland was ever connected and
+    // the socket drops, assume the user is PRESENT. Headless hosts that never had
+    // a compositor are different: with no active graphical session there is no
+    // one to protect, so an unattended build is allowed to use every core.
+    void      mark_activity();
+    long long seconds_since_last_activity() const;
+    bool      user_unattended(long idle_threshold_s) const;
+
     // Get current WorkspaceState map (thread-safe snapshot)
     std::unordered_map<int, WorkspaceState> snapshot_workspaces() const;
 
@@ -74,13 +99,29 @@ public:
     // Compute from aggregate system demand. Called each tick.
     // `current` is the hint currently applied; it selects the hysteresis band so
     // the governor cannot flap when demand and pressure sit on a boundary.
+    //
+    // `pressure` is the MEMORY channel (HC-CPU-1). `cpu_pressure` is the CPU
+    // channel: when the CPU is contended (>= MODERATE) and a foreground workload
+    // is actively executing, the governor is boosted to PERFORMANCE so the
+    // foreground gets full clocks, unless the machine is thermally constrained
+    // or memory is HIGH/CRITICAL (a cooler, lower-clocked machine wins there).
     static GovernorHint compute_governor(
         const std::unordered_map<uint32_t, Workload>& workloads,
         PressureLevel pressure,
-        GovernorHint current = GovernorHint::SCHEDUTIL);
+        GovernorHint current = GovernorHint::SCHEDUTIL,
+        PressureLevel cpu_pressure = PressureLevel::NORMAL,
+        bool thermally_constrained = false);
 
-    // Apply governor hint to /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
-    static bool apply_governor(GovernorHint hint);
+    // Apply governor hint to every online CPU's cpufreq policy.
+    //
+    // The kernel does not necessarily expose the governor THM would like to
+    // name: intel_pstate/amd-pstate systems, for example, offer only
+    // "performance" and "powersave" (no schedutil). The target is therefore
+    // chosen from each CPU's `scaling_available_governors`, and the matching
+    // `energy_performance_preference` is programmed where the platform supports
+    // it. Returns the governor actually applied ("" if no cpufreq driver), which
+    // the telemetry snapshot publishes instead of the abstract hint.
+    static std::string apply_governor(GovernorHint hint);
 
     ~WorkspaceMonitor() { stop(); }
 
@@ -91,7 +132,13 @@ private:
     std::atomic<int>  focused_ws_{1};
     std::atomic<bool> running_{false};
     std::atomic<bool> connected_{false};
+    // Distinguish "Hyprland IPC never existed" (headless QEMU/CI/server) from
+    // "IPC was up and dropped" (compositor glitch: assume the user is present).
+    std::atomic<bool> ever_connected_{false};
     std::thread       listener_thread_;
+
+    // steady_clock milliseconds of the last user-driven compositor event.
+    std::atomic<long long> last_activity_ms_{0};
 
     mutable std::mutex ws_mtx_;
     std::unordered_map<int, WorkspaceState> workspaces_;
