@@ -2,10 +2,13 @@
 <RCC version="1.0">
     <qresource prefix="/">
         <file>qml/TourWindow.qml</file>
+        <file>qml/TourSidebar.qml</file>
         <file>qml/TourHeader.qml</file>
         <file>qml/TourFooter.qml</file>
         <file>qml/components/Keycap.qml</file>
         <file>qml/components/HotspotPill.qml</file>
+        <file>qml/components/CoachCapsule.qml</file>
+        <file>qml/components/MotionStage.qml</file>
         <file>qml/slides/StepWelcome.qml</file>
         <file>qml/slides/StepNavigation.qml</file>
         <file>qml/slides/StepShortcuts.qml</file>

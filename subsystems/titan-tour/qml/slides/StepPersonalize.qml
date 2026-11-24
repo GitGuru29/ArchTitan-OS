@@ -3,7 +3,7 @@ import QtQuick.Layouts
 
 Item {
     id: root
-    signal finishRequested()
+    signal jumpToChapter(int chapterIdx)
 
     readonly property var paletteSwatches: [
         ["#38BDF8", "#3B82F6", "#1E3A8A", "#F59E0B"],
@@ -30,39 +30,54 @@ Item {
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.topMargin: 14
-        anchors.bottomMargin: 14
-        anchors.leftMargin: 28
-        anchors.rightMargin: 28
-        spacing: 12
+        anchors.margins: 24
+        spacing: 14
 
-        // ── Centered macOS Title ────────────────────────────────────────────
-        ColumnLayout {
-            Layout.alignment: Qt.AlignHCenter
-            spacing: 2
+        // ── Editorial Title Header ──────────────────────────────────────────
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 12
 
-            Text {
-                Layout.alignment: Qt.AlignHCenter
-                text: "Choose Your Look"
-                color: "#F5F5F7"
-                font.family: "Inter"
-                font.pixelSize: 22
-                font.weight: Font.Bold
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: 2
+                Text {
+                    text: "GETTING STARTED • CHAPTER 2"
+                    color: "#FF375F"
+                    font.family: "Inter"; font.pixelSize: 10; font.weight: Font.Bold; font.letterSpacing: 0.6
+                }
+                Text {
+                    text: "Choose Your Look & Wallpaper"
+                    color: "#FFFFFF"
+                    font.family: "Inter"; font.pixelSize: 22; font.weight: Font.Bold
+                }
             }
 
-            Text {
-                Layout.alignment: Qt.AlignHCenter
-                text: "Select a curated 4K desktop wallpaper. Your selection transitions live on your desktop immediately."
-                color: "#98989D"
-                font.family: "Inter"
-                font.pixelSize: 12
+            Rectangle {
+                implicitHeight: 30
+                implicitWidth: moreRow.implicitWidth + 16
+                radius: 7
+                color: moreMouse.containsMouse ? "#3A3A3E" : "#2A2A2E"
+                border.width: 1
+                border.color: Qt.rgba(1, 1, 1, 0.14)
+
+                Row {
+                    id: moreRow; anchors.centerIn: parent; spacing: 6
+                    Text { text: "\uf013"; color: "#64D2FF"; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 11; anchors.verticalCenter: parent.verticalCenter }
+                    Text { text: "Appearance Settings…"; color: "#F5F5F7"; font.family: "Inter"; font.pixelSize: 11; font.weight: 600; anchors.verticalCenter: parent.verticalCenter }
+                }
+
+                MouseArea {
+                    id: moreMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                    onClicked: tourCtrl.launchSettings()
+                }
             }
         }
 
         // ── Upper Card: macOS System Settings Style Active Desktop Preview ──
         Rectangle {
             Layout.fillWidth: true
-            implicitHeight: 112
+            implicitHeight: 114
             radius: 14
             color: Qt.rgba(1, 1, 1, 0.05)
             border.width: 1
@@ -75,9 +90,9 @@ Item {
 
                 // Miniature Mac Display Bezel showing Current Wallpaper
                 Rectangle {
-                    width: 174
-                    height: 88
-                    radius: 8
+                    width: 176
+                    height: 90
+                    radius: 9
                     color: "#0D1322"
                     border.width: 2
                     border.color: "#0A84FF"
@@ -91,21 +106,15 @@ Item {
 
                     // Mini top bar inside preview
                     Rectangle {
-                        anchors.top: parent.top
-                        anchors.topMargin: 4
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.leftMargin: 5
-                        anchors.rightMargin: 5
-                        height: 9
-                        radius: 3
+                        anchors.top: parent.top; anchors.topMargin: 4
+                        anchors.left: parent.left; anchors.right: parent.right
+                        anchors.leftMargin: 5; anchors.rightMargin: 5
+                        height: 9; radius: 3
                         color: Qt.rgba(0.08, 0.09, 0.12, 0.88)
 
                         Row {
-                            anchors.left: parent.left
-                            anchors.leftMargin: 4
-                            anchors.verticalCenter: parent.verticalCenter
-                            spacing: 2
+                            anchors.left: parent.left; anchors.leftMargin: 4
+                            anchors.verticalCenter: parent.verticalCenter; spacing: 2
                             Rectangle { width: 4; height: 4; radius: 2; color: "#0A84FF" }
                             Rectangle { width: 8; height: 3; radius: 1.5; color: "#64D2FF"; anchors.verticalCenter: parent.verticalCenter }
                         }
@@ -115,18 +124,15 @@ Item {
                     Rectangle {
                         anchors.centerIn: parent
                         anchors.verticalCenterOffset: 3
-                        width: 84
-                        height: 46
-                        radius: 5
+                        width: 86; height: 46; radius: 5
                         color: Qt.rgba(0.11, 0.12, 0.16, 0.90)
-                        border.width: 1
-                        border.color: Qt.rgba(1, 1, 1, 0.24)
+                        border.width: 1; border.color: Qt.rgba(1, 1, 1, 0.24)
 
                         Row {
-                            x: 5; y: 4; spacing: 2.5
-                            Rectangle { width: 3.5; height: 3.5; radius: 1.75; color: "#FF5F57" }
-                            Rectangle { width: 3.5; height: 3.5; radius: 1.75; color: "#FEBC2E" }
-                            Rectangle { width: 3.5; height: 3.5; radius: 1.75; color: "#28C840" }
+                            x: 5; y: 4; spacing: 3
+                            Rectangle { width: 4; height: 4; radius: 2; color: "#FF5F57" }
+                            Rectangle { width: 4; height: 4; radius: 2; color: "#FEBC2E" }
+                            Rectangle { width: 4; height: 4; radius: 2; color: "#28C840" }
                         }
                     }
                 }
@@ -141,9 +147,7 @@ Item {
                         Text {
                             text: root.activeWallpaperObj().name
                             color: "#F5F5F7"
-                            font.family: "Inter"
-                            font.pixelSize: 17
-                            font.weight: Font.Bold
+                            font.family: "Inter"; font.pixelSize: 17; font.weight: Font.Bold
                         }
 
                         Rectangle {
@@ -151,26 +155,21 @@ Item {
                             implicitWidth: tagTxt.implicitWidth + 12
                             radius: 10
                             color: Qt.rgba(48/255, 209/255, 88/255, 0.16)
-                            border.width: 1
-                            border.color: "#30D158"
+                            border.width: 1; border.color: "#30D158"
 
                             Text {
-                                id: tagTxt
-                                anchors.centerIn: parent
+                                id: tagTxt; anchors.centerIn: parent
                                 text: "✓ Active Desktop"
-                                color: "#30D158"
-                                font.family: "Inter"
-                                font.pixelSize: 10
-                                font.weight: 600
+                                color: "#30D158"; font.family: "Inter"; font.pixelSize: 10; font.weight: 600
                             }
                         }
                     }
 
                     Text {
-                        text: "Curated 4K Desktop Environment • Adaptive Waybar & Accent Palette"
+                        text: "Click any 4K wallpaper below to transition your live desktop and window vibrancy tint immediately."
                         color: "#98989D"
-                        font.family: "Inter"
-                        font.pixelSize: 12
+                        font.family: "Inter"; font.pixelSize: 11
+                        Layout.fillWidth: true; wrapMode: Text.WordWrap
                     }
 
                     // Palette Swatch Row
@@ -178,62 +177,18 @@ Item {
                         spacing: 6
                         Text {
                             text: "Theme Accents:"
-                            color: "#8E8E93"
-                            font.family: "Inter"
-                            font.pixelSize: 11
+                            color: "#8E8E93"; font.family: "Inter"; font.pixelSize: 11
                             anchors.verticalCenter: parent.verticalCenter
                         }
                         Repeater {
                             model: root.paletteSwatches[root.activeWallpaperIndex() % root.paletteSwatches.length]
                             Rectangle {
-                                width: 14
-                                height: 14
-                                radius: 7
+                                width: 14; height: 14; radius: 7
                                 color: modelData
-                                border.width: 1
-                                border.color: Qt.rgba(1, 1, 1, 0.35)
+                                border.width: 1; border.color: Qt.rgba(1, 1, 1, 0.35)
                                 anchors.verticalCenter: parent.verticalCenter
                             }
                         }
-                    }
-                }
-
-                // Button to Open Full Appearance Settings
-                Rectangle {
-                    implicitHeight: 32
-                    implicitWidth: moreRow.implicitWidth + 18
-                    radius: 8
-                    color: moreMouse.containsMouse ? "#3A3A3E" : "#2E2E32"
-                    border.width: 1
-                    border.color: Qt.rgba(1, 1, 1, 0.16)
-
-                    Row {
-                        id: moreRow
-                        anchors.centerIn: parent
-                        spacing: 6
-                        Text {
-                            text: "\uf013"
-                            color: "#64D2FF"
-                            font.family: "JetBrainsMono Nerd Font"
-                            font.pixelSize: 11
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-                        Text {
-                            text: "Appearance Settings…"
-                            color: "#F5F5F7"
-                            font.family: "Inter"
-                            font.pixelSize: 12
-                            font.weight: 600
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-                    }
-
-                    MouseArea {
-                        id: moreMouse
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: tourCtrl.launchSettings()
                     }
                 }
             }
@@ -269,83 +224,90 @@ Item {
                         fillMode: Image.PreserveAspectCrop
                         asynchronous: true
                         opacity: wpMouse.containsMouse || wpCard.isSelected ? 1.0 : 0.85
-                        Behavior on opacity { NumberAnimation { duration: 140 } }
                     }
 
                     // Top-Left Theme Tag Badge
                     Rectangle {
-                        anchors.top: parent.top
-                        anchors.left: parent.left
-                        anchors.margins: 8
-                        implicitHeight: 18
-                        implicitWidth: tTag.implicitWidth + 10
-                        radius: 5
-                        color: Qt.rgba(0.06, 0.07, 0.10, 0.78)
-                        border.width: 1
-                        border.color: Qt.rgba(1, 1, 1, 0.16)
-
+                        anchors.top: parent.top; anchors.left: parent.left; anchors.margins: 8
+                        implicitHeight: 18; implicitWidth: tTag.implicitWidth + 10; radius: 5
+                        color: Qt.rgba(0.06, 0.07, 0.10, 0.80)
+                        border.width: 1; border.color: Qt.rgba(1, 1, 1, 0.16)
                         Text {
-                            id: tTag
-                            anchors.centerIn: parent
-                            text: modelData.tag
-                            color: "#D1D1D6"
-                            font.family: "Inter"
-                            font.pixelSize: 9
-                            font.weight: Font.Bold
+                            id: tTag; anchors.centerIn: parent
+                            text: modelData.tag; color: "#D1D1D6"; font.family: "Inter"; font.pixelSize: 9; font.weight: Font.Bold
                         }
                     }
 
                     // Bottom Gradient Scrim + Wallpaper Title
                     Rectangle {
-                        anchors.bottom: parent.bottom
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        height: 32
+                        anchors.bottom: parent.bottom; anchors.left: parent.left; anchors.right: parent.right
+                        height: 30
                         gradient: Gradient {
                             GradientStop { position: 0.0; color: "transparent" }
                             GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.86) }
                         }
 
                         RowLayout {
-                            anchors.fill: parent
-                            anchors.leftMargin: 10
-                            anchors.rightMargin: 8
-                            spacing: 6
-
+                            anchors.fill: parent; anchors.leftMargin: 10; anchors.rightMargin: 8; spacing: 6
                             Text {
                                 text: modelData.name
-                                color: "#F5F5F7"
-                                font.family: "Inter"
-                                font.pixelSize: 12
-                                font.weight: 600
+                                color: "#F5F5F7"; font.family: "Inter"; font.pixelSize: 12; font.weight: 600
                                 Layout.fillWidth: true
                             }
-
                             Rectangle {
                                 visible: wpCard.isSelected
-                                width: 18
-                                height: 18
-                                radius: 9
-                                color: "#0A84FF"
-                                border.width: 1
-                                border.color: "#FFFFFF"
+                                width: 17; height: 17; radius: 8.5
+                                color: "#0A84FF"; border.width: 1; border.color: "#FFFFFF"
                                 Text {
                                     anchors.centerIn: parent
-                                    text: "\uf00c"
-                                    color: "#FFFFFF"
-                                    font.family: "JetBrainsMono Nerd Font"
-                                    font.pixelSize: 8
+                                    text: "\uf00c"; color: "#FFFFFF"; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 8
                                 }
                             }
                         }
                     }
 
                     MouseArea {
-                        id: wpMouse
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
+                        id: wpMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
                         onClicked: tourCtrl.applyWallpaper(modelData.path)
+                    }
+                }
+            }
+        }
+
+        // ── Bottom Editorial Navigation Bar ─────────────────────────────────
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 12
+
+            Text {
+                text: "Your wallpaper selection is automatically persisted across reboots."
+                color: "#8E8E93"
+                font.family: "Inter"
+                font.pixelSize: 11
+                Layout.fillWidth: true
+            }
+
+            Rectangle {
+                implicitHeight: 34
+                implicitWidth: nxtRow.implicitWidth + 22
+                radius: 8
+                gradient: Gradient {
+                    GradientStop { position: 0.0; color: nxtArea.containsMouse ? "#2894FF" : "#188BFF" }
+                    GradientStop { position: 1.0; color: nxtArea.containsMouse ? "#0A84FF" : "#007AFF" }
+                }
+                border.width: 1; border.color: Qt.rgba(1, 1, 1, 0.25)
+
+                Row {
+                    id: nxtRow; anchors.centerIn: parent; spacing: 6
+                    Text { text: "Next: Top Bar & Media Island"; color: "#FFFFFF"; font.family: "Inter"; font.pixelSize: 12; font.weight: 600 }
+                    Text { text: "→"; color: "#FFFFFF"; font.family: "Inter"; font.pixelSize: 13; font.weight: Font.Bold }
+                }
+
+                MouseArea {
+                    id: nxtArea; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        tourCtrl.playSound("tap");
+                        root.jumpToChapter(2);
                     }
                 }
             }

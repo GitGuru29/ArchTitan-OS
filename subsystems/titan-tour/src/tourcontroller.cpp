@@ -202,6 +202,24 @@ void TourController::setPowerProfile(const QString &profile)
     }
 }
 
+void TourController::setCoachWindowGeometry(bool coachMode)
+{
+    playSound(QStringLiteral("tap"));
+    if (!QStandardPaths::findExecutable(QStringLiteral("hyprctl")).isEmpty()) {
+        if (coachMode) {
+            QProcess::startDetached(
+                QStringLiteral("hyprctl"),
+                QStringList() << QStringLiteral("--batch")
+                              << QStringLiteral("dispatch resizewindowpixel exact 580 112,class:^(titan-tour)$ ; dispatch centerwindow 1"));
+        } else {
+            QProcess::startDetached(
+                QStringLiteral("hyprctl"),
+                QStringList() << QStringLiteral("--batch")
+                              << QStringLiteral("dispatch resizewindowpixel exact 960 620,class:^(titan-tour)$ ; dispatch centerwindow 1"));
+        }
+    }
+}
+
 void TourController::finishTour(bool dontShowAgain)
 {
     playSound(QStringLiteral("complete"));

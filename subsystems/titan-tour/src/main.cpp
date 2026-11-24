@@ -111,7 +111,19 @@ int main(int argc, char *argv[])
             auto *stepTimer = new QTimer(window);
             int *currentIdx = new int(0);
             QObject::connect(stepTimer, &QTimer::timeout, window, [window, dumpDir, total, currentIdx, stepTimer]() {
-                if (*currentIdx >= total) {
+                if (*currentIdx == total) {
+                    // Render Floating Desktop Coach Capsule screenshot
+                    window->setProperty("coachMode", true);
+                    window->setProperty("activeCoachStep", 0);
+                    window->update();
+                    QTimer::singleShot(250, window, [window, dumpDir, currentIdx]() {
+                        QImage img = window->grabWindow();
+                        img.save(QStringLiteral("%1/coach_capsule.png").arg(dumpDir));
+                        (*currentIdx)++;
+                    });
+                    return;
+                }
+                if (*currentIdx > total) {
                     stepTimer->stop();
                     delete currentIdx;
                     QGuiApplication::quit();

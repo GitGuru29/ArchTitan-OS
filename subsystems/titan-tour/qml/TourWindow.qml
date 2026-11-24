@@ -1,20 +1,22 @@
 import QtQuick
 import QtQuick.Window
 import QtQuick.Layouts
-import QtQuick.Effects
+import "components"
 import "slides"
 
 Window {
     id: rootWindow
-    width: 900
-    height: 580
+    width: coachMode ? 580 : 960
+    height: coachMode ? 112 : 620
     visible: true
     title: "Welcome to ArchTitan"
     flags: Qt.FramelessWindowHint | Qt.Window
     color: "transparent"
 
     property int currentSlide: 0
-    readonly property int totalSlides: 5
+    readonly property int totalSlides: 8
+    property bool coachMode: false
+    property int activeCoachStep: 0
     property real entryProgress: 0.0
     property real slideFade: 1.0
     property real slideOffset: 0.0
@@ -42,15 +44,15 @@ Window {
             property: "slideFade"
             from: 0.25
             to: 1.0
-            duration: 220
+            duration: 210
             easing.type: Easing.OutCubic
         }
         NumberAnimation {
             target: rootWindow
             property: "slideOffset"
-            from: 18
+            from: 14
             to: 0
-            duration: 240
+            duration: 220
             easing.type: Easing.OutCubic
         }
     }
@@ -71,16 +73,15 @@ Window {
         pageTransitionAnim.restart();
     }
 
-    function nextSlide() {
-        if (currentSlide < totalSlides - 1) {
-            goToSlide(currentSlide + 1);
-        }
+    function enterCoachMode(stepIdx) {
+        activeCoachStep = (typeof stepIdx === "number" && stepIdx >= 0 && stepIdx < 5) ? stepIdx : 0;
+        coachMode = true;
+        tourCtrl.setCoachWindowGeometry(true);
     }
 
-    function prevSlide() {
-        if (currentSlide > 0) {
-            goToSlide(currentSlide - 1);
-        }
+    function exitCoachMode() {
+        coachMode = false;
+        tourCtrl.setCoachWindowGeometry(false);
     }
 
     function finishAndClose() {
@@ -94,38 +95,47 @@ Window {
         focus: true
 
         Keys.onPressed: function(event) {
-            if (event.key === Qt.Key_Right || event.key === Qt.Key_Space || event.key === Qt.Key_Return) {
-                if (rootWindow.currentSlide < rootWindow.totalSlides - 1) {
-                    rootWindow.nextSlide();
+            if (event.key === Qt.Key_Down || event.key === Qt.Key_Right) {
+                if (!rootWindow.coachMode && rootWindow.currentSlide < rootWindow.totalSlides - 1) {
+                    rootWindow.goToSlide(rootWindow.currentSlide + 1);
+                }
+                event.accepted = true;
+            } else if (event.key === Qt.Key_Up || event.key === Qt.Key_Left) {
+                if (!rootWindow.coachMode && rootWindow.currentSlide > 0) {
+                    rootWindow.goToSlide(rootWindow.currentSlide - 1);
+                }
+                event.accepted = true;
+            } else if (event.key === Qt.Key_Escape) {
+                if (rootWindow.coachMode) {
+                    rootWindow.exitCoachMode();
                 } else {
                     rootWindow.finishAndClose();
                 }
-                event.accepted = true;
-            } else if (event.key === Qt.Key_Left || event.key === Qt.Key_Backspace) {
-                rootWindow.prevSlide();
-                event.accepted = true;
-            } else if (event.key === Qt.Key_Escape) {
-                rootWindow.finishAndClose();
-                event.accepted = true;
-            } else if (event.key >= Qt.Key_1 && event.key <= Qt.Key_5) {
-                tourCtrl.playSound("step");
-                rootWindow.goToSlide(event.key - Qt.Key_1);
                 event.accepted = true;
             }
         }
     }
 
-    // ── macOS Sequoia Dark Vibrancy Window Surface ──────────────────────────
+    // ── MODE B: Floating Hands-On Desktop Coach Capsule (580 x 112) ─────────
+    CoachCapsule {
+        visible: rootWindow.coachMode
+        anchors.fill: parent
+        coachStep: rootWindow.activeCoachStep
+        onExpandGuideRequested: rootWindow.exitCoachMode()
+        onCloseRequested: rootWindow.finishAndClose()
+    }
+
+    // ── MODE A: macOS "What's New & Tips" Master–Detail Split Hub (960 x 620)
     Rectangle {
         id: mainCard
+        visible: !rootWindow.coachMode
         anchors.fill: parent
         radius: 18
         opacity: rootWindow.entryProgress
-        scale: 0.985 + 0.015 * rootWindow.entryProgress
 
         gradient: Gradient {
-            GradientStop { position: 0.0; color: "#222228" }
-            GradientStop { position: 0.5; color: "#19191E" }
+            GradientStop { position: 0.0; color: "#212127" }
+            GradientStop { position: 0.5; color: "#18181D" }
             GradientStop { position: 1.0; color: "#131317" }
         }
 
@@ -133,23 +143,13 @@ Window {
         border.color: Qt.rgba(1, 1, 1, 0.18)
         clip: true
 
-        // Subtle Behind-Window Wallpaper Vibrancy Tint
+        // Subtle Behind-Window Wallpaper Vibrancy Bleed
         Image {
             anchors.fill: parent
             source: rootWindow.activeWallpaperUrl()
             fillMode: Image.PreserveAspectCrop
             opacity: 0.065
             asynchronous: true
-        }
-
-        // Inner Hairline Frame
-        Rectangle {
-            anchors.fill: parent
-            anchors.margins: 1
-            radius: 17
-            color: "transparent"
-            border.width: 1
-            border.color: Qt.rgba(1, 1, 1, 0.05)
         }
 
         // Top Specular Glass Rim
@@ -162,61 +162,73 @@ Window {
             gradient: Gradient {
                 orientation: Gradient.Horizontal
                 GradientStop { position: 0.0; color: "transparent" }
-                GradientStop { position: 0.25; color: Qt.rgba(1, 1, 1, 0.24) }
-                GradientStop { position: 0.5; color: Qt.rgba(100/255, 210/255, 255/255, 0.45) }
-                GradientStop { position: 0.75; color: Qt.rgba(1, 1, 1, 0.24) }
+                GradientStop { position: 0.25; color: Qt.rgba(1, 1, 1, 0.22) }
+                GradientStop { position: 0.5; color: Qt.rgba(100/255, 210/255, 255/255, 0.42) }
+                GradientStop { position: 0.75; color: Qt.rgba(1, 1, 1, 0.22) }
                 GradientStop { position: 1.0; color: "transparent" }
             }
         }
 
-        ColumnLayout {
+        RowLayout {
             anchors.fill: parent
             spacing: 0
 
-            // macOS Titlebar with Traffic Lights & Sliding Segmented Chapter Bar
-            TourHeader {
-                Layout.fillWidth: true
-                currentSlide: rootWindow.currentSlide
-                totalSlides: rootWindow.totalSlides
-                onSlideRequested: function(idx) { rootWindow.goToSlide(idx); }
-                onCloseClicked: rootWindow.finishAndClose()
+            // ── Left Pane: 244px Frosted Translucent macOS Sidebar ──────────
+            TourSidebar {
+                Layout.fillHeight: true
+                Layout.preferredWidth: 244
+                currentChapter: rootWindow.currentSlide
+                onChapterSelected: function(idx) { rootWindow.goToSlide(idx); }
+                onStartCoachRequested: rootWindow.enterCoachMode(0)
+                onCloseRequested: rootWindow.finishAndClose()
             }
 
-            // 5-Screen macOS Onboarding Stage with Smooth Transition Container
+            // ── Right Pane: 716px Editorial Visual Story Canvas ─────────────
             Item {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 clip: true
 
-                StackLayout {
-                    id: slideStack
+                Item {
                     anchors.fill: parent
-                    anchors.leftMargin: rootWindow.slideOffset
-                    anchors.rightMargin: -rootWindow.slideOffset
+                    anchors.topMargin: rootWindow.slideOffset
+                    anchors.bottomMargin: -rootWindow.slideOffset
                     opacity: rootWindow.slideFade
-                    currentIndex: rootWindow.currentSlide
 
                     StepWelcome {
-                        onJumpToSlide: function(idx) { rootWindow.goToSlide(idx); }
+                        visible: rootWindow.currentSlide === 0
+                        anchors.fill: parent
+                        onJumpToChapter: function(idx) { rootWindow.goToSlide(idx); }
+                        onStartCoachAt: function(cIdx) { rootWindow.enterCoachMode(cIdx); }
                     }
-                    StepNavigation {}
-                    StepShortcuts {}
-                    StepPersonalize {
-                        onFinishRequested: rootWindow.finishAndClose()
-                    }
-                    StepHardware {}
-                }
-            }
 
-            // macOS Setup Assistant Bottom Bar
-            TourFooter {
-                Layout.fillWidth: true
-                currentSlide: rootWindow.currentSlide
-                totalSlides: rootWindow.totalSlides
-                onPrevClicked: rootWindow.prevSlide()
-                onNextClicked: rootWindow.nextSlide()
-                onFinishClicked: rootWindow.finishAndClose()
-                onSlideRequested: function(idx) { rootWindow.goToSlide(idx); }
+                    StepPersonalize {
+                        visible: rootWindow.currentSlide === 1
+                        anchors.fill: parent
+                        onJumpToChapter: function(idx) { rootWindow.goToSlide(idx); }
+                    }
+
+                    StepNavigation {
+                        visible: rootWindow.currentSlide === 2 || rootWindow.currentSlide === 3 || rootWindow.currentSlide === 4 || rootWindow.currentSlide === 6
+                        anchors.fill: parent
+                        chapterIndex: rootWindow.currentSlide
+                        onJumpToChapter: function(idx) { rootWindow.goToSlide(idx); }
+                        onStartCoachAt: function(cIdx) { rootWindow.enterCoachMode(cIdx); }
+                    }
+
+                    StepShortcuts {
+                        visible: rootWindow.currentSlide === 5
+                        anchors.fill: parent
+                        onJumpToChapter: function(idx) { rootWindow.goToSlide(idx); }
+                    }
+
+                    StepHardware {
+                        visible: rootWindow.currentSlide === 7
+                        anchors.fill: parent
+                        onFinishRequested: rootWindow.finishAndClose()
+                        onStartCoachAt: function(cIdx) { rootWindow.enterCoachMode(cIdx); }
+                    }
+                }
             }
         }
     }

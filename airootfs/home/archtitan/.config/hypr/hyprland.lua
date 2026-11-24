@@ -407,7 +407,7 @@ hl.window_rule({
     name    = "titan-tour-float",
     match   = { class = "^titan-tour$" },
     float   = true,
-    size    = "900 580",
+    size    = "960 620",
     center  = true,
 })
 

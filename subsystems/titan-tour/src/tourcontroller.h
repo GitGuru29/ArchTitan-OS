@@ -56,6 +56,7 @@ public:
     Q_INVOKABLE void toggleMenu();
     Q_INVOKABLE void applyWallpaper(const QString &path);
     Q_INVOKABLE void setPowerProfile(const QString &profile);
+    Q_INVOKABLE void setCoachWindowGeometry(bool coachMode);
     Q_INVOKABLE void finishTour(bool dontShowAgain);
     Q_INVOKABLE void closeApp();
 
