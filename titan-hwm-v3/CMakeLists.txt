@@ -67,6 +67,9 @@ target_include_directories(thm_core PUBLIC ${CMAKE_SOURCE_DIR})
 add_executable(titan-hwm-daemon daemon/daemon.cpp)
 set_target_properties(titan-hwm-daemon PROPERTIES OUTPUT_NAME "titan-hwm-daemon")
 target_link_libraries(titan-hwm-daemon PRIVATE thm_core pthread)
+# Keep the resident set small: statically linked C++ runtime pulls in only the
+# code actually used instead of mapping ~1.4 MB of libstdc++ text/rodata.
+target_link_options(titan-hwm-daemon PRIVATE -static-libstdc++ -static-libgcc)
 
 # ── CLI executable (Phase 14) ────────────────────────────────────────────────
 add_executable(titan-hwm-cli cli/titan_hwm_cli.cpp)

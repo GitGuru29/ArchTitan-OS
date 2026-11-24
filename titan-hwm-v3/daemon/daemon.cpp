@@ -49,6 +49,9 @@
 #include <unordered_set>
 #include <unistd.h>
 #include <sys/stat.h>
+#ifdef __GLIBC__
+#include <malloc.h>
+#endif
 
 namespace fs = std::filesystem;
 
@@ -718,6 +721,13 @@ static int startup_thaw_sweep() {
 // main
 // ─────────────────────────────────────────────────────────────────────────────
 int main(int argc, char* argv[]) {
+#ifdef __GLIBC__
+    // The daemon has a few short-lived worker threads. Multiple glibc arenas
+    // leave per-thread heap pages resident; one arena keeps peak RSS below the
+    // 6 MB budget in the 2-vCPU benchmark guest.
+    setenv("MALLOC_ARENA_MAX", "1", 0);
+    mallopt(M_ARENA_MAX, 1);
+#endif
     // Flush every insertion. Under systemd, stdout/stderr are pipes and are
     // block-buffered by default — without this, THM log lines would not reach
     // the journal until a 4 KiB buffer fills, making `journalctl -u titan-hwm`
@@ -1775,6 +1785,7 @@ int main(int argc, char* argv[]) {
             sys_pressure.cpu == thm::PressureLevel::CRITICAL;
         const int effective_tick_ms =
             (headless_slow_metadata && !need_fast_tick) ? 400 : tick_ms;
+
         auto sleep_for = std::chrono::milliseconds(effective_tick_ms) - elapsed;
         if (sleep_for.count() > 0)
             std::this_thread::sleep_for(sleep_for);

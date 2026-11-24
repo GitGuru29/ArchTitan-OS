@@ -112,7 +112,7 @@ ArchTitan provides a suite of native C++ and Qt6 applications built specifically
 * **Validated:** 45/45 unit tests, 8/8 CPU headroom scorecard, and real cgroup RAM-pressure benchmark PASS (`high=18`, `oom_kill=0`).
 * **Next isolation item:** give the latency/game workload its own physical core, the foreground IDE/agent another, and background work the rest — stricter than today’s shared latency/active cpuset. Also next: bind `active_window_class` / `active_window_title` to workload roots and build the dependency/workload graph. I/O and GPU planes remain out of scope.
 
-#### Current THM validation snapshot (v3.4-R5)
+#### Current THM validation snapshot (v3.4-R6)
 
 | Check | Result |
 | :--- | :--- |
@@ -324,40 +324,41 @@ The current tree is validated on real cgroup v2 with the 5 Hz daemon, not only i
 
 Full reports: [`titan-hwm-v3/docs/benchmark-results/`](titan-hwm-v3/docs/benchmark-results/).
 
-### QEMU/KVM re-run against current v3.4 (2026-11-21 → 2026-11-23) — regression fixed, daemon cost reduced, memory floor restored
+### QEMU/KVM re-run against current v3.4 (2026-11-21 → 2026-11-24) — regression fixed, daemon RSS under 6 MB
 
 The first re-run with v3.4 exposed a **9.8× compile regression** (1 round at
 468.3 s vs 5 rounds at 47.6 s). It was traced to slice-wide `memory.high`, a
 headless CPU cap that never lifted, and compiler children being frozen as IDLE.
-v3.4-R2 fixed those; v3.4-R3 restored throughput with headless bulk cgroup
-weights and a slower full-`/proc` metadata refresh.
+v3.4-R2/R3 fixed the regression; R4/R5 cut daemon CPU and made the headless tick
+pressure-aware (400 ms calm, 200 ms under pressure, desktop always 200 ms).
 
-v3.4-R4 cut the daemon's own CPU cost on headless hosts by skipping doomed
-`hyprctl` forks, scanning cpufreq only on change/5 s, and publishing telemetry
-at 1 Hz. v3.4-R5 made the headless tick **pressure-aware**: 400 ms while memory
-is calm, snapping back to 200 ms the moment memory pressure leaves NORMAL (or
-CPU goes CRITICAL). Desktop/Hyprland stays 200 ms throughout.
+v3.4-R6 reduces daemon RSS below the 6 MB budget by forcing one glibc malloc
+arena and statically linking the C++ runtime. Sampled guest peak RSS is now
+**4.2 MB** (local dry-run 4.8 MB, down from 5.7 MB).
 
-Final exact-A/B rerun (`A-20261123-125441` vs `B-20261123-130153`):
+Final exact-A/B rerun (`A-20261124-233618` vs `B-20261124-234404`):
 
-| Metric | THM v3.4-R5 | THM disabled | Original failing run |
+| Metric | THM v3.4-R6 | THM disabled | Original failing run |
 | :--- | :---: | :---: | :---: |
-| Complete compile rounds | **13** | 14 (+1 failed) | 1 |
-| Median round wall time | **20.3 s** | **19.0 s** | 468.3 s |
-| Median ratio vs THM off | **1.07×** | 1.00× | 9.84× |
-| THM daemon CPU | **10.64% of one vCPU** | — | 33.68% |
-| Swap-out pages | **0** | **0** | 401085 |
-| Full-stall seconds | **0.5 s** | **7.3 s** | 18.0 s |
-| Min MemAvailable | **658 MB** | 28 MB | — |
+| Complete compile rounds | **4** | 5 | 1 |
+| Median round wall time | **56.3 s** | **48.9 s** | 468.3 s |
+| Median ratio vs THM off | **1.15×** | 1.00× | 9.84× |
+| THM daemon CPU | **17.76% of one vCPU** | — | 33.68% |
+| THM daemon max RSS | **4.2 MB** | — | ~6 MB |
+| Full-stall seconds | **2.2 s** | **13.7 s** | 18.0 s |
+| Min MemAvailable | **643 MB** | 19 MB | — |
 | Kernel OOM kills | 0 | 0 | 0 |
 | Compiler frozen | **no** | — | yes |
 
-The original 9.8× regression stays fixed, the absolute median is **well below
-50 s**, and the 1.07× ratio is essentially parity (arm-order/thermal noise;
-earlier runs were 1.17× and 0.63×). One compile round died without THM; zero
-with THM. The pressure-aware tick keeps daemon CPU low without sacrificing the
-memory floor: 658 MB min MemAvailable and 0.5 s stalls, versus 37 MB and 4.4 s
-with an unconditional 400 ms tick.
+The original 9.8× regression stays fixed. This host was slow/contended (THM-off
+itself was 49 s versus 19 s in the clean R5 run), so absolute times and the
+17.76% daemon CPU are **not comparable** to R5 (20.3 s, 10.64%). The robust
+back-to-back result is **1.15×**, with 84% fewer stalls and RSS verified below
+6 MB. No compiler process was frozen.
+
+Rejected after testing: unconditional 1 Hz tick (lost containment), 500 ms tick
+with 10 s metadata / 5 s telemetry (65–72 s rounds), and periodic
+`malloc_trim()` (multi-second pauses).
 
 Full report:
 [`2026-11-21-v3.4-qemu-ab-regression.md`](titan-hwm-v3/docs/benchmark-results/2026-11-21-v3.4-qemu-ab-regression.md).
