@@ -1,0 +1,15 @@
+{
+  "eyebrow": "ARCHTITAN OS",
+  "headline": "RISE, TITAN.",
+  "subheadline": "Discover what your desktop can do.",
+  "copy": "A desktop built around your workflow.",
+  "liveIsoBadge": "LIVE ENVIRONMENT · EXPLORE OR INSTALL ANYTIME (SUPER + I)",
+  "installedBadge": "FIRST-RUN EXPERIENCE · WAYLAND NATIVE",
+  "primaryAction": "Explore ArchTitan",
+  "secondaryAction": "Skip for now",
+  "completionHeadline": "Your workspace. Your rules. Your Titan.",
+  "completionSubheadline": "You're ready. Relaunch this tour anytime with Super + F1.",
+  "completionPrimary": "Enter ArchTitan",
+  "completionSecondary": "Explore features again"
+}
+

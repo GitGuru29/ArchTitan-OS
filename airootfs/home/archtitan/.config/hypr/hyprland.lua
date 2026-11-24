@@ -118,7 +118,6 @@ superBind(mainMod .. " + D", hl.dsp.exec_cmd("titan-spotlight --toggle"))       
 superBind(mainMod .. " + R", hl.dsp.exec_cmd("titan-spotlight --toggle"))  -- Super+R: Secondary App runner (Spotlight)
 superBind(mainMod .. " + slash", hl.dsp.exec_cmd("titan-menu --toggle"))        -- Help & Shortcuts Cheat Sheet (Super+/)
 superBind(mainMod .. " + question", hl.dsp.exec_cmd("titan-menu --toggle"))     -- Super+?
-superBind(mainMod .. " + F1", hl.dsp.exec_cmd("titan-menu --toggle"))           -- Help & Shortcuts Cheat Sheet (Super+F1)
 superBind(mainMod .. " + V", hl.dsp.exec_cmd("titan-spotlight --clipboard"))  -- Clipboard History Manager
 superBind(mainMod .. " + Period", hl.dsp.exec_cmd("titan-spotlight --toggle"))  -- Quick symbols/emoji
 superBind(mainMod .. " + backslash", hl.dsp.exec_cmd("titan-wallpaper-picker"))  -- Wallpaper Picker (Super+\)
@@ -407,7 +406,7 @@ hl.window_rule({
     name    = "titan-tour-float",
     match   = { class = "^titan-tour$" },
     float   = true,
-    size    = "960 620",
+    size    = "1280 800",
     center  = true,
 })
 
