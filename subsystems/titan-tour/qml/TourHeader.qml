@@ -3,7 +3,7 @@ import QtQuick.Layouts
 
 Item {
     id: root
-    height: 48
+    height: 50
 
     property int currentSlide: 0
     property int totalSlides: 5
@@ -11,11 +11,11 @@ Item {
     signal closeClicked()
 
     readonly property var steps: [
-        { title: "Welcome" },
-        { title: "Desktop Tour" },
-        { title: "Shortcuts" },
-        { title: "Appearance" },
-        { title: "Your System" }
+        { title: "Welcome",      icon: "\uf015" },
+        { title: "Desktop Tour", icon: "\uf108" },
+        { title: "Shortcuts",    icon: "\uf11c" },
+        { title: "Appearance",   icon: "\uf03e" },
+        { title: "Your System",  icon: "\uf2db" }
     ]
 
     // Allow moving the window by dragging the titlebar
@@ -34,7 +34,7 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         height: 1
-        color: Qt.rgba(1, 1, 1, 0.06)
+        color: Qt.rgba(1, 1, 1, 0.08)
     }
 
     RowLayout {
@@ -150,19 +150,19 @@ Item {
 
         Item { Layout.fillWidth: true }
 
-        // ── Center: macOS Segmented Navigation Bar ──────────────────────────
+        // ── Center: macOS Segmented Navigation Bar with Icons ───────────────
         Rectangle {
-            implicitHeight: 30
-            implicitWidth: navRow.implicitWidth + 6
-            radius: 8
-            color: Qt.rgba(1, 1, 1, 0.05)
+            implicitHeight: 32
+            implicitWidth: navRow.implicitWidth + 8
+            radius: 9
+            color: Qt.rgba(0, 0, 0, 0.28)
             border.width: 1
-            border.color: Qt.rgba(1, 1, 1, 0.07)
+            border.color: Qt.rgba(1, 1, 1, 0.08)
 
             Row {
                 id: navRow
                 anchors.centerIn: parent
-                spacing: 2
+                spacing: 3
 
                 Repeater {
                     model: root.steps
@@ -171,26 +171,49 @@ Item {
                         id: segPill
                         property bool isCurrent: index === root.currentSlide
 
-                        implicitHeight: 24
-                        implicitWidth: segLabel.implicitWidth + 22
-                        radius: 6
+                        implicitHeight: 26
+                        implicitWidth: segContent.implicitWidth + 20
+                        radius: 7
 
-                        color: isCurrent ? "#3A3A3E"
-                                         : (segMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.05) : "transparent")
-                        border.width: isCurrent ? 0.5 : 0
-                        border.color: Qt.rgba(1, 1, 1, 0.14)
+                        gradient: Gradient {
+                            GradientStop {
+                                position: 0.0
+                                color: segPill.isCurrent ? "#424248"
+                                                         : (segMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.06) : "transparent")
+                            }
+                            GradientStop {
+                                position: 1.0
+                                color: segPill.isCurrent ? "#323238"
+                                                         : (segMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.04) : "transparent")
+                            }
+                        }
 
-                        Behavior on color { ColorAnimation { duration: 140 } }
+                        border.width: isCurrent ? 1 : 0
+                        border.color: Qt.rgba(1, 1, 1, 0.16)
 
-                        Text {
-                            id: segLabel
+                        Row {
+                            id: segContent
                             anchors.centerIn: parent
-                            text: modelData.title
-                            color: segPill.isCurrent ? "#F5F5F7"
-                                                     : (segMouse.containsMouse ? "#D1D1D6" : "#8E8E93")
-                            font.family: "Inter"
-                            font.pixelSize: 12
-                            font.weight: segPill.isCurrent ? 600 : 500
+                            spacing: 6
+
+                            Text {
+                                text: modelData.icon
+                                color: segPill.isCurrent ? "#0A84FF"
+                                                         : (segMouse.containsMouse ? "#D1D1D6" : "#6E6E73")
+                                font.family: "JetBrainsMono Nerd Font"
+                                font.pixelSize: 11
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+
+                            Text {
+                                text: modelData.title
+                                color: segPill.isCurrent ? "#F5F5F7"
+                                                         : (segMouse.containsMouse ? "#D1D1D6" : "#8E8E93")
+                                font.family: "Inter"
+                                font.pixelSize: 12
+                                font.weight: segPill.isCurrent ? 600 : 500
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
                         }
 
                         MouseArea {
@@ -210,10 +233,29 @@ Item {
 
         Item { Layout.fillWidth: true }
 
-        // ── Right: Subtle Sound Toggle & Close Pill ─────────────────────────
+        // ── Right: Step Progress Pill & Sound Toggle ────────────────────────
         Row {
             spacing: 8
             Layout.alignment: Qt.AlignVCenter
+
+            Rectangle {
+                implicitHeight: 22
+                implicitWidth: stepBadgeTxt.implicitWidth + 12
+                radius: 6
+                color: Qt.rgba(1, 1, 1, 0.05)
+                border.width: 1
+                border.color: Qt.rgba(1, 1, 1, 0.08)
+
+                Text {
+                    id: stepBadgeTxt
+                    anchors.centerIn: parent
+                    text: (root.currentSlide + 1) + " of " + root.totalSlides
+                    color: "#8E8E93"
+                    font.family: "Inter"
+                    font.pixelSize: 11
+                    font.weight: 600
+                }
+            }
 
             Rectangle {
                 width: 26

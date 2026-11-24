@@ -5,15 +5,27 @@ Item {
     id: root
     signal finishRequested()
 
-    // Helper to find active wallpaper metadata
-    function activeWallpaperObj() {
+    readonly property var paletteSwatches: [
+        ["#38BDF8", "#3B82F6", "#1E3A8A", "#F59E0B"],
+        ["#89B4FA", "#CBA6F7", "#313244", "#1E1E2E"],
+        ["#2DD4BF", "#14B8A6", "#0F766E", "#111827"],
+        ["#EB6F92", "#C4A7E7", "#9CCFD8", "#191724"],
+        ["#60A5FA", "#2563EB", "#1E293B", "#0F172A"],
+        ["#A1A1AA", "#52525B", "#27272A", "#09090B"]
+    ]
+
+    function activeWallpaperIndex() {
         var list = tourCtrl.wallpapers;
         for (var i = 0; i < list.length; i++) {
-            if (list[i].path === tourCtrl.selectedWallpaper) {
-                return list[i];
-            }
+            if (list[i].path === tourCtrl.selectedWallpaper) return i;
         }
-        return list.length > 0 ? list[0] : { name: "Watchtower", tag: "Dynamic 4K", url: "", path: "" };
+        return 0;
+    }
+
+    function activeWallpaperObj() {
+        var list = tourCtrl.wallpapers;
+        var idx = activeWallpaperIndex();
+        return list.length > idx ? list[idx] : { name: "Watchtower", tag: "LANDSCAPE", url: "", path: "" };
     }
 
     ColumnLayout {
@@ -40,7 +52,7 @@ Item {
 
             Text {
                 Layout.alignment: Qt.AlignHCenter
-                text: "Select a desktop wallpaper below. Your choice transitions live on your desktop immediately."
+                text: "Select a curated 4K desktop wallpaper. Your selection transitions live on your desktop immediately."
                 color: "#98989D"
                 font.family: "Inter"
                 font.pixelSize: 12
@@ -50,11 +62,11 @@ Item {
         // ── Upper Card: macOS System Settings Style Active Desktop Preview ──
         Rectangle {
             Layout.fillWidth: true
-            implicitHeight: 104
-            radius: 12
-            color: Qt.rgba(1, 1, 1, 0.045)
+            implicitHeight: 112
+            radius: 14
+            color: Qt.rgba(1, 1, 1, 0.05)
             border.width: 1
-            border.color: Qt.rgba(1, 1, 1, 0.08)
+            border.color: Qt.rgba(1, 1, 1, 0.10)
 
             RowLayout {
                 anchors.fill: parent
@@ -63,12 +75,12 @@ Item {
 
                 // Miniature Mac Display Bezel showing Current Wallpaper
                 Rectangle {
-                    width: 162
-                    height: 82
+                    width: 174
+                    height: 88
                     radius: 8
                     color: "#0D1322"
                     border.width: 2
-                    border.color: Qt.rgba(1, 1, 1, 0.24)
+                    border.color: "#0A84FF"
                     clip: true
 
                     Image {
@@ -87,26 +99,42 @@ Item {
                         anchors.rightMargin: 5
                         height: 9
                         radius: 3
-                        color: Qt.rgba(0.08, 0.09, 0.12, 0.85)
+                        color: Qt.rgba(0.08, 0.09, 0.12, 0.88)
+
+                        Row {
+                            anchors.left: parent.left
+                            anchors.leftMargin: 4
+                            anchors.verticalCenter: parent.verticalCenter
+                            spacing: 2
+                            Rectangle { width: 4; height: 4; radius: 2; color: "#0A84FF" }
+                            Rectangle { width: 8; height: 3; radius: 1.5; color: "#64D2FF"; anchors.verticalCenter: parent.verticalCenter }
+                        }
                     }
 
                     // Mini floating window silhouette inside preview
                     Rectangle {
                         anchors.centerIn: parent
-                        anchors.verticalCenterOffset: 4
-                        width: 78
-                        height: 44
+                        anchors.verticalCenterOffset: 3
+                        width: 84
+                        height: 46
                         radius: 5
-                        color: Qt.rgba(0.12, 0.13, 0.16, 0.88)
+                        color: Qt.rgba(0.11, 0.12, 0.16, 0.90)
                         border.width: 1
-                        border.color: Qt.rgba(1, 1, 1, 0.22)
+                        border.color: Qt.rgba(1, 1, 1, 0.24)
+
+                        Row {
+                            x: 5; y: 4; spacing: 2.5
+                            Rectangle { width: 3.5; height: 3.5; radius: 1.75; color: "#FF5F57" }
+                            Rectangle { width: 3.5; height: 3.5; radius: 1.75; color: "#FEBC2E" }
+                            Rectangle { width: 3.5; height: 3.5; radius: 1.75; color: "#28C840" }
+                        }
                     }
                 }
 
-                // Current Wallpaper Details
+                // Current Wallpaper Details + Color Palette Swatches
                 ColumnLayout {
                     Layout.fillWidth: true
-                    spacing: 4
+                    spacing: 5
 
                     RowLayout {
                         spacing: 8
@@ -114,7 +142,7 @@ Item {
                             text: root.activeWallpaperObj().name
                             color: "#F5F5F7"
                             font.family: "Inter"
-                            font.pixelSize: 16
+                            font.pixelSize: 17
                             font.weight: Font.Bold
                         }
 
@@ -129,7 +157,7 @@ Item {
                             Text {
                                 id: tagTxt
                                 anchors.centerIn: parent
-                                text: "✓ Active Wallpaper"
+                                text: "✓ Active Desktop"
                                 color: "#30D158"
                                 font.family: "Inter"
                                 font.pixelSize: 10
@@ -139,21 +167,45 @@ Item {
                     }
 
                     Text {
-                        text: "Curated ArchTitan 4K Desktop Environment • Instant Wayland Transition"
+                        text: "Curated 4K Desktop Environment • Adaptive Waybar & Accent Palette"
                         color: "#98989D"
                         font.family: "Inter"
                         font.pixelSize: 12
+                    }
+
+                    // Palette Swatch Row
+                    Row {
+                        spacing: 6
+                        Text {
+                            text: "Theme Accents:"
+                            color: "#8E8E93"
+                            font.family: "Inter"
+                            font.pixelSize: 11
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+                        Repeater {
+                            model: root.paletteSwatches[root.activeWallpaperIndex() % root.paletteSwatches.length]
+                            Rectangle {
+                                width: 14
+                                height: 14
+                                radius: 7
+                                color: modelData
+                                border.width: 1
+                                border.color: Qt.rgba(1, 1, 1, 0.35)
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+                        }
                     }
                 }
 
                 // Button to Open Full Appearance Settings
                 Rectangle {
-                    implicitHeight: 30
+                    implicitHeight: 32
                     implicitWidth: moreRow.implicitWidth + 18
-                    radius: 7
+                    radius: 8
                     color: moreMouse.containsMouse ? "#3A3A3E" : "#2E2E32"
                     border.width: 1
-                    border.color: Qt.rgba(1, 1, 1, 0.14)
+                    border.color: Qt.rgba(1, 1, 1, 0.16)
 
                     Row {
                         id: moreRow
@@ -161,7 +213,7 @@ Item {
                         spacing: 6
                         Text {
                             text: "\uf013"
-                            color: "#AEAEB2"
+                            color: "#64D2FF"
                             font.family: "JetBrainsMono Nerd Font"
                             font.pixelSize: 11
                             anchors.verticalCenter: parent.verticalCenter
@@ -170,8 +222,8 @@ Item {
                             text: "Appearance Settings…"
                             color: "#F5F5F7"
                             font.family: "Inter"
-                            font.pixelSize: 11
-                            font.weight: 500
+                            font.pixelSize: 12
+                            font.weight: 600
                             anchors.verticalCenter: parent.verticalCenter
                         }
                     }
@@ -207,7 +259,7 @@ Item {
                     color: "#222226"
                     border.width: isSelected ? 2 : 1
                     border.color: isSelected ? "#0A84FF"
-                                             : (wpMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.28) : Qt.rgba(1, 1, 1, 0.10))
+                                             : (wpMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.32) : Qt.rgba(1, 1, 1, 0.10))
                     clip: true
 
                     Image {
@@ -220,15 +272,38 @@ Item {
                         Behavior on opacity { NumberAnimation { duration: 140 } }
                     }
 
+                    // Top-Left Theme Tag Badge
+                    Rectangle {
+                        anchors.top: parent.top
+                        anchors.left: parent.left
+                        anchors.margins: 8
+                        implicitHeight: 18
+                        implicitWidth: tTag.implicitWidth + 10
+                        radius: 5
+                        color: Qt.rgba(0.06, 0.07, 0.10, 0.78)
+                        border.width: 1
+                        border.color: Qt.rgba(1, 1, 1, 0.16)
+
+                        Text {
+                            id: tTag
+                            anchors.centerIn: parent
+                            text: modelData.tag
+                            color: "#D1D1D6"
+                            font.family: "Inter"
+                            font.pixelSize: 9
+                            font.weight: Font.Bold
+                        }
+                    }
+
                     // Bottom Gradient Scrim + Wallpaper Title
                     Rectangle {
                         anchors.bottom: parent.bottom
                         anchors.left: parent.left
                         anchors.right: parent.right
-                        height: 30
+                        height: 32
                         gradient: Gradient {
                             GradientStop { position: 0.0; color: "transparent" }
-                            GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.82) }
+                            GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.86) }
                         }
 
                         RowLayout {
@@ -241,16 +316,16 @@ Item {
                                 text: modelData.name
                                 color: "#F5F5F7"
                                 font.family: "Inter"
-                                font.pixelSize: 11
+                                font.pixelSize: 12
                                 font.weight: 600
                                 Layout.fillWidth: true
                             }
 
                             Rectangle {
                                 visible: wpCard.isSelected
-                                width: 16
-                                height: 16
-                                radius: 8
+                                width: 18
+                                height: 18
+                                radius: 9
                                 color: "#0A84FF"
                                 border.width: 1
                                 border.color: "#FFFFFF"

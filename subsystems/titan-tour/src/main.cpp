@@ -117,16 +117,22 @@ int main(int argc, char *argv[])
                     QGuiApplication::quit();
                     return;
                 }
+                QMetaObject::invokeMethod(window, "goToSlide", Q_ARG(QVariant, *currentIdx));
                 window->setProperty("currentSlide", *currentIdx);
                 window->setProperty("entryProgress", 1.0);
-                QTimer::singleShot(180, window, [window, dumpDir, currentIdx]() {
+                window->setProperty("slideFade", 1.0);
+                window->setProperty("slideOffset", 0.0);
+                window->update();
+                QTimer::singleShot(280, window, [window, dumpDir, currentIdx]() {
+                    window->setProperty("slideFade", 1.0);
+                    window->setProperty("slideOffset", 0.0);
                     QImage img = window->grabWindow();
                     QString outPath = QStringLiteral("%1/slide_%2.png").arg(dumpDir).arg(*currentIdx + 1);
                     img.save(outPath);
                     (*currentIdx)++;
                 });
             });
-            stepTimer->start(350);
+            stepTimer->start(450);
         }
     }
 

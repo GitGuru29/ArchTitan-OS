@@ -9,6 +9,7 @@ Item {
             id: "power-saver",
             title: "Low Power",
             badge: "Quiet & Cool",
+            spec: "Target: Max Battery • Silent Acoustics",
             icon: "\uf06c",
             accentColor: "#30D158",
             desc: "Reduces energy consumption and fan acoustics to maximize battery life during everyday tasks."
@@ -17,6 +18,7 @@ Item {
             id: "balanced",
             title: "Automatic",
             badge: "Recommended",
+            spec: "Target: 25ms CFS Headroom • 60–144 Hz",
             icon: "\uf24e",
             accentColor: "#0A84FF",
             desc: "Intelligently adapts CPU and memory priority so your active window stays smooth under any load."
@@ -25,6 +27,7 @@ Item {
             id: "performance",
             title: "High Performance",
             badge: "Max Boost",
+            spec: "Target: Peak Turbo Clocks • Full GPU",
             icon: "\uf0e7",
             accentColor: "#FF9F0A",
             desc: "Sustains peak processor and graphics clock speeds for heavy compilation and intensive workloads."
@@ -55,7 +58,7 @@ Item {
 
             Text {
                 Layout.alignment: Qt.AlignHCenter
-                text: "Review your machine specifications and select an energy mode for your workflow."
+                text: "Review your machine specifications and select an adaptive energy mode for your workflow."
                 color: "#98989D"
                 font.family: "Inter"
                 font.pixelSize: 12
@@ -65,11 +68,11 @@ Item {
         // ── Upper Card: macOS "About This Mac" Style System Overview Card ───
         Rectangle {
             Layout.fillWidth: true
-            implicitHeight: 96
-            radius: 12
-            color: Qt.rgba(1, 1, 1, 0.045)
+            implicitHeight: 108
+            radius: 14
+            color: Qt.rgba(1, 1, 1, 0.05)
             border.width: 1
-            border.color: Qt.rgba(1, 1, 1, 0.08)
+            border.color: Qt.rgba(1, 1, 1, 0.10)
 
             RowLayout {
                 anchors.fill: parent
@@ -79,36 +82,37 @@ Item {
 
                 // Workstation Squircle Icon
                 Rectangle {
-                    width: 54
-                    height: 54
-                    radius: 13
+                    width: 60
+                    height: 60
+                    radius: 15
                     gradient: Gradient {
-                        GradientStop { position: 0.0; color: "#2C3E50" }
-                        GradientStop { position: 1.0; color: "#1A252F" }
+                        GradientStop { position: 0.0; color: "#1E3A8A" }
+                        GradientStop { position: 0.5; color: "#172554" }
+                        GradientStop { position: 1.0; color: "#0B1120" }
                     }
                     border.width: 1
-                    border.color: Qt.rgba(1, 1, 1, 0.20)
+                    border.color: Qt.rgba(1, 1, 1, 0.25)
 
                     Image {
                         anchors.centerIn: parent
-                        width: 30
-                        height: 30
+                        width: 34
+                        height: 34
                         source: tourCtrl.logoUrl
                         fillMode: Image.PreserveAspectFit
                         mipmap: true
                     }
                 }
 
-                // OS Brand Title
+                // OS Brand Title & Status Pill
                 ColumnLayout {
-                    Layout.preferredWidth: 165
-                    spacing: 2
+                    Layout.preferredWidth: 162
+                    spacing: 4
 
                     Text {
                         text: "ArchTitan OS"
                         color: "#F5F5F7"
                         font.family: "Inter"
-                        font.pixelSize: 16
+                        font.pixelSize: 17
                         font.weight: Font.Bold
                     }
 
@@ -118,22 +122,40 @@ Item {
                         font.family: "Inter"
                         font.pixelSize: 11
                     }
+
+                    Rectangle {
+                        implicitHeight: 18
+                        implicitWidth: thmTag.implicitWidth + 10
+                        radius: 9
+                        color: Qt.rgba(48/255, 209/255, 88/255, 0.16)
+                        border.width: 1
+                        border.color: "#30D158"
+                        Text {
+                            id: thmTag
+                            anchors.centerIn: parent
+                            text: "✓ THM v3 Guard Active"
+                            color: "#30D158"
+                            font.family: "Inter"
+                            font.pixelSize: 9
+                            font.weight: Font.Bold
+                        }
+                    }
                 }
 
                 Rectangle {
                     width: 1
                     Layout.fillHeight: true
-                    Layout.topMargin: 14
-                    Layout.bottomMargin: 14
-                    color: Qt.rgba(1, 1, 1, 0.08)
+                    Layout.topMargin: 16
+                    Layout.bottomMargin: 16
+                    color: Qt.rgba(1, 1, 1, 0.09)
                 }
 
                 // 2x2 Apple Hardware Spec Grid
                 GridLayout {
                     Layout.fillWidth: true
                     columns: 2
-                    columnSpacing: 20
-                    rowSpacing: 8
+                    columnSpacing: 18
+                    rowSpacing: 10
 
                     // Processor
                     ColumnLayout {
@@ -186,11 +208,11 @@ Item {
                     Layout.fillHeight: true
                     radius: 12
 
-                    color: isSelected ? Qt.rgba(10/255, 132/255, 255/255, 0.14)
-                                      : (profMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.075)
-                                                                 : Qt.rgba(1, 1, 1, 0.04))
+                    color: isSelected ? Qt.rgba(10/255, 132/255, 255/255, 0.16)
+                                      : (profMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.08)
+                                                                 : Qt.rgba(1, 1, 1, 0.045))
                     border.width: isSelected ? 2 : 1
-                    border.color: isSelected ? "#0A84FF" : Qt.rgba(1, 1, 1, 0.08)
+                    border.color: isSelected ? "#0A84FF" : Qt.rgba(1, 1, 1, 0.09)
 
                     Behavior on color { ColorAnimation { duration: 140 } }
 
@@ -204,16 +226,18 @@ Item {
                             spacing: 10
 
                             Rectangle {
-                                width: 30
-                                height: 30
-                                radius: 7
+                                width: 32
+                                height: 32
+                                radius: 8
                                 color: modelData.accentColor
+                                border.width: 1
+                                border.color: Qt.rgba(1, 1, 1, 0.25)
                                 Text {
                                     anchors.centerIn: parent
                                     text: modelData.icon
                                     color: "#FFFFFF"
                                     font.family: "JetBrainsMono Nerd Font"
-                                    font.pixelSize: 13
+                                    font.pixelSize: 14
                                 }
                             }
 
@@ -231,7 +255,7 @@ Item {
                                     color: profCard.isSelected ? "#64D2FF" : "#8E8E93"
                                     font.family: "Inter"
                                     font.pixelSize: 10
-                                    font.weight: 500
+                                    font.weight: 600
                                 }
                             }
 
@@ -267,6 +291,25 @@ Item {
                             Layout.fillHeight: true
                             wrapMode: Text.WordWrap
                         }
+
+                        // Bottom Technical Spec Pill
+                        Rectangle {
+                            Layout.fillWidth: true
+                            height: 22
+                            radius: 6
+                            color: Qt.rgba(0, 0, 0, 0.22)
+                            border.width: 1
+                            border.color: Qt.rgba(1, 1, 1, 0.06)
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: modelData.spec
+                                color: profCard.isSelected ? "#D1D1D6" : "#8E8E93"
+                                font.family: "Inter"
+                                font.pixelSize: 10
+                                font.weight: 500
+                            }
+                        }
                     }
 
                     MouseArea {
@@ -285,9 +328,9 @@ Item {
             Layout.fillWidth: true
             implicitHeight: 44
             radius: 10
-            color: Qt.rgba(1, 1, 1, 0.04)
+            color: Qt.rgba(1, 1, 1, 0.045)
             border.width: 1
-            border.color: Qt.rgba(1, 1, 1, 0.07)
+            border.color: Qt.rgba(1, 1, 1, 0.08)
 
             RowLayout {
                 anchors.fill: parent
@@ -296,11 +339,11 @@ Item {
                 spacing: 10
 
                 Text {
-                    text: "Quick Actions:"
+                    text: "Quick Launch:"
                     color: "#98989D"
                     font.family: "Inter"
                     font.pixelSize: 12
-                    font.weight: 500
+                    font.weight: 600
                 }
 
                 Item { Layout.fillWidth: true }
@@ -336,7 +379,7 @@ Item {
                                 color: "#F5F5F7"
                                 font.family: "Inter"
                                 font.pixelSize: 11
-                                font.weight: 500
+                                font.weight: 600
                                 anchors.verticalCenter: parent.verticalCenter
                             }
                         }

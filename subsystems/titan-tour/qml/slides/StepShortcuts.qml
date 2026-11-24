@@ -6,6 +6,7 @@ Item {
     id: root
 
     property int activeTab: 0
+    property int hoveredIndex: 0
 
     readonly property var keyCategories: ["All Shortcuts", "Apps & Search", "Window Tiling", "System Tools"]
 
@@ -30,19 +31,17 @@ Item {
         anchors.bottomMargin: 12
         anchors.leftMargin: 28
         anchors.rightMargin: 28
-        spacing: 12
+        spacing: 10
 
-        // ── Centered macOS Title & Segmented Filter Bar ─────────────────────
-        ColumnLayout {
-            Layout.alignment: Qt.AlignHCenter
-            spacing: 8
+        // ── Top Bar: Title Left + Live macOS Key Visualizer Pill Right ──────
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 16
 
             ColumnLayout {
-                Layout.alignment: Qt.AlignHCenter
                 spacing: 2
 
                 Text {
-                    Layout.alignment: Qt.AlignHCenter
                     text: "Keyboard Shortcuts"
                     color: "#F5F5F7"
                     font.family: "Inter"
@@ -51,60 +50,111 @@ Item {
                 }
 
                 Text {
-                    Layout.alignment: Qt.AlignHCenter
-                    text: "Move effortlessly across apps, tiled windows, and workspaces. Click any highlighted row to test it."
+                    text: "Hover any shortcut to inspect, or click an app shortcut to trigger it live."
                     color: "#98989D"
                     font.family: "Inter"
                     font.pixelSize: 12
                 }
             }
 
-            // macOS Segmented Control
+            Item { Layout.fillWidth: true }
+
+            // Live Interactive Key Visualizer HUD Pill
             Rectangle {
-                Layout.alignment: Qt.AlignHCenter
-                implicitHeight: 30
-                implicitWidth: segRow.implicitWidth + 6
-                radius: 8
-                color: "#252529"
+                implicitHeight: 38
+                implicitWidth: hudRow.implicitWidth + 20
+                radius: 10
+                color: Qt.rgba(10/255, 132/255, 255/255, 0.14)
                 border.width: 1
-                border.color: Qt.rgba(1, 1, 1, 0.08)
+                border.color: "#0A84FF"
 
                 Row {
-                    id: segRow
+                    id: hudRow
                     anchors.centerIn: parent
-                    spacing: 2
+                    spacing: 8
 
-                    Repeater {
-                        model: root.keyCategories
+                    Rectangle {
+                        width: 22; height: 22; radius: 6
+                        color: root.allShortcuts[root.hoveredIndex].col
+                        anchors.verticalCenter: parent.verticalCenter
+                        Text {
+                            anchors.centerIn: parent
+                            text: root.allShortcuts[root.hoveredIndex].icon
+                            color: "#FFFFFF"
+                            font.family: "JetBrainsMono Nerd Font"
+                            font.pixelSize: 10
+                        }
+                    }
 
-                        Rectangle {
-                            property bool isSel: root.activeTab === index
-                            implicitHeight: 24
-                            implicitWidth: tabText.implicitWidth + 20
-                            radius: 6
-                            color: isSel ? "#3F3F46" : (tabMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.05) : "transparent")
-                            border.width: isSel ? 0.5 : 0
-                            border.color: Qt.rgba(1, 1, 1, 0.16)
+                    Text {
+                        text: root.allShortcuts[root.hoveredIndex].title + ":"
+                        color: "#F5F5F7"
+                        font.family: "Inter"
+                        font.pixelSize: 12
+                        font.weight: 600
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
 
-                            Text {
-                                id: tabText
-                                anchors.centerIn: parent
+                    Row {
+                        spacing: 4
+                        anchors.verticalCenter: parent.verticalCenter
+                        Repeater {
+                            model: root.allShortcuts[root.hoveredIndex].keys
+                            Keycap {
                                 text: modelData
-                                color: isSel ? "#F5F5F7" : "#98989D"
-                                font.family: "Inter"
-                                font.pixelSize: 11
-                                font.weight: isSel ? 600 : 500
+                                isAccent: true
                             }
+                        }
+                    }
+                }
+            }
+        }
 
-                            MouseArea {
-                                id: tabMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: {
-                                    tourCtrl.playSound("tap");
-                                    root.activeTab = index;
-                                }
+        // ── macOS Segmented Filter Control ──────────────────────────────────
+        Rectangle {
+            Layout.alignment: Qt.AlignHCenter
+            implicitHeight: 30
+            implicitWidth: segRow.implicitWidth + 6
+            radius: 8
+            color: Qt.rgba(0, 0, 0, 0.26)
+            border.width: 1
+            border.color: Qt.rgba(1, 1, 1, 0.08)
+
+            Row {
+                id: segRow
+                anchors.centerIn: parent
+                spacing: 2
+
+                Repeater {
+                    model: root.keyCategories
+
+                    Rectangle {
+                        property bool isSel: root.activeTab === index
+                        implicitHeight: 24
+                        implicitWidth: tabText.implicitWidth + 22
+                        radius: 6
+                        color: isSel ? "#3F3F46" : (tabMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.05) : "transparent")
+                        border.width: isSel ? 1 : 0
+                        border.color: Qt.rgba(1, 1, 1, 0.16)
+
+                        Text {
+                            id: tabText
+                            anchors.centerIn: parent
+                            text: modelData
+                            color: isSel ? "#F5F5F7" : "#98989D"
+                            font.family: "Inter"
+                            font.pixelSize: 11
+                            font.weight: isSel ? 600 : 500
+                        }
+
+                        MouseArea {
+                            id: tabMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                tourCtrl.playSound("tap");
+                                root.activeTab = index;
                             }
                         }
                     }
@@ -135,12 +185,12 @@ Item {
                         Layout.fillWidth: true
                         implicitHeight: 46
                         radius: 10
-                        color: cardMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.08)
+                        color: cardMouse.containsMouse ? Qt.rgba(10/255, 132/255, 255/255, 0.14)
                                                        : Qt.rgba(1, 1, 1, 0.045)
                         border.width: 1
-                        border.color: cardMouse.containsMouse && modelData.action !== null
+                        border.color: cardMouse.containsMouse
                                       ? "#0A84FF"
-                                      : Qt.rgba(1, 1, 1, 0.07)
+                                      : Qt.rgba(1, 1, 1, 0.08)
 
                         RowLayout {
                             anchors.fill: parent
@@ -150,8 +200,8 @@ Item {
 
                             // macOS Colorful Squircle Icon
                             Rectangle {
-                                width: 28
-                                height: 28
+                                width: 30
+                                height: 30
                                 radius: 7
                                 color: modelData.col
                                 border.width: 1
@@ -171,12 +221,32 @@ Item {
                                 Layout.fillWidth: true
                                 spacing: 1
 
-                                Text {
-                                    text: modelData.title
-                                    color: "#F5F5F7"
-                                    font.family: "Inter"
-                                    font.pixelSize: 12
-                                    font.weight: 600
+                                RowLayout {
+                                    spacing: 6
+                                    Text {
+                                        text: modelData.title
+                                        color: "#F5F5F7"
+                                        font.family: "Inter"
+                                        font.pixelSize: 12
+                                        font.weight: 600
+                                    }
+
+                                    Rectangle {
+                                        visible: modelData.action !== null
+                                        implicitHeight: 15
+                                        implicitWidth: liveTag.implicitWidth + 8
+                                        radius: 4
+                                        color: Qt.rgba(10/255, 132/255, 255/255, 0.18)
+                                        Text {
+                                            id: liveTag
+                                            anchors.centerIn: parent
+                                            text: "Try ↗"
+                                            color: "#64D2FF"
+                                            font.family: "Inter"
+                                            font.pixelSize: 9
+                                            font.weight: 600
+                                        }
+                                    }
                                 }
 
                                 Text {
@@ -196,6 +266,7 @@ Item {
                                     model: modelData.keys
                                     Keycap {
                                         text: modelData
+                                        isAccent: cardMouse.containsMouse
                                     }
                                 }
                             }
@@ -206,7 +277,9 @@ Item {
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: modelData.action !== null ? Qt.PointingHandCursor : Qt.ArrowCursor
+                            onEntered: root.hoveredIndex = index
                             onClicked: {
+                                root.hoveredIndex = index;
                                 if (modelData.action !== null) {
                                     tourCtrl.playSound("click");
                                     modelData.action();
