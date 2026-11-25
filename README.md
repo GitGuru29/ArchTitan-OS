@@ -101,25 +101,25 @@ graph TD
 
 ArchTitan provides a suite of native C++ and Qt6 applications built specifically for the OS:
 
-### 1.  Titan Hardware Manager (`titan-hwm` v3.4)
+### 1.  Titan Hardware Manager (`titan-hwm` v3.8)
 * **Lead:** `@GitGuru29` | **Location:** `titan-hwm-v3/` & `subsystems/titan-hwm/`
 * **Direction:** “Titan Hardware Manager — Workload-Aware Resource Orchestration Engine.” The kernel keeps low-level scheduling; THM supplies intent, context, reservations, and guardrails. Hyprland IPC is the primary live context provider — no parallel context source.
 * High-performance C++20 autonomous daemon running at 5 Hz as `titan-hwm.service` with `archtitan.slice` cgroup v2 delegation (`OOMScoreAdjust=-1000`).
 * Routes classified workloads across `archtitan-active.slice`, `archtitan-latency.slice`, `archtitan-background.slice`, and `archtitan-frozen.slice` using multi-signal fusion classification (process ancestry to depth 3, Hyprland window/workspace focus, CWD project signatures, cmdline drift, and execution observation).
 * **Context:** a bounded 30-second recent-focus window keeps a just-left workspace foreground, so fast workspace switches no longer cause immediate downgrades; protection expires cleanly.
-* **CPU plane:** PSI + loadavg + `cpu.stat` + thermal drive `cpu.weight`, `cpu.max`, `cpu.idle`, SMT-aware `cpuset`, governor hints, and input boost. `archtitan-latency.slice` is never capped or idled. **HC-CPU-1:** CPU pressure can change scheduling, never process lifetime — no kill, stop, or freeze.
+* **CPU plane:** PSI + loadavg + `cpu.stat` + thermal drive `cpu.weight`, `cpu.max`, `cpu.idle`, SMT-aware `cpuset`, governor hints, input boost, and **stall-aware bandwidth loaning** (idle reservation capacity is lent to bulk work only after a quiet streak, and reclaimed immediately on input, PSI stalls, or foreground load). `archtitan-latency.slice` is never capped or idled. **HC-CPU-1:** CPU pressure can change scheduling, never process lifetime — no kill, stop, or freeze.
 * **Memory plane:** real `memory.high` / `memory.low` wiring, fail-closed enforcement gate, unified `pidfd` reclaim signaling with `posix_spawn()` helper execution, browser-safe cgroup freezing, protected-daemon immunity, and orphan thaw sweep. Destructive automatic reclaim stays off unless `THM_ALLOW_DESTRUCTIVE_RECLAIM=1` is explicitly set.
-* **Validated:** 45/45 unit tests, 8/8 CPU headroom scorecard, and real cgroup RAM-pressure benchmark PASS (`high=18`, `oom_kill=0`).
-* **Next isolation item:** give the latency/game workload its own physical core, the foreground IDE/agent another, and background work the rest — stricter than today’s shared latency/active cpuset. Also next: bind `active_window_class` / `active_window_title` to workload roots and build the dependency/workload graph. I/O and GPU planes remain out of scope.
+* **Validated:** 46/46 unit tests, 8/8 CPU headroom scorecard, and real cgroup RAM-pressure benchmark PASS (`high=18`, `oom_kill=0`).
+* **Next item:** bind `active_window_class` / `active_window_title` to workload roots and build the dependency/workload graph. I/O and GPU planes remain out of scope.
 
-#### Current THM validation snapshot (v3.4-R6)
+#### Current THM validation snapshot (v3.8)
 
 | Check | Result |
 | :--- | :--- |
-| Unit suite (`./build/thm_test_runner`) | **45/45 PASSED** (TC-44 throttled slice, TC-45 build freeze guard) |
+| Unit suite (`./build/thm_test_runner`) | **46/46 PASSED** (TC-44 throttled slice, TC-45 build freeze guard, TC-46 bandwidth loan) |
 | CPU headroom A/B (`bench_cpu_headroom --compare`) | **8/8 scorecard**, HC-CPU-1 workers 2/2 alive in both runs |
-| Latency | deadline misses **24.8% → 2.5%**; severe drops **51 → 1** |
-| Background work | ~**90.7%** throughput retained while `cpu.max` is actively throttling |
+| Latency (latest run) | deadline misses **28.5% → 2.0%**; wake-up p99 **25.7 ms → 5.2 ms** |
+| Background work | **86.6%** throughput retained while `cpu.max` is actively throttling |
 | Real RAM pressure (`bench_memory_pressure.sh`) | `memory.high=96 MiB`, `memory.low=32 MiB`, `high=18`, `oom_kill=0` — **PASS** |
 | Safety | CPU pressure never kills/stops/freezes; destructive reclaim opt-in only |
 
@@ -321,7 +321,7 @@ The current tree is validated on real cgroup v2 with the 5 Hz daemon, not only i
 
 - **CPU:** 8/8 scorecard — deadline misses **24.8% → 2.5%**, severe drops **51 → 1**, ~**90.7%** background throughput retained while `cpu.max` is actively throttling.
 - **Memory:** real `memory.high` / `memory.low` scope produced **18 `high` events with `oom_kill=0`** — **PASS**.
-- **Invariants:** **45/45** tests; HC-CPU-1 held; destructive reclaim remains off by default.
+- **Invariants:** **46/46** tests; HC-CPU-1 held; destructive reclaim remains off by default.
 
 Full reports: [`titan-hwm-v3/docs/benchmark-results/`](titan-hwm-v3/docs/benchmark-results/).
 

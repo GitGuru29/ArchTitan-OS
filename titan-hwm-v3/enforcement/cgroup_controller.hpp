@@ -86,6 +86,11 @@ struct CpuDemandHint {
     float foreground_cpu_pct = 0.0f;   // sum over active workloads (100% == 1 core)
     float cpu_temp_c         = 0.0f;   // 0 = unknown
     bool  smt_siblings       = false;  // logical CPUs share physical cores
+    // v3.8 stall-aware bandwidth loaning. Both default to "assume protected
+    // work still needs its reservation": no loan until the daemon proves the
+    // foreground is quiet and runqueue stalls are absent.
+    float cpu_stall_pct      = -1.0f;  // last-tick PSI some %; <0 = unavailable
+    bool  input_active       = false;  // keyboard/mouse event inside boost window
 };
 
 // Pure: logical CPUs reserved for foreground work at HIGH/CRITICAL pressure.
@@ -109,6 +114,42 @@ private:
     int current_   = -1;
     int candidate_ = -1;
     int streak_    = 0;
+    PressureLevel last_pressure_ = PressureLevel::NORMAL;
+    bool last_unattended_ = false;
+};
+
+// ── v3.8: stall-aware bandwidth loaning ──────────────────────────────────────
+// The base reservation protects the compositor, input, audio and any active
+// latency/GPU workload. When that reservation is visibly unused AND the kernel
+// reports no runqueue stalls, one core of bandwidth can be lent to the bulk
+// slice. Any sign of foreground life or contention reclaims it immediately —
+// scheduling only, so HC-CPU-1 (no kill/stop/freeze) still holds.
+class BandwidthLoanTracker {
+public:
+    int update(int base_reserve,
+               PressureLevel pressure,
+               bool unattended,
+               bool input_active,
+               bool smt_siblings,
+               float foreground_cpu_pct,
+               float cpu_stall_pct,
+               int online_cpus);
+    int reserve() const { return reserve_; }
+    int loaned_cores() const { return loan_; }
+    void reset();
+
+private:
+    // ~1 s at the 200 ms pressure tick. Reclaim is never delayed by this.
+    static constexpr int kEngageTicks = 5;
+    // PSI some above this means a user-visible stall is already forming.
+    static constexpr float kStallReclaimPct = 5.0f;
+    // Foreground using more than ~25% of each reserved core means the loan
+    // would make it contend with the build.
+    static constexpr float kFgLoadPerCorePct = 25.0f;
+
+    int reserve_ = -1;
+    int loan_    = 0;
+    int streak_  = 0;
     PressureLevel last_pressure_ = PressureLevel::NORMAL;
     bool last_unattended_ = false;
 };

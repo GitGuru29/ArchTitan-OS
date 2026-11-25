@@ -240,6 +240,9 @@ static std::string format_status(const thm::TelemetrySnapshot& s) {
           << (s.background_cpu_idle ? " + cpu.idle" : "")
           << " (25ms CFS period, " << s.reserved_headroom_cores
           << " core(s) reserved)\n";
+    if (s.bandwidth_loan_cores > 0)
+        o << "  Bandwidth loan: " << s.bandwidth_loan_cores
+          << " core(s) lent from idle reservation\n";
     if (s.smt_isolation_active)
         o << "  SMT isolation:  " << s.isolated_physical_cores
           << " physical core(s) | latency[" << s.latency_cpuset
@@ -379,6 +382,9 @@ static std::string format_pressure(const thm::TelemetrySnapshot& s) {
         o << std::setprecision(1) << s.background_cpu_max_pct << "%  (25ms CFS period)"
           << (s.background_cpu_idle ? "  cpu.idle=1" : "")
           << "  reserved=" << s.reserved_headroom_cores << " core(s)\n";
+    if (s.bandwidth_loan_cores > 0)
+        o << "Bandwidth loan: " << s.bandwidth_loan_cores
+          << " core(s) lent from idle reservation\n";
     if (s.smt_isolation_active)
         o << "SMT isolation:  " << s.isolated_physical_cores
           << " core(s) | latency[" << s.latency_cpuset
@@ -845,6 +851,8 @@ int main(int argc, char* argv[]) {
 
     // v3.4: 3-tick-confirmed adaptive headroom; avoids cpu.max flapping.
     thm::AdaptiveHeadroomTracker headroom_tracker;
+    // v3.8: stall-aware loan of bandwidth the foreground is not using.
+    thm::BandwidthLoanTracker loan_tracker;
 
     // v3.5: physical-core topology, discovered once when online_cpus is known.
     thm::SmtTopology smt_topo;
@@ -1499,6 +1507,8 @@ int main(int argc, char* argv[]) {
         thm::CpuDemandHint demand;
         demand.cpu_temp_c   = cpu_temp_c; // sampled every 5 ticks in step (g)
         demand.smt_siblings = smt_topo.has_smt();
+        demand.cpu_stall_pct = sys_pressure.cpu_some_inst; // tick PSI, -1 if n/a
+        demand.input_active  = input_hot;                  // real input beats a loan
         for (uint32_t id : workload_mgr.all_ids()) {
             const thm::Workload* wl = workload_mgr.get(id);
             if (!wl || wl->observed) continue;
@@ -1523,10 +1533,19 @@ int main(int argc, char* argv[]) {
             demand.latency_workloads == 0 &&
             demand.gpu_feeders == 0;
 
-        const int reserve_target = thm::compute_reserved_cores(
+        const int base_reserve_target = thm::compute_reserved_cores(
             sys_pressure.cpu, online_cpus, unattended_idle, demand);
-        const int reserve_applied = headroom_tracker.update(
-            reserve_target, sys_pressure.cpu, unattended_idle);
+        // v3.8: only lend what the base reservation is not using. Engagement
+        // is delayed until a quiet streak; every reclaim is immediate so a
+        // returning user never waits for the old hysteresis to catch up.
+        const int loan_adjusted_target = loan_tracker.update(
+            base_reserve_target, sys_pressure.cpu, unattended_idle,
+            demand.input_active, demand.smt_siblings,
+            demand.foreground_cpu_pct, demand.cpu_stall_pct, online_cpus);
+        int reserve_applied = headroom_tracker.update(
+            loan_adjusted_target, sys_pressure.cpu, unattended_idle);
+        if (loan_adjusted_target > reserve_applied)
+            reserve_applied = loan_adjusted_target; // instant protection restore
 
         thm::CpuSlicePolicy cpu_policy = dry_run
             ? thm::compute_cpu_slice_policy(sys_pressure.cpu, online_cpus,
@@ -1697,6 +1716,7 @@ int main(int argc, char* argv[]) {
             snap.background_cpu_max_pct = cpu_policy.background_max_pct;
             snap.cpu_headroom_engaged   = cpu_policy.headroom_engaged;
             snap.reserved_headroom_cores = cpu_policy.reserved_cores;
+            snap.bandwidth_loan_cores    = loan_tracker.loaned_cores();
             snap.smt_isolation_active    = isolation_state.active;
             snap.isolated_physical_cores = isolation_state.reserved_physical_cores;
             snap.latency_cpuset          = isolation_state.latency_cpus;

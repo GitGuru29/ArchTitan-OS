@@ -344,6 +344,79 @@ int AdaptiveHeadroomTracker::update(int target, PressureLevel pressure,
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// BandwidthLoanTracker — lend idle reserved bandwidth, reclaim at once
+// ─────────────────────────────────────────────────────────────────────────────
+void BandwidthLoanTracker::reset() {
+    reserve_ = -1;
+    loan_ = 0;
+    streak_ = 0;
+    last_pressure_ = PressureLevel::NORMAL;
+    last_unattended_ = false;
+}
+
+int BandwidthLoanTracker::update(int base_reserve,
+                                 PressureLevel pressure,
+                                 bool unattended,
+                                 bool input_active,
+                                 bool smt_siblings,
+                                 float foreground_cpu_pct,
+                                 float cpu_stall_pct,
+                                 int online_cpus) {
+    const int cpus = std::max(1, online_cpus);
+    const int known_base = reserve_ + loan_;
+
+    // A change in pressure, presence or the base reservation is a new regime:
+    // never carry a loan across it. base_reserve growth (new game/feeder) must
+    // restore protection in the same tick.
+    if (reserve_ < 0 || base_reserve != known_base ||
+        pressure != last_pressure_ || unattended != last_unattended_) {
+        reserve_ = base_reserve;
+        loan_ = 0;
+        streak_ = 0;
+        last_pressure_ = pressure;
+        last_unattended_ = unattended;
+        return reserve_;
+    }
+
+    // Loan preconditions. A single machine with no stall telemetry, an
+    // unattended host (already fully lifted), a 2-vCPU guest, or a reservation
+    // of one core must keep the fixed guarantee.
+    const bool stall_hot = cpu_stall_pct >= kStallReclaimPct;
+    const bool fg_hot = foreground_cpu_pct >=
+                        kFgLoadPerCorePct * static_cast<float>(base_reserve);
+    if (unattended || pressure < PressureLevel::HIGH || cpus < 3 ||
+        base_reserve <= 1 || cpu_stall_pct < 0.0f ||
+        input_active || stall_hot || fg_hot) {
+        reserve_ = base_reserve;
+        loan_ = 0;
+        streak_ = 0;
+        return reserve_;
+    }
+
+    // On SMT hosts a half-core loan would split sibling threads and undermine
+    // the v3.5 whole-core isolation; lend a complete physical core instead.
+    const int step = smt_siblings ? 2 : 1;
+    if (base_reserve - step < 1) {
+        reserve_ = base_reserve;
+        loan_ = 0;
+        streak_ = 0;
+        return reserve_;
+    }
+    const int candidate = base_reserve - step;
+
+    if (candidate == reserve_) {
+        streak_ = 0; // already loaned, still quiet
+        return reserve_;
+    }
+    if (++streak_ >= kEngageTicks) {
+        reserve_ = candidate;
+        loan_ = base_reserve - candidate;
+        streak_ = 0;
+    }
+    return reserve_;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // should_lift_unattended_cap — presence gate for the background bandwidth cap
 //
 // Idle detection alone is not enough: an unattended game, benchmark or GPU

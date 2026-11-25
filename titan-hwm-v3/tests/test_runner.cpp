@@ -2,7 +2,7 @@
 // titan-hwm-v3/tests/test_runner.cpp
 // Real OS-Level Test Suite for Titan Hardware Manager v3 (THM v3)
 //
-// Validates 45 architectural test cases on real Linux OS primitives:
+// Validates 46 architectural test cases on real Linux OS primitives:
 //   TC-1:  Gradle / Background Build Survival
 //   TC-2:  AI Agent Workload Survival & Execution Authority
 //   TC-3:  Idle IDE Aging, Throttling & Freeze under Pressure
@@ -23,6 +23,7 @@
 //   TC-43: Hyprland Recent-Focus Context (v3.4-R1)
 //   TC-44: Throttled Slice Isolation (v3.4-R2)
 //   TC-45: Build Toolchain Never Frozen (v3.4-R2)
+//   TC-46: Stall-Aware Bandwidth Loaning (v3.8)
 // =============================================================================
 
 #include "../core/types.hpp"
@@ -3158,6 +3159,85 @@ void test_tc45_bulk_build_never_frozen() {
     std::cout << (passed ? ">>> PASS: build toolchain freeze guard verified.\n" : ">>> FAIL!\n");
 }
 
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-46: v3.8 Stall-Aware Bandwidth Loaning
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc46_stall_aware_bandwidth_loan() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(46, "Stall-Aware Bandwidth Loan",
+                    "Idle reservation is lent after a quiet streak and reclaimed immediately");
+
+    thm::BandwidthLoanTracker t;
+    const int a = t.update(2, thm::PressureLevel::HIGH, false, false, false, 0,  0, 8);
+    const int b = t.update(2, thm::PressureLevel::HIGH, false, false, false, 0,  0, 8);
+    const int c = t.update(2, thm::PressureLevel::HIGH, false, false, false, 0,  0, 8);
+    const int d = t.update(2, thm::PressureLevel::HIGH, false, false, false, 0,  0, 8);
+    const int e = t.update(2, thm::PressureLevel::HIGH, false, false, false, 0,  0, 8);
+    const int f = t.update(2, thm::PressureLevel::HIGH, false, false, false, 0,  0, 8);
+    const int loan_out = t.loaned_cores();
+    const int g = t.update(2, thm::PressureLevel::HIGH, false, false, false, 0,  0, 8);
+    const int h = t.update(2, thm::PressureLevel::HIGH, false,  true, false, 0,  0, 8);
+    const int after_input_loan = t.loaned_cores();
+    const int i = t.update(2, thm::PressureLevel::HIGH, false, false, false, 0, 12, 8);
+    const int j = t.update(2, thm::PressureLevel::HIGH, false, false, false, 60, 0, 8);
+    const int k = t.update(2, thm::PressureLevel::NORMAL, false, false, false, 0, 0, 8);
+    const int l = t.update(3, thm::PressureLevel::HIGH, false, false, false, 0, 0, 8);
+
+    // SMT hosts lend a whole physical core (two logical siblings), never half.
+    thm::BandwidthLoanTracker smt;
+    int smt_reserve = 0;
+    for (int n = 0; n < 6; ++n)
+        smt_reserve = smt.update(4, thm::PressureLevel::HIGH, false, false,
+                                 true, 0, 0, 8);
+    const int smt_loan = smt.loaned_cores();
+
+    // Guardrails: 2-vCPU guest and missing PSI never lend.
+    thm::BandwidthLoanTracker small;
+    const int s1 = small.update(1, thm::PressureLevel::HIGH, false, false, false, 0, 0, 2);
+    const int s2 = small.update(1, thm::PressureLevel::HIGH, false, false, false, 0, 0, 2);
+    thm::BandwidthLoanTracker unknown;
+    const int u1 = unknown.update(2, thm::PressureLevel::HIGH, false, false, false, 0, -1, 8);
+    const int u2 = unknown.update(2, thm::PressureLevel::HIGH, false, false, false, 0, -1, 8);
+
+    // Scheduling-only effect: the loan widens BG quota, never signals a task.
+    thm::CpuDemandHint hint;
+    hint.latency_workloads = 1;
+    hint.foreground_cpu_pct = 0.0f;
+    hint.cpu_stall_pct = 0.0f;
+    const int base = thm::compute_reserved_cores(
+        thm::PressureLevel::HIGH, 8, false, hint);
+    const auto policy = thm::compute_cpu_slice_policy(
+        thm::PressureLevel::HIGH, 8, false, &hint, 1);
+    const bool quota_ok = base == 2 && policy.reserved_cores == 1 &&
+        policy.background_quota_us == 7 * thm::CFS_SMOOTH_PERIOD_US &&
+        !policy.background_idle && policy.headroom_engaged;
+
+    const bool passed =
+        a == 2 && b == 2 && c == 2 && d == 2 && e == 2 && f == 1 &&
+        loan_out == 1 && g == 1 && h == 2 && after_input_loan == 0 &&
+        i == 2 && j == 2 && k == 2 && l == 3 &&
+        smt_reserve == 2 && smt_loan == 2 &&
+        s1 == 1 && s2 == 1 && u1 == 2 && u2 == 2 && quota_ok;
+
+    std::cout << "[Loan] quiet ticks=" << a << b << c << d << e << f
+              << " loan=" << loan_out << " input_reclaim=" << h
+              << "(" << after_input_loan << ")"
+              << " stall_reclaim=" << i << " fg_reclaim=" << j
+              << " regime=" << k << l << "\n";
+    std::cout << "[Loan] smt=" << smt_reserve << "/" << smt_loan
+              << " small=" << s1 << s2 << " no_psi=" << u1 << u2
+              << " quota=" << policy.background_quota_us << "us\n";
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-46: Stall-Aware Bandwidth Loan",
+                         "idle reservation lent after 5 quiet ticks; input/PSI/foreground reclaim at once",
+                         passed,
+                         "8CPU:2->1 core, SMT:4->2, 2vCPU/no-PSI:no loan, quota 6->7 periods",
+                         ms});
+    std::cout << (passed ? ">>> PASS: bandwidth loan verified.\n" : ">>> FAIL!\n");
+}
+
 int main() {
     std::cout << "\n╔══════════════════════════════════════════════════════════════════════════════╗\n";
     std::cout << "║        THM v3 Real OS-Level Architectural Test Suite                         ║\n";
@@ -3209,6 +3289,7 @@ int main() {
     test_tc43_recent_focus_context();
     test_tc44_throttled_slice_isolation();
     test_tc45_bulk_build_never_frozen();
+    test_tc46_stall_aware_bandwidth_loan();
 
     // Summary Table
     std::cout << "\n════════════════════════════════════════════════════════════════════════════════\n";

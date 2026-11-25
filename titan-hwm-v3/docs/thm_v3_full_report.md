@@ -696,6 +696,6 @@ Rollout would be four commits with tests, benchmark A/B, documentation, and push
 
 ## 10. Conclusion
 
-THM v3 now has a mature dual-plane design: memory pressure can safely reclaim genuinely idle work, while CPU pressure is strictly limited to scheduling arbitration. The CPU engine combines PSI, per-tick stall deltas, runqueue gates, workload intent, adaptive headroom, SMT-aware cpusets, and input feed-forward — all without sending a single CPU-pressure kill or stop signal.
+THM v3 now has a mature dual-plane design: memory pressure can safely reclaim genuinely idle work, while CPU pressure is strictly limited to scheduling arbitration. The CPU engine combines PSI, per-tick stall deltas, runqueue gates, workload intent, adaptive headroom, SMT-aware cpusets, input feed-forward, and stall-aware bandwidth loaning — all without sending a single CPU-pressure kill or stop signal.
 
-The next high-value step is **stall-aware bandwidth loaning**: detect when protected work does not need its reservation, lend that capacity to background work, and reclaim it before the user notices. That preserves the system's core promise — developer and AI workloads keep running, background throughput stays high, and interactive latency remains protected.
+The **v3.8 bandwidth loan** completes the reservation feedback loop: after five consecutive quiet ticks with no PSI stall and no recent input, one core of an idle foreground reservation is lent to bulk work (one whole physical core on SMT hosts). Any input event, PSI stall, foreground load increase, pressure/presence change, or new latency/GPU workload restores the full reservation in the same tick. The next high-value step is the dependency/workload graph — I/O and GPU planes remain out of scope.

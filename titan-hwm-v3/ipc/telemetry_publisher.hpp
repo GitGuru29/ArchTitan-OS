@@ -100,6 +100,7 @@ struct TelemetrySnapshot {
     float       background_cpu_max_pct = 100.0f;
     bool        cpu_headroom_engaged   = false;
     int         reserved_headroom_cores = 0; // v3.4 adaptive reservation (logical CPUs)
+    int         bandwidth_loan_cores    = 0; // v3.8 lent from idle reservation
     bool        smt_isolation_active    = false; // v3.5 whole-core placement in effect
     int         isolated_physical_cores = 0;
     std::string latency_cpuset;                  // e.g. "0,4,1,5"
