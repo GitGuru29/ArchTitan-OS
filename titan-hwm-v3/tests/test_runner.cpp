@@ -2,7 +2,7 @@
 // titan-hwm-v3/tests/test_runner.cpp
 // Real OS-Level Test Suite for Titan Hardware Manager v3 (THM v3)
 //
-// Validates 46 architectural test cases on real Linux OS primitives:
+// Validates 47 architectural test cases on real Linux OS primitives:
 //   TC-1:  Gradle / Background Build Survival
 //   TC-2:  AI Agent Workload Survival & Execution Authority
 //   TC-3:  Idle IDE Aging, Throttling & Freeze under Pressure
@@ -24,6 +24,7 @@
 //   TC-44: Throttled Slice Isolation (v3.4-R2)
 //   TC-45: Build Toolchain Never Frozen (v3.4-R2)
 //   TC-46: Stall-Aware Bandwidth Loaning (v3.8)
+//   TC-47: Hyprland Window Context Binding (v3.9)
 // =============================================================================
 
 #include "../core/types.hpp"
@@ -3238,6 +3239,95 @@ void test_tc46_stall_aware_bandwidth_loan() {
     std::cout << (passed ? ">>> PASS: bandwidth loan verified.\n" : ">>> FAIL!\n");
 }
 
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-47: v3.9 Hyprland Window Context Binding
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc47_window_context_binding() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(47, "Hyprland Window Context Binding",
+                    "bind active window class/title to the matching workload root only");
+
+    const bool kitty = thm::window_context_matches(
+        "org.kde.kitty", "kitty", "/usr/bin/kitty", "/usr/bin/kitty");
+    const bool chrome = thm::window_context_matches(
+        "Google-chrome", "chrome", "/opt/google/chrome/chrome",
+        "/opt/google/chrome/chrome --type=renderer");
+    const bool chromium_alias = thm::window_context_matches(
+        "chromium", "chrome", "/opt/google/chrome/chrome", "");
+    const bool code = thm::window_context_matches(
+        "code", "code", "/usr/share/code/code", "/usr/share/code/code /home/u/proj");
+
+    // Title-only similarity must never bind a headless compiler/toolchain.
+    const bool no_compiler = !thm::window_context_matches(
+        "firefox", "cc1plus", "/usr/lib/gcc/cc1plus", "g++ main.cpp");
+    const bool no_gpp = !thm::window_context_matches(
+        "code", "g++", "/usr/bin/g++", "g++ main.cpp -o main");
+    const bool no_empty = !thm::window_context_matches("", "code", "/usr/bin/code", "code");
+
+    thm::WorkspaceState ws;
+    ws.id = 3;
+    ws.active_window_class = "code";
+    ws.active_window_title = "main.cpp - Visual Studio Code";
+
+    thm::ProcessNode root;
+    root.comm = "code";
+    root.exe = "/usr/share/code/code";
+    root.cmdline = "/usr/share/code/code /home/u/proj";
+
+    thm::Workload wl;
+    wl.id = 7;
+    thm::bind_window_context(wl, &ws, &root);
+    const bool bound = wl.window_class == "code" &&
+                       wl.window_title == ws.active_window_title;
+
+    // An IPC gap must not strip an already-bound context.
+    thm::WorkspaceState blank;
+    blank.id = 3;
+    thm::bind_window_context(wl, &blank, &root);
+    const bool preserved = wl.window_class == "code" &&
+                           wl.window_title == ws.active_window_title;
+
+    thm::ProcessNode compiler;
+    compiler.comm = "cc1plus";
+    compiler.exe = "/usr/lib/gcc/cc1plus";
+    compiler.cmdline = "g++ main.cpp";
+    thm::Workload wl2;
+    wl2.id = 8;
+    thm::bind_window_context(wl2, &ws, &compiler);
+    const bool no_false_bind = wl2.window_class.empty() && wl2.window_title.empty();
+
+    thm::TelemetrySnapshot snap;
+    thm::TelemetryWorkload tw;
+    tw.id = wl.id;
+    tw.window_class = wl.window_class;
+    tw.window_title = wl.window_title;
+    snap.workloads.push_back(tw);
+    const std::string json = thm::serialize_snapshot(snap);
+    const bool telemetry_ok =
+        json.find("\"window_class\":\"code\"") != std::string::npos &&
+        json.find("\"window_title\":\"main.cpp - Visual Studio Code\"") != std::string::npos;
+
+    const bool passed = kitty && chrome && chromium_alias && code &&
+                        no_compiler && no_gpp && no_empty &&
+                        bound && preserved && no_false_bind && telemetry_ok;
+
+    std::cout << "[Window] class matches: kitty=" << kitty << " chrome=" << chrome
+              << " alias=" << chromium_alias << " code=" << code << "\n";
+    std::cout << "[Window] false binds blocked: cc1plus=" << no_compiler
+              << " g++=" << no_gpp << " empty=" << no_empty
+              << " | bound=" << bound << " preserved=" << preserved
+              << " no_false=" << no_false_bind << " telemetry=" << telemetry_ok << "\n";
+
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-47: Hyprland Window Context Binding",
+                         "class-rooted binding; title never binds headless work; IPC gap preserves state",
+                         passed,
+                         "kitty/chrome/code matched, cc1plus/g++ rejected, telemetry carries class+title",
+                         ms});
+    std::cout << (passed ? ">>> PASS: window context binding verified.\n" : ">>> FAIL!\n");
+}
+
 int main() {
     std::cout << "\n╔══════════════════════════════════════════════════════════════════════════════╗\n";
     std::cout << "║        THM v3 Real OS-Level Architectural Test Suite                         ║\n";
@@ -3290,6 +3380,7 @@ int main() {
     test_tc44_throttled_slice_isolation();
     test_tc45_bulk_build_never_frozen();
     test_tc46_stall_aware_bandwidth_loan();
+    test_tc47_window_context_binding();
 
     // Summary Table
     std::cout << "\n════════════════════════════════════════════════════════════════════════════════\n";

@@ -49,6 +49,21 @@ using WindowCallback    = std::function<void(int workspace_id,
                                               const std::string& window_class,
                                               const std::string& window_title)>;
 
+// Pure binding evidence for Hyprland's active window. Title is stored only
+// after the window CLASS matches the process identity — a headless compiler
+// whose source file appears in a focused editor title must not inherit that
+// editor's foreground context. No compositor fork or new context source.
+bool window_context_matches(const std::string& window_class,
+                            const std::string& comm,
+                            const std::string& exe,
+                            const std::string& cmdline);
+
+// Store the matched class/title on the workload root. An empty or mismatched
+// state leaves existing evidence intact (IPC gaps must not strip a binding).
+void bind_window_context(Workload& workload,
+                         const WorkspaceState* ws,
+                         const ProcessNode* root);
+
 // ─────────────────────────────────────────────────────────────────────────────
 // WorkspaceMonitor — Hyprland IPC socket listener
 // ─────────────────────────────────────────────────────────────────────────────

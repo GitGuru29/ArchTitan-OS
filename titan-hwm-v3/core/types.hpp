@@ -136,6 +136,10 @@ static constexpr float OBSERVED_CPU_DEMAND_PCT = 15.0f;
 struct Workload {
     uint32_t      id;
     int           workspace_id  = -1;
+    // v3.9: Hyprland active-window evidence bound to this workload root.
+    // Empty on headless/unmatched roots — children inherit via ownership.
+    std::string   window_class;
+    std::string   window_title;
     WorkloadType  type          = WorkloadType::NEUTRAL;
     WorkloadState state         = WorkloadState::DISCOVERED;
 

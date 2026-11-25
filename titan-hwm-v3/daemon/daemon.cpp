@@ -533,6 +533,9 @@ static std::string format_explain(const thm::TelemetrySnapshot& s,
     o << "  state:       " << w.state << "\n";
     o << "  workspace:   " << w.workspace_id
       << (w.workspace_id == -2 ? " (headless / unknown)" : "") << "\n";
+    if (!w.window_class.empty())
+        o << "  window:      " << w.window_class
+          << " | " << w.window_title << "\n";
     o << "  members:     " << w.pid_count << "\n";
     o << "  CPU:         " << std::fixed << std::setprecision(1)
       << w.cpu_pct << "%\n";
@@ -1115,6 +1118,11 @@ int main(int argc, char* argv[]) {
                             }
                             wl->root_cmdline  = node.cmdline;
                             wl->is_reclassifiable = false; // reset until next drift
+                            auto fws_it = workspaces.find(ws_id);
+                            thm::bind_window_context(
+                                *wl,
+                                fws_it != workspaces.end() ? &fws_it->second : nullptr,
+                                &node);
                         } else if (!wl->observed) {
                             wl->root_cmdline = node.cmdline;
                         }
@@ -1128,29 +1136,26 @@ int main(int argc, char* argv[]) {
             // focused workspace. Assign WS=-2 to avoid polluting WS telemetry.
             bool has_window = false;
             int ws_id = -2; // HC-03: default = headless / unknown workspace
+            const thm::WorkspaceState* root_ws = nullptr;
             {
-                // A process is considered window-rooted if its cmdline matches
-                // a known IDE, terminal, or browser command.
-                // Simple heuristic: check if any workspace reports it as focused.
+                // v3.9: only the Hyprland window CLASS is binding evidence.
+                // A title can contain a source filename that a headless
+                // compiler also has, so it must never create foreground context.
                 auto focused_ws = ws_monitor.focused_workspace();
                 auto ws_it2 = workspaces.find(focused_ws);
                 if (ws_it2 != workspaces.end()) {
-                    // Only assign to focused WS if the process comm matches
-                    // the active window class (i.e., it IS the foreground app).
                     const auto& ws_state = ws_it2->second;
-                    if (!ws_state.active_window_class.empty() &&
-                        node.comm.find(ws_state.active_window_class.substr(0,8)) != std::string::npos) {
+                    if (thm::window_context_matches(ws_state.active_window_class,
+                                                    node.comm, node.exe, node.cmdline)) {
                         ws_id = focused_ws;
                         has_window = true;
+                        root_ws = &ws_state;
                     }
                 }
             }
 
             std::string title;
-            if (has_window) {
-                auto ws_it = workspaces.find(ws_id);
-                if (ws_it != workspaces.end()) title = ws_it->second.active_window_title;
-            }
+            if (has_window && root_ws) title = root_ws->active_window_title;
 
             auto result = classifier.classify(pid, title, proc_graph);
             // v3.3: a game / renderer / training job is worth managing even if
@@ -1176,6 +1181,8 @@ int main(int argc, char* argv[]) {
                                                            : node.cmdline; // HC-10
                 wl.state            = thm::WorkloadState::DISCOVERED;
                 wl.workspace_id     = ws_id;                   // HC-03: -2 if headless
+                wl.window_class     = root_ws ? root_ws->active_window_class : "";
+                wl.window_title     = title;
                 wl.created_at       = thm::ms_clock::now();
                 wl.last_active      = thm::ms_clock::now();
                 wl.pids.push_back(pid);
@@ -1217,6 +1224,8 @@ int main(int argc, char* argv[]) {
                 wl.root_cmdline     = node.cmdline.empty() ? node.comm : node.cmdline;
                 wl.state            = thm::WorkloadState::DISCOVERED;
                 wl.workspace_id     = ws_id;                   // HC-03: -2 if headless
+                wl.window_class     = root_ws ? root_ws->active_window_class : "";
+                wl.window_title     = title;
                 wl.created_at       = thm::ms_clock::now();
                 wl.last_active      = thm::ms_clock::now();
                 wl.pids.push_back(pid);
@@ -1297,6 +1306,12 @@ int main(int argc, char* argv[]) {
             const thm::WorkspaceState* ws = &default_ws;
             auto ws_it = workspaces.find(wl->workspace_id);
             if (ws_it != workspaces.end()) ws = &ws_it->second;
+
+            // v3.9: keep the root's Hyprland evidence fresh as focus changes.
+            auto root_it = proc_graph.find(wl->root_pid);
+            thm::bind_window_context(
+                *wl, ws,
+                root_it != proc_graph.end() ? &root_it->second : nullptr);
 
             // Aggregate activity
             thm::ActivityState activity = detector.aggregate(*wl, proc_graph);
@@ -1751,6 +1766,8 @@ int main(int argc, char* argv[]) {
                 tw.id           = wl->id;
                 tw.root_pid     = wl->root_pid;
                 tw.workspace_id = wl->workspace_id;
+                tw.window_class = wl->window_class;
+                tw.window_title = wl->window_title;
                 tw.name         = !wl->root_cmdline.empty()
                                       ? wl->root_cmdline
                                       : [&]() {

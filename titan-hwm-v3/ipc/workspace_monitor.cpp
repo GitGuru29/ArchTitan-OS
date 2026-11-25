@@ -10,6 +10,9 @@
 #include <filesystem>
 #include <cstring>
 #include <cstdlib>
+#include <cctype>
+#include <algorithm>
+#include <unordered_set>
 #include <chrono>
 #include <unistd.h>
 #include <poll.h>
@@ -39,6 +42,52 @@ bool has_token(const std::vector<std::string>& toks, const char* name) {
     for (const auto& t : toks)
         if (t == name) return true;
     return false;
+}
+
+std::vector<std::string> normalized_tokens(const std::string& s) {
+    std::string clean;
+    clean.reserve(s.size());
+    for (unsigned char c : s)
+        clean.push_back(std::isalnum(c) ? static_cast<char>(std::tolower(c)) : ' ');
+    std::istringstream ss(clean);
+    std::vector<std::string> out;
+    std::string tok;
+    while (ss >> tok) out.push_back(tok);
+    return out;
+}
+
+std::string canonical_token(const std::string& t) {
+    if (t == "chromium" || t == "googlechrome") return "chrome";
+    if (t == "firefoxesr") return "firefox";
+    if (t == "visualstudiocode" || t == "vscodium") return "code";
+    return t;
+}
+
+std::vector<std::string> identity_tokens(const std::string& value) {
+    std::vector<std::string> out;
+    for (auto& t : normalized_tokens(value)) {
+        t = canonical_token(t);
+        if (t.size() >= 3) out.push_back(t);
+    }
+    return out;
+}
+
+bool significant_class_token(const std::string& t) {
+    static const std::unordered_set<std::string> generic = {
+        "com", "org", "net", "io", "app", "apps", "exe", "bin", "usr",
+        "local", "share", "lib", "lib64", "google", "microsoft", "inc",
+        "linux", "x11", "wayland", "desktop", "default", "client",
+        "clients", "window", "windows", "visual", "studio", "jetbrains",
+        "application", "launcher", "main", "root", "the", "new"
+    };
+    return t.size() >= 3 && generic.find(t) == generic.end();
+}
+
+bool token_match(const std::string& a, const std::string& b) {
+    if (a == b) return true;
+    const size_t shortest = std::min(a.size(), b.size());
+    return shortest >= 4 &&
+           a.compare(0, shortest, b, 0, shortest) == 0;
 }
 
 std::string read_first_line(const std::string& path) {
@@ -105,6 +154,53 @@ bool systemd_graphical_session_active() {
 }
 
 } // namespace
+
+// ─────────────────────────────────────────────────────────────────────────────
+// window_context_matches — bind Hyprland active-window class to a process root.
+//
+// Hyprland's `activewindow` event carries class/title, not a PID. We therefore
+// require the class to match the process identity (comm, exe basename, argv0
+// basename). The title is deliberately NOT evidence: a headless `g++ main.cpp`
+// must not inherit a focused editor whose title contains "main.cpp".
+// ─────────────────────────────────────────────────────────────────────────────
+bool window_context_matches(const std::string& window_class,
+                            const std::string& comm,
+                            const std::string& exe,
+                            const std::string& cmdline) {
+    std::vector<std::string> class_tokens;
+    for (auto t : normalized_tokens(window_class)) {
+        t = canonical_token(t);
+        if (significant_class_token(t)) class_tokens.push_back(t);
+    }
+    if (class_tokens.empty()) return false;
+
+    std::vector<std::string> ids;
+    auto add_identity = [&ids](const std::string& value) {
+        for (auto& t : identity_tokens(value)) ids.push_back(t);
+    };
+    add_identity(comm);
+    if (!exe.empty()) add_identity(fs::path(exe).filename().string());
+    if (!cmdline.empty()) {
+        std::string argv0(cmdline.c_str()); // /proc cmdline is NUL-separated
+        if (!argv0.empty()) add_identity(fs::path(argv0).filename().string());
+    }
+    if (ids.empty()) return false;
+
+    for (const auto& c : class_tokens)
+        for (const auto& i : ids)
+            if (token_match(c, i)) return true;
+    return false;
+}
+
+void bind_window_context(Workload& workload,
+                         const WorkspaceState* ws,
+                         const ProcessNode* root) {
+    if (!ws || !root || ws->active_window_class.empty()) return;
+    if (!window_context_matches(ws->active_window_class,
+                                root->comm, root->exe, root->cmdline)) return;
+    workload.window_class = ws->active_window_class;
+    workload.window_title = ws->active_window_title;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Hyprland IPC socket discovery.

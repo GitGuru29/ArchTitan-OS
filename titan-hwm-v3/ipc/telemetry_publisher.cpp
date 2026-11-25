@@ -157,6 +157,8 @@ std::string serialize_snapshot(const TelemetrySnapshot& s) {
           << "\"id\":"        << w.id
           << ",\"pid\":"      << w.root_pid
           << ",\"workspace\":" << w.workspace_id
+          << ",\"window_class\":\"" << esc(w.window_class) << '"'
+          << ",\"window_title\":\"" << esc(w.window_title) << '"'
           << ",\"name\":\""   << esc(w.name) << '"'
           << ",\"type\":\""   << esc(w.type) << '"'
           << ",\"state\":\""  << esc(w.state) << '"'

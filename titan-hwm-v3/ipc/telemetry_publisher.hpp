@@ -29,6 +29,8 @@ struct TelemetryWorkload {
     uint32_t    id           = 0;
     pid_t       root_pid     = 0;
     int         workspace_id = -1;
+    std::string window_class;         // v3.9 bound Hyprland class (may be empty)
+    std::string window_title;         // v3.9 bound Hyprland title (may be empty)
     std::string name;                 // root cmdline (human label)
     std::string type;                 // to_string(WorkloadType)
     std::string state;                // to_string(WorkloadState)
