@@ -1,0 +1,195 @@
+[driver] qemu: qemu-system-x86_64 -enable-kvm -cpu host -m 4G -smp 2 -machine q35 -kernel /tmp/thm-bench/archtitan/vmlinuz -initrd /tmp/thm-bench/archtitan/initramfs -append archisobasedir=arch archisosearchuuid=2026-11-18-02-02-04-00 splash quiet loglevel=3 rd.udev.log_level=3 vt.global_cursor_default=0 plymouth.ignore-serial-consoles consoleblank=0 console=ttyS0,115200 systemd.unit=multi-user.target plymouth.enable=0 disablehooks=plymouth -drive if=none,id=iso,file=out/archtitan-2026.11.18-x86_64.iso,format=raw,readonly=on -device virtio-blk-pci,drive=iso -drive if=none,id=bench,file=/home/msfvenom/custom-os-build/bench/bench.img,format=raw -device virtio-blk-pci,drive=bench -netdev user,id=n0 -device virtio-net-pci,netdev=n0 -display none -vga none -serial unix:/tmp/thm-bench/A.sock,server=on,wait=off -monitor none -no-reboot
+[driver] arm A: booting (qemu pid 53910)
+/init: line 7: memdiskfind: not found
+P+q6E616D65\[18t[!p]104\[0m[?7h[1G[0J]3008;start=79c08d5d72e748c5bb44040df967262f;user=root;hostname=archiso;machineid=ffc7033b318346a587f156ef143b3359;bootid=f2539cb9da87462a89203d2d05b66750;pid=1;pidfdid=1;comm=systemd;type=boot\[!p]104\[0m[?7h[1G[0J7[32766;32766H[6n8[!p]104\[0m[?7h[1G[0J7[32766;32766H[6n8]3008;start=0f696e715cc4469cb70c9995869e1bd9;user=root;hostname=archiso;machineid=ffc7033b318346a587f156ef143b3359;bootid=f2539cb9da87462a89203d2d05b66750;pid=584;pidfdid=333;comm=(temd-firstboot);servicename=systemd-firstboot.service;invocationid=2065455a82e6429ca9ef631eb6f979[!p]104\[0m[?7h[1G[0J7[32766;32766H[6n8[!p]104\[0m[?7h[1G[0J7[32766;32766H[6n8]3008;start=821236a7a6b14d71adf2d4b5fa271f99;user=root;hostname=archiso;machineid=ffc7033b318346a587f156ef143b3359;bootid=f2539cb9da87462a89203d2d05b66750;pid=698;pidfdid=4419;comm=(agetty);servicename=serial-getty@ttyS0.service;invocationid=7c68f657b7474fe388b3150656d49eb6;type=service\P+q6E616D65\
+033[1m033[38;2;137;180;250m  ArchTitan OS 033[0m — Linux 7.3.4-arch1-2 (archiso)
+033[2m033[38;2;166;173;200m  Titan shell · tty ttyS0 · 05:40:50033[0m
+archiso login: root
+To install [38;2;23;147;209mArch Linux[0m follow the installation guide:
+https://wiki.archlinux.org/title/Installation_guide
+
+For Wi-Fi, authenticate to the wireless network using the [35miwctl[0m utility.
+For mobile broadband (WWAN) modems, connect with the [35mmmcli[0m utility.
+Ethernet, WLAN and WWAN interfaces using DHCP should work automatically.
+
+After connecting to the internet, the installation guide can be accessed
+via the convenience script [35mInstallation_guide[0m.
+
+[41m [41m [41m [40m [44m [40m [41m [46m [45m [41m [46m [43m [41m [44m [45m [40m [44m [40m [41m [44m [41m [41m [46m [42m [41m [44m [43m [41m [45m [40m [40m [44m [40m [41m [44m [42m [41m [46m [44m [41m [46m [47m [0m
+]3008;start=ae32d1781e384818968ec39ab3af26b7;user=root;hostname=archiso;machineid=ffc7033b318346a587f156ef143b3359;bootid=f2539cb9da87462a89203d2d05b66750;pid=698;pidfdid=4419;comm=login;targetuser=root;sessionid=3;type=session\fish: Unknown command: fastfetch
+~/.config/fish/config.fish (line 4): 
+    fastfetch
+    ^~~~~~~~^
+from sourcing file ~/.config/fish/config.fish
+	called during startup
+]4;0;#171A26\]1;0;#171A26\]4;1;#8E80FF\]4;2;#62E0C8\]4;3;#84FDCB\]4;4;#78B3C4\]4;5;#99A6EF\]4;6;#80D8D6\]4;7;#CDDBD2\]4;8;#B2BCB4\]4;9;#C1B7FF\]4;10;#F5FFFB\]4;11;#FFFFFF\]4;12;#BEE3E7\]4;13;#D5D7FF\]4;14;#EAFFFD\]4;15;#DEE0FF\]4;232;#CDDBD2\]4;255;#63D3FF\]4;254;#004D63\]4;253;#8AD0EF\]4;252;#03617C\]4;251;#B9C3FF\]4;250;#838DC8\]4;249;#FFB4AB\]4;248;#93000A\]4;232;#003545\]4;233;#BCE9FF\]4;234;#003545\]4;235;#BCE9FF\]4;236;#212C61\]4;237;#000000\]4;238;#690005\]4;239;#FFDAD6\]4;240;#003545\]4;243;#63D3FF\]4;244;#FFB4AB\]4;245;#434659\]10;#CDDBD2\]11;[100]#171A26\]12;#CDDBD2\]13;#CDDBD2\]17;#CDDBD2\]19;#171A26\]708;[100]#171A26[?u[>0q]11;?\[?1049hP+q696e646e\P+q71756572792d6f732d6e616d65\[?1049l[0c]7;file://archiso/root]0;~\[m]11;?\[6n[0c[?2004h[?2031h[>4;1m=[K]133;A;click_events=1\[J[1;38;5;252m[48;5;252;38;5;235m󰪢 0s[0m[1;38;5;252m[0m [1;38;5;255m[0m[48;5;255;38;5;240m󰉋 →  [0m[1;38;5;255m[0m
+  [1;38;5;243m [0m ]133;B\[K[6Ce[7Cx[8Ce[9Cc[10C [11Cb[12Ca[13Cs[14Ch[15C [16C-[17C-[18Cn[19Co[20Cp[21Cr[22Co[23Cf[24Ci[25Cl[26Ce[27C [28C-[29C-[30Cn[31Co[32Cr[33Cc[34C[?2004l[?2031l[>4;0m>]0;~\[m[A]133;A;click_events=1\[1;38;5;243m [0m ]133;B\[Jexec bash --noprofile --norc[32C[28Dexec bash [36m--noprofile[39m [36m--norc[39m[32C
+[m]133;C;cmdline_url=exec%20bash%20--noprofile%20--norc\]0;exec bash --noprofil ~\[m[?2004hbash-5.3# 
+[?2004l[?2004hbash-5.3# echo __LOGIN_OK__$((41+1))
+[?2004l__LOGIN_OK__42
+[?2004hbash-5.3# [driver] logged in as root
+mkdir -p /bench && mount /dev/disk/by-label/BENCHDISK /bench && chmod +x /bench/guest/tstress && echo MOUNTOK; echo __BENCHEDGE_1=$?
+[?2004lMOUNTOK
+__BENCHEDGE_1=0
+[?2004hbash-5.3# [driver] rc(mount bench) = 0
+[driver] arm A: verifying environment
+systemctl is-active titan-hwm; echo __BENCHEDGE_2=$?
+[?2004lactive
+__BENCHEDGE_2=0
+[?2004hbash-5.3# [driver] rc(thm active?) = 0
+ls /sys/fs/cgroup/archtitan.slice/ 2>/dev/null; echo __BENCHEDGE_3=$?
+[?2004larchtitan-active.slice	    cpu.stat		 memory.numa_stat
+archtitan-background.slice  cpu.stat.local	 memory.oom.group
+archtitan-frozen.slice	    cpu.uclamp.max	 memory.peak
+archtitan-protected.slice   cpu.uclamp.min	 memory.pressure
+cgroup.controllers	    cpu.weight		 memory.reclaim
+cgroup.events		    cpu.weight.nice	 memory.stat
+cgroup.freeze		    io.bfq.weight	 memory.swap.current
+cgroup.kill		    io.latency		 memory.swap.events
+cgroup.max.depth	    io.max		 memory.swap.high
+cgroup.max.descendants	    io.pressure		 memory.swap.max
+cgroup.pressure		    io.prio.class	 memory.swap.peak
+cgroup.procs		    io.stat		 memory.zswap.current
+cgroup.stat		    io.weight		 memory.zswap.max
+cgroup.stat.local	    irq.pressure	 memory.zswap.writeback
+cgroup.subtree_control	    memory.current	 pids.current
+cgroup.threads		    memory.events	 pids.events
+cgroup.type		    memory.events.local  pids.events.local
+cpu.idle		    memory.high		 pids.max
+cpu.max			    memory.low		 pids.peak
+cpu.max.burst		    memory.max		 titan-hwm.service
+cpu.pressure		    memory.min
+__BENCHEDGE_3=0
+[driver] rc(thm slice) = 0
+[?2004hbash-5.3# ps -o pid,%cpu,rss,etime,comm -p $(systemctl show -p MainPID --value titan-hwm); echo __BENCHEDGE_4=$?
+[?2004l    PID %CPU   RSS     ELAPSED COMMAND
+    617 13.8  5420       00:17 titan-hwm-daemo
+__BENCHEDGE_4=0
+[?2004hbash-5.3# [driver] rc(thm daemon before) = 0
+nproc; free -m | head -2; uname -r; echo __BENCHEDGE_5=$?
+[?2004l2
+               total        used        free      shared  buff/cache   available
+Mem:            3906         409        2370           9        1350        3496
+7.3.4-arch1-2
+__BENCHEDGE_5=0
+[?2004hbash-5.3# [driver] rc(guest specs) = 0
+[driver] arm A: running scenario (rundir A-20261123-111029)
+bash /bench/guest/scenario.sh --arm A --dir /bench/results/A-20261123-111029; echo __BENCHEDGE_6=$?
+[?2004l=== [SCENARIO:A] environment recorded ===
+arm=A quick=0 date=2026-11-23T05:41:01+00:00
+kernel=7.3.4-arch1-2
+cmdline=archisobasedir=arch archisosearchuuid=2026-11-18-02-02-04-00 splash quiet loglevel=3 rd.udev.log_level=3 vt.global_cursor_default=0 plymouth.ignore-serial-consoles consoleblank=0 console=ttyS0,115200 systemd.unit=multi-user.target plymouth.enable=0 disablehooks=plymouth
+nproc=2
+               total        used        free      shared  buff/cache   available
+Mem:            3906         410        2369           9        1350        3495
+Swap:              0           0           0
+cgroup_v2=cgroup2fs
+thm_present=yes
+gcc 16.2.1+r23+gd564253eb6c8-1
+make 4.4.1-3
+=== [SCENARIO:A] ARM A: installing bench-disk THM v3.4 daemon ===
+=== [SCENARIO:A] ARM A: THM v3.4 ACTIVE (systemctl: active) ===
+=== [SCENARIO:A] 2G swap enabled on bench disk ===
+=== [SCENARIO:A] warm-up compile (populates squashfs header cache before calibration) ===
+=== [SCENARIO:A] warm-up compile: 6426 ms (excluded from metrics) ===
+=== [SCENARIO:A] calibrating one TU x2 (second pass recorded) ===
+=== [SCENARIO:A] calibration pass 1: 5419 ms (peak cc1plus RSS 87 MB) ===
+=== [SCENARIO:A] calibration pass 2: 5570 ms (peak cc1plus RSS 87 MB) ===
+=== [SCENARIO:A] calibration: calib_tu_ms=5570 calib_tu_rss_mb=87 calib_exit=0 ===
+=== [SCENARIO:A] compile loop started (detached from THM ownership tree; make -j2 rounds) ===
+=== [SCENARIO:A] probe (untracked control task) + 2 idle apps (400MB each, CWD=/bench/proj) started ===
+=== [SCENARIO:A] PHASE warmup (60s, not sampled) — CPU frequency / cache ramp ===
+=== [SCENARIO:A] collector started (pid 2303, 540s budget) ===
+=== [SCENARIO:A] PHASE baseline (60s) — reference metrics ===
+=== [SCENARIO:A] PHASE ramp — hog burst 1900MB then 200MB/10s (cap 4600MB) ===
+=== [SCENARIO:A] ramp: hog=0MB, free=64.6% (0s/240s) ===
+=== [SCENARIO:A] ramp: hog=1900MB, free=18.7% (6s/240s) ===
+=== [SCENARIO:A] free pct 18.7% < 20% — ramp complete ===
+=== [SCENARIO:A] ramp end: hog=alloc_mb=1900 free=18.5% ===
+=== [SCENARIO:A] PHASE hold (90s) — pressure window (free: 18.5%) ===
+=== [SCENARIO:A] PHASE release — SIGTERM hog (simulates user closing the app) ===
+=== [SCENARIO:A] hog survived TERM (frozen by THM) — SIGKILL (force quit) ===
+/bench/guest/scenario.sh: line 423:  5563 Killed                     ( cd "$PROJ" && exec $TS hog --initial-mb $HOG_INIT_MB --max-mb $HOG_MAX_MB --step-mb $HOG_STEP_MB --step-sec $HOG_STEP_SEC --retouch-sec $HOG_RETOUCH_SEC --status-file $RUNDIR/hog.status > $RUNDIR/hog-stdout.log 2>&1 )
+=== [SCENARIO:A] post-release free: 65.3% ===
+=== [SCENARIO:A] PHASE audit — stopping compile loop ===
+AUDIT step=1 journal-follower-stopped
+AUDIT step=2 compile-stop (waited 1s)
+AUDIT step=3 compilers-killed
+=== [SCENARIO:A] stopping probe + collector ===
+AUDIT step=4 probe-collector-stopped
+=== [SCENARIO:A] survival audit: ===
+name	pid	alive	final_state	oom_killed
+compile	1728	no	gone	no
+idle1	1729	yes	S	no
+idle2	1730	yes	S	no
+probe	1731	no	gone	no
+hog	5563	no	gone	no
+=== [SCENARIO:A] kernel OOM kill events: 0
+0 ===
+=== [SCENARIO:A] === GUEST SUMMARY (arm A) === ===
+{
+  "arm": "A",
+  "min_memavail_mb": 375,
+  "min_memavail_ts": 1795412653043,
+  "peak_psi_mem_some": 16.99,
+  "peak_psi_mem_full": 4.46,
+  "psi_full_stall_seconds": 0.6,
+  "peak_swapused_mb": 0,
+  "pswpin_total": 0,
+  "pswpout_total": 0,
+  "pgmajfault_total": 4087619,
+  "hog_max_rss_mb": 2178,
+  "hog_frozen_samples": 142,
+  "idle_frozen_samples": 179,
+  "collector_tick_ms_max": 462,
+  "thm_daemon_avg_cpu": 9.64,
+  "thm_daemon_max_rss_mb": 6,
+  "thm_alive": 1,
+  "oom_kills": 0
+}
+/bench/guest/scenario.sh: line 533:  1729 Killed                     ( cd "$PROJ" && exec $TS idle-app --mb $IDLE_MB --id idle1 > $RUNDIR/idle1-stdout.log 2>&1 )
+/bench/guest/scenario.sh: line 533:  1730 Killed                     ( cd "$PROJ" && exec $TS idle-app --mb $IDLE_MB --id idle2 > $RUNDIR/idle2-stdout.log 2>&1 )
+=== [SCENARIO:A] bench resources released (swap off, workloads stopped) ===
+SCENARIO_COMPLETE arm=A
+=== [SCENARIO:A] EXIT rc=0 at: exit 0 ===
+__BENCHEDGE_6=0
+[?2004hbash-5.3# [driver] rc(scenario) = 0
+ls -la /bench/results/A-20261123-111029/ | head -25; echo __BENCHEDGE_7=$?
+[?2004ltotal 456
+drwxr-xr-x 2 root      root       4096 Nov 23 05:46 .
+drwxr-xr-x 3 archtitan archtitan  4096 Nov 23 05:41 ..
+-rw-r--r-- 1 root      root          0 Nov 23 05:46 STOP_COMPILE
+-rw-r--r-- 1 root      root          6 Nov 23 05:46 builds.count
+-rw-r--r-- 1 root      root         79 Nov 23 05:46 builds.tsv
+-rw-r--r-- 1 root      root         49 Nov 23 05:41 calibration.txt
+-rw-r--r-- 1 root      root         40 Nov 23 05:46 collector.done
+-rwxr-xr-x 1 root      root       1700 Nov 23 05:41 compile-loop.sh
+-rw-r--r-- 1 root      root          0 Nov 23 05:41 compile.log
+-rw-r--r-- 1 root      root         73 Nov 23 05:43 hog-stdout.log
+-rw-r--r-- 1 root      root         35 Nov 23 05:43 hog.status
+-rw-r--r-- 1 root      root         37 Nov 23 05:41 idle1-stdout.log
+-rw-r--r-- 1 root      root         37 Nov 23 05:41 idle2-stdout.log
+-rw-r--r-- 1 root      root      34915 Nov 23 05:46 journal-tail-audit.log
+-rw-r--r-- 1 root      root      72601 Nov 23 05:46 kernel-log-tail.log
+-rw-r--r-- 1 root      root        915 Nov 23 05:46 last-build.log
+-rw-r--r-- 1 root      root        873 Nov 23 05:41 meta.txt
+-rw-r--r-- 1 root      root      69452 Nov 23 05:46 metrics.csv
+-rw-r--r-- 1 root      root          0 Nov 23 05:46 oom-events.log
+-rw-r--r-- 1 root      root          6 Nov 23 05:46 phase
+-rw-r--r-- 1 root      root        143 Nov 23 05:46 phase-timeline.tsv
+-rw-r--r-- 1 root      root         68 Nov 23 05:43 pidmap
+-rw-r--r-- 1 root      root         53 Nov 23 05:41 probe-stdout.log
+-rw-r--r-- 1 root      root      79952 Nov 23 05:46 probe.csv
+__BENCHEDGE_7=0
+[?2004h[driver] rc(results listing) = 0
+bash-5.3# test -f /bench/results/A-20261123-111029/summary.json && echo SUMMARY_PRESENT; echo __BENCHEDGE_8=$?
+[?2004lSUMMARY_PRESENT
+__BENCHEDGE_8=0
+[?2004hbash-5.3# [driver] rc(summary.json present?) = 0
+cd /; swapoff -a 2>/dev/null; pkill -9 -x tstress 2>/dev/null; sync; umount /bench && echo UMOUNTOK || { sleep 1; umount /bench && echo UMOUNTOK_RETRY || { umount -l /bench && echo UMOUNT_LAZY; }; }; echo __BENCHEDGE_9=$?
+[?2004lumount: /bench: target is busy.
+umount: /bench: target is busy.
+UMOUNT_LAZY
+__BENCHEDGE_9=0
+[?2004hbash-5.3# [driver] rc(umount) = 0
+[driver] arm A: scenario rc=0 — powering off

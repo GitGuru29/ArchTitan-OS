@@ -191,6 +191,11 @@ public:
     // Set cpu.weight inside archtitan.slice/<slice> (1–10000, default 100)
     bool set_cpu_weight(const std::string& slice_name, int weight);
 
+    // Set cpu.weight on archtitan.slice itself. Child weights are divided by
+    // the parent's share against system.slice, so a headless bulk-only host
+    // needs the parent raised too.
+    bool set_root_cpu_weight(int weight);
+
     // Set cpu.max (CFS bandwidth). quota_us <= 0 writes "max" (uncapped); the
     // period is always written so a previously changed period is restored.
     bool set_cpu_max(const std::string& slice_name,

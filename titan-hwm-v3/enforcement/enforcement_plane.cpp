@@ -258,6 +258,23 @@ CpuSlicePolicy EnforcementPlane::apply_cpu_pressure_policy(PressureLevel cpu_pre
     if (write_backoff_ > 0) { --write_backoff_; return policy; }
 
     bool failed = false;
+
+    // Child weights only divide the share archtitan.slice wins against
+    // system.slice. A headless bulk-only host is the one case where the whole
+    // hierarchy should outrank the daemon/probe; restore the normal parent
+    // share the moment a user/compositor signal returns.
+    const bool bulk_lift = policy.unattended_lift && demand &&
+                           demand->bulk_workloads > 0 &&
+                           demand->latency_workloads == 0 &&
+                           demand->gpu_feeders == 0;
+    const int want_root_weight = bulk_lift ? 2000 : 100;
+    if (want_root_weight != written_.root_weight) {
+        if (cgroup_.set_root_cpu_weight(want_root_weight))
+            written_.root_weight = want_root_weight;
+        else
+            failed = true;
+    }
+
     auto put_weight = [&](const char* slice, int want, int& have) {
         if (want == have) return;
         if (cgroup_.set_cpu_weight(slice, want)) have = want; else failed = true;

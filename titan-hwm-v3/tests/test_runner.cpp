@@ -2773,7 +2773,8 @@ void test_tc38_unattended_game_cap_guard() {
         p_game.background_quota_us > 0 &&
         !p_feeder.unattended_lift && p_feeder.headroom_engaged &&
         p_feeder.background_quota_us > 0 &&
-        p_bulk.unattended_lift && p_bulk.background_quota_us == 0;
+        p_bulk.unattended_lift && p_bulk.background_quota_us == 0 &&
+        p_bulk.background_weight == p_bulk.active_weight;
 
     std::cout << "[Unattended] game lift=" << p_game.unattended_lift
               << " quota=" << p_game.background_quota_us

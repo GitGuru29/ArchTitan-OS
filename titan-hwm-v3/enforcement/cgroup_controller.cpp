@@ -178,6 +178,15 @@ bool CgroupController::set_cpu_weight(const std::string& slice_name, int weight)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// set_root_cpu_weight — parent share against system.slice
+// ─────────────────────────────────────────────────────────────────────────────
+bool CgroupController::set_root_cpu_weight(int weight) {
+    weight = std::max(1, std::min(10000, weight));
+    return write_file(std::string(SLICE_ROOT) + "/cpu.weight",
+                      std::to_string(weight));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // set_cpu_max — write cpu.max as "<quota_us|max> <period_us>"
 // ─────────────────────────────────────────────────────────────────────────────
 bool CgroupController::set_cpu_max(const std::string& slice_name,
@@ -389,6 +398,13 @@ CpuSlicePolicy compute_cpu_slice_policy(PressureLevel cpu_pressure,
     if (should_lift_unattended_cap(user_unattended_idle,
                                    demand ? *demand : empty_hint)) {
         p.unattended_lift = true; // nobody is here to feel latency: lift the cap
+        // Headless bulk-only host: the build is the workload, not background
+        // noise. Give it near-active CFS weight so the fixed daemon/probe cost
+        // cannot steal its CPU budget (the 2-vCPU QEMU residual).
+        if (demand && demand->bulk_workloads > 0 &&
+            demand->latency_workloads == 0 && demand->gpu_feeders == 0) {
+            p.background_weight = p.active_weight;
+        }
         return p;
     }
 

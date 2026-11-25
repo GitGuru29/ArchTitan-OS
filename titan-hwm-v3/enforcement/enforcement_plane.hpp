@@ -123,6 +123,7 @@ private:
         int  throttled_weight  = -1;
         long throttled_quota   = -2;
         int  throttled_idle    = -1;
+        int  root_weight       = -1;
     } written_;
 
     CpuSlicePolicy effective_policy_;

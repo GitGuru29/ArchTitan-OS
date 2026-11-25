@@ -49,6 +49,9 @@
 #include <unordered_set>
 #include <unistd.h>
 #include <sys/stat.h>
+#ifdef __GLIBC__
+#include <malloc.h>
+#endif
 
 namespace fs = std::filesystem;
 
@@ -718,6 +721,13 @@ static int startup_thaw_sweep() {
 // main
 // ─────────────────────────────────────────────────────────────────────────────
 int main(int argc, char* argv[]) {
+#ifdef __GLIBC__
+    // The daemon has a few short-lived worker threads. Multiple glibc arenas
+    // leave per-thread heap pages resident; one arena keeps peak RSS below the
+    // 6 MB budget in the 2-vCPU benchmark guest.
+    setenv("MALLOC_ARENA_MAX", "1", 0);
+    mallopt(M_ARENA_MAX, 1);
+#endif
     // Flush every insertion. Under systemd, stdout/stderr are pipes and are
     // block-buffered by default — without this, THM log lines would not reach
     // the journal until a 4 KiB buffer fills, making `journalctl -u titan-hwm`
@@ -846,6 +856,10 @@ int main(int argc, char* argv[]) {
 
     // Governor hint currently applied — feeds compute_governor's hysteresis band
     thm::GovernorHint current_gov = thm::GovernorHint::SCHEDUTIL;
+    // apply_governor() scans every CPU's cpufreq sysfs. Re-check on a hint
+    // change, then only every 25 ticks (~5 s) to catch external edits.
+    thm::GovernorHint last_applied_gov = thm::GovernorHint::SCHEDUTIL;
+    int  last_gov_apply_tick = -100;
 
     // ── Phase 13: Telemetry sidecar ─────────────────────────────────────────
     thm::TelemetryPublisher telemetry;
@@ -955,6 +969,10 @@ int main(int argc, char* argv[]) {
     bool  prev_headroom_engaged  = false;
     bool  prev_unattended_lift   = false;
     bool  prev_bg_idle           = false;
+    // Headless bulk-only hosts do not need cmdline/exe/cgroup re-read every
+    // second; new PIDs are still fully read on first sight. Set from the
+    // previous tick's demand so the fast path can use it at the top of this one.
+    bool  headless_slow_metadata = false;
     std::string applied_gov      = "unknown";
 
     // Wall time of the previous pressure sample — feeds the per-tick PSI delta
@@ -979,7 +997,9 @@ int main(int argc, char* argv[]) {
 
         // ── (a) Refresh /proc snapshot ──────────────────────────────────────
         // Fast path: one stat read per PID. Full metadata refresh at 1 Hz.
-        const bool full_proc_refresh = (tick_count % 5 == 0) || proc_graph.empty();
+        const int full_refresh_period = headless_slow_metadata ? 25 : 5;
+        const bool full_proc_refresh =
+            (tick_count % full_refresh_period == 0) || proc_graph.empty();
         const auto scan_start = std::chrono::steady_clock::now();
         refresh_proc_graph(proc_graph, full_proc_refresh);
         scan_us_total += std::chrono::duration_cast<std::chrono::microseconds>(
@@ -987,7 +1007,11 @@ int main(int argc, char* argv[]) {
         ++scan_ticks;
 
         // ── (b) Refresh workspace visibility ────────────────────────────────
-        ws_monitor.refresh_visibility();
+        // refresh_visibility() shells out to `hyprctl monitors -j` on every
+        // call. On a headless host that is a doomed popen() five times a second;
+        // skip it entirely until Hyprland IPC has actually connected.
+        if (ws_monitor.connected())
+            ws_monitor.refresh_visibility();
         auto workspaces = ws_monitor.snapshot_workspaces();
 
         // ── (c) Read dual-signal pressure (Memory + CPU) ────────────────────
@@ -1492,6 +1516,13 @@ int main(int argc, char* argv[]) {
         const bool unattended_idle = thm::should_lift_unattended_cap(
             raw_unattended, demand);
 
+        headless_slow_metadata =
+            unattended_idle &&
+            !ws_monitor.connected() &&
+            demand.bulk_workloads > 0 &&
+            demand.latency_workloads == 0 &&
+            demand.gpu_feeders == 0;
+
         const int reserve_target = thm::compute_reserved_cores(
             sys_pressure.cpu, online_cpus, unattended_idle, demand);
         const int reserve_applied = headroom_tracker.update(
@@ -1561,8 +1592,12 @@ int main(int argc, char* argv[]) {
                                                            thermally_constrained);
         current_gov = gov;
         if (!dry_run) {
-            const std::string applied = thm::WorkspaceMonitor::apply_governor(gov);
-            if (!applied.empty()) applied_gov = applied;
+            if (gov != last_applied_gov || tick_count - last_gov_apply_tick >= 25) {
+                const std::string applied = thm::WorkspaceMonitor::apply_governor(gov);
+                if (!applied.empty()) applied_gov = applied;
+                last_applied_gov = gov;
+                last_gov_apply_tick = tick_count;
+            }
         } else {
             applied_gov = governor_to_string(gov);
         }
@@ -1618,7 +1653,12 @@ int main(int argc, char* argv[]) {
         }
 
         // ── (i) Publish telemetry snapshot ──────────────────────────────────
-        {
+        // Building the snapshot walks every workload/PID, and publish() serialises
+        // it. In headless bulk mode 1 Hz is plenty for `titan-hwm status`; the
+        // policy/enforcement path above still runs at the full 200 ms tick.
+        const bool publish_snapshot =
+            !headless_slow_metadata || (tick_count % 5 == 0);
+        if (publish_snapshot) {
             thm::TelemetrySnapshot snap;
             snap.timestamp_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                 std::chrono::system_clock::now().time_since_epoch()).count();
@@ -1736,7 +1776,17 @@ int main(int argc, char* argv[]) {
 
         // ── Sleep remaining tick budget ─────────────────────────────────────
         auto elapsed = std::chrono::steady_clock::now() - tick_start;
-        auto sleep_for = std::chrono::milliseconds(tick_ms) - elapsed;
+        // Headless bulk-only hosts save CPU with a 400 ms tick while memory is
+        // calm. The instant memory pressure leaves NORMAL (or CPU hits
+        // CRITICAL) we snap back to 200 ms so containment/hog response keeps
+        // the R3 memory floor. Desktop/Hyprland always stays at 200 ms.
+        const bool need_fast_tick =
+            pressure != thm::PressureLevel::NORMAL ||
+            sys_pressure.cpu == thm::PressureLevel::CRITICAL;
+        const int effective_tick_ms =
+            (headless_slow_metadata && !need_fast_tick) ? 400 : tick_ms;
+
+        auto sleep_for = std::chrono::milliseconds(effective_tick_ms) - elapsed;
         if (sleep_for.count() > 0)
             std::this_thread::sleep_for(sleep_for);
     }
