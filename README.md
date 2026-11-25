@@ -124,7 +124,7 @@ ArchTitan provides a suite of native C++ and Qt6 applications built specifically
 | Real RAM pressure (`bench_memory_pressure.sh`) | `memory.high=96 MiB`, `memory.low=32 MiB`, `high=18`, `oom_kill=0` — **PASS** |
 | Safety | CPU pressure never kills/stops/freezes; destructive reclaim opt-in only |
 
-Detailed reports live in [`titan-hwm-v3/docs/benchmark-results/`](titan-hwm-v3/docs/benchmark-results/).
+Detailed reports live in [`titan-hwm-v3/docs/benchmark-results/`](titan-hwm-v3/docs/benchmark-results/). The full v3 progress/roadmap rollup is [`THM_V3_STATUS_AND_ROADMAP.md`](titan-hwm-v3/docs/THM_V3_STATUS_AND_ROADMAP.md).
 
 ### 2.  ArchTitan Settings (`archtitan-settings`)
 * **Lead:** `@GitGuru29` | **Location:** `archtitan-settings/`
