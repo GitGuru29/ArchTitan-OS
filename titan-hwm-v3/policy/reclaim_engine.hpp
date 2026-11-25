@@ -18,6 +18,8 @@
 
 namespace thm {
 
+class WorkloadDependencyGraph;
+
 struct ReclaimConfig {
     int   grace_period_ms   = 2000; // notify → SIGTERM gap
     int   sigterm_grace_ms  = 3000; // SIGTERM → SIGKILL gap
@@ -53,7 +55,8 @@ public:
     // Performs all 9 safety checks before sending any signal.
     bool reclaim(const Workload&                               wl,
                  const std::unordered_map<pid_t, ProcessNode>& graph,
-                 const std::unordered_map<uint32_t, Workload>& all_workloads);
+                 const std::unordered_map<uint32_t, Workload>& all_workloads,
+                 const WorkloadDependencyGraph*                 deps = nullptr);
 
     // Signal every PID in `pids`, refusing any PID the registry protects.
     //
@@ -77,8 +80,10 @@ private:
     bool check_not_protected(const Workload& wl) const;
     bool check_not_executing(const Workload& wl,
                               const std::unordered_map<pid_t, ProcessNode>& graph) const;
-    bool check_no_active_dependent(const Workload& wl,
-                                    const std::unordered_map<uint32_t, Workload>& all) const;
+    bool check_no_active_dependent(
+        const Workload& wl,
+        const std::unordered_map<uint32_t, Workload>& all,
+        const WorkloadDependencyGraph* deps) const;
     bool check_no_recent_focus(const Workload& wl) const;
 
     // Send desktop notification. Spawns notify-send directly via posix_spawn —

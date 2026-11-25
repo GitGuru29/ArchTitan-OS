@@ -2,7 +2,7 @@
 // titan-hwm-v3/tests/test_runner.cpp
 // Real OS-Level Test Suite for Titan Hardware Manager v3 (THM v3)
 //
-// Validates 47 architectural test cases on real Linux OS primitives:
+// Validates 49 architectural test cases on real Linux OS primitives:
 //   TC-1:  Gradle / Background Build Survival
 //   TC-2:  AI Agent Workload Survival & Execution Authority
 //   TC-3:  Idle IDE Aging, Throttling & Freeze under Pressure
@@ -25,11 +25,14 @@
 //   TC-45: Build Toolchain Never Frozen (v3.4-R2)
 //   TC-46: Stall-Aware Bandwidth Loaning (v3.8)
 //   TC-47: Hyprland Window Context Binding (v3.9)
+//   TC-48: Workload Dependency Graph (v3.10)
+//   TC-49: Graph-Guarded Reclaim (v3.10)
 // =============================================================================
 
 #include "../core/types.hpp"
 #include "../core/protected_registry.hpp"
 #include "../workload/ownership_graph.hpp"
+#include "../workload/dependency_graph.hpp"
 #include "../workload/workload_manager.hpp"
 #include "../classifier/fusion_classifier.hpp"
 #include "../classifier/execution_detector.hpp"
@@ -3328,6 +3331,155 @@ void test_tc47_window_context_binding() {
     std::cout << (passed ? ">>> PASS: window context binding verified.\n" : ">>> FAIL!\n");
 }
 
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-48: Workload Dependency Graph
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc48_workload_dependency_graph() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(48, "Workload Dependency Graph",
+                    "IDE/LSP/build/project relationships shield roots from reclaim");
+
+    std::unordered_map<uint32_t, thm::Workload> all;
+    auto add_workload = [&](uint32_t id, int ws, thm::WorkloadState state,
+                            const std::string& window_class,
+                            bool has_lsp, bool is_building) {
+        thm::Workload wl;
+        wl.id = id;
+        wl.workspace_id = ws;
+        wl.state = state;
+        wl.window_class = window_class;
+        wl.window_title = window_class.empty() ? "" : "main.cpp - " + window_class;
+        wl.has_lsp = has_lsp;
+        wl.is_building = is_building;
+        all[id] = wl;
+    };
+
+    add_workload(1, 1, thm::WorkloadState::ACTIVE, "code", false, false);
+    add_workload(2, 1, thm::WorkloadState::BACKGROUND_EXECUTING, "", true, false);
+    add_workload(3, 1, thm::WorkloadState::IDLE, "", false, true);
+    add_workload(4, -1, thm::WorkloadState::IDLE, "", false, false);
+    add_workload(5, -1, thm::WorkloadState::IDLE, "", false, false);
+
+    auto make_proc = [](pid_t pid, pid_t ppid, uint32_t wid,
+                        const std::string& cwd) {
+        thm::ProcessNode n;
+        n.pid = pid;
+        n.ppid = ppid;
+        n.workload_id = wid;
+        n.cwd = cwd;
+        n.activity = thm::ActivityState::IDLE;
+        return n;
+    };
+
+    std::unordered_map<pid_t, thm::ProcessNode> procs;
+    procs.emplace(101, make_proc(101, 1, 1, "/src/app"));
+    procs.emplace(201, make_proc(201, 1, 2, "/src/app")); // LSP, not child PID
+    procs.emplace(301, make_proc(301, 1, 3, "/src/app")); // build, not child PID
+    procs.emplace(401, make_proc(401, 1, 4, "/src/app")); // shared project
+    procs.emplace(501, make_proc(501, 101, 5, "/tmp/else")); // ancestry
+
+    thm::WorkloadDependencyGraph graph;
+    graph.rebuild(all, procs);
+
+    const bool toolchain =
+        graph.depends_on(2, 1) && graph.depends_on(3, 1) &&
+        graph.edge_count(thm::DependencyKind::Toolchain) >= 2;
+    const bool project =
+        graph.depends_on(4, 1) &&
+        graph.edge_count(thm::DependencyKind::SharedProject) >= 1;
+    const bool ancestry =
+        graph.depends_on(5, 1) &&
+        graph.edge_count(thm::DependencyKind::ProcessAncestry) >= 1;
+    const bool active_shield = graph.has_active_dependent(1) &&
+                               !graph.has_active_dependent(4);
+
+    thm::TelemetrySnapshot snap;
+    snap.dependency_summary = graph.summary();
+    snap.dependency_nodes = static_cast<int>(graph.node_count());
+    snap.dependency_edges = static_cast<int>(graph.edge_count());
+    snap.dependency_shielded = static_cast<int>(graph.active_dependent_count());
+
+    thm::TelemetryWorkload tw;
+    tw.id = 1;
+    tw.dependency_providers = static_cast<int>(graph.providers_of(1).size());
+    tw.dependency_dependents = static_cast<int>(graph.dependents_of(1).size());
+    tw.protected_by_dependents = graph.has_active_dependent(1);
+    snap.workloads.push_back(tw);
+
+    const std::string json = thm::serialize_snapshot(snap);
+    const bool telemetry =
+        json.find("\"dependency\":{") != std::string::npos &&
+        json.find("\"dependency_providers\":") != std::string::npos &&
+        json.find("\"protected_by_dependents\":true") != std::string::npos;
+
+    const bool passed = toolchain && project && ancestry && active_shield &&
+                        telemetry;
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-48: Workload Dependency Graph",
+                         "cross-root toolchain/project/ancestry edges and telemetry",
+                         passed,
+                         "edge kinds inferred; active dependents shield root",
+                         ms});
+    std::cout << "[Dependency] " << graph.summary() << "\n";
+    std::cout << (passed ? ">>> PASS: workload dependency graph verified.\n"
+                         : ">>> FAIL!\n");
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TC-49: Graph-Guarded Reclaim
+// ═════════════════════════════════════════════════════════════════════════════
+void test_tc49_graph_guarded_reclaim() {
+    auto t0 = std::chrono::steady_clock::now();
+    log_test_header(49, "Graph-Guarded Reclaim",
+                    "an active LSP child blocks reclaim of its IDE root even without shared PIDs");
+
+    thm::ProtectedRegistry registry;
+    thm::ExecutionDetector detector;
+    thm::ReclaimConfig cfg;
+    cfg.notify_enabled = false; // no desktop side effects in CI
+    thm::ReclaimEngine reclaimer(registry, detector, cfg);
+
+    thm::Workload provider;
+    provider.id = 10;
+    provider.workspace_id = 1;
+    provider.window_class = "code";
+    provider.state = thm::WorkloadState::RECLAIMABLE;
+    provider.root_pid = 1000;
+
+    thm::Workload dependent;
+    dependent.id = 11;
+    dependent.workspace_id = 1;
+    dependent.state = thm::WorkloadState::ACTIVE;
+    dependent.has_lsp = true;
+    dependent.root_pid = 2000; // not in provider.pids: old check cannot see it
+
+    std::unordered_map<uint32_t, thm::Workload> all{
+        {provider.id, provider}, {dependent.id, dependent}};
+    std::unordered_map<pid_t, thm::ProcessNode> empty_procs;
+
+    thm::WorkloadDependencyGraph graph;
+    graph.rebuild(all, empty_procs);
+
+    const bool old_check_gap = provider.pids.empty();
+    const bool shielded = graph.has_active_dependent(provider.id) &&
+                          graph.depends_on(dependent.id, provider.id);
+    const bool reclaimed = reclaimer.reclaim(provider, empty_procs, all, &graph);
+
+    const bool passed = old_check_gap && shielded && !reclaimed;
+    auto t1 = std::chrono::steady_clock::now();
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    g_results.push_back({"TC-49: Graph-Guarded Reclaim",
+                         "active dependent blocks reclaim before any signal",
+                         passed,
+                         "no shared PID; graph-dependent check aborted reclaim",
+                         ms});
+    std::cout << "[ReclaimGraph] shielded=" << shielded
+              << " reclaimed=" << reclaimed << "\n";
+    std::cout << (passed ? ">>> PASS: graph-guarded reclaim verified.\n"
+                         : ">>> FAIL!\n");
+}
+
 int main() {
     std::cout << "\n╔══════════════════════════════════════════════════════════════════════════════╗\n";
     std::cout << "║        THM v3 Real OS-Level Architectural Test Suite                         ║\n";
@@ -3381,6 +3533,8 @@ int main() {
     test_tc45_bulk_build_never_frozen();
     test_tc46_stall_aware_bandwidth_loan();
     test_tc47_window_context_binding();
+    test_tc48_workload_dependency_graph();
+    test_tc49_graph_guarded_reclaim();
 
     // Summary Table
     std::cout << "\n════════════════════════════════════════════════════════════════════════════════\n";

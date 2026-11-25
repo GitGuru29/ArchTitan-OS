@@ -83,11 +83,11 @@ flowchart TD
 
 ---
 
-## 4. Integration with Titan Hardware Manager (THM v3.9)
+## 4. Integration with Titan Hardware Manager (THM v3.10)
 
 To ensure high-speed file transfers are not interrupted during system resource contention or heavy compiling tasks:
 
-* **Protected Daemon Status**: TitanShare binaries (`titan-share`, `titanshare`) are registered in THM v3.9's `ProtectedRegistry` (`protected_registry.hpp`).
+* **Protected Daemon Status**: TitanShare binaries (`titan-share`, `titanshare`) are registered in THM v3.10's `ProtectedRegistry` (`protected_registry.hpp`).
 * **Resource Guarantee**: THM classifies active file transfers as protected operations, ensuring the daemon is never demoted to `archtitan-frozen.slice`, frozen via cgroups, or targeted by SIGSTOP/SIGKILL memory reclaim.
 
 ---

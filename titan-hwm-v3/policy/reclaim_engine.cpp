@@ -4,6 +4,7 @@
 // =============================================================================
 #include "reclaim_engine.hpp"
 #include "../core/signal_utils.hpp"
+#include "../workload/dependency_graph.hpp"
 
 #include <fstream>
 #include <iostream>
@@ -42,7 +43,14 @@ bool ReclaimEngine::check_not_executing(
 
 bool ReclaimEngine::check_no_active_dependent(
         const Workload& wl,
-        const std::unordered_map<uint32_t, Workload>& all) const {
+        const std::unordered_map<uint32_t, Workload>& all,
+        const WorkloadDependencyGraph* deps) const {
+    // v3.10: graph first. It covers cross-root relationships the old root_pid
+    // equality check could never see (LSP/build child -> IDE root, shared CWD,
+    // and ancestor process in another workload).
+    if (deps != nullptr && deps->has_active_dependent(wl.id)) return false;
+
+    // Backward-compatible fallback for callers that have not built a graph.
     // A dependent is another workload whose root_pid is a child of this workload's pids
     for (const auto& [id, other] : all) {
         if (id == wl.id) continue;
@@ -183,7 +191,8 @@ void ReclaimEngine::kill_tree(const std::vector<pid_t>& pids, int sig,
 bool ReclaimEngine::reclaim(
         const Workload&                               wl,
         const std::unordered_map<pid_t, ProcessNode>& graph,
-        const std::unordered_map<uint32_t, Workload>& all_workloads)
+        const std::unordered_map<uint32_t, Workload>& all_workloads,
+        const WorkloadDependencyGraph*                 deps)
 {
     // ── Step 1: Protected check ───────────────────────────────────────────
     if (!check_not_protected(wl)) {
@@ -198,9 +207,10 @@ bool ReclaimEngine::reclaim(
     }
 
     // ── Step 3: Active dependent check ────────────────────────────────────
-    if (!check_no_active_dependent(wl, all_workloads)) {
+    if (!check_no_active_dependent(wl, all_workloads, deps)) {
         std::cout << "[Reclaim] Abort: workload " << wl.id
-                  << " has an active dependent.\n";
+                  << " has an active dependent"
+                  << (deps != nullptr ? " (dependency graph)" : "") << ".\n";
         return false;
     }
 
@@ -229,7 +239,7 @@ bool ReclaimEngine::reclaim(
     // Conditions may have changed during the grace period
     if (!check_not_protected(wl)          ||
         !check_not_executing(wl, graph)   ||
-        !check_no_active_dependent(wl, all_workloads) ||
+        !check_no_active_dependent(wl, all_workloads, deps) ||
         !check_no_recent_focus(wl)) {
         std::cout << "[Reclaim] Conditions changed during grace period — aborting.\n";
         return false;

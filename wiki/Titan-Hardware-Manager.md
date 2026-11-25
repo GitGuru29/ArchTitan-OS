@@ -1,4 +1,4 @@
-# Titan Hardware Manager (THM v3.9)
+# Titan Hardware Manager (THM v3.10)
 
 The **Titan Hardware Manager (`titan-hwm`)** is ArchTitan OS's flagship workload-centric resource orchestration daemon. Written in **C++17** for the daemon/core/CLI (the empirical bench harness is C++20), THM autonomously governs Linux kernel primitives—including **cgroups v2**, **Pressure Stall Information (PSI)**, process scheduling weights, and memory reclaim—by tracking real-time developer workflows across Wayland (Hyprland) workspaces.
 
@@ -16,7 +16,20 @@ Rather than relying on naive memory kill thresholds (`oomd`) or static governors
 - **Recent-Focus Context**: A bounded 30-second window keeps a just-left workspace foreground, preventing downgrades during rapid workspace switches.
 - **Stall-Aware Bandwidth Loan (v3.8)**: Idle foreground reservation is lent to bulk work only after five quiet ticks; input, PSI stalls, or foreground growth reclaim it immediately.
 - **Orphan Thaw Sweep**: On daemon startup, `startup_thaw_sweep()` scans `/proc` and automatically revives (`SIGCONT`) any user processes left suspended in `T` state by previous crashes or sessions.
-- **Rigorous Real-World Validation**: 100% pass rate across **47 architectural test cases** (TC-01 through TC-47) plus CPU headroom, cgroup RAM-pressure, and QEMU/KVM A/B benchmarks.
+- **Dependency Graph (v3.10)**: window-bound roots are linked to LSP/build children, shared-CWD processes, and ancestry; an active dependent blocks reclaim of its root even without a shared PID.
+- **Rigorous Real-World Validation**: 100% pass rate across **49 architectural test cases** (TC-01 through TC-49) plus CPU headroom, cgroup RAM-pressure, and QEMU/KVM A/B benchmarks.
+
+## Dependency Graph (v3.10)
+
+The ownership forest answers “which workload owns this PID?”. The dependency
+graph answers “which workload needs this root to stay alive?”. Edges are
+directed `dependent -> provider` and are inferred from process ancestry,
+LSP/build toolchain metadata, and shared project CWD under a Hyprland-bound
+root. `ReclaimEngine` queries the graph before any memory reclaim signal, and
+telemetry publishes providers, dependents, and `protected_by_dependents`.
+
+Browser tab groups, `waits-on`, and reclassification history are not modelled
+yet; current browser roots are shielded by the protected-root invariant.
 
 ---
 
@@ -34,7 +47,7 @@ flowchart TD
         DRIFT["Cmdline Drift Detector<br>(Fork/Exec Tracking)"]
     end
 
-    subgraph Core["THM v3.9 Autonomous Core"]
+    subgraph Core["THM v3.10 Autonomous Core"]
         FUS["Multi-Signal Fusion Classifier<br>(Process, Title, CWD, Trees)"]
         DET["Execution Detector<br>(is_persistent_service, CPU/IO)"]
         WM["Workload Manager & State Machine<br>(30s recent-focus, state machine)"]
@@ -134,9 +147,9 @@ THM solves this by coupling **cgroup PSI monitoring** with **compositor focus se
 
 ---
 
-## THM v3.9 Hardcore Resilience Matrix & 10h Stress-Test Remediations
+## THM v3.10 Hardcore Resilience Matrix & 10h Stress-Test Remediations
 
-THM v3.9 incorporates empirical architectural solutions developed to resolve 11 critical edge cases discovered during real-world stress testing, along with 7 major system-level remediations validated over 10-hour continuous stress runs:
+THM v3.10 incorporates empirical architectural solutions developed to resolve 11 critical edge cases discovered during real-world stress testing, along with 7 major system-level remediations validated over 10-hour continuous stress runs:
 
 | Category | Component | Failure Condition / Hazard | Architectural Remediation |
 | :--- | :--- | :--- | :--- |
@@ -238,7 +251,17 @@ titan-hwm metrics
   },
   "governor": "schedutil",
   "workload_count": 2,
-  "bandwidth_loan_cores": 0,
+  "cpu": {
+    "pressure": "NORMAL",
+    "psi_some_avg10": 2.10,
+    "bandwidth_loan_cores": 0
+  },
+  "dependency": {
+    "summary": "2 nodes, 1 edges (0 ancestry/1 toolchain/0 project, 1 shielded)",
+    "nodes": 2,
+    "edges": 1,
+    "shielded": 1
+  },
   "active_workloads": 0,
   "last_action": null,
   "workloads": [
@@ -251,7 +274,10 @@ titan-hwm metrics
       "state": "IDLE",
       "pids": 1,
       "window_class": "code",
-      "window_title": "main.cpp - Visual Studio Code"
+      "window_title": "main.cpp - Visual Studio Code",
+      "dependency_providers": 0,
+      "dependency_dependents": 1,
+      "protected_by_dependents": true
     }
   ]
 }
@@ -333,7 +359,7 @@ sudo systemctl enable --now titan-hwm.service
 
 ## Standalone Test Suite & Source Verification
 
-THM v3.9 is verified using an independent, auditable test harness:
+THM v3.10 is verified using an independent, auditable test harness:
 
 - **Standalone Test Repository**: [`https://github.com/GitGuru29/titan-hardware-manager-test-system`](https://github.com/GitGuru29/titan-hardware-manager-test-system)
 - **Source Code in OS Repo**: `titan-hwm-v3/` (subsystem in `archtitan-os`)

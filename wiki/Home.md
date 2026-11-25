@@ -45,7 +45,7 @@ The project was originally developed as **TitanArch**, an advanced Final Year Pr
 ## Core Philosophy
 
 1. **Wayland native** — Hyprland compositor with Wayland LayerShell surfaces; zero legacy X11 session dependencies.
-2. **Autonomous resource awareness** — Titan Hardware Manager (THM v3.9) uses cgroups v2, kernel PSI, and multi-signal classification to keep foreground workflows jitter-free.
+2. **Autonomous resource awareness** — Titan Hardware Manager (THM v3.10) uses cgroups v2, kernel PSI, and multi-signal classification to keep foreground workflows jitter-free.
 3. **First-party desktop stack** — Native C++/Qt6 desktop suite (TitanBrowser, Settings, Quick Settings, Menu, System Monitor, Media HUD, Hotzones, Wallpaper Picker).
 4. **Cinematic polish & aesthetic cohesion** — Catppuccin Mocha theme, custom Plymouth "Rise, Titan." boot ceremony, and consistent Obsidian glassmorphism.
 5. **Developer ready** — Fish + Starship shell, VS Code, Docker, Rust/Go/Node toolchains, and Android tooling hooks pre-installed out of the box.

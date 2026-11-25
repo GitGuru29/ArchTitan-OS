@@ -10,7 +10,7 @@ This page tracks the current implementation state of **ArchTitan OS** components
 | :--- | :--- | :--- | :--- | :--- |
 | **archiso ISO Builder** | @GitGuru29 (Lead) | Build Pipeline | 🟢 **Shipped** | Full UEFI bootable ISO profile with zstd compression (2 CPU limit) and custom overlay |
 | **Hyprland Compositor** | @GitGuru29 (Lead) | Desktop Environment | 🟢 **Shipped** | v0.53+/v0.56+ window rules, Aquamarine VM backend, Catppuccin Mocha styling |
-| **Titan Hardware Manager (`titan-hwm`)** | @GitGuru29 (Lead) | System Daemon | 🟢 **Shipped (v3.9)** | C++17 autonomous resource orchestrator managing cgroup v2 slices, multi-signal fusion, 47-scenario failure test matrix (`titan-hwm-v3/`) |
+| **Titan Hardware Manager (`titan-hwm`)** | @GitGuru29 (Lead) | System Daemon | 🟢 **Shipped (v3.10)** | C++17 autonomous resource orchestrator managing cgroup v2 slices, multi-signal fusion, workload dependency graph, 49-scenario failure test matrix (`titan-hwm-v3/`) |
 | **Titan System Monitor (`titan-sysmon`)** | @GitGuru29 (Lead) | Desktop Sidebar | 🟢 **Shipped** | Left-anchored 450px LayerShell sidebar, Hero Gauges, QML THM properties (`subsystems/titan-sysmon/`) |
 | **Titan Quick Settings (`titan-quicksettings`)**| @GitGuru29 (Lead) | Control Drawer | 🟢 **Shipped** | Obsidian glassmorphic control drawer & notification center (`subsystems/titan-quicksettings/`) |
 | **Titan Menu (`titan-menu`)** | @GitGuru29 (Lead) | Command Palette | 🟢 **Shipped** | Native Wayland layer-shell command palette & shortcuts cheat sheet (`subsystems/titan-menu/`) |
@@ -74,7 +74,8 @@ timeline
 ### Milestone 1.0 — Core Foundation (Shipped)
 - **Goal**: Deliver a stable, bootable developer-focused Arch distribution with first-party cgroup resource management and custom Qt6 desktop applications.
 - **Key Deliverables**:
-  - `titan-hwm-daemon` (THM v3.9) C++17 autonomous resource daemon (C++20 bench harness only) running as `titan-hwm.service` with `archtitan.slice` cgroup delegation.
+  - `titan-hwm-daemon` (THM v3.10) C++17 autonomous resource daemon (C++20 bench harness only) running as `titan-hwm.service` with `archtitan.slice` cgroup delegation.
+  - Cross-root dependency graph (IDE ↔ LSP ↔ build ↔ shared project) guarding reclaim decisions.
   - Hyprland Wayland environment preconfigured with Catppuccin Mocha styling, updated v0.53+/v0.56+ window rules, and VM GPU rendering support (`AQ_NO_MODIFIERS=1`).
   - Compiled C++/Qt6 `titanfetch` system information tool.
   - Native `titanbrowser` Qt6 WebEngine browser with low-memory tuning as default browser (`Super + W`).

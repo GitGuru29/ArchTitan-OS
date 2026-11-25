@@ -1,9 +1,9 @@
 # Titan Hardware Manager v3 — Progress, Evidence, and Remaining Work
 
-**Status document:** full THM v3 rollup through v3.9  
-**Branch:** `feat/thm-cpu-pressure-engine`  
-**Commit at writing:** `b5adf5ec66f5476a8d36f1f0ed465b093e11ca4f`  
-**Date:** 2026-11-25  
+**Status document:** full THM v3 rollup through v3.10
+**Branch:** `feat/thm-cpu-pressure-engine`
+**Commit at writing:** latest commit on `feat/thm-cpu-pressure-engine`
+**Date:** 2026-11-25
 **Audience:** ArchTitan OS maintainers / THM contributors
 
 > Workflow note: THM changes are to be pushed to `feat/thm-cpu-pressure-engine`.
@@ -26,18 +26,21 @@ The system has two deliberately asymmetric planes:
 
 Current state:
 
-- **47/47** architectural unit tests pass.
+- **49/49** architectural unit tests pass.
 - **8/8** CPU headroom scorecard passes on the latest short run.
-- Daemon local dry-run peak RSS is **4.8 MB**, under the 6 MB budget.
+- Workload dependency graph links IDE/LSP/build/project roots and blocks
+  reclaim when an active dependent exists.
+- Daemon local dry-run peak RSS is **4.6 MB**, under the 6 MB budget.
 - Real cgroup memory-pressure primitives are proven (`high=18`, `oom_kill=0`).
 - Last full QEMU/KVM compile A/B was the **v3.4-R6** regression run; no
-  median-compile improvement is claimed for v3.8 or v3.9.
+  median-compile improvement is claimed for v3.8, v3.9, or v3.10.
 - Hyprland IPC remains the **only** live context source.
 - I/O and GPU control planes remain out of scope, and GPU stress requires
   explicit approval.
 
-The next functional item is the **dependency/workload graph**: IDE ↔ LSP ↔
-build ↔ browser-tab roots, built over the Hyprland bindings introduced in v3.9.
+v3.10 adds the **dependency/workload graph** over the Hyprland bindings
+introduced in v3.9. The next functional work is observability fidelity and
+end-to-end memory-pressure validation.
 
 ---
 
@@ -212,6 +215,28 @@ IPC and therefore exercises only the unchanged CPU path.
 
 Evidence: `2026-11-25-v3.9-window-context-binding.md`.
 
+### v3.10 — workload dependency graph
+
+- `workload/dependency_graph.hpp/.cpp` infers `ProcessAncestry`, `Toolchain`,
+  and `SharedProject` edges over window-bound workload roots.
+- Direction is `from DEPENDS ON to`; `has_active_dependent()` walks dependents
+  transitively and treats protected roots as shielding too.
+- `ReclaimEngine::reclaim()` takes an optional graph pointer. Step 3 and the
+  step-7 recheck use it before the legacy root-PID fallback.
+- Daemon uses a two-pass tick (state pass → graph rebuild → policy pass) so a
+  child that became ACTIVE this tick shields its root immediately.
+- Telemetry exposes `dependency` summary/counts; per-workload providers,
+  dependents, and `protected_by_dependents`; CLI prints the graph summary.
+- TC-48 and TC-49 added; suite is **49/49**.
+- Latest scorecard: **8/8** at 40.0°C after one transient host-noise 7/8 run;
+  wake-up p99 **13.332 ms → 5.278 ms**, deadline misses **23.3% → 1.3%**, BG
+  throughput **80.0% retained**. Local dry-run RSS **4692 kB (4.6 MB)**.
+
+No QEMU compile A/B was run after v3.10; no median-compile improvement is
+claimed.
+
+Evidence: `2026-11-25-v3.10-workload-dependency-graph.md`.
+
 ---
 
 ## 4. Guardrails and invariants
@@ -244,7 +269,7 @@ runs.
 ./build/thm_test_runner
 ```
 
-Result: **47/47 PASSED**.
+Result: **49/49 PASSED**.
 
 Selected cases:
 
@@ -253,6 +278,8 @@ Selected cases:
 - TC-38/44/45 — recent focus, throttled slice isolation, build toolchain freeze guard.
 - TC-46 — bandwidth loan and immediate reclaim.
 - TC-47 — Hyprland class/title root binding and false-bind rejection.
+- TC-48 — toolchain/project/ancestry edges and graph telemetry.
+- TC-49 — active LSP child blocks reclaim of its root with no shared PID.
 
 ### 5.2 CPU headroom scorecard
 
@@ -261,11 +288,12 @@ Selected cases:
   --duration 8 --threads 16 --bg-procs 2 --adaptive both --no-color
 ```
 
-Latest v3.9 re-run after this documentation update: **8/8** at 43.0°C.
-Wake-up p99 **12.073 ms → 4.820 ms**, deadline misses **164 (17.8%) → 11
-(1.0%)**, BG throughput **79.3% retained**. HC-CPU-1 workers survived 2/2 in
-both arms; p99 and deadline misses improved while `cpu.max` throttled
-background work. The original dated v3.9 report recorded 82.1% retention.
+Latest v3.10 re-run: **8/8** at 40.0°C. Wake-up p99 **13.332 ms → 5.278 ms**,
+deadline misses **202 (23.3%) → 15 (1.3%)**, BG throughput **80.0% retained**.
+HC-CPU-1 workers survived 2/2 in both arms. The first v3.10 run was **7/8**
+because BG throughput fell to 31.5% on a noisy host; the re-run restored the
+invariant. The graph is not exercised by this harness, so that transient was
+not treated as a graph regression.
 
 Important caveat: p95/p99 on this shared host are noisy. Aggregate pressure p95
 must not be quoted alone; historical aggregate pressure was
@@ -293,7 +321,7 @@ has been run.
 
 ### 5.5 Resource cost
 
-- Local dry-run peak RSS: **4.8 MB**.
+- Local dry-run peak RSS: **4.6 MB** (v3.10, 5 ticks, 306 PIDs).
 - Guest sampled max RSS in R6: **4.2 MB**.
 - Daemon CPU percentage remains host-sensitive; quote specific run IDs, not
   cross-run averages.
@@ -310,6 +338,7 @@ has been run.
 | Workspace/window context from Hyprland IPC | Complete |
 | 30 s recent-focus protection | Complete |
 | Window class/title bound to workload root | Complete (v3.9) |
+| Workload dependency graph + graph-guarded reclaim | Complete (v3.10) |
 | CPU pressure arbitration | Complete |
 | SMT whole-core isolation | Complete |
 | Input feed-forward | Complete |
@@ -321,7 +350,7 @@ has been run.
 | Browser-safe freeze / protected registry | Complete |
 | Orphan thaw sweep | Complete |
 | Telemetry JSON and CLI status/explain/scan | Complete |
-| 47-case test suite | Complete |
+| 49-case test suite | Complete |
 | CPU headroom scorecard | Complete |
 | Real cgroup memory-primitive benchmark | Complete |
 | QEMU A/B harness with thermal guard | Complete |
@@ -333,28 +362,29 @@ has been run.
 
 ### P0 — dependency / workload graph
 
-**Status:** not implemented; only PID→workload forest exists.
+**Status:** implemented in v3.10; residual modelling remains (see below).
 
-Build a first-class graph over the v3.9 bound roots:
+The graph is built after the daemon state pass over the v3.9 bound roots:
 
-- nodes: workload roots, Hyprland window bindings, LSP processes, build roots,
-  browser tab groups, GPU-feeding children;
-- edges: owns, feeds, waits-on, reclassifies-from, shares-project;
-- consumers: policy engine, reclaim active-dependent check, telemetry, CLI.
+- nodes: workload roots, state, Hyprland class/title evidence;
+- edges: `ProcessAncestry`, `Toolchain` (LSP/build → window root),
+  `SharedProject` (same CWD → window root);
+- consumers: reclaim active-dependent check, telemetry, CLI.
 
-Why now: v3.9 gives real root bindings, so the graph can be queried instead of
-re-guessing from process names.
+Residual gap: browser tab groups, `waits-on`, and `reclassifies-from` are not
+modelled yet. Existing browser roots are protected by the protected-root node
+flag rather than per-tab edges.
 
 Files:
-`workload/ownership_graph.hpp/.cpp`, `core/types.hpp`,
-`classifier/fusion_classifier.cpp`, `policy/reclaim_engine.cpp`,
-`daemon/daemon.cpp`, `tests/test_runner.cpp`.
+`workload/dependency_graph.hpp/.cpp`, `policy/reclaim_engine.cpp`,
+`daemon/daemon.cpp`, `ipc/telemetry_publisher.*`, `tests/test_runner.cpp`.
 
 ### P0 — graph-aware active-dependent check
 
-`policy/reclaim_engine.cpp:43-57` only compares `other.root_pid == our_pid`
-despite its comment claiming graph awareness. It must use the new graph so a
-compiler/language-server child cannot be reclaimed while its root is active.
+**Status:** implemented in v3.10. `ReclaimEngine::reclaim()` takes an optional
+`WorkloadDependencyGraph*`; steps 3 and 7 query `has_active_dependent()` before
+falling back to the legacy root-PID comparison. TC-49 proves an active LSP
+child blocks reclaim of a root with no shared PID.
 
 ### P1 — observability completion
 
@@ -372,7 +402,7 @@ Files: `resources/pressure_level.cpp`, `daemon/daemon.cpp`,
 
 ### P1 — version / schema / docs reconciliation
 
-- Telemetry `version` is still `3.3.0` while source/README/wiki advertise v3.9.
+- Telemetry `version` is still `3.3.0` while source/README/wiki advertise v3.10.
 - Bench harness still checks schema prefix `3.2` and prints “v3.2 OK”.
 - Some harness labels still say “THM v3.2” or “shipped v3.4”.
 - **Resolved:** docs now state the actual build standard: C++17 for THM core,
@@ -381,7 +411,7 @@ Files: `resources/pressure_level.cpp`, `daemon/daemon.cpp`,
 - OOM constants differ between code (`-500 / 0 / +500`) and service comments
   (`-200 / +300`).
 - Architecture report still describes a removed reclaim kernel-root check.
-- **Resolved:** wiki pages updated from v3.1 to v3.9 and C++ labels corrected.
+- **Resolved:** wiki pages updated from v3.1 to v3.10 and C++ labels corrected.
 
 This is correctness-adjacent because live bench integration skips on stale
 schema.
@@ -404,7 +434,7 @@ schema.
 1. **End-to-end THM memory-pressure test.** Current RAM benchmark proves kernel
    primitives in a transient scope, not THM's `memory.high` write, freeze/thaw,
    or reclaim decision path.
-2. **post-v3.8/v3.9 QEMU compile A/B.** Needed before claiming throughput
+2. **post-v3.8/v3.9/v3.10 QEMU compile A/B.** Needed before claiming throughput
    gains; no claim is made now.
 3. **`systemd-oomd` / kernel OOM coexistence audit.** Still outstanding.
 4. **Browser collateral positive path.** TC-13 records “positive path not
@@ -412,7 +442,7 @@ schema.
 5. **GPU policy evidence.** glmark2 A/B recorded no enforcement because it was
    not classified as GPU-feeding; this is not a strong policy test.
 6. **Input boost measurement.** Harness cannot inject realistic user input.
-7. **Daemon CPU/RSS reprofile** after v3.8/v3.9 on a quiet host.
+7. **Daemon CPU/RSS reprofile** after v3.8/v3.9/v3.10 on a quiet host.
 8. **Live daemon cgroup path.** Original session reported
    `/sys/fs/cgroup/archtitan.slice not found`; delegation must be verified on a
    normal boot, not only in bench-disk injection.
@@ -456,12 +486,13 @@ schema.
 
 ## 11. Suggested next three releases
 
-### v3.10 — workload graph
+### v3.10 — workload graph — SHIPPED
 
-- Add graph nodes/edges and tests.
-- Bind LSP/build/browser-tab children to roots.
-- Make reclaim active-dependent graph-aware.
-- Publish graph summary in telemetry / CLI.
+- Graph nodes/edges and TC-48/TC-49 added.
+- LSP/build children and shared-CWD processes bound to window roots.
+- Reclaim active-dependent check is graph-aware.
+- Graph summary and per-workload counts published in telemetry / CLI.
+- Browser tab groups, waits-on, and reclassification history deferred.
 
 ### v3.11 — observability and pressure fidelity
 
@@ -488,13 +519,13 @@ workload-aware orchestrator with explicit guardrails. The CPU plane is
 scheduling-only and has survived the original v3.4 regression plus two further
 feature layers. The memory plane is protect-first and now uses real cgroup
 primitives with fail-closed decisions. Context is Hyprland-only and, since
-v3.9, auditable at the workload-root level.
+v3.9, auditable at the workload-root level. v3.10 adds a real dependency graph
+so an active LSP/build child can shield its root even without a shared PID.
 
-The main remaining architectural gap is the **dependency/workload graph**.
-Until that exists, THM can classify and protect individual roots well, but it
-cannot fully reason about IDE/LSP/build/browser-tab coordination. The rest of
-the roadmap is observability, version hygiene, and validation under quiet,
-representative workloads.
+The remaining gaps are fidelity and validation: browser-tab groups and
+waits-on edges, version/schema hygiene, end-to-end memory-pressure testing, and
+quiet-host QEMU A/B. The core orchestration and reclaim guardrails are in
+place.
 
 ---
 
@@ -505,4 +536,5 @@ representative workloads.
 - `docs/benchmark-results/2026-11-21-v3.4-qemu-ab-regression.md`
 - `docs/benchmark-results/2026-11-25-v3.8-bandwidth-loan.md`
 - `docs/benchmark-results/2026-11-25-v3.9-window-context-binding.md`
+- `docs/benchmark-results/2026-11-25-v3.10-workload-dependency-graph.md`
 - `README.md` — user-facing validation snapshot.
