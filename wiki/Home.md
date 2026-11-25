@@ -2,13 +2,13 @@
 
 Welcome to the ArchTitan OS documentation. This wiki covers everything from building the live ISO to configuring the custom daemons, first-party applications, and Wayland LayerShell desktop interfaces that make ArchTitan a high-performance distribution.
 
-> **Project status:** Active production development. Core ISO build pipeline, THM daemon (v3.1), Titan Sandbox, TitanFetch, TitanBrowser, ArchTitan Settings, Titan Media HUD, Titan Quick Settings, Titan Menu, Titan System Monitor, Titan Tour v2, Titan Hotzones, Titan Wallpaper Picker, and Plymouth "Rise, Titan." boot ceremony are shipped in the production ISO. Group subsystems (Auto GPU Switcher, TITAN AI, TITAN Task Manager, TITAN Share, TITAN Mirror) are structured under `subsystems/`.
+> **Project status:** Active production development. Core ISO build pipeline, THM daemon (v3.9), Titan Sandbox, TitanFetch, TitanBrowser, ArchTitan Settings, Titan Media HUD, Titan Quick Settings, Titan Menu, Titan System Monitor, Titan Tour v2, Titan Hotzones, Titan Wallpaper Picker, and Plymouth "Rise, Titan." boot ceremony are shipped in the production ISO. Group subsystems (Auto GPU Switcher, TITAN AI, TITAN Task Manager, TITAN Share, TITAN Mirror) are structured under `subsystems/`.
 
 ---
 
 ## What is ArchTitan?
 
-ArchTitan is a custom, developer-focused Linux distribution built on [Arch Linux](https://archlinux.org) using [archiso](https://wiki.archlinux.org/title/Archiso). It ships a Wayland-native Hyprland desktop, first-party system services written in C++20, native Qt6 LayerShell applications (Titan Quick Settings, Titan Menu, Titan System Monitor, Titan Tour, Titan Media HUD), and a curated toolchain for software development — without the idle overhead of a full GNOME or KDE stack.
+ArchTitan is a custom, developer-focused Linux distribution built on [Arch Linux](https://archlinux.org) using [archiso](https://wiki.archlinux.org/title/Archiso). It ships a Wayland-native Hyprland desktop, first-party system services written in modern C++ (C++17 for THM, C++20 for Qt6 services), native Qt6 LayerShell applications (Titan Quick Settings, Titan Menu, Titan System Monitor, Titan Tour, Titan Media HUD), and a curated toolchain for software development — without the idle overhead of a full GNOME or KDE stack.
 
 The project was originally developed as **TitanArch**, an advanced Final Year Project focused on autonomous context-aware resource management for developer workflows.
 
@@ -45,7 +45,7 @@ The project was originally developed as **TitanArch**, an advanced Final Year Pr
 ## Core Philosophy
 
 1. **Wayland native** — Hyprland compositor with Wayland LayerShell surfaces; zero legacy X11 session dependencies.
-2. **Autonomous resource awareness** — Titan Hardware Manager (THM v3.1) uses cgroups v2, kernel PSI, and multi-signal classification to keep foreground workflows jitter-free.
+2. **Autonomous resource awareness** — Titan Hardware Manager (THM v3.9) uses cgroups v2, kernel PSI, and multi-signal classification to keep foreground workflows jitter-free.
 3. **First-party desktop stack** — Native C++/Qt6 desktop suite (TitanBrowser, Settings, Quick Settings, Menu, System Monitor, Media HUD, Hotzones, Wallpaper Picker).
 4. **Cinematic polish & aesthetic cohesion** — Catppuccin Mocha theme, custom Plymouth "Rise, Titan." boot ceremony, and consistent Obsidian glassmorphism.
 5. **Developer ready** — Fish + Starship shell, VS Code, Docker, Rust/Go/Node toolchains, and Android tooling hooks pre-installed out of the box.
@@ -75,7 +75,7 @@ graph TB
     end
 
     subgraph ArchTitan["ArchTitan System Services"]
-        THM[Titan Hardware Manager v3.1]
+        THM[Titan Hardware Manager v3.9]
         TS[Titan Sandbox]
         TSS[TitanShare P2P Daemon]
     end

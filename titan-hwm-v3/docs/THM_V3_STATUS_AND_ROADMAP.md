@@ -202,7 +202,8 @@ Latest scorecard (2026-11-25):
 - wake-up p99 **12.714 ms → 4.623 ms**;
 - frame completion p99 **14.980 ms → 7.270 ms**;
 - deadline misses **177 (19.7%) → 14 (1.2%)**;
-- BG throughput **82.1% retained**;
+- BG throughput **82.1% retained** in the original report; **79.3%** on the
+  latest re-run (43.0°C host);
 - **8/8**;
 - RSS **4876 KB (4.8 MB)**.
 
@@ -260,8 +261,11 @@ Selected cases:
   --duration 8 --threads 16 --bg-procs 2 --adaptive both --no-color
 ```
 
-Latest v3.9 run: **8/8**. HC-CPU-1 workers survived 2/2 in both arms; p99 and
-deadline misses improved while `cpu.max` throttled background work.
+Latest v3.9 re-run after this documentation update: **8/8** at 43.0°C.
+Wake-up p99 **12.073 ms → 4.820 ms**, deadline misses **164 (17.8%) → 11
+(1.0%)**, BG throughput **79.3% retained**. HC-CPU-1 workers survived 2/2 in
+both arms; p99 and deadline misses improved while `cpu.max` throttled
+background work. The original dated v3.9 report recorded 82.1% retention.
 
 Important caveat: p95/p99 on this shared host are noisy. Aggregate pressure p95
 must not be quoted alone; historical aggregate pressure was
@@ -368,14 +372,16 @@ Files: `resources/pressure_level.cpp`, `daemon/daemon.cpp`,
 
 ### P1 — version / schema / docs reconciliation
 
-- Telemetry `version` is still `3.3.0` while README advertises v3.9.
+- Telemetry `version` is still `3.3.0` while source/README/wiki advertise v3.9.
 - Bench harness still checks schema prefix `3.2` and prints “v3.2 OK”.
 - Some harness labels still say “THM v3.2” or “shipped v3.4”.
-- CMake sets C++17 while docs say C++20.
+- **Resolved:** docs now state the actual build standard: C++17 for THM core,
+  CLI and tests; C++20 only for `bench_cpu_headroom`. The daemon sources contain
+  no C++20-only constructs.
 - OOM constants differ between code (`-500 / 0 / +500`) and service comments
   (`-200 / +300`).
 - Architecture report still describes a removed reclaim kernel-root check.
-- Wiki roadmap still says v3.1.
+- **Resolved:** wiki pages updated from v3.1 to v3.9 and C++ labels corrected.
 
 This is correctness-adjacent because live bench integration skips on stale
 schema.
