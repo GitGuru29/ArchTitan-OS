@@ -42,6 +42,11 @@ struct TelemetryWorkload {
     bool        latency_critical = false;
     bool        throughput_bulk  = false;
     bool        gpu_feeding      = false;
+    // v3.10 dependency graph: providers this workload needs and workloads
+    // that depend on it. `protected_by_dependents` blocks reclaim.
+    int         dependency_providers   = 0;
+    int         dependency_dependents  = 0;
+    bool        protected_by_dependents = false;
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -122,6 +127,12 @@ struct TelemetrySnapshot {
     int         active_workloads    = 0;     // ACTIVE + BACKGROUND_EXECUTING
     int         classified_workloads = 0;    // non-observed (enforcement-eligible)
     int         observed_workloads   = 0;    // telemetry-only
+
+    // v3.10 workload dependency graph
+    std::string dependency_summary;
+    int         dependency_nodes     = 0;
+    int         dependency_edges     = 0;
+    int         dependency_shielded  = 0;    // nodes with active dependents
 
     // Process inventory — makes `0 workloads` self-explanatory.
     int         processes_seen      = 0;

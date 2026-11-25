@@ -1,6 +1,6 @@
-# Titan Hardware Manager (THM v3.1)
+# Titan Hardware Manager (THM v3.10)
 
-The **Titan Hardware Manager (`titan-hwm`)** is ArchTitan OS's flagship workload-centric resource orchestration daemon. Written in **C++20**, THM autonomously governs Linux kernel primitives—including **cgroups v2**, **Pressure Stall Information (PSI)**, process scheduling weights, and memory reclaim—by tracking real-time developer workflows across Wayland (Hyprland) workspaces.
+The **Titan Hardware Manager (`titan-hwm`)** is ArchTitan OS's flagship workload-centric resource orchestration daemon. Written in **C++17** for the daemon/core/CLI (the empirical bench harness is C++20), THM autonomously governs Linux kernel primitives—including **cgroups v2**, **Pressure Stall Information (PSI)**, process scheduling weights, and memory reclaim—by tracking real-time developer workflows across Wayland (Hyprland) workspaces.
 
 Rather than relying on naive memory kill thresholds (`oomd`) or static governors, THM understands modern developer activities (compilers, language servers, persistent VMs, test runners, dev watchers, browser renderers, and audio daemons) and ensures foreground fluidity without disrupting long-running build tasks.
 
@@ -8,13 +8,28 @@ Rather than relying on naive memory kill thresholds (`oomd`) or static governors
 
 ## Key Highlights & Capabilities
 
-- **Workload Classification (Multi-Signal Fusion)**: Combines process tree walking, Hyprland window/workspace focus, CWD project signatures (`package.json`, `Cargo.toml`, `CMakeLists.txt`), GUI window titles, and dynamic cmdline drift detection.
-- **cgroup v2 Resource Slices**: Dynamically routes processes across `archtitan-active.slice`, `archtitan-background.slice`, `archtitan-idle.slice`, and `archtitan-reclaimable.slice`.
+- **Workload Classification (Multi-Signal Fusion)**: Combines process tree walking, Hyprland window/workspace focus, CWD project signatures (`package.json`, `Cargo.toml`, `CMakeLists.txt`), GUI window titles, and dynamic cmdline drift detection. Since v3.9 the active Hyprland class/title is bound to the matching workload **root**; a title alone never binds a headless compiler.
+- **cgroup v2 Resource Slices**: Dynamically routes processes across `archtitan-active.slice`, `archtitan-latency.slice`, `archtitan-background.slice`, `archtitan-throttled.slice`, and `archtitan-frozen.slice`. `archtitan-latency.slice` is never capped or idled.
+- **CPU Guardrail (HC-CPU-1)**: CPU pressure changes scheduling only — no kill, stop, or freeze signal may originate from the CPU plane.
 - **First-Class Service & VM Immunity**: Dedicated `WorkloadType::SERVICE` and `WorkloadType::VM` classifications guarantee databases, container runtimes, QEMU, and Android emulators are never frozen or killed.
 - **Browser-Safe Enforcement**: Browser roots are marked latency-sensitive; background renderer processes are frozen exclusively via cgroups (`cgroup.freeze`), strictly bypassing POSIX signals to prevent UI deadlock.
-- **Workspace Leave Hysteresis**: 2-second decay dampening (10 ticks @ 200ms) prevents thrashing during rapid workspace switching.
+- **Recent-Focus Context**: A bounded 30-second window keeps a just-left workspace foreground, preventing downgrades during rapid workspace switches.
+- **Stall-Aware Bandwidth Loan (v3.8)**: Idle foreground reservation is lent to bulk work only after five quiet ticks; input, PSI stalls, or foreground growth reclaim it immediately.
 - **Orphan Thaw Sweep**: On daemon startup, `startup_thaw_sweep()` scans `/proc` and automatically revives (`SIGCONT`) any user processes left suspended in `T` state by previous crashes or sessions.
-- **Rigorous Real-World Validation**: 100% pass rate across **39 hardcore failure scenarios** (Groups A through M) validated against kernel stress, SIGSTOP races, disk sleep, and multi-monitor workspace topologies.
+- **Dependency Graph (v3.10)**: window-bound roots are linked to LSP/build children, shared-CWD processes, and ancestry; an active dependent blocks reclaim of its root even without a shared PID.
+- **Rigorous Real-World Validation**: 100% pass rate across **49 architectural test cases** (TC-01 through TC-49) plus CPU headroom, cgroup RAM-pressure, and QEMU/KVM A/B benchmarks.
+
+## Dependency Graph (v3.10)
+
+The ownership forest answers “which workload owns this PID?”. The dependency
+graph answers “which workload needs this root to stay alive?”. Edges are
+directed `dependent -> provider` and are inferred from process ancestry,
+LSP/build toolchain metadata, and shared project CWD under a Hyprland-bound
+root. `ReclaimEngine` queries the graph before any memory reclaim signal, and
+telemetry publishes providers, dependents, and `protected_by_dependents`.
+
+Browser tab groups, `waits-on`, and reclassification history are not modelled
+yet; current browser roots are shielded by the protected-root invariant.
 
 ---
 
@@ -32,18 +47,19 @@ flowchart TD
         DRIFT["Cmdline Drift Detector<br>(Fork/Exec Tracking)"]
     end
 
-    subgraph Core["THM v3.1 Autonomous Core"]
+    subgraph Core["THM v3.10 Autonomous Core"]
         FUS["Multi-Signal Fusion Classifier<br>(Process, Title, CWD, Trees)"]
         DET["Execution Detector<br>(is_persistent_service, CPU/IO)"]
-        WM["Workload Manager & State Machine<br>(2s Hysteresis, State Machine)"]
+        WM["Workload Manager & State Machine<br>(30s recent-focus, state machine)"]
         POL["Policy Engine & Governor Hints<br>(Immunity Arbitration, Decay)"]
     end
 
     subgraph Enforcement["cgroup v2 & Signal Plane"]
-        ACT["archtitan-active.slice<br>(cpu.weight: 200, memory.low)"]
-        BG["archtitan-background.slice<br>(cpu.weight: 50, persistent services)"]
-        IDLE["archtitan-idle.slice<br>(cpu.weight: 10, background apps)"]
-        REC["archtitan-reclaimable.slice<br>(cgroup.freeze: 1, SIGSTOP/CONT)"]
+        ACT["archtitan-active.slice<br>(cpu.weight, memory.low)"]
+        LAT["archtitan-latency.slice<br>(protected; never cpu.max/cpu.idle)"]
+        BG["archtitan-background.slice<br>(cpu.weight, bulk work)"]
+        THR["archtitan-throttled.slice<br>(cpu.max during pressure)"]
+        FRZ["archtitan-frozen.slice<br>(cgroup.freeze; browser-safe)"]
         THAW["Startup Thaw Sweep<br>(Revives orphaned T-state procs)"]
     end
 
@@ -65,9 +81,10 @@ flowchart TD
     WM --> POL
 
     POL --> ACT
+    POL --> LAT
     POL --> BG
-    POL --> IDLE
-    POL --> REC
+    POL --> THR
+    POL --> FRZ
     THAW --> ACT
 
     POL --> WAY
@@ -103,35 +120,36 @@ Under `/sys/fs/cgroup/`, THM provisions an isolated cgroup tree under `archtitan
 ```
 /sys/fs/cgroup/archtitan.slice/
 ├── archtitan-active.slice/
-│   ├── cpu.weight = 200
-│   ├── memory.low = 4G (guaranteed slab)
-│   └── io.weight = 100
+│   ├── cpu.weight = interactive policy
+│   └── memory.low = protected foreground work
+├── archtitan-latency.slice/
+│   ├── protected from cpu.max / cpu.idle
+│   └── latency-sensitive and GPU-feeding work
 ├── archtitan-background.slice/
-│   ├── cpu.weight = 50
-│   ├── memory.low = 1G
-│   └── io.weight = 50
-├── archtitan-idle.slice/
-│   ├── cpu.weight = 10
-│   └── io.weight = 10
-└── archtitan-reclaimable.slice/
-    ├── cgroup.freeze = 1 (during escalation)
-    └── oom_score_adj = +500 to +1000
+│   ├── cpu.weight = throughput policy
+│   └── bulk / observed work
+├── archtitan-throttled.slice/
+│   ├── cpu.max applied under CPU pressure
+│   └── SMT-aware bandwidth loans may widen quota
+└── archtitan-frozen.slice/
+    ├── cgroup.freeze = 1 (browser-safe cgroup-only freeze)
+    └── idle reclaim candidates only
 ```
 
 ### Architectural Differentiation from `systemd-oomd`
 
 Traditional server daemons like `systemd-oomd` monitor pure memory pressure statistics in isolation, leading to destructive kills of heavy developer workloads (like an active 8-thread Rust compile or an Android emulator). 
 
-THM solves this by coupling **cgroup PSI monitoring** with **compositor focus semantics**:
+THM solves this by coupling **cgroup PSI monitoring** with **compositor focus semantics**. No I/O or GPU control plane is implemented.
 1. It knows which workspace you are looking at in Hyprland.
 2. It protects child compilers spawned from background terminals if they are actively doing work.
 3. It freezes non-critical background tabs and idle Electron wrappers before escalating to SIGTERM/SIGKILL.
 
 ---
 
-## THM v3.1 Hardcore Resilience Matrix & 10h Stress-Test Remediations
+## THM v3.10 Hardcore Resilience Matrix & 10h Stress-Test Remediations
 
-THM v3.1 incorporates empirical architectural solutions developed to resolve 11 critical edge cases discovered during real-world stress testing, along with 7 major system-level remediations validated over 10-hour continuous stress runs:
+THM v3.10 incorporates empirical architectural solutions developed to resolve 11 critical edge cases discovered during real-world stress testing, along with 7 major system-level remediations validated over 10-hour continuous stress runs:
 
 | Category | Component | Failure Condition / Hazard | Architectural Remediation |
 | :--- | :--- | :--- | :--- |
@@ -145,7 +163,7 @@ THM v3.1 incorporates empirical architectural solutions developed to resolve 11 
 
 ### Hardcore Edge-Case Failure Matrix (HC-01 through HC-11)
 
-| Issue ID | Subsystem Component | Empirical Failure Condition | v3.1 Architectural Solution |
+| Issue ID | Subsystem Component | Empirical Failure Condition | Current Architectural Solution |
 | :--- | :--- | :--- | :--- |
 | **HC-01** | `execution_detector` | DB daemons and local test servers went idle between queries and were mistakenly deprioritized. | Added `is_persistent_service()` to mark databases (`redis`, `postgres`, `mysql`, `mongod`) as permanently EXECUTING. |
 | **HC-02** | `execution_detector` | Build watchers (`vite`, `nodemon`, `tsc --watch`) sleep on epoll and had CPU drop to 0%, getting marked IDLE. | Expanded `BUILD_CMDS` signature matching to recognize watch daemons as persistent build tasks. |
@@ -176,7 +194,7 @@ stateDiagram-v2
     BACKGROUND_EXECUTING --> IDLE: Build finishes / I/O drops
     IDLE --> AGING: Inactive > 30 seconds
     AGING --> RECLAIMABLE: Inactive > 3 minutes & memory pressure
-    RECLAIMABLE --> [*]: SIGTERM / SIGKILL (Extreme OOM)
+    RECLAIMABLE --> [*]: TERMINATE only with THM_ALLOW_DESTRUCTIVE_RECLAIM=1
 
     RECLAIMABLE --> ACTIVE: Window refocused / Hyprland switch
     IDLE --> ACTIVE: Window refocused
@@ -196,7 +214,7 @@ rhythmbox, strawberry, deadbeef, cmus, ncmpcpp,
 cantata, audacious, elisa, playerctld
 ```
 
-Audio daemons and active players remain pinned with `cpu.weight = 100` regardless of workspace focus or memory pressure.
+Audio daemons and active players are protected from freeze and OOM-score escalation and are routed by latency policy.
 
 ---
 
@@ -220,7 +238,7 @@ titan-hwm metrics
 
 ```json
 {
-  "version": "3.1.0",
+  "version": "3.3.0",
   "timestamp_ms": 1792147312851,
   "uptime_seconds": 1420,
   "pressure": {
@@ -233,6 +251,17 @@ titan-hwm metrics
   },
   "governor": "schedutil",
   "workload_count": 2,
+  "cpu": {
+    "pressure": "NORMAL",
+    "psi_some_avg10": 2.10,
+    "bandwidth_loan_cores": 0
+  },
+  "dependency": {
+    "summary": "2 nodes, 1 edges (0 ancestry/1 toolchain/0 project, 1 shielded)",
+    "nodes": 2,
+    "edges": 1,
+    "shielded": 1
+  },
   "active_workloads": 0,
   "last_action": null,
   "workloads": [
@@ -243,7 +272,12 @@ titan-hwm metrics
       "name": "cargo",
       "type": "SYSTEM_DEV",
       "state": "IDLE",
-      "pids": 1
+      "pids": 1,
+      "window_class": "code",
+      "window_title": "main.cpp - Visual Studio Code",
+      "dependency_providers": 0,
+      "dependency_dependents": 1,
+      "protected_by_dependents": true
     }
   ]
 }
@@ -257,7 +291,7 @@ titan-hwm metrics
 
 | Path | Purpose |
 | :--- | :--- |
-| `/usr/local/bin/titan-hwm-daemon` | C++20 autonomous resource orchestrator daemon executable |
+| `/usr/local/bin/titan-hwm-daemon` | C++17 autonomous resource orchestrator daemon executable |
 | `/usr/local/bin/titan-hwm` | Native CLI interface for control and telemetry queries |
 | `/usr/local/bin/titan-hwm-waybar` | Status pill helper script for Waybar UI integration |
 | `/etc/titan-hwm/config` | Daemon configuration file (thresholds, tool whitelists, tier weights) |
@@ -274,8 +308,8 @@ debounce_ms = 800
 ram_freeze_pct = 50
 ram_kill_pct = 25
 thermal_hot_temp = 80
-oom_protect_score = -200
-oom_expose_score = 300
+oom_protect_score = -500
+oom_expose_score = 500
 sigterm_grace_ms = 500
 casual_workspaces = [1]
 web_workspaces = [2]
@@ -325,7 +359,7 @@ sudo systemctl enable --now titan-hwm.service
 
 ## Standalone Test Suite & Source Verification
 
-THM v3.1 is verified using an independent, auditable test harness:
+THM v3.10 is verified using an independent, auditable test harness:
 
 - **Standalone Test Repository**: [`https://github.com/GitGuru29/titan-hardware-manager-test-system`](https://github.com/GitGuru29/titan-hardware-manager-test-system)
 - **Source Code in OS Repo**: `titan-hwm-v3/` (subsystem in `archtitan-os`)

@@ -17,7 +17,7 @@ graph TD
     end
 
     subgraph L3["System Services & Overlays"]
-        THM[Titan Hardware Manager v3.1]
+        THM[Titan Hardware Manager v3.9]
         TS[Titan Sandbox]
         HUD[Titan Media HUD Dynamic Island]
         TSM[Titan System Monitor]
@@ -52,7 +52,7 @@ graph TD
 | :--- | :--- | :--- |
 | **Base** | Bootable rootfs, kernel, firmware, networking | archiso, pacstrap, mkinitcpio, systemd |
 | **Desktop** | Wayland session, input, visuals, session management | Hyprland, Waybar, Rofi, SDDM, PipeWire |
-| **Services & Overlays** | Workload-aware resource control, app isolation, LayerShell overlays & sidebars | C++20 daemons, cgroups v2, PSI, seccomp, Qt6 LayerShell overlays |
+| **Services & Overlays** | Workload-aware resource control, app isolation, LayerShell overlays & sidebars | C++17/C++20 daemons, cgroups v2, PSI, seccomp, Qt6 LayerShell overlays |
 | **Application** | User-facing tools, browser, settings GUI, and installer | TitanBrowser (Qt6 WebEngine), ArchTitan Settings (Qt6), TitanFetch (Qt6), Calamares |
 
 ---
@@ -87,10 +87,10 @@ sequenceDiagram
 | `pacman.conf` | Mirror and repo configuration for the build |
 | `airootfs/` | Overlay copied onto the rootfs (configs, systemd units, binaries) |
 | `grub/` / `efiboot/` | Bootloader configuration & unicode font resources |
-| `subsystems/` | Dedicated directories for group subsystems (THM v3.1, Sandbox, Media HUD, Quick Settings, Menu, Sysmon, Hotzones, Wallpaper Picker, Tour) |
+| `subsystems/` | Dedicated directories for group subsystems (THM v3.10, Sandbox, Media HUD, Quick Settings, Menu, Sysmon, Hotzones, Wallpaper Picker, Tour) |
 | `titan-browser-source/` | First-party TitanBrowser Qt6 WebEngine source |
 | `archtitan-settings/` | ArchTitan Settings C++/Qt6 control center source |
-| `titan-hwm-v3/` | Titan Hardware Manager v3.1 C++20 autonomous resource orchestrator source |
+| `titan-hwm-v3/` | Titan Hardware Manager v3.9 C++17 autonomous resource orchestrator source (C++20 bench harness) |
 | `titanfetch-src/` | TitanFetch C++/Qt6 application source |
 | `sandbox/` | Titan Sandbox C++ daemon & policy loader source |
 | `airootfs/usr/share/plymouth/themes/` | Plymouth boot splash themes (including "Rise, Titan." ceremony) |
@@ -98,9 +98,9 @@ sequenceDiagram
 
 ---
 
-## Titan Hardware Manager (THM v3.1) — Autonomous Control Loop
+## Titan Hardware Manager (THM v3.10) — Autonomous Control Loop
 
-THM v3.1 is the central resource intelligence service written in C++20. It continuously samples Hyprland workspace state, process trees, and kernel PSI metrics every 200ms, routing workloads across `archtitan.slice` sub-slices with zero foreground jitter.
+THM v3.10 is the central resource intelligence service written in C++17 (the empirical bench harness is C++20). It continuously samples Hyprland workspace state, process trees, and kernel PSI metrics every 200ms, routing workloads across `archtitan.slice` sub-slices with zero foreground jitter.
 
 ```mermaid
 flowchart LR
@@ -111,7 +111,7 @@ flowchart LR
         TH["/sys/class/thermal"]
     end
 
-    subgraph THM["THM v3.1 Autonomous Core"]
+    subgraph THM["THM v3.10 Autonomous Core"]
         CLS[Multi-Signal Fusion Classifier]
         DET[Execution & Service Detector]
         POL[Policy Engine & Hysteresis]
@@ -121,8 +121,9 @@ flowchart LR
     subgraph Slices["archtitan.slice Hierarchy"]
         ACT[archtitan-active.slice]
         BG[archtitan-background.slice]
-        IDLE[archtitan-idle.slice]
-        REC[archtitan-reclaimable.slice]
+        LAT[archtitan-latency.slice]
+        THR[archtitan-throttled.slice]
+        FRZ[archtitan-frozen.slice]
     end
 
     WS --> CLS
@@ -132,15 +133,16 @@ flowchart LR
     DET --> POL
     PSI --> ESC
     POL --> ACT
+    POL --> LAT
     POL --> BG
-    POL --> IDLE
-    ESC --> REC
+    POL --> THR
+    ESC --> FRZ
     TH --> POL
 ```
 
 ### Workload Taxonomy & Invariant Protection
 
-THM v3.1 evaluates processes using **multi-signal fusion** (process hierarchy, Hyprland window titles, CWD project signatures, and cmdline drift detection):
+THM v3.10 evaluates processes using **multi-signal fusion** (process hierarchy, Hyprland window titles, CWD project signatures, and cmdline drift detection):
 
 | Workload Type | Identified Binaries & Workflows | Allocation & Invariant Protection |
 | :--- | :--- | :--- |
@@ -204,7 +206,7 @@ TitanShare operates as a native C++ daemon coupled with an Android Jetpack Compo
 * **Base Storage Resolution**: Root execution defaults to `/var/lib/titanshare`, normal user to `$HOME/.local/share/titanshare`, and fallback to `/tmp/titanshare`.
 * **Sanitized File Layout**: Received files are saved in `<DATA_DIR>/received_files` with strict path traversal sanitization; outgoing files are staged in `<DATA_DIR>/send_to_android`.
 * **Systemd Sandboxing & IPC**: Runs under systemd with `ProtectSystem=strict`, `StateDirectory=titanshare`, and `RuntimeDirectory=titanshare`. Generates runtime pairing PINs at `/run/titanshare/titanshare-pin.json` monitored by ArchTitan Settings GUI (`QFileSystemWatcher`).
-* **Protected Status**: Registered in THM v3.1 `ProtectedRegistry` to prevent freeze or OOM reclaim during high-volume LAN transfers. See [Titan Share](Titan-Share) for full specs.
+* **Protected Status**: Registered in THM v3.10 `ProtectedRegistry` to prevent freeze or OOM reclaim during high-volume LAN transfers. See [Titan Share](Titan-Share) for full specs.
 
 ---
 

@@ -117,6 +117,12 @@ std::string serialize_snapshot(const TelemetrySnapshot& s) {
     o << ",\"active_workloads\":" << s.active_workloads;
     o << ",\"classified_workloads\":" << s.classified_workloads;
     o << ",\"observed_workloads\":" << s.observed_workloads;
+    o << ",\"dependency\":{"
+      << "\"summary\":\"" << esc(s.dependency_summary) << '"'
+      << ",\"nodes\":" << s.dependency_nodes
+      << ",\"edges\":" << s.dependency_edges
+      << ",\"shielded\":" << s.dependency_shielded
+      << '}';
     o << ",\"processes\":{"
       << "\"seen\":"      << s.processes_seen
       << ",\"protected\":" << s.processes_protected
@@ -169,6 +175,10 @@ std::string serialize_snapshot(const TelemetrySnapshot& s) {
           << ",\"latency_critical\":" << (w.latency_critical ? "true" : "false")
           << ",\"throughput_bulk\":"  << (w.throughput_bulk ? "true" : "false")
           << ",\"gpu_feeding\":"      << (w.gpu_feeding ? "true" : "false")
+          << ",\"dependency_providers\":" << w.dependency_providers
+          << ",\"dependency_dependents\":" << w.dependency_dependents
+          << ",\"protected_by_dependents\":"
+            << (w.protected_by_dependents ? "true" : "false")
           << '}';
     }
     o << "]}";

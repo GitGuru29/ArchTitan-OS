@@ -25,6 +25,9 @@ set(CORE_SRC
     # Phase 2: Process Ownership Graph
     workload/ownership_graph.cpp
 
+    # v3.10: cross-root workload dependency graph
+    workload/dependency_graph.cpp
+
     # Phase 3: FusionClassifier (ported from v2)
     classifier/fusion_classifier.cpp
 

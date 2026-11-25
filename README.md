@@ -15,7 +15,7 @@ ArchTitan is a custom, high-performance Linux distribution built on top of Arch 
 ArchTitan embraces the Unix philosophy while providing a cohesive, pre-configured premium experience out of the box.
 
 - **Wayland Native:** Powered by the **Hyprland** dynamic tiling window manager with fluid animations, 1:1 touchpad relative workspace gestures, pointer hotzones, and responsive window rules.
-- **Resource Aware:** Features custom daemons like the **Titan Hardware Manager (THM v3.4)** — a workload-aware resource orchestration engine built on Hyprland IPC context — and **Titan System Monitor (`titan-sysmon`)** for live telemetry streaming.
+- **Resource Aware:** Features custom daemons like the **Titan Hardware Manager (THM v3.10)** — a workload-aware resource orchestration engine built on Hyprland IPC context — and **Titan System Monitor (`titan-sysmon`)** for live telemetry streaming.
 - **Aesthetic First:** Deeply integrated **Catppuccin Mocha** dark theme and unified **Titan Design Language (TDL)** across all UI elements, terminals, browsers, overlays, and custom tools.
 - **Privacy & Security Focused:** Process sandboxing via Linux namespaces & seccomp-bpf, plus native ad & tracker blocking in Titan Browser.
 - **System Safety:** Automated BTRFS pre-transaction snapshots before `pacman` updates with bootable subvolume rollback entries in GRUB, alongside **ArchTitan Guard** display manager integrity protection.
@@ -101,30 +101,31 @@ graph TD
 
 ArchTitan provides a suite of native C++ and Qt6 applications built specifically for the OS:
 
-### 1.  Titan Hardware Manager (`titan-hwm` v3.9)
+### 1.  Titan Hardware Manager (`titan-hwm` v3.10)
 * **Lead:** `@GitGuru29` | **Location:** `titan-hwm-v3/` & `subsystems/titan-hwm/`
 * **Direction:** “Titan Hardware Manager — Workload-Aware Resource Orchestration Engine.” The kernel keeps low-level scheduling; THM supplies intent, context, reservations, and guardrails. Hyprland IPC is the primary live context provider — no parallel context source.
-* High-performance C++20 autonomous daemon running at 5 Hz as `titan-hwm.service` with `archtitan.slice` cgroup v2 delegation (`OOMScoreAdjust=-1000`).
+* High-performance C++17 daemon/core/CLI running at 5 Hz as `titan-hwm.service` with `archtitan.slice` cgroup v2 delegation (`OOMScoreAdjust=-1000`). The empirical `bench_cpu_headroom` harness is the only C++20 target.
 * Routes classified workloads across `archtitan-active.slice`, `archtitan-latency.slice`, `archtitan-background.slice`, and `archtitan-frozen.slice` using multi-signal fusion classification (process ancestry to depth 3, Hyprland window/workspace focus, CWD project signatures, cmdline drift, and execution observation).
 * **Context:** a bounded 30-second recent-focus window keeps a just-left workspace foreground, so fast workspace switches no longer cause immediate downgrades; protection expires cleanly. v3.9 binds the Hyprland `active_window_class` / `active_window_title` to the matching workload **root** (class is authority, title alone never binds), exports both in telemetry, and shows them in `titan-hwm status`.
 * **CPU plane:** PSI + loadavg + `cpu.stat` + thermal drive `cpu.weight`, `cpu.max`, `cpu.idle`, SMT-aware `cpuset`, governor hints, input boost, and **stall-aware bandwidth loaning** (idle reservation capacity is lent to bulk work only after a quiet streak, and reclaimed immediately on input, PSI stalls, or foreground load). `archtitan-latency.slice` is never capped or idled. **HC-CPU-1:** CPU pressure can change scheduling, never process lifetime — no kill, stop, or freeze.
 * **Memory plane:** real `memory.high` / `memory.low` wiring, fail-closed enforcement gate, unified `pidfd` reclaim signaling with `posix_spawn()` helper execution, browser-safe cgroup freezing, protected-daemon immunity, and orphan thaw sweep. Destructive automatic reclaim stays off unless `THM_ALLOW_DESTRUCTIVE_RECLAIM=1` is explicitly set.
-* **Validated:** 47/47 unit tests, 8/8 CPU headroom scorecard, and real cgroup RAM-pressure benchmark PASS (`high=18`, `oom_kill=0`).
-* **Next item:** build the dependency/workload graph over these bound roots (IDE ↔ LSP ↔ build ↔ browser tabs). I/O and GPU planes remain out of scope.
+* **Dependency graph (v3.10):** workload roots are linked to LSP/build children, shared-project processes, and ancestry; an active dependent blocks reclaim of its root even when no PID is shared.
+* **Validated:** 49/49 unit tests, 8/8 CPU headroom scorecard, and real cgroup RAM-pressure benchmark PASS (`high=18`, `oom_kill=0`).
+* **Next items:** end-to-end THM memory-pressure benchmark, `systemd-oomd` coexistence audit, and a quiet-host QEMU A/B. I/O and GPU planes remain out of scope.
 
-#### Current THM validation snapshot (v3.9)
+#### Current THM validation snapshot (v3.10)
 
 | Check | Result |
 | :--- | :--- |
-| Unit suite (`./build/thm_test_runner`) | **47/47 PASSED** (TC-44 throttled slice, TC-45 build freeze guard, TC-46 bandwidth loan, TC-47 window binding) |
+| Unit suite (`./build/thm_test_runner`) | **49/49 PASSED** (TC-44 throttled slice, TC-45 build freeze guard, TC-46 bandwidth loan, TC-47 window binding, TC-48 dependency graph, TC-49 graph-guarded reclaim) |
 | CPU headroom A/B (`bench_cpu_headroom --compare`) | **8/8 scorecard**, HC-CPU-1 workers 2/2 alive in both runs |
-| Latency (latest run) | deadline misses **19.7% → 1.2%**; wake-up p99 **12.7 ms → 4.6 ms** |
-| Background work | **82.1%** throughput retained while `cpu.max` is actively throttling |
-| Daemon RSS (local dry-run) | **4.8 MB**, still under the 6 MB budget |
+| Latency (latest run) | deadline misses **23.3% → 1.3%**; wake-up p99 **13.3 ms → 5.3 ms** |
+| Background work | **80.0%** throughput retained while `cpu.max` is actively throttling |
+| Daemon RSS (local dry-run) | **4.6 MB**, still under the 6 MB budget |
 | Real RAM pressure (`bench_memory_pressure.sh`) | `memory.high=96 MiB`, `memory.low=32 MiB`, `high=18`, `oom_kill=0` — **PASS** |
 | Safety | CPU pressure never kills/stops/freezes; destructive reclaim opt-in only |
 
-Detailed reports live in [`titan-hwm-v3/docs/benchmark-results/`](titan-hwm-v3/docs/benchmark-results/).
+Detailed reports live in [`titan-hwm-v3/docs/benchmark-results/`](titan-hwm-v3/docs/benchmark-results/). The full v3 progress/roadmap rollup is [`THM_V3_STATUS_AND_ROADMAP.md`](titan-hwm-v3/docs/THM_V3_STATUS_AND_ROADMAP.md).
 
 ### 2.  ArchTitan Settings (`archtitan-settings`)
 * **Lead:** `@GitGuru29` | **Location:** `archtitan-settings/`
@@ -215,7 +216,7 @@ Detailed reports live in [`titan-hwm-v3/docs/benchmark-results/`](titan-hwm-v3/d
   - Dynamic path resolution: Root execution (`/var/lib/titanshare`), User (`~/.local/share/titanshare`), Fallback (`/tmp/titanshare`).
   - Path traversal sanitization for received files and dedicated send staging folder (`send_to_android/`).
   - Hardened systemd sandboxing (`ProtectSystem=strict`, `StateDirectory=titanshare`) with IPC pairing PIN output at `/run/titanshare/titanshare-pin.json`.
-  - Registered in THM v3.4 `ProtectedRegistry` to prevent freeze or OOM reclaim during active file transfers.
+  - Registered in THM v3.10 `ProtectedRegistry` to prevent freeze or OOM reclaim during active file transfers.
 
 ### 15. ArchTitan Boot Ceremony & Splash (`archtitan-rise` & `archtitan`)
 * **Lead:** `@GitGuru29` | **Location:** `airootfs/usr/share/plymouth/themes/` & `airootfs/usr/local/bin/`
@@ -316,19 +317,19 @@ mindmap
 
 ## 🔬 Empirical Stress Benchmarks (THM v3)
 
-### Latest host-level validation (v3.4-R2)
+### Host-level validation history (v3.4-R2 → v3.10)
 
 The current tree is validated on real cgroup v2 with the 5 Hz daemon, not only in the VM harness:
 
 - **CPU:** 8/8 scorecard — deadline misses **24.8% → 2.5%**, severe drops **51 → 1**, ~**90.7%** background throughput retained while `cpu.max` is actively throttling.
 - **Memory:** real `memory.high` / `memory.low` scope produced **18 `high` events with `oom_kill=0`** — **PASS**.
-- **Invariants:** **47/47** tests; HC-CPU-1 held; destructive reclaim remains off by default.
+- **Invariants:** **49/49** tests; HC-CPU-1 held; destructive reclaim remains off by default.
 
 Full reports: [`titan-hwm-v3/docs/benchmark-results/`](titan-hwm-v3/docs/benchmark-results/).
 
-### QEMU/KVM re-run against current v3.4 (2026-11-21 → 2026-11-24) — regression fixed, daemon RSS under 6 MB
+### QEMU/KVM regression repair (v3.4-R2 → R6, 2026-11-21 → 2026-11-24) — fixed, daemon RSS under 6 MB
 
-The first re-run with v3.4 exposed a **9.8× compile regression** (1 round at
+The original v3.4 re-run exposed a **9.8× compile regression** (1 round at
 468.3 s vs 5 rounds at 47.6 s). It was traced to slice-wide `memory.high`, a
 headless CPU cap that never lifted, and compiler children being frozen as IDLE.
 v3.4-R2/R3 fixed the regression; R4/R5 cut daemon CPU and made the headless tick
@@ -472,7 +473,7 @@ ArchTitan is developed as a modular group project with 4 members. The repository
 
 | Component | Category | Owner | Status | Directory |
 | :--- | :--- | :--- | :--- | :--- |
-| **Titan Hardware Manager** | Core Daemon | @GitGuru29 (Lead) | 🟢 Shipped (v3.4) | `titan-hwm-v3/` & `subsystems/titan-hwm/` |
+| **Titan Hardware Manager** | Core Daemon | @GitGuru29 (Lead) | 🟢 Shipped (v3.10) | `titan-hwm-v3/` & `subsystems/titan-hwm/` |
 | **ArchTitan Settings** | Core App | @GitGuru29 (Lead) | 🟢 Shipped | `archtitan-settings/` |
 | **Titan Browser** | Core App | @GitGuru29 (Lead) | 🟢 Shipped | `titan-browser-source/` |
 | **Titan Sandbox** | Core Subsystem | @GitGuru29 (Lead) | 🟢 Shipped | `sandbox/` & `subsystems/titan-sandbox/` |
@@ -515,7 +516,7 @@ Changes affecting base OS configurations and core tooling require explicit revie
 | `airootfs/` | Rootfs overlay (systemd units, dotfiles, desktop configs, binary overlays) |
 | `archtitan-settings/` | ArchTitan Settings application source |
 | `titan-browser-source/` | Titan Browser source and resources |
-| `titan-hwm-v3/` | Titan Hardware Manager v3 C++20 daemon source |
+| `titan-hwm-v3/` | Titan Hardware Manager v3 source (C++17 core/CLI, C++20 bench harness) |
 | `titanfetch-src/` | TitanFetch utility source |
 | `titan-ui/` | Titan Design Language (TDL) component library & tokens |
 | `sandbox/` | Titan Sandbox daemon & policy parser source |
@@ -555,7 +556,7 @@ Comprehensive guides and technical documentation are available on the [ArchTitan
 | **Building the ISO** | Archiso compilation steps and dependency handling | [Build Documentation](https://github.com/GitGuru29/archtitan-os/wiki/Building-the-ISO) |
 | **Installation Guide** | UEFI partitioning, live environment, and dual-booting | [Installation Manual](https://github.com/GitGuru29/archtitan-os/wiki/Installation-Guide) |
 | **Hardware Manager** | cgroups v2 resource orchestration and power policies | [THM Documentation](https://github.com/GitGuru29/archtitan-os/wiki/Titan-Hardware-Manager) |
-| **THM Benchmark Results** | Per-task CPU/memory validation reports, including v3.4 Hyprland context | [`titan-hwm-v3/docs/benchmark-results/`](titan-hwm-v3/docs/benchmark-results/) |
+| **THM Benchmark Results** | Per-task CPU/memory validation reports, including v3.4 regression repair, v3.9 Hyprland root binding, and v3.10 dependency graph | [`titan-hwm-v3/docs/benchmark-results/`](titan-hwm-v3/docs/benchmark-results/) |
 | **Titan Sandbox** | Namespaces, capability drops, and TOML policies | [Sandbox Manual](https://github.com/GitGuru29/archtitan-os/wiki/Titan-Sandbox) |
 | **Titan Browser** | Qt6 WebEngine browser and sandboxing guide | [Titan Browser Guide](https://github.com/GitGuru29/archtitan-os/wiki/Titan-Browser) |
 | **ArchTitan Settings** | System control center and THM profile manager | [Settings Manual](https://github.com/GitGuru29/archtitan-os/wiki/ArchTitan-Settings) |

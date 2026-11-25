@@ -17,7 +17,7 @@ graph TD
     subgraph Slides["Interactive Stage Modules"]
         S1["SlideWelcome (Design Philosophy & Identity)"]
         S2["SlideControlCenter (Quick Settings & Waybar Island)"]
-        S3["SlideHardware (THM v3.1 & System Monitor)"]
+        S3["SlideHardware (THM v3.10 & System Monitor)"]
         S4["SlideKeybinds (Hyprland Workspaces & Gestures)"]
         S5["SlideEcosystem (TitanBrowser, Settings & Sandbox)"]
         S6["SlideLaunch (Finish & Workspace Initialization)"]
@@ -44,7 +44,7 @@ graph TD
    - Demonstrates quick toggles for Wi-Fi, Bluetooth, Audio output, and Power Profiles.
 
 3. **Hardware Orchestration (`SlideHardware.qml`)**:
-   - Showcases the **Titan Hardware Manager (THM v3.1)** and real-time telemetry streaming into the **Titan System Monitor** (`titan-sysmon`).
+   - Showcases the **Titan Hardware Manager (THM v3.10)** and real-time telemetry streaming into the **Titan System Monitor** (`titan-sysmon`).
    - Explains cgroups v2 resource slicing (`archtitan-active.slice` vs. `archtitan-background.slice`).
 
 4. **Keybindings & Gestures (`SlideKeybinds.qml`)**:

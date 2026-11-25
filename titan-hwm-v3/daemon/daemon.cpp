@@ -18,6 +18,7 @@
 #include "../core/protected_registry.hpp"
 #include "../core/signal_utils.hpp"
 #include "../workload/ownership_graph.hpp"
+#include "../workload/dependency_graph.hpp"
 #include "../workload/workload_manager.hpp"
 #include "../classifier/fusion_classifier.hpp"
 #include "../classifier/execution_detector.hpp"
@@ -259,6 +260,8 @@ static std::string format_status(const thm::TelemetrySnapshot& s) {
     o << "  CPU governor:    " << s.governor << "\n";
     o << "  Workloads:       " << s.active_workloads << " active / "
       << s.workload_count << " tracked\n";
+    if (!s.dependency_summary.empty())
+        o << "  Dependencies:    " << s.dependency_summary << "\n";
     if (s.has_last_action && !s.last_action.empty()) {
         o << "  Last action:     " << s.last_action;
         if (!s.last_action_target.empty())
@@ -306,8 +309,12 @@ static std::string format_workloads(const thm::TelemetrySnapshot& s,
           << std::setw(8)  << w.cpu_pct
           << std::setw(9)  << (std::to_string(w.mem_kb / 1024) + "M")
           << std::setw(7)  << w.pid_count
-          << "  " << w.name << (w.observed ? " [observed]" : "")
-          << "\n";
+          << "  " << w.name << (w.observed ? " [observed]" : "");
+        if (w.dependency_providers || w.dependency_dependents)
+            o << " dep[" << w.dependency_providers << "/"
+              << w.dependency_dependents
+              << (w.protected_by_dependents ? "!" : "") << "]";
+        o << "\n";
     }
     o.unsetf(std::ios::fixed);
     o << std::string(96, '-') << "\n";
@@ -807,6 +814,7 @@ int main(int argc, char* argv[]) {
 
     // ── Phase 5: Workload registry ──────────────────────────────────────────
     thm::WorkloadManager workload_mgr;
+    thm::WorkloadDependencyGraph dependency_graph; // v3.10 cross-root graph
     thm::OwnershipGraph  ownership;
     thm::FusionClassifier classifier;
     thm::PolicyEngine     policy;
@@ -1272,14 +1280,44 @@ int main(int argc, char* argv[]) {
             last_cpu_pct[pid] = node.cpu_pct; // reused by classification next tick
         }
 
-        // ── (f) Drive state machine + evaluate policy + enforce ─────────────
-        // Build temporary registry snapshot for reclaim dependency check
+        // ── (f1) State pass: refresh context/CPU/state for every workload ──
+        // v3.10: this is a separate pass so the dependency graph sees the
+        // current tick's state for *all* workloads before any reclaim check.
         std::unordered_map<uint32_t, thm::Workload> all_workloads;
+        all_workloads.reserve(workload_mgr.all_ids().size());
+
         for (uint32_t id : workload_mgr.all_ids()) {
             auto* wl = workload_mgr.get(id);
-            if (wl) all_workloads[id] = *wl;
+            if (!wl || wl->state == thm::WorkloadState::TERMINATED) continue;
+
+            float wl_cpu_pct = 0.0f;
+            for (pid_t p : wl->pids) {
+                auto pit = proc_graph.find(p);
+                if (pit != proc_graph.end()) wl_cpu_pct += pit->second.cpu_pct;
+            }
+            wl->cpu_pct = wl_cpu_pct;
+
+            static const thm::WorkspaceState default_ws{};
+            const thm::WorkspaceState* ws = &default_ws;
+            auto ws_it = workspaces.find(wl->workspace_id);
+            if (ws_it != workspaces.end()) ws = &ws_it->second;
+
+            auto root_it = proc_graph.find(wl->root_pid);
+            thm::bind_window_context(
+                *wl, ws,
+                root_it != proc_graph.end() ? &root_it->second : nullptr);
+
+            thm::ActivityState activity = detector.aggregate(*wl, proc_graph);
+            workload_mgr.tick(*wl, *ws, activity, pressure);
+
+            all_workloads[id] = *wl;
         }
 
+        // Rebuild after the state pass: an LSP/build child that just became
+        // ACTIVE must shield its window-bound IDE root in the same tick.
+        dependency_graph.rebuild(all_workloads, proc_graph);
+
+        // ── (f2) Policy pass + enforce ──────────────────────────────────────
         // v3.3-R2: aggregate RSS by memory-orchestration role. Hyprland IPC
         // focus/visibility has already driven the state machine and policy by
         // this point, so these are the *live* foreground/background sets.
@@ -1291,33 +1329,13 @@ int main(int argc, char* argv[]) {
             auto* wl = workload_mgr.get(id);
             if (!wl || wl->state == thm::WorkloadState::TERMINATED) continue;
 
-            // Fresh aggregate CPU% (ExecutionDetector ran in step (e)). This is
-            // the demand signal used by the governor and the observed-workload
-            // slice arbiter, so it must be computed before both.
-            float wl_cpu_pct = 0.0f;
-            for (pid_t p : wl->pids) {
-                auto pit = proc_graph.find(p);
-                if (pit != proc_graph.end()) wl_cpu_pct += pit->second.cpu_pct;
-            }
-            wl->cpu_pct = wl_cpu_pct;
-
-            // Find workspace state
+            // State/context/CPU were refreshed for every workload in (f1).
+            // Re-read only the workspace pointer and activity used by policy.
             static const thm::WorkspaceState default_ws{};
             const thm::WorkspaceState* ws = &default_ws;
             auto ws_it = workspaces.find(wl->workspace_id);
             if (ws_it != workspaces.end()) ws = &ws_it->second;
-
-            // v3.9: keep the root's Hyprland evidence fresh as focus changes.
-            auto root_it = proc_graph.find(wl->root_pid);
-            thm::bind_window_context(
-                *wl, ws,
-                root_it != proc_graph.end() ? &root_it->second : nullptr);
-
-            // Aggregate activity
             thm::ActivityState activity = detector.aggregate(*wl, proc_graph);
-
-            // Drive state machine
-            workload_mgr.tick(*wl, *ws, activity, pressure);
 
             // Observation-only workloads never enter the memory/signal policy
             // plane (no FREEZE, no RECLAIM, no memory.high throttle — TC-14/15).
@@ -1405,8 +1423,13 @@ int main(int argc, char* argv[]) {
                 };
 
                 if (decision == thm::PolicyDecision::RECLAIM) {
-                    if (reclaimer.reclaim(*wl, proc_graph, all_workloads))
+                    if (reclaimer.reclaim(*wl, proc_graph, all_workloads,
+                                          &dependency_graph)) {
                         wl->state = thm::WorkloadState::TERMINATED;
+                        all_workloads[wl->id].state =
+                            thm::WorkloadState::TERMINATED;
+                        dependency_graph.mark_terminated(wl->id);
+                    }
                     record_action(decision);
                 } else {
                     enforcement.apply(*wl, decision);
@@ -1447,7 +1470,7 @@ int main(int argc, char* argv[]) {
             cgroup.move_to_slice(protected_pids, thm::SLICE_PROTECTED);
         }
 
-        // ── (f2) Memory orchestration: kernel-native soft limits ────────────
+        // ── (f3) Memory orchestration: kernel-native soft limits ────────────
         // THROTTLE now means a real memory.high write, not just OOM exposure.
         // The soft limit is scoped to archtitan-throttled.slice only; executing
         // background work in archtitan-background.slice is never memory-capped.
@@ -1747,6 +1770,10 @@ int main(int argc, char* argv[]) {
 
             snap.governor        = applied_gov;
             snap.workload_count  = static_cast<int>(workload_mgr.all_ids().size());
+            snap.dependency_summary    = dependency_graph.summary();
+            snap.dependency_nodes      = static_cast<int>(dependency_graph.node_count());
+            snap.dependency_edges      = static_cast<int>(dependency_graph.edge_count());
+            snap.dependency_shielded   = static_cast<int>(dependency_graph.active_dependent_count());
             snap.processes_seen      = processes_seen;
             snap.processes_protected = processes_protected;
             snap.processes_assigned  = processes_assigned;
@@ -1783,6 +1810,12 @@ int main(int argc, char* argv[]) {
                 tw.latency_critical = wl->latency_critical;
                 tw.throughput_bulk  = wl->throughput_bulk;
                 tw.gpu_feeding      = wl->gpu_feeding;
+                tw.dependency_providers =
+                    static_cast<int>(dependency_graph.providers_of(wl->id).size());
+                tw.dependency_dependents =
+                    static_cast<int>(dependency_graph.dependents_of(wl->id).size());
+                tw.protected_by_dependents =
+                    dependency_graph.has_active_dependent(wl->id);
 
                 long mem_kb = 0;
                 for (pid_t p : wl->pids) {
