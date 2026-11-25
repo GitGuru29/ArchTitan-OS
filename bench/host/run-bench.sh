@@ -27,6 +27,8 @@ QUICK=0
 ISO_AT=""
 ISO_VAN=""
 ALLOW_LOAD=0
+ALLOW_HOT=0
+MAX_TEMP_C=60
 HOST_WAIT_MAX=600
 
 while [ $# -gt 0 ]; do
@@ -36,6 +38,8 @@ while [ $# -gt 0 ]; do
         --iso-archtitan) ISO_AT="$2"; shift 2 ;;
         --iso-vanilla) ISO_VAN="$2"; shift 2 ;;
         --allow-load) ALLOW_LOAD=1; shift ;;
+        --allow-hot) ALLOW_HOT=1; shift ;;
+        --max-temp) MAX_TEMP_C="$2"; shift 2 ;;
         --host-wait) HOST_WAIT_MAX="$2"; shift 2 ;;
         *) echo "unknown arg: $1"; exit 2 ;;
     esac
@@ -217,24 +221,51 @@ wait_for_idle_host() {
     done
 }
 
+# ── host thermal guard ────────────────────────────────────────────────────────
+# Hottest thermal_zone reading in °C. -1 means "no sensor exposed".
+host_temp_c() {
+    awk -v max=-999999 '{ if ($1 > max) max = $1 }
+         END { if (max <= -999998) print -1; else printf "%.1f", max/1000 }' \
+        /sys/class/thermal/thermal_zone*/temp 2>/dev/null || echo -1
+}
+
+# Every arm waits for a cool host, not just the gap between arms. A hot laptop
+# can throttle for hours after a stress run; starting another arm on top of that
+# produces garbage data and makes the thermal situation worse.
+wait_for_cool_host() {
+    local temp waited=0
+    while :; do
+        temp=$(host_temp_c)
+        if awk -v t="$temp" 'BEGIN{exit !(t < 0)}'; then
+            echo "[host] no thermal zone exposed — thermal guard inactive"
+            return 0
+        fi
+        if awk -v t="$temp" -v m="$MAX_TEMP_C" 'BEGIN{exit !(t <= m)}'; then
+            echo "[host] cool: hottest zone ${temp}°C (<=${MAX_TEMP_C}°C)"
+            return 0
+        fi
+        if [ "$ALLOW_HOT" = 1 ]; then
+            echo "[host] WARNING: hot (${temp}°C > ${MAX_TEMP_C}°C) — --allow-hot"
+            return 0
+        fi
+        if [ "$waited" -ge "$HOST_WAIT_MAX" ]; then
+            echo "[host] ERROR: still ${temp}°C after ${waited}s (limit ${MAX_TEMP_C}°C)"
+            echo "       Let the machine cool, or pass --allow-hot (results will be noisy)."
+            return 1
+        fi
+        [ $((waited % 60)) -eq 0 ] && \
+            echo "[host] waiting to cool… ${temp}°C (limit ${MAX_TEMP_C}°C, ${waited}s/${HOST_WAIT_MAX}s)"
+        sleep 10
+        waited=$((waited + 10))
+    done
+}
+
 # ── thermal cooldown between arms ─────────────────────────────────────────────
 cooldown() {
     local seconds="${1:-60}"
     echo "[cooldown] resting ${seconds}s (thermal relief)"
     sleep "$seconds"
-    # optional passive wait if the machine is hot
-    local hottest
-    hottest=$(awk -v max=0 '{ if ($1 > max) max = $1 } END { print max/1000 }' \
-             /sys/class/thermal/thermal_zone*/temp 2>/dev/null || echo 0)
-    if [ "$(echo "$hottest > 70" | bc 2>/dev/null || echo 0)" = "1" ]; then
-        echo "[cooldown] CPU hot (${hottest}°C) — waiting to cool below 60°C"
-        for _ in $(seq 1 30); do
-            sleep 10
-            hottest=$(awk -v max=0 '{ if ($1 > max) max = $1 } END { print max/1000 }' \
-                     /sys/class/thermal/thermal_zone*/temp 2>/dev/null || echo 0)
-            [ "$(echo "$hottest < 60" | bc 2>/dev/null || echo 1)" = "1" ] && break
-        done
-    fi
+    wait_for_cool_host
 }
 
 # ── run one arm ────────────────────────────────────────────────────────────────
@@ -270,8 +301,17 @@ run_arm() {
 FAILED=0
 PREV=""
 for arm in "${ARM_LIST[@]}"; do
-    [ -n "$PREV" ] && cooldown 60
+    if [ -n "$PREV" ]; then
+        if ! cooldown 60; then
+            echo "ABORT: host did not cool down — no valid results would be produced."
+            exit 1
+        fi
+    fi
     PREV="$arm"
+    if ! wait_for_cool_host; then
+        echo "ABORT: host too hot to benchmark — no valid results would be produced."
+        exit 1
+    fi
     if ! wait_for_idle_host; then
         echo "ABORT: host too busy to benchmark — no valid results would be produced."
         exit 1

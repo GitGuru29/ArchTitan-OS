@@ -113,6 +113,13 @@ still busy it aborts instead of producing invalid numbers — override with
 load 14/8 turned a 5.4 s TU into 44.8 s and starved the sampler; that run was
 discarded.)
 
+A **host thermal guard** now applies before every arm, not only between arms.
+It waits until the hottest `thermal_zone` is ≤ 60°C (override with
+`--max-temp C`, bypass with `--allow-hot`) and aborts after `--host-wait SEC`
+if the machine stays hot. This prevents stacking a 10-minute stress arm on a
+laptop that is already throttling — exactly the state that produced unusable
+absolute numbers in later v3.4 runs.
+
 Artefacts per run:
 
 - `bench/results/<arm>-<ts>/` — `metrics.csv` (500 ms samples), `probe.csv`,
