@@ -49,6 +49,55 @@ std::string FusionClassifier::read_cmdline(pid_t pid) {
     return s;
 }
 
+// Full command line with arguments, joined with spaces. Called only for
+// python-family executables while detecting training workloads, so the extra
+// /proc read is rare and bounded by the child-walk depth.
+std::string FusionClassifier::read_full_cmdline(pid_t pid) {
+    std::ifstream f("/proc/" + std::to_string(pid) + "/cmdline", std::ios::binary);
+    if (!f.is_open()) return {};
+    std::string raw((std::istreambuf_iterator<char>(f)),
+                    std::istreambuf_iterator<char>());
+    for (char& c : raw) if (c == '\0') c = ' ';
+    return raw;
+}
+
+void FusionClassifier::detect_intent(const ClassifierConfig& cfg,
+                                     const std::string& cmd, pid_t pid,
+                                     ClassificationResult& r,
+                                     const std::string* full_cmdline) {
+    if (cmd.empty()) return;
+
+    for (const auto& app : cfg.latency_critical_apps) {
+        if (cmd == app) {
+            r.latency_critical = true;
+            r.latency_sensitive = true; // reuse the governor's latency boost
+            return;
+        }
+    }
+    for (const auto& app : cfg.bulk_render_apps) {
+        if (cmd == app) {
+            r.throughput_bulk = true;
+            return;
+        }
+    }
+
+    // Training: a python-family root plus a marker in the full command line.
+    // Plain `python script.py` stays NEUTRAL — only training runs get the GPU
+    // feeding guarantee.
+    const bool python_family =
+        cmd == "python"   || cmd == "python3"   || cmd == "python3.10" ||
+        cmd == "python3.11" || cmd == "python3.12" || cmd == "torchrun";
+    if (!python_family) return;
+    const std::string full = full_cmdline ? *full_cmdline : read_full_cmdline(pid);
+    for (const auto& marker : cfg.training_markers) {
+        if (full.find(marker) != std::string::npos) {
+            r.gpu_feeding = true;
+            r.throughput_bulk = true;
+            return;
+        }
+    }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // ISSUE-11 FIX: reject executables from world-writable paths
 // Prevents unprivileged spoofing via /tmp/clangd etc.
@@ -139,10 +188,62 @@ ClassificationResult FusionClassifier::from_children(
     std::vector<std::pair<pid_t, std::string>> children;
     walk_child_procs_recursive(pid, graph, children, 3);
 
+    // Also use the root process' exe/cmdline for stronger signals
+    {
+        auto rit = graph.find(pid);
+        if (rit != graph.end()) {
+            const auto& rn = rit->second;
+            std::string exe_base;
+            if (!rn.exe.empty()) {
+                auto sl = rn.exe.rfind('/');
+                exe_base = (sl != std::string::npos) ? rn.exe.substr(sl + 1) : rn.exe;
+                // strip (deleted)
+                auto spd2 = exe_base.find(" (deleted)");
+                if (spd2 != std::string::npos) exe_base = exe_base.substr(0, spd2);
+            }
+            // v3.3: root executable can itself be a game / renderer / trainer.
+            detect_intent(cfg_, exe_base, pid, r);
+            if (exe_base == "android-studio" || exe_base == "studio" || exe_base == "studio.sh") {
+                scores[static_cast<int>(WorkloadType::ANDROID_DEV)] += 0.4f;
+            } else if (exe_base == "code" || exe_base == "codium" || exe_base == "cursor" ||
+                       exe_base == "vscodium" || exe_base == "code-oss") {
+                scores[static_cast<int>(WorkloadType::SYSTEM_DEV)] += 0.3f;
+            } else if (rn.exe.find("jbr/bin/java") != std::string::npos ||
+                       rn.exe.find("android-studio") != std::string::npos) {
+                scores[static_cast<int>(WorkloadType::ANDROID_DEV)] += 0.3f;
+            }
+        }
+    }
+
     for (const auto& [cpid, cmd] : children) {
         if (cmd.empty()) continue;
         // ISSUE-11: verify exe path
         if (!is_valid_executable_path(cpid)) continue;
+
+        // v3.3 intent from children (games often launch a wine/proton child,
+        // renderers spawn worker processes, training spawns dataloaders).
+        detect_intent(cfg_, cmd, cpid, r);
+
+        // exe-based hints (untruncated)
+        {
+            auto cit = graph.find(cpid);
+            if (cit != graph.end()) {
+                const std::string& cexe = cit->second.exe;
+                if (cexe.find("android-studio") != std::string::npos ||
+                    cexe.find("jbr/bin/java") != std::string::npos) {
+                    scores[static_cast<int>(WorkloadType::ANDROID_DEV)] += 0.25f;
+                }
+                if (cexe.find("/node") != std::string::npos || cexe.find("/bun") != std::string::npos) {
+                    scores[static_cast<int>(WorkloadType::WEB_DEV)] += 0.2f;
+                }
+                if (cexe.find("rust-analyzer") != std::string::npos ||
+                    cexe.find("/clangd") != std::string::npos ||
+                    cexe.find("/gopls") != std::string::npos ||
+                    cexe.find("/rustc") != std::string::npos) {
+                    scores[static_cast<int>(WorkloadType::SYSTEM_DEV)] += 0.25f;
+                }
+            }
+        }
 
         // HC-08: VM host process
         if (vm_set.count(cmd)) {
@@ -300,6 +401,7 @@ ClassificationResult FusionClassifier::classify(
     // HC-05/06: check if the root PID itself is a browser process
     // If so, mark it as browser_root and latency_sensitive (video/WebRTC calls)
     std::string root_cmd = read_cmdline(pid);
+    detect_intent(cfg_, root_cmd, pid, r); // argv[0] may differ from exe (launchers)
     std::unordered_set<std::string> br_set(cfg_.browser_roots.begin(), cfg_.browser_roots.end());
     if (br_set.count(root_cmd)) {
         r.is_browser_root    = true;

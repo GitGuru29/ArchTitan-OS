@@ -16,12 +16,40 @@ import "../style"
 Rectangle {
     id: powerRoot
     radius: TitanTheme.radiusWindow
-    color: TitanTheme.bgMenu
+    color: TitanTheme.isDark ? "#181825" : "#EFF1F5"
     border.color: TitanTheme.borderGlass
     border.width: 1
     clip: true
 
     signal closeRequested()
+
+    // Session actions. The pointer path and the keyboard path both call these,
+    // so the two can never drift apart.
+    function doClose()   { powerRoot.closeRequested() }
+    function doPowerOff() {
+        if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.poweroffSystem();
+        powerRoot.closeRequested();
+    }
+    function doReboot() {
+        if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.rebootSystem();
+        powerRoot.closeRequested();
+    }
+    function doLock() {
+        if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.lockSession();
+        powerRoot.closeRequested();
+    }
+    function doSuspend() {
+        if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.suspendSession();
+        powerRoot.closeRequested();
+    }
+    function doLogout() {
+        if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.logoutSession();
+        powerRoot.closeRequested();
+    }
+    function doClassicMenu() {
+        if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.openPowerMenu();
+        powerRoot.closeRequested();
+    }
 
     // Smooth entry transition
     opacity: visible ? 1.0 : 0.0
@@ -95,12 +123,23 @@ Rectangle {
                     color: TitanTheme.textPrimary
                 }
 
+                // Keyboard: Tab-reachable, Enter / Space activate.
+                activeFocusOnTab: true
+                Keys.onReturnPressed: (event) => { powerRoot.doClose(); event.accepted = true }
+                Keys.onEnterPressed:  (event) => { powerRoot.doClose(); event.accepted = true }
+                Keys.onSpacePressed:  (event) => { powerRoot.doClose(); event.accepted = true }
+                Accessible.role: Accessible.Button
+                Accessible.name: "Close"
+                Accessible.onPressAction: powerRoot.doClose()
+
+                FocusRing {}
+
                 MouseArea {
                     id: closeMa
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: powerRoot.closeRequested()
+                    onClicked: powerRoot.doClose()
                 }
             }
         }
@@ -171,17 +210,23 @@ Rectangle {
                     }
                 }
 
+                // Keyboard: Tab-reachable, Enter / Space activate.
+                activeFocusOnTab: true
+                Keys.onReturnPressed: (event) => { powerRoot.doPowerOff(); event.accepted = true }
+                Keys.onEnterPressed:  (event) => { powerRoot.doPowerOff(); event.accepted = true }
+                Keys.onSpacePressed:  (event) => { powerRoot.doPowerOff(); event.accepted = true }
+                Accessible.role: Accessible.Button
+                Accessible.name: "Power off"
+                Accessible.onPressAction: powerRoot.doPowerOff()
+
+                FocusRing {}
+
                 MouseArea {
                     id: pwrMa
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        if (typeof systemCtrl !== "undefined" && systemCtrl) {
-                            systemCtrl.poweroffSystem();
-                        }
-                        powerRoot.closeRequested();
-                    }
+                    onClicked: powerRoot.doPowerOff()
                 }
             }
 
@@ -245,17 +290,23 @@ Rectangle {
                     }
                 }
 
+                // Keyboard: Tab-reachable, Enter / Space activate.
+                activeFocusOnTab: true
+                Keys.onReturnPressed: (event) => { powerRoot.doReboot(); event.accepted = true }
+                Keys.onEnterPressed:  (event) => { powerRoot.doReboot(); event.accepted = true }
+                Keys.onSpacePressed:  (event) => { powerRoot.doReboot(); event.accepted = true }
+                Accessible.role: Accessible.Button
+                Accessible.name: "Restart"
+                Accessible.onPressAction: powerRoot.doReboot()
+
+                FocusRing {}
+
                 MouseArea {
                     id: rbtMa
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        if (typeof systemCtrl !== "undefined" && systemCtrl) {
-                            systemCtrl.rebootSystem();
-                        }
-                        powerRoot.closeRequested();
-                    }
+                    onClicked: powerRoot.doReboot()
                 }
             }
 
@@ -319,17 +370,23 @@ Rectangle {
                     }
                 }
 
+                // Keyboard: Tab-reachable, Enter / Space activate.
+                activeFocusOnTab: true
+                Keys.onReturnPressed: (event) => { powerRoot.doLock(); event.accepted = true }
+                Keys.onEnterPressed:  (event) => { powerRoot.doLock(); event.accepted = true }
+                Keys.onSpacePressed:  (event) => { powerRoot.doLock(); event.accepted = true }
+                Accessible.role: Accessible.Button
+                Accessible.name: "Lock screen"
+                Accessible.onPressAction: powerRoot.doLock()
+
+                FocusRing {}
+
                 MouseArea {
                     id: lckMa
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        if (typeof systemCtrl !== "undefined" && systemCtrl) {
-                            systemCtrl.lockSession();
-                        }
-                        powerRoot.closeRequested();
-                    }
+                    onClicked: powerRoot.doLock()
                 }
             }
 
@@ -339,8 +396,8 @@ Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 70
                 radius: TitanTheme.radiusCard
-                color: suspMa.containsMouse ? Qt.rgba(TitanTheme.lavender.r, TitanTheme.lavender.g, TitanTheme.lavender.b, 0.16) : TitanTheme.bgOneUICard
-                border.color: suspMa.containsMouse ? Qt.rgba(TitanTheme.lavender.r, TitanTheme.lavender.g, TitanTheme.lavender.b, 0.5) : TitanTheme.borderGlass
+                color: suspMa.containsMouse ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.16) : TitanTheme.bgOneUICard
+                border.color: suspMa.containsMouse ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.5) : TitanTheme.borderGlass
                 border.width: 1
                 scale: suspMa.pressed ? 0.97 : (suspMa.containsMouse ? 1.015 : 1.0)
                 Behavior on scale { NumberAnimation { duration: 130; easing.type: Easing.OutQuad } }
@@ -354,7 +411,7 @@ Rectangle {
                         width: 44
                         height: 44
                         radius: 22
-                        color: TitanTheme.lavender
+                        color: TitanTheme.accent
 
                         Text {
                             anchors.centerIn: parent
@@ -393,17 +450,23 @@ Rectangle {
                     }
                 }
 
+                // Keyboard: Tab-reachable, Enter / Space activate.
+                activeFocusOnTab: true
+                Keys.onReturnPressed: (event) => { powerRoot.doSuspend(); event.accepted = true }
+                Keys.onEnterPressed:  (event) => { powerRoot.doSuspend(); event.accepted = true }
+                Keys.onSpacePressed:  (event) => { powerRoot.doSuspend(); event.accepted = true }
+                Accessible.role: Accessible.Button
+                Accessible.name: "Suspend"
+                Accessible.onPressAction: powerRoot.doSuspend()
+
+                FocusRing {}
+
                 MouseArea {
                     id: suspMa
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        if (typeof systemCtrl !== "undefined" && systemCtrl) {
-                            systemCtrl.suspendSession();
-                        }
-                        powerRoot.closeRequested();
-                    }
+                    onClicked: powerRoot.doSuspend()
                 }
             }
 
@@ -467,17 +530,23 @@ Rectangle {
                     }
                 }
 
+                // Keyboard: Tab-reachable, Enter / Space activate.
+                activeFocusOnTab: true
+                Keys.onReturnPressed: (event) => { powerRoot.doLogout(); event.accepted = true }
+                Keys.onEnterPressed:  (event) => { powerRoot.doLogout(); event.accepted = true }
+                Keys.onSpacePressed:  (event) => { powerRoot.doLogout(); event.accepted = true }
+                Accessible.role: Accessible.Button
+                Accessible.name: "Log out"
+                Accessible.onPressAction: powerRoot.doLogout()
+
+                FocusRing {}
+
                 MouseArea {
                     id: lgoMa
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        if (typeof systemCtrl !== "undefined" && systemCtrl) {
-                            systemCtrl.logoutSession();
-                        }
-                        powerRoot.closeRequested();
-                    }
+                    onClicked: powerRoot.doLogout()
                 }
             }
         }
@@ -520,17 +589,23 @@ Rectangle {
                     }
                 }
 
+                // Keyboard: Tab-reachable, Enter / Space activate.
+                activeFocusOnTab: true
+                Keys.onReturnPressed: (event) => { powerRoot.doClassicMenu(); event.accepted = true }
+                Keys.onEnterPressed:  (event) => { powerRoot.doClassicMenu(); event.accepted = true }
+                Keys.onSpacePressed:  (event) => { powerRoot.doClassicMenu(); event.accepted = true }
+                Accessible.role: Accessible.Button
+                Accessible.name: "Classic power menu"
+                Accessible.onPressAction: powerRoot.doClassicMenu()
+
+                FocusRing {}
+
                 MouseArea {
                     id: rofiMa
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        if (typeof systemCtrl !== "undefined" && systemCtrl) {
-                            systemCtrl.openPowerMenu();
-                        }
-                        powerRoot.closeRequested();
-                    }
+                    onClicked: powerRoot.doClassicMenu()
                 }
             }
 
@@ -554,12 +629,23 @@ Rectangle {
                     color: TitanTheme.textPrimary
                 }
 
+                // Keyboard: Tab-reachable, Enter / Space activate.
+                activeFocusOnTab: true
+                Keys.onReturnPressed: (event) => { powerRoot.doClose(); event.accepted = true }
+                Keys.onEnterPressed:  (event) => { powerRoot.doClose(); event.accepted = true }
+                Keys.onSpacePressed:  (event) => { powerRoot.doClose(); event.accepted = true }
+                Accessible.role: Accessible.Button
+                Accessible.name: "Cancel"
+                Accessible.onPressAction: powerRoot.doClose()
+
+                FocusRing {}
+
                 MouseArea {
                     id: cancelMa
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: powerRoot.closeRequested()
+                    onClicked: powerRoot.doClose()
                 }
             }
         }

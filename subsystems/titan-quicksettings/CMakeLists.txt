@@ -21,6 +21,7 @@ set(SOURCES
     src/nightlightcontroller.cpp
     src/notificationmodel.cpp
     src/notificationserver.cpp
+    src/mpriscontroller.cpp
 )
 
 set(HEADERS
@@ -32,6 +33,7 @@ set(HEADERS
     src/nightlightcontroller.h
     src/notificationmodel.h
     src/notificationserver.h
+    src/mpriscontroller.h
 )
 
 set(RESOURCES
@@ -53,6 +55,12 @@ target_link_libraries(titan-quicksettings PRIVATE
     Qt6::Network
     Qt6::Widgets
     LayerShellQt::Interface
+)
+
+set_target_properties(titan-quicksettings PROPERTIES
+    BUILD_RPATH "/usr/lib;${CMAKE_CURRENT_SOURCE_DIR}/../../airootfs/usr/lib;${CMAKE_CURRENT_SOURCE_DIR}/../../titan-ui/build"
+    INSTALL_RPATH "/usr/lib;/usr/local/lib"
+    BUILD_WITH_INSTALL_RPATH FALSE
 )
 
 install(TARGETS titan-quicksettings DESTINATION /usr/local/bin)

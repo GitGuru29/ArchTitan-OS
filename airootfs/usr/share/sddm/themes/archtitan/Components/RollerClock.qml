@@ -10,6 +10,16 @@ Item {
     property string timeStr: ""
     property string dateStr: ""
 
+    // ── TDL tokens — Catppuccin Mocha baseline (mirrors titan-ui's TitanTheme.qml)
+    // SDDM is pre-login, so the shipped default palette is inlined here;
+    // colour-lint keeps these on-palette with every other surface.
+    readonly property color tdlCrust   : "#11111B"
+    readonly property color tdlMantle  : "#181825"
+    readonly property color tdlSurface0: "#313244"
+    readonly property color tdlTextHigh: "#CDD6F4"
+    readonly property color tdlTextMid : "#A6ADC8"
+    readonly property color tdlTextLow : "#7F849C"
+
     function updateTime() {
         var now = new Date()
         var format = is24Hour ? "hh:mm" : "hh:mm ap"
@@ -61,13 +71,13 @@ Item {
                         width: 4
                         height: 4
                         radius: 2
-                        color: "#8B95AA"
+                        color: tdlTextLow
                     }
                     Rectangle {
                         width: 4
                         height: 4
                         radius: 2
-                        color: "#8B95AA"
+                        color: tdlTextLow
                     }
                 }
             }
@@ -82,7 +92,7 @@ Item {
         Text {
             id: dateText
             text: "THU  •  13 OCT"
-            color: "#8E98AC"
+            color: tdlTextMid
             font.pixelSize: 15
             font.weight: Font.DemiBold
             font.letterSpacing: 3.5
@@ -96,20 +106,20 @@ Item {
         width: 64
         height: 96
         radius: 8
-        color: "#161922"
+        color: tdlMantle
         border.width: 1
-        border.color: "#282E3D"
+        border.color: tdlSurface0
         clip: true
 
         property string digit: "0"
 
         // Metallic gradient
         gradient: Gradient {
-            GradientStop { position: 0.0; color: "#11131A" }
-            GradientStop { position: 0.2; color: "#1A1D27" }
-            GradientStop { position: 0.5; color: "#222735" }
-            GradientStop { position: 0.8; color: "#1A1D27" }
-            GradientStop { position: 1.0; color: "#11131A" }
+            GradientStop { position: 0.0; color: tdlCrust }
+            GradientStop { position: 0.2; color: tdlMantle }
+            GradientStop { position: 0.5; color: tdlSurface0 }
+            GradientStop { position: 0.8; color: tdlMantle }
+            GradientStop { position: 1.0; color: tdlCrust }
         }
 
         // Text digit with roll animation
@@ -117,7 +127,7 @@ Item {
             id: digitDisplay
             anchors.centerIn: parent
             text: drum.digit
-            color: "#F0F3F9"
+            color: tdlTextHigh
             font.pixelSize: 58
             font.weight: Font.Bold
             font.family: "JetBrainsMono Nerd Font"
@@ -136,7 +146,7 @@ Item {
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
             height: 1
-            color: "#0A0B10"
+            color: tdlCrust
             opacity: 0.85
         }
 

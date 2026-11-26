@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/">
+        <file>qml/PowerMenuWindow.qml</file>
+        <file>qml/PowerCard.qml</file>
+    </qresource>
+</RCC>

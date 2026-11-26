@@ -2,14 +2,18 @@
     "layer"        : "top",
     "position"     : "top",
     "height"       : 38,
-    "margin-top"   : 6,
-    "margin-left"  : 10,
-    "margin-right" : 10,
+    "margin-top"   : 8,
+    "margin-left"  : 14,
+    "margin-right" : 14,
     "spacing"      : 0,
     "exclusive"    : true,
+    "reload_style_on_change": true,
 
     "modules-left": [
-        "hyprland/workspaces"
+        "custom/install-badge",
+        "hyprland/workspaces",
+        "group/hardware",
+        "custom/git-hud"
     ],
 
     "modules-center": [
@@ -17,29 +21,43 @@
     ],
 
     "modules-right": [
-        "custom/power-profile",
-        "custom/separator",
+        "custom/focus-ring",
+        "custom/titan-hwm",
+        "custom/cava",
+        "group/capture",
         "clock",
-        "custom/separator",
-        "temperature",
-        "custom/separator",
-        "pulseaudio",
-        "custom/separator",
-        "network",
-        "custom/separator",
-        "battery",
-        "custom/separator",
-        "custom/notification",
-        "tray"
+        "group/quicksettings",
+        "tray",
+        "group/quick-controls"
     ],
 
-    // ── LEFT: Workspaces ───────────────────────────────────────
+    // ── LEFT: Workspaces & Installer ───────────────────────────
+
+    "custom/install-badge": {
+        "exec"       : "if [ -d /run/archiso ]; then echo '{\"text\": \"󰐥 Install ArchTitan\", \"tooltip\": \"Launch ArchTitan System Installer (Calamares)\"}'; fi",
+        "return-type": "json",
+        "interval"   : 30,
+        "on-click"   : "launch-installer"
+    },
 
     "hyprland/workspaces": {
-        "format"              : "{id}",
-        "on-click"            : "activate",
-        "sort-by-number"      : true,
-        "persistent-workspaces": { "*": 5 }
+        "format"                 : "{icon}{windows}",
+        "format-window-separator": "",
+        "on-click"               : "activate",
+        "sort-by-number"         : true,
+        "format-icons"           : {
+            "default": "",
+            "empty"  : "•"
+        },
+        "persistent-workspaces"  : { "*": 10 },
+        "workspace-taskbar": {
+            "enable"                : true,
+            "update-active-window"  : true,
+            "active-window-position": "first",
+            "max-icons"             : 1,
+            "format"                : "{icon}",
+            "icon-size"             : 16
+        }
     },
 
     // ── CENTER: Embedded Rolling Viewport ──────────────────────
@@ -55,18 +73,112 @@
         "tooltip"         : true
     },
 
-    // ── RIGHT: Telemetry ───────────────────────────────────────
+    // ── RIGHT: Telemetry & Controls ────────────────────────────
 
-    "custom/power-profile": {
-        "exec"    : "powerprofilesctl get 2>/dev/null | sed 's/balanced/󰌪  Balanced/;s/performance/󰓅  Performance/;s/power-saver/󰚥  Saver/' || echo '󰌪  Balanced'",
-        "interval": 10,
-        "format"  : "{}",
-        "tooltip" : false
+    "custom/titan-hwm": {
+        "exec"            : "titan-hwm-waybar",
+        "return-type"     : "json",
+        "interval"        : 3,
+        "on-click"        : "kitty -e sh -c 'clear; echo \"Titan Hardware Manager (THM) v3\"; echo; titan-hwm status; echo; echo \"--- Workloads ---\"; titan-hwm workloads 2>&1 | tail -30; echo; echo \"Press Enter for full help or close...\"; read -r _' 2>/dev/null",
+        "on-click-right"  : "kitty -e sh -c 'titan-hwm scan 2>&1 | tail -60; echo; echo \"Press Enter to close...\"; read -r _' 2>/dev/null",
+        "tooltip"         : true
     },
 
-    "custom/separator": {
-        "format" : "<span color='#313244'>│</span>",
-        "tooltip": false
+    "group/hardware": {
+        "orientation": "horizontal",
+        "modules": [
+            "cpu",
+            "memory#swap",
+            "memory"
+        ]
+    },
+
+    "cpu": {
+        "interval"      : 2,
+        "format"        : "  {usage}",
+        "tooltip"       : true,
+        "tooltip-format": "CPU Usage: {usage}%\nLoad: {load}\nCores: {cores}",
+        "on-click"      : "kitty -e btop 2>/dev/null || btop",
+        "states"        : {
+            "warning" : 75,
+            "critical": 90
+        }
+    },
+
+    "memory#swap": {
+        "interval"      : 3,
+        "format"        : "󰓡  {swapPercentage}",
+        "tooltip"       : true,
+        "tooltip-format": "Swap Usage: {swapPercentage}%\nUsed: {swapUsed:0.1f} GiB / {swapTotal:0.1f} GiB",
+        "on-click"      : "kitty -e btop 2>/dev/null || btop",
+        "states"        : {
+            "warning" : 60,
+            "critical": 80
+        }
+    },
+
+    "memory": {
+        "interval"      : 2,
+        "format"        : "󰾆  {percentage}",
+        "tooltip"       : true,
+        "tooltip-format": "RAM Usage: {percentage}%\nUsed: {used:0.1f} GiB / {total:0.1f} GiB\nAvailable: {avail:0.1f} GiB",
+        "on-click"      : "kitty -e btop 2>/dev/null || btop",
+        "states"        : {
+            "warning" : 75,
+            "critical": 90
+        }
+    },
+
+    // ── Contextual Dev & Git HUD (Auto-reveals in Repos/IDEs) ─
+    "custom/git-hud": {
+        "exec"            : "titan-git-hud",
+        "return-type"     : "json",
+        "restart-interval": 3,
+        "format"          : "{}",
+        "tooltip"         : true,
+        "on-click"        : "titan-git-hud --action terminal",
+        "on-click-right"  : "titan-git-hud --action remote",
+        "on-click-middle" : "titan-git-hud --action copy"
+    },
+
+    // ── Audio Visualizer (Auto-reveals on Music Playback) ──────
+    "custom/cava": {
+        "exec"            : "titan-cava",
+        "return-type"     : "json",
+        "restart-interval": 3,
+        "format"          : "{}",
+        "tooltip"         : true,
+        "on-click"        : "playerctl play-pause 2>/dev/null || true",
+        "on-scroll-up"    : "playerctl next 2>/dev/null || true",
+        "on-scroll-down"  : "playerctl previous 2>/dev/null || true"
+    },
+
+    // ── Screen Capture & Recording ─────────────────────────────
+    "group/capture": {
+        "orientation": "horizontal",
+        "modules": [
+            "custom/snip",
+            "custom/recorder"
+        ]
+    },
+
+    "custom/snip": {
+        "format"         : "󰄀",
+        "tooltip"        : true,
+        "tooltip-format" : "Screenshot Snip\nLeft-click: Select Region\nRight-click: Fullscreen\nMiddle-click: Active Window",
+        "on-click"       : "titan-screenshot --area",
+        "on-click-right" : "titan-screenshot --full",
+        "on-click-middle": "titan-screenshot --window"
+    },
+
+    "custom/recorder": {
+        "exec"           : "titan-recorder --status",
+        "return-type"    : "json",
+        "interval"       : 2,
+        "signal"         : 8,
+        "on-click"       : "titan-recorder --toggle",
+        "on-click-right" : "titan-recorder --area",
+        "tooltip"        : true
     },
 
     "clock": {
@@ -79,13 +191,22 @@
             "weeks-pos" : "right",
             "on-scroll" : 1,
             "format": {
-                "months"  : "<span color='#cdd6f4'><b>{}</b></span>",
-                "days"    : "<span color='#7f849c'>{}</span>",
-                "weeks"   : "<span color='#45475a'><b>W{}</b></span>",
-                "weekdays": "<span color='#b4befe'><b>{}</b></span>",
-                "today"   : "<span color='#a6e3a1'><b><u>{}</u></b></span>"
+                "months"  : "<span><b>{}</b></span>",
+                "days"    : "<span alpha='75%'>{}</span>",
+                "weeks"   : "<span alpha='50%'><b>W{}</b></span>",
+                "weekdays": "<span alpha='85%'><b>{}</b></span>",
+                "today"   : "<span><b><u>{}</u></b></span>"
             }
         }
+    },
+
+    "group/quicksettings": {
+        "orientation": "horizontal",
+        "modules": [
+            "temperature",
+            "pulseaudio",
+            "battery"
+        ]
     },
 
     "temperature": {
@@ -93,24 +214,24 @@
         "format"            : "󰔏 {temperatureC}°C",
         "format-critical"   : "󰔏 {temperatureC}°C",
         "interval"          : 3,
+        "hwmon-path-abs"    : [
+            "/sys/devices/platform/coretemp.0/hwmon",
+            "/sys/devices/pci0000:00/0000:00:18.3/hwmon"
+        ],
+        "input-filename"    : "temp1_input",
+        "on-click"          : "titan-quicksettings --toggle",
         "tooltip"           : false
     },
 
     "pulseaudio": {
-        "format"        : "󰕾 {volume}%",
-        "format-muted"  : "󰖁 Muted",
-        "on-click"      : "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
-        "on-right-click": "pavucontrol",
-        "tooltip"       : false
-    },
-
-    "network": {
-        "format-wifi"        : "󰤨",
-        "format-ethernet"    : "󰈀",
-        "format-disconnected": "󰤭",
-        "interval"           : 5,
-        "tooltip-format-wifi"    : "{essid} ({signalStrength}%)\nIP: {ipaddr}\n↓ {bandwidthDownBytes}  ↑ {bandwidthUpBytes}",
-        "tooltip-format-ethernet": "{ifname}\nIP: {ipaddr}"
+        "format"         : "󰕾 {volume}%",
+        "format-muted"   : "󰖁 Muted",
+        "on-click"       : "titan-quicksettings --toggle",
+        "on-click-right" : "pavucontrol",
+        "on-click-middle": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
+        "on-scroll-up"   : "wpctl set-volume -l 1.5 @DEFAULT_AUDIO_SINK@ 5%+",
+        "on-scroll-down" : "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-",
+        "tooltip"        : false
     },
 
     "battery": {
@@ -122,18 +243,85 @@
         "format-full"     : "󰁹 100%",
         "format-not-found": "",
         "interval"        : 10,
+        "on-click"        : "titan-quicksettings --toggle",
         "tooltip-format"  : "{timeTo} · {capacity}%\nPower: {power:.1f}W"
-    },
-
-    "custom/notification": {
-        "tooltip": false,
-        "format": "󰍜",
-        "on-click": "titan-quicksettings --toggle"
     },
 
     "tray": {
         "icon-size"        : 14,
         "spacing"          : 8,
         "show-passive-items": true
+    },
+
+    // ── 3-Button Control Pack (Notification, Wi-Fi, Bluetooth) ──
+
+    "group/quick-controls": {
+        "orientation": "horizontal",
+        "modules": [
+            "custom/notification",
+            "network",
+            "bluetooth"
+        ]
+    },
+
+    // ── RIGHT: TitanFocus, HWM, Capture, Clock, QuickSettings ──
+
+    "custom/focus-ring": {
+        "exec"          : "titan-focus --waybar",
+        "return-type"   : "json",
+        "interval"      : 5,
+        "on-click"      : "titan-focus --toggle",
+        "on-click-right": "titan-focus --snooze 15",
+        "tooltip"       : true
+    },
+
+    "custom/notification": {
+        "tooltip": true,
+        "tooltip-format": "Notifications &amp; Quick Settings (Super+N)",
+        "format": "{icon}",
+        "format-icons": {
+            "notification": "󱅫",
+            "none": "󰂚",
+            "dnd-notification": "󱅯",
+            "dnd-none": "󰂛",
+            "inhibited-notification": "󱅫",
+            "inhibited-none": "󰂚",
+            "dnd-inhibited-notification": "󱅯",
+            "dnd-inhibited-none": "󰂛"
+        },
+        "return-type": "json",
+        "exec-if": "which swaync-client",
+        "exec": "swaync-client -swb",
+        "on-click": "titan-quicksettings --toggle",
+        "on-click-right": "swaync-client -d -sw 2>/dev/null || true",
+        "escape": true
+    },
+
+    "network": {
+        "format-wifi"            : "󰤨",
+        "format-ethernet"        : "󰈀",
+        "format-disconnected"    : "󰤭",
+        "format-disabled"        : "󰤮",
+        "interval"               : 5,
+        "on-click"               : "titan-quicksettings --toggle",
+        "on-click-right"         : "nm-connection-editor",
+        "tooltip-format-wifi"    : "Wi-Fi: {essid} ({signalStrength}%)\nIP: {ipaddr}\n↓ {bandwidthDownBytes}  ↑ {bandwidthUpBytes}",
+        "tooltip-format-ethernet": "Ethernet: {ifname}\nIP: {ipaddr}",
+        "tooltip-format-disconnected": "Disconnected\nClick to open network settings"
+    },
+
+    "bluetooth": {
+        "format"                 : "󰂯",
+        "format-disabled"        : "󰂲",
+        "format-off"             : "󰂲",
+        "format-on"              : "󰂯",
+        "format-connected"       : "󰂱",
+        "format-connected-battery": "󰂱",
+        "tooltip-format"         : "Bluetooth: {controller_alias}\nStatus: {status}",
+        "tooltip-format-connected": "Bluetooth: {controller_alias}\nConnected: {device_alias}\nBattery: {device_battery_percentage}%",
+        "tooltip-format-disabled": "Bluetooth: Disabled",
+        "tooltip-format-off"     : "Bluetooth: Powered Off",
+        "on-click"               : "titan-quicksettings --toggle",
+        "on-click-right"         : "rfkill toggle bluetooth"
     }
 }

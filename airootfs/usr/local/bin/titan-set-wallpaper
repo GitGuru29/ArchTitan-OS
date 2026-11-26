@@ -38,26 +38,94 @@ if [[ ! " $VALID_MODES " == *" $SCALE_MODE "* ]]; then
     exit 1
 fi
 
-# ── Kill existing swaybg ────────────────────────────────────────────────────
-# Use pkill -x for an exact match so we don't kill other sway processes.
-if pkill -x swaybg 2>/dev/null; then
-    sleep 0.15   # brief gap so the new instance doesn't race the old one
-fi
+# ── Launch new swaybg first for seamless overlap ────────────────────────────
+# Capture running swaybg PIDs so we only retire them AFTER the new swaybg has
+# successfully rendered and presented its layer surface to Wayland.
+# This guarantees that the previous wallpaper remains visible until the new one
+# takes over, completely eliminating the black screen gap.
+OLD_SWAYBG_PIDS=$(pgrep -x swaybg || true)
 
-# ── Launch new swaybg ───────────────────────────────────────────────────────
-# Disown immediately — we don't want it in our process group.
 swaybg -i "$WALLPAPER_PATH" -m "$SCALE_MODE" &
+NEW_SWAYBG_PID=$!
 disown
+
+# Gracefully retire the previous swaybg instances once the new surface is up
+if [[ -n "$OLD_SWAYBG_PIDS" ]]; then
+    (
+        sleep 0.4
+        for pid in $OLD_SWAYBG_PIDS; do
+            if [[ "$pid" != "$NEW_SWAYBG_PID" ]]; then
+                kill "$pid" 2>/dev/null || true
+            fi
+        done
+    ) >/dev/null 2>&1 &
+    disown
+fi
 
 # ── Persist ─────────────────────────────────────────────────────────────────
 mkdir -p "$PERSIST_DIR"
 printf '%s\n%s\n' "$WALLPAPER_PATH" "$SCALE_MODE" > "$PERSIST_FILE"
 
+# ── Sync active wallpaper into theme.json and TAW config ────────────────────
+if [[ -f "${PERSIST_DIR}/theme.json" ]]; then
+    python3 -c "
+import json, sys
+p = sys.argv[1]
+wp = sys.argv[2]
+try:
+    with open(p, 'r', encoding='utf-8') as f:
+        d = json.load(f)
+    if d.get('wallpaper') != wp:
+        d['wallpaper'] = wp
+        with open(p, 'w', encoding='utf-8') as f:
+            json.dump(d, f, indent=2, ensure_ascii=False)
+            f.write('\n')
+except Exception:
+    pass
+" "${PERSIST_DIR}/theme.json" "$WALLPAPER_PATH" 2>/dev/null || true
+fi
+
+# If setting a user original wallpaper (not an internally generated TAW cache variant), update TAW original
+if [[ -z "${TITAN_TAW_KEEP_ORIGINAL:-}" ]] && [[ "$WALLPAPER_PATH" != *"/archtitan/wallpapers/"* ]]; then
+    python3 -c "
+import json, os, sys
+cfg_path = os.path.expanduser('~/.config/archtitan/adaptive-wallpaper.json')
+wp = sys.argv[1]
+try:
+    data = {}
+    if os.path.isfile(cfg_path):
+        with open(cfg_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+    if data.get('originalWallpaper') != wp:
+        data['originalWallpaper'] = wp
+        with open(cfg_path, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+            f.write('\n')
+except Exception:
+    pass
+" "$WALLPAPER_PATH" 2>/dev/null || true
+fi
+
 # ── Retint the Waybar to suit the new wallpaper ─────────────────────────────
 # Best-effort: a theming failure must never fail the wallpaper change.
-titan-waybar-theme "$WALLPAPER_PATH" >/dev/null 2>&1 || true
+# Suppressed when TITAN_QUIET is set (`titan-theme set/apply` synchronizes Waybar atomically).
+if [[ -z "${TITAN_QUIET:-}" ]]; then
+    titan-waybar-theme "$WALLPAPER_PATH" >/dev/null 2>&1 || true
+fi
 
 # ── Notify ──────────────────────────────────────────────────────────────────
-NAME="$(basename "${WALLPAPER_PATH%.*}")"
-notify-send -u low -i preferences-desktop-wallpaper \
-    "Wallpaper applied" "$NAME" 2>/dev/null || true
+# TITAN_QUIET=1 suppresses this toast — `titan-theme set` already sends its
+# own themed notification and doesn't want a duplicate.
+if [[ -z "${TITAN_QUIET:-}" ]]; then
+    NAME="$(basename "${WALLPAPER_PATH%.*}")"
+    notify-send -u low -i preferences-desktop-wallpaper \
+        "Wallpaper applied" "$NAME" 2>/dev/null || true
+    snd="/usr/share/sounds/freedesktop/stereo/complete.oga"
+    if [[ -f "$snd" ]]; then
+        if command -v pw-play >/dev/null 2>&1; then
+            pw-play "$snd" >/dev/null 2>&1 &
+        elif command -v paplay >/dev/null 2>&1; then
+            paplay "$snd" >/dev/null 2>&1 &
+        fi
+    fi
+fi

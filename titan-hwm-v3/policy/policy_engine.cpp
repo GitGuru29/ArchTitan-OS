@@ -19,11 +19,43 @@ PolicyDecision PolicyEngine::evaluate(
     if (wl.is_protected) return PolicyDecision::KEEP_FULL;
     if (registry.is_protected_any(wl.pids)) return PolicyDecision::KEEP_FULL;
 
+    // ── Step 1a (v3.1): Observation-only workloads ───────────────────────────
+    // Tracked so the system monitor reflects reality, but they were never
+    // classified and therefore have no enforcement authority. This is a hard
+    // guard, not just a daemon-side convenience: an observed workload may
+    // never be throttled, frozen or reclaimed.
+    if (wl.observed) return PolicyDecision::KEEP_BACKGROUND;
+
+    // ── Step 1a-2 (v3.3): latency-critical interactive work ─────────────────
+    // A game / real-time app keeps foreground slice rights and OOM protection
+    // even when its workspace is no longer focused (e.g. running while the
+    // user browses or streams). It is never frozen or reclaimed by any memory
+    // level; CPU pressure cannot signal it either (HC-CPU-1).
+    if (wl.latency_critical) return PolicyDecision::KEEP_FULL;
+
+    // ── Step 1a-3 (v3.3): GPU-feeding work (training dataloaders) ────────────
+    // Capping or freezing the process that keeps a busy accelerator fed loses
+    // far more throughput than the headroom it saves. It stays alive in the
+    // uncapped latency slice and can only be memory-throttled at CRITICAL.
+    if (wl.gpu_feeding) {
+        if (pressure >= PressureLevel::CRITICAL) return PolicyDecision::THROTTLE;
+        return PolicyDecision::KEEP_BACKGROUND;
+    }
+
+    // ── Step 1a-4 (v3.4-R2): bulk throughput work is never frozen ────────────
+    // Compilers, renderers and encoders are the definition of "safe to cap,
+    // unsafe to stop". Their children are short-lived and can look IDLE/AGING
+    // to the state machine; freezing them stalls a build even though no memory
+    // is reclaimed (frozen pages stay resident). Executing bulk work receives
+    // memory.low protection instead: pressure relief comes from idle/AGING work
+    // in archtitan-throttled.slice, never from capping a live compiler.
+    if (wl.throughput_bulk) return PolicyDecision::KEEP_BACKGROUND;
+
     // ── Step 1b (HC-07): SERVICE workloads — DB servers, containers ──────────
     // These headless services have no window and low CPU but must stay alive.
     // Minimum decision: KEEP_BACKGROUND. Never FREEZE or RECLAIM.
     if (wl.type == WorkloadType::SERVICE) {
-        if (ws.is_focused || ws.is_visible || activity == ActivityState::EXECUTING)
+        if (ws.context_active() || activity == ActivityState::EXECUTING)
             return PolicyDecision::KEEP_BACKGROUND;
         // Under CRITICAL pressure: throttle but never freeze or reclaim
         if (pressure >= PressureLevel::CRITICAL) return PolicyDecision::THROTTLE;
@@ -34,7 +66,7 @@ PolicyDecision PolicyEngine::evaluate(
     // Guest kernel has its own timer wheel. Host SIGSTOP stalls the guest hard.
     // Minimum decision: KEEP_BACKGROUND. Never FREEZE.
     if (wl.type == WorkloadType::VM) {
-        if (activity == ActivityState::EXECUTING || ws.is_focused || ws.is_visible)
+        if (activity == ActivityState::EXECUTING || ws.context_active())
             return PolicyDecision::KEEP_BACKGROUND;
         // Allow throttle under extreme pressure, but never freeze
         if (pressure >= PressureLevel::CRITICAL) return PolicyDecision::THROTTLE;
@@ -45,7 +77,7 @@ PolicyDecision PolicyEngine::evaluate(
     // A workload doing real work gets resources, regardless of which workspace
     // is focused. Workspace visibility only determines the priority tier.
     if (activity == ActivityState::EXECUTING) {
-        if (ws.is_focused || ws.is_visible)
+        if (ws.context_active())
             return PolicyDecision::KEEP_FULL;        // interactive dev context
         return PolicyDecision::KEEP_BACKGROUND;      // background build / AI task
     }
@@ -53,7 +85,7 @@ PolicyDecision PolicyEngine::evaluate(
     // ── Step 3: User is actively in this workspace + workload is ACTIVE ───────
     // The workload itself isn't executing right now (e.g. IDE waiting for input),
     // but the user is present. Grant KEEP_FULL so UI remains responsive.
-    if ((ws.is_focused || ws.is_visible) &&
+    if (ws.context_active() &&
          wl.state == WorkloadState::ACTIVE)
         return PolicyDecision::KEEP_FULL;
 

@@ -9,8 +9,8 @@
 - **Chanika Anuradhi** (TitanShare Daemon & Android Client)  
 - **Zumra Hassan** (TitanMirror Screen Mirroring Pipeline)  
 **Supervisors:** Mr. Kavida Tharindu, Dr. Sanika Wijesekara  
-**Evaluation Date:** August 2026  
-**Status:** Core Foundation Released (v1.0 Ready) • Overall Project Life-Cycle ~77% Completed  
+**Evaluation Date:** November 2026  
+**Status:** Core Foundation Released (v1.0 Ready) • Overall Project Life-Cycle ~85% Completed  
 
 ---
 
@@ -31,8 +31,8 @@
 ArchTitan OS is an intelligent, developer-centric Linux distribution designed to eliminate the friction, resource wastage, and performance degradation inherent in generic desktop operating systems. By combining **workspace-aware resource management**, **deterministic kernel cgroup v2 slicing**, **zero-overhead seccomp-BPF sandboxing**, and a **first-party native application ecosystem**, ArchTitan transforms the desktop from a passive host into an active resource supervisor.
 
 ```
-[████████████████████████████████░░░░░░░░]  ~77% Overall Research Scope Completed
-[██████████████████████████████████████░░]  ~94% Milestone 1.0 (Core OS Release) Ready
+[████████████████████████████████████░░░░]  ~85% Overall Research Scope Completed
+[████████████████████████████████████████]  100% Milestone 1.0 (Core OS Release) Ready
 ```
 
 ### 📊 Completion Breakdown by Category
@@ -40,11 +40,11 @@ ArchTitan OS is an intelligent, developer-centric Linux distribution designed to
 | Category | Components Included | Status | % Done |
 | :--- | :--- | :--- | :---: |
 | **1. Base OS & Boot Pipeline** | `archiso`, UEFI GRUB, Calamares GUI installer, kernel configs, display/sleep fixes | 🟢 Production Ready | **100%** |
-| **2. Desktop & Wayland UI** | Hyprland Compositor, Glassmorphic Waybar, Rofi, Kitty, Catppuccin Mocha | 🟢 Production Ready | **100%** |
-| **3. Hardware & Security Daemons** | Titan Hardware Manager (`titan-hwm`), Titan Sandbox (`titan-sandboxd`), TitanFetch | 🟢 Production Ready | **100%** |
-| **4. First-Party Native Apps** | ArchTitan Settings (Qt6/QML), Titan Media HUD (MPRIS), Titan Browser (+TitanShield) | 🟢 Production Ready | **95%** |
-| **5. Cross-Device & Auxiliary Modules** | Auto GPU Switcher, TitanShare (P2P + Android), TitanTask GUI, TitanMirror, TitanAI | 🟡 In Dev / Skeletons | **~20%** |
-| **6. Documentation & Governance** | 13-page GitHub Wiki, subsystem specs, PR templates, architecture diagrams | 🟢 Published | **100%** |
+| **2. Desktop & Wayland UI** | Hyprland Compositor, Glassmorphic Waybar, Titan QuickSettings (Liquid Glass Control Center), Titan Tour v2, Kitty, Catppuccin Mocha | 🟢 Production Ready | **100%** |
+| **3. Hardware & Security Daemons** | Titan Hardware Manager (`titan-hwm` v3 with 3-signal fusion classifier), Titan Sandbox (`titan-sandboxd`), TitanFetch | 🟢 Production Ready | **100%** |
+| **4. First-Party Native Apps** | ArchTitan Settings (Qt6/QML), Titan QuickSettings, Titan Tour, Titan Media HUD (MPRIS), Titan Browser (+TitanShield) | 🟢 Production Ready | **100%** |
+| **5. Cross-Device & Auxiliary Modules** | Auto GPU Switcher, TitanShare (P2P + Android), TitanTask GUI, TitanMirror, TitanAI | 🟡 In Dev / Skeletons | **~25%** |
+| **6. Documentation & Governance** | 13-page GitHub Wiki, subsystem specs, PR templates, architecture diagrams, benchmark suite | 🟢 Published | **100%** |
 
 ---
 
@@ -55,7 +55,7 @@ Direct mapping against the seven core objectives stated in Section 4 of the offi
 | # | Proposal Objective | Promised Scope | Implementation in Codebase | Status | % Done |
 | :-: | :--- | :--- | :--- | :---: | :-: |
 | **Obj 1** | **Titan Hardware Manager (THM)** | C++ privileged daemon, `cgroups v2`, PSI memory pressure escalation, 3-tier resource slicing | `titan-hwm-v3/`, `archtitan-active.slice`, `archtitan-background.slice`, `archtitan-frozen.slice`, CLI & Waybar hooks | 🟢 **Complete** | **100%** |
-| **Obj 2** | **Multi-Signal Workload Classifier** | Process-neutral classification using window metadata, project structure, and background state | Integrated into THM & Hyprland IPC session guard (`archtitan-session-guard`, `titan-exec-hook`) | 🟡 **Core Done, Expansion Pending** | **75%** |
+| **Obj 2** | **Multi-Signal Workload Classifier** | Process-neutral classification using window metadata, project structure, and background state | Production-ready in `titan-hwm-v3/classifier/`: 3-signal fusion voting (Signal 1 depth-3 process tree traversal for build daemons & LSP servers, Signal 2 Hyprland window title/class IPC telemetry, Signal 3 CWD project markers), execution state detection, dynamic cmdline drift reclassification (HC-10), and observation mode fallback | 🟢 **Complete** | **100%** |
 | **Obj 3** | **Auto GPU Switcher** | Dynamic iGPU/dGPU switching without user intervention based on power & workload | `subsystems/auto-gpu-switcher/` directory skeleton & architecture defined | 🟡 **In Development** | **20%** |
 | **Obj 4** | **TitanShare (Linux–Android)** | P2P local file transfer via mDNS/UNIX socket & remote monitoring Android app | `subsystems/titan-share/` layout & storage architecture specs ready in Knowledge Base | 🟡 **In Development** | **25%** |
 | **Obj 5** | **TitanMirror (Screen Mirroring)** | Low-latency (<100ms) Wayland-native screen mirroring for Android (MediaProjection / H.264) | `subsystems/titan-mirror/` layout & pipeline design ready | 🟡 **In Development** | **15%** |
@@ -89,8 +89,8 @@ Evaluation against Section 6 ("Expected Outcomes") of the SLTC research proposal
 * **Evidence**: The 3-tier slicing architecture (`titan-active`, `titan-background`, `titan-frozen`) in `titan-hwm` reclaims memory from idle workspaces and freezes inactive background tasks, keeping idle RAM at ~550MB compared to Ubuntu/GNOME's ~1.4GB.
 
 ### ❓ RQ2: *Can workload types be accurately inferred using OS-level signals?*
-* **Status**: **Validated via Hyprland IPC + Exec Hooks.**
-* **Evidence**: `titan-exec-hook` and `archtitan-session-guard` inspect process metadata, active window focus, and TOML policies to route applications into appropriate cgroups and seccomp profiles without developer friction.
+* **Status**: **Proven & Production-Implemented.**
+* **Evidence**: The 3-signal fusion classifier (`titan-hwm-v3/classifier/fusion_classifier.cpp`) fuses depth-3 process tree traversal (detecting build daemons, LSP servers, and execution runtimes), Hyprland window title and class IPC telemetry, and CWD project filesystem markers with confidence-weighted voting. Combined with dynamic cmdline drift reclassification (HC-10) and CPU delta execution detection, it autonomously categorizes workloads into developer taxonomies (`SYSTEM_DEV`, `ANDROID_DEV`, `WEB_DEV`, `SERVICE`, `VM`, `NEUTRAL`) with zero manual configuration.
 
 ### ❓ RQ3: *Can resource allocation policies prevent interruption of background processes during workspace switching?*
 * **Status**: **Proven.**
@@ -109,6 +109,8 @@ graph TD
     subgraph "User Space (Wayland & First-Party Suite)"
         H[Hyprland Compositor]
         W[Waybar Glassmorphic Panel]
+        TQS[Titan QuickSettings Control Center]
+        TT[Titan Tour v2 Cinematic Onboarding]
         R[Rofi App Launcher]
         K[Kitty Terminal]
         TS_APP[ArchTitan Settings]
@@ -118,7 +120,7 @@ graph TD
     end
 
     subgraph "Custom ArchTitan Daemons & Middleware"
-        THM[Titan Hardware Manager Daemon]
+        THM[Titan Hardware Manager Daemon v3]
         TSB[Titan Sandbox Daemon]
         AGS[Auto GPU Switcher]
         TSS[TitanShare P2P Daemon]
@@ -132,6 +134,8 @@ graph TD
     end
 
     H --- W
+    H --- TQS
+    H --- TT
     H --- R
     H --- K
     TS_APP -.->|Configures| THM
@@ -142,23 +146,31 @@ graph TD
     TSB ==>|Applies| SC
 ```
 
-### 1. ⚙️ Titan Hardware Manager (`titan-hwm`)
-* **Source**: `titan-hwm-v3/` (CMake project; the v1/v2 monolith in `titan-hwm-source/` was removed as it was superseded and never installed into the ISO)
-* **Features**: Privileged C++ systemd daemon that manages `cgroups v2` slices (`titan-active`, `titan-background`, `titan-frozen`). Monitors `/proc/pressure/{memory,cpu,io}` to dynamically throttle heavy background tasks (e.g. kernel compilation, rendering) whenever foreground interactive tasks need CPU/GPU priority.
+### 1. ⚙️ Titan Hardware Manager (`titan-hwm` v3)
+* **Source**: `titan-hwm-v3/` (Modern C++20 CMake architecture)
+* **Features**: Privileged C++ systemd daemon that manages `cgroups v2` slices (`archtitan-active.slice`, `archtitan-background.slice`, `archtitan-frozen.slice`). Features a **Multi-Signal Fusion Classifier** combining depth-3 process tree traversal, Hyprland window title/class IPC telemetry, and CWD project markers; an **Execution State Detector** distinguishing active execution from dormant processes; and dynamic **PSI memory stall escalation** that proactively throttles and freezes background consumers before destructive OOM conditions emerge.
 
-### 2. 🛡️ Titan Sandbox (`titan-sandboxd`)
+### 2. 🎛️ Titan QuickSettings (`titan-quicksettings`)
+* **Source**: `subsystems/titan-quicksettings/`
+* **Features**: macOS-inspired Liquid Glass Wayland Control Center built with Qt6/QML and LayerShell Qt. Features real-time expandable quick toggles (Wi-Fi network picker, Bluetooth device manager, Audio sink switcher, Display brightness/scaling, Do Not Disturb, and Power Profiles), interactive sliders, and unified MPRIS media player playback controls.
+
+### 3. 🚀 Titan Tour v2 (`titan-tour`)
+* **Source**: `subsystems/titan-tour/`
+* **Features**: Interactive, cinematic first-run walkthrough utilizing Wayland LayerShell overlay mode. Built with a 3-island Bento stage, interactive ZoneOSD dwell pods, live system telemetry (kernel, uptime, memory, CPU), and guided workspace navigation shortcuts.
+
+### 4. 🛡️ Titan Sandbox (`titan-sandboxd`)
 * **Source**: `sandbox/titan-sandboxd.cpp`
 * **Features**: Zero-overhead containerization engine leveraging Linux namespaces, seccomp-BPF syscall filters, and `PR_SET_NO_NEW_PRIVS`. Intercepts desktop executions via `titan-exec-hook` and applies granular security profiles defined in `/etc/titan-sandbox/policies/`.
 
-### 3. 🎛️ ArchTitan Settings (`archtitan-settings`)
+### 5. ⚙️ ArchTitan Settings (`archtitan-settings`)
 * **Source**: `archtitan-settings/`
 * **Features**: Native Qt6/QML control center. Backends include `SystemInfo`, `AudioBackend` (PipeWire volume, sinks, equalizer presets), `DisplayManager` (Hyprland monitor scaling and refresh rates), `NetworkManager`, `PowerBackend` (Performance, Balanced, Power Saving), `WallpaperManager`, and `SecurityPage`.
 
-### 4. 🌐 Titan Browser (`titanbrowser`)
+### 6. 🌐 Titan Browser (`titanbrowser`)
 * **Source**: `titan-browser-source/`
 * **Features**: Developer browser built with Qt6 WebEngine. Features compact vertical navigation, Spaces, Command Bar (`Ctrl+K`), DevTools toggle, dark settings (`settings.html`), custom start page (`homepage.html`), and **TitanShield Engine** (network request blocking, DOM element removal, and deep YouTube/Spotify JSON/fetch/XHR payload anti-ad interception).
 
-### 5. 📊 TitanFetch & Titan Media HUD
+### 7. 📊 TitanFetch & Titan Media HUD
 * **Source**: `titanfetch-src/`, `subsystems/titan-media-hud/`
 * **Features**: C++/Qt6 direct `sysfs`/`cgroups` reader providing ASCII terminal output and a live animated GUI card. Titan Media HUD provides a floating Wayland MPRIS overlay with track metadata and playback controls.
 

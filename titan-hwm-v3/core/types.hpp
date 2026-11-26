@@ -15,6 +15,12 @@ namespace thm {
 using ms_clock   = std::chrono::steady_clock;
 using time_point = std::chrono::time_point<ms_clock>;
 
+// v3.4: Hyprland IPC focus events stay authoritative for this long after the
+// user leaves a workspace. Prevents an immediate downgrade on a quick switch.
+static constexpr long kRecentFocusWindowS = 30;
+
+inline long seconds_since(const time_point& tp);
+
 // ─────────────────────────────────────────────────────────────────────────────
 // WorkloadType — classification label ONLY, never used as a kill authority
 // ─────────────────────────────────────────────────────────────────────────────
@@ -93,13 +99,17 @@ enum class PolicyDecision {
 struct ProcessNode {
     pid_t       pid        = 0;
     pid_t       ppid       = 0;
+    pid_t       sid        = 0;   // session ID (getsid)
     std::string comm;           // /proc/pid/stat field 2
     std::string exe;            // /proc/pid/exe readlink result
     std::string cmdline;        // argv[0] from /proc/pid/cmdline
     std::string cwd;            // /proc/pid/cwd readlink result
+    std::string cgroup;         // relevant systemd scope/slice from /proc/pid/cgroup
     char        proc_state = '?'; // R, S, D, T, Z from /proc/pid/stat
     long        rss_kb     = 0;
     long        cpu_ticks  = 0;  // utime+stime snapshot for delta
+    float       cpu_pct    = 0.0f; // % CPU over the last sample window (100% = 1 core)
+    uid_t       uid        = 0;   // real UID from stat("/proc/<pid>")
     std::vector<pid_t> children;
 
     // Ownership — assigned by OwnershipGraph
@@ -115,11 +125,27 @@ struct ProcessNode {
 // ─────────────────────────────────────────────────────────────────────────────
 // Workload — group of related processes forming one logical unit of work
 // ─────────────────────────────────────────────────────────────────────────────
+// An observed (unclassified) workload must consume at least this much CPU
+// (summed over all member PIDs; 100% == one core) before it counts as real
+// system demand for the governor and the CPU slice arbiter. Idle windows that
+// merely happen to be observed must not pin PERFORMANCE, but a game, Blender
+// render or training job that the classifier does not recognise must never be
+// mistaken for an idle desktop (it used to force POWERSAVE).
+static constexpr float OBSERVED_CPU_DEMAND_PCT = 15.0f;
+
 struct Workload {
     uint32_t      id;
     int           workspace_id  = -1;
+    // v3.9: Hyprland active-window evidence bound to this workload root.
+    // Empty on headless/unmatched roots — children inherit via ownership.
+    std::string   window_class;
+    std::string   window_title;
     WorkloadType  type          = WorkloadType::NEUTRAL;
     WorkloadState state         = WorkloadState::DISCOVERED;
+
+    // Aggregate CPU% over all member PIDs, refreshed every tick from the
+    // ExecutionDetector's measured deltas (100% == one fully used core).
+    float         cpu_pct       = 0.0f;
 
     // Classification metadata (from FusionClassifier)
     float         confidence    = 0.0f;
@@ -130,6 +156,18 @@ struct Workload {
     bool          is_protected       = false; // hard block — never touch
     bool          ai_owned           = false; // AI agent owns this workload
     bool          latency_sensitive  = false; // TitanMirror, audio, real-time
+    // v3.1: observation-only workload. Tracked for telemetry so the system
+    // monitor reflects real process trees, but NEVER granted enforcement
+    // authority: PolicyEngine always returns KEEP_BACKGROUND and the daemon
+    // skips enforcement for it. A workload leaves observation-only status once
+    // the classifier identifies it.
+    bool          observed           = false;
+
+    // v3.3 workload intent — descriptive, derived from the classifier. It
+    // routes work to a CPU slice; it is never a kill/freeze authority.
+    bool          latency_critical   = false; // game / real-time app — never capped or idled
+    bool          throughput_bulk    = false; // render / compile — safe to cap when background
+    bool          gpu_feeding        = false; // dataloader feeding a GPU — uncapped latency slice
     // ── v3.1 additions ────────────────────────────────────────────────────
     bool          is_browser_root    = false; // HC-05/06: browser root — skip SIGSTOP on FREEZE
     bool          is_reclassifiable  = false; // HC-10: allow WorkloadType re-evaluation
@@ -153,10 +191,21 @@ struct WorkspaceState {
     int           id           = -1;
     bool          is_visible   = false; // on a physical monitor right now
     bool          is_focused   = false; // receiving keyboard input
+    time_point    last_focused;         // v3.4: last Hyprland focus event
     time_point    last_user_activity;
     std::string   active_window_class;  // Hyprland window class of focused window
     std::string   active_window_title;  // Hyprland window title of focused window
     std::vector<uint32_t> workload_ids; // workloads associated with this WS
+
+    // v3.4 workload context. True for the live focus/visibility signal OR
+    // during the bounded recent-focus window after a Hyprland workspace event.
+    // Default-constructed states have no last_focused stamp, so existing tests
+    // and callers keep the old behaviour exactly.
+    bool context_active(long window_s = kRecentFocusWindowS) const {
+        if (is_focused || is_visible) return true;
+        if (last_focused == time_point{}) return false;
+        return seconds_since(last_focused) < window_s;
+    }
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -180,6 +229,10 @@ struct ClassificationResult {
     bool         ai_modifier = false;  // AI agent child detected
     bool         latency_sensitive = false; // streaming / media detected
     bool         is_browser_root   = false; // HC-05/06: root is a browser process
+    // v3.3: CPU_slice intent for games / bulk renderers / GPU-feeding jobs.
+    bool         latency_critical  = false;
+    bool         throughput_bulk   = false;
+    bool         gpu_feeding       = false;
     // Full per-type score map for polyglot / multi-context detection
     std::unordered_map<int, float> score_map;
 };
@@ -248,6 +301,12 @@ inline const char* to_string(PolicyDecision d) {
 // ─────────────────────────────────────────────────────────────────────────────
 inline long minutes_since(const time_point& tp) {
     return std::chrono::duration_cast<std::chrono::minutes>(
+        ms_clock::now() - tp).count();
+}
+
+// Convenience: seconds elapsed since a time_point
+inline long seconds_since(const time_point& tp) {
+    return std::chrono::duration_cast<std::chrono::seconds>(
         ms_clock::now() - tp).count();
 }
 

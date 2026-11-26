@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=TitanFocus
+GenericName=Developer Work Optimization Engine
+Comment=Advisory Pomodoro, ergonomic cadence, and focus telemetry overlay for ArchTitan OS
+Exec=/usr/local/bin/titan-focus --toggle
+Icon=preferences-system-time
+Terminal=false
+Categories=Utility;Development;
+Keywords=focus;pomodoro;break;ergonomics;hydration;timer;
+StartupNotify=false

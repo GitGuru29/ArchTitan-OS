@@ -57,14 +57,16 @@ Item {
             value: sliderRoot.value
             stepSize: 1
             snapMode: Slider.NoSnap
-            focusPolicy: Qt.NoFocus
+            // Reachable with Tab and adjustable with the arrow keys.
+            focusPolicy: Qt.StrongFocus
+            activeFocusOnTab: true
 
             background: Rectangle {
                 height: 6
                 radius: 3
                 color: TitanTheme.bgInset
-                border.color: TitanTheme.borderSubtle
-                border.width: 1
+                border.color: control.activeFocus ? TitanTheme.accent : TitanTheme.borderSubtle
+                border.width: control.activeFocus ? 2 : 1
 
                 // Filled portion
                 Rectangle {

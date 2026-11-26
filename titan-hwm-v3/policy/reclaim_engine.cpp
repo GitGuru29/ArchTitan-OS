@@ -3,6 +3,8 @@
 // Phase 10 — 9-step safety-checked termination sequence
 // =============================================================================
 #include "reclaim_engine.hpp"
+#include "../core/signal_utils.hpp"
+#include "../workload/dependency_graph.hpp"
 
 #include <fstream>
 #include <iostream>
@@ -21,50 +23,6 @@
 extern char** environ;
 
 namespace thm {
-
-namespace {
-
-// Outcome of a signal attempt, distinguished so callers can log accurately.
-enum class SignalResult {
-    Signaled,  // signal delivered (or the process was already gone at open time)
-    Gone,      // no such process — nothing to do, and the correct thing to log
-    Failed     // refused or errored; errno is set
-};
-
-// Deliver `sig` to exactly the process currently holding PID `pid`.
-//
-// A liveness check followed by kill() has a time-of-check/time-of-use window:
-// the PID can exit and be recycled, and the signal then lands on an unrelated
-// process. A pidfd pins the *process* rather than the number, so once opened the
-// descriptor always refers to the same process — if that process has exited the
-// send fails with ESRCH and a recycled PID can never be signalled through it.
-// That makes check-and-signal atomic with respect to recycling, closing the
-// window rather than narrowing it.
-//
-// The glibc wrappers are not exported by this toolchain's glibc, so the
-// syscalls are issued directly. Kernels before 5.3 return ENOSYS and fall back
-// to kill(), which is still guarded by the caller's protected-PID check.
-SignalResult signal_pid(pid_t pid, int sig) {
-    const int pfd = static_cast<int>(::syscall(SYS_pidfd_open, pid, 0));
-
-    if (pfd >= 0) {
-        const long rc = ::syscall(SYS_pidfd_send_signal, pfd, sig, nullptr, 0);
-        const int err = (rc == 0) ? 0 : errno;
-        ::close(pfd);
-        if (rc == 0)     return SignalResult::Signaled;
-        if (err == ESRCH) return SignalResult::Gone;     // exited before signal
-        if (err != ENOSYS) { errno = err; return SignalResult::Failed; }
-        // ENOSYS — pre-5.3 kernel, fall through to the plain path
-    } else if (errno == ESRCH) {
-        return SignalResult::Gone;
-    }
-    // errno == ENOSYS here means pidfd is unsupported entirely.
-
-    if (::kill(pid, sig) == 0 || errno == ESRCH) return SignalResult::Signaled;
-    return SignalResult::Failed;
-}
-
-} // namespace
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Safety checks
@@ -85,7 +43,14 @@ bool ReclaimEngine::check_not_executing(
 
 bool ReclaimEngine::check_no_active_dependent(
         const Workload& wl,
-        const std::unordered_map<uint32_t, Workload>& all) const {
+        const std::unordered_map<uint32_t, Workload>& all,
+        const WorkloadDependencyGraph* deps) const {
+    // v3.10: graph first. It covers cross-root relationships the old root_pid
+    // equality check could never see (LSP/build child -> IDE root, shared CWD,
+    // and ancestor process in another workload).
+    if (deps != nullptr && deps->has_active_dependent(wl.id)) return false;
+
+    // Backward-compatible fallback for callers that have not built a graph.
     // A dependent is another workload whose root_pid is a child of this workload's pids
     for (const auto& [id, other] : all) {
         if (id == wl.id) continue;
@@ -204,7 +169,7 @@ void ReclaimEngine::kill_tree(const std::vector<pid_t>& pids, int sig,
                       << " is a browser, not the reclaim target — not signalled\n";
             continue;
         }
-        switch (signal_pid(pid, sig)) {
+        switch (signal_process(pid, sig)) {
             case SignalResult::Gone:
                 break;  // already exited — not an error, and nothing to log
             case SignalResult::Failed:
@@ -226,7 +191,8 @@ void ReclaimEngine::kill_tree(const std::vector<pid_t>& pids, int sig,
 bool ReclaimEngine::reclaim(
         const Workload&                               wl,
         const std::unordered_map<pid_t, ProcessNode>& graph,
-        const std::unordered_map<uint32_t, Workload>& all_workloads)
+        const std::unordered_map<uint32_t, Workload>& all_workloads,
+        const WorkloadDependencyGraph*                 deps)
 {
     // ── Step 1: Protected check ───────────────────────────────────────────
     if (!check_not_protected(wl)) {
@@ -241,9 +207,10 @@ bool ReclaimEngine::reclaim(
     }
 
     // ── Step 3: Active dependent check ────────────────────────────────────
-    if (!check_no_active_dependent(wl, all_workloads)) {
+    if (!check_no_active_dependent(wl, all_workloads, deps)) {
         std::cout << "[Reclaim] Abort: workload " << wl.id
-                  << " has an active dependent.\n";
+                  << " has an active dependent"
+                  << (deps != nullptr ? " (dependency graph)" : "") << ".\n";
         return false;
     }
 
@@ -272,7 +239,7 @@ bool ReclaimEngine::reclaim(
     // Conditions may have changed during the grace period
     if (!check_not_protected(wl)          ||
         !check_not_executing(wl, graph)   ||
-        !check_no_active_dependent(wl, all_workloads) ||
+        !check_no_active_dependent(wl, all_workloads, deps) ||
         !check_no_recent_focus(wl)) {
         std::cout << "[Reclaim] Conditions changed during grace period — aborting.\n";
         return false;

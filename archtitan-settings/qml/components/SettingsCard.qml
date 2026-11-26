@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
-import ArchTitanSettings
 import ArchTitan.TitanUI
+import ArchTitanSettings
 
 Rectangle {
     id: cardRoot
@@ -31,21 +31,18 @@ Rectangle {
 
             Text {
                 anchors.verticalCenter: parent.verticalCenter
-                text: cardRoot.title.toUpperCase()
-                font { pixelSize: 10; family: "Inter" }
+                text: cardRoot.title
+                font { pixelSize: 13; family: "Inter" }
                 font.weight: Font.DemiBold
-                font.letterSpacing: 1.2
-                color: TitanTheme.textLow
+                color: TitanTheme.textHigh
             }
         }
 
-        // Subtle divider under title
-        Rectangle {
+        // Spacer in place of the old divider — M3 groups breathe instead of ruling lines
+        Item {
             visible: cardRoot.title !== ""
             Layout.fillWidth: true
-            height: 1
-            color: TitanTheme.borderSubtle
-            Layout.bottomMargin: 12
+            Layout.preferredHeight: 8
         }
     }
 

@@ -11,8 +11,8 @@ import "../style"
 RowLayout {
     id: headerRoot
     Layout.fillWidth: true
-    Layout.preferredHeight: 68
-    spacing: 12
+    Layout.preferredHeight: 38
+    spacing: 10
 
     property string userName: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.userName)
                               ? systemCtrl.userName
@@ -24,72 +24,48 @@ RowLayout {
     property bool showPowerMenu: false
     signal togglePowerMenu()
 
-    function getGreeting() {
-        var h = new Date().getHours();
-        var period = "Good evening";
-        var icon = "🌙";
-        if (h >= 5 && h < 12) {
-            period = "Good morning";
-            icon = "☀️";
-        } else if (h >= 12 && h < 17) {
-            period = "Good afternoon";
-            icon = "🌤️";
-        } else if (h >= 17 && h < 22) {
-            period = "Good evening";
-            icon = "🌙";
-        } else {
-            period = "Good night";
-            icon = "🌙";
-        }
-        return period + ", " + userName + " " + icon;
+    // Shared by the pointer path and the keyboard path so both stay identical.
+    function openSettingsAction() {
+        if (typeof systemCtrl !== "undefined" && systemCtrl)
+            systemCtrl.openSettings();
     }
 
-    // ── Clock & Date Cluster ────────────────────────────────────────────────
-    ColumnLayout {
-        spacing: 2
+    function getGreeting() {
+        return userName;
+    }
+
+    // ── Apple macOS Control Center Session Header ───────────────────────────
+    RowLayout {
+        spacing: 6
         Layout.alignment: Qt.AlignVCenter
 
-        RowLayout {
-            spacing: 6
-            Layout.alignment: Qt.AlignLeft
+        Text {
+            id: clockTime
+            text: "12:00"
+            font.family: TitanTheme.fontFamily
+            font.pixelSize: 17
+            font.weight: Font.Bold
+            color: TitanTheme.textPrimary
+        }
 
-            Text {
-                id: clockTime
-                text: "23:03"
-                font.family: TitanTheme.fontFamily
-                font.pixelSize: 34
-                font.weight: Font.Bold
-                color: TitanTheme.textPrimary
-            }
-
-            Text {
-                id: clockSeconds
-                text: "40"
-                font.family: TitanTheme.fontFamily
-                font.pixelSize: 12
-                color: TitanTheme.textSubtle
-                Layout.alignment: Qt.AlignBaseline
-            }
+        Text {
+            text: "•"
+            font.pixelSize: 11
+            color: TitanTheme.textMuted
         }
 
         Text {
             id: dateLabel
-            text: "Sun, Oct 11"
+            text: "Sat, Nov 7"
             font.family: TitanTheme.fontFamily
-            font.pixelSize: 13
+            font.pixelSize: 12
             font.weight: Font.DemiBold
             color: TitanTheme.textSecondary
         }
 
-        Text {
-            id: greetingLabel
-            text: headerRoot.getGreeting()
-            font.family: TitanTheme.fontFamily
-            font.pixelSize: 12
-            color: TitanTheme.textMuted
-            elide: Text.ElideRight
-            Layout.maximumWidth: 190
-        }
+        // Hidden bindings preserved for background timer
+        Text { id: clockSeconds; visible: false; text: "" }
+        Text { id: greetingLabel; visible: false; text: "" }
     }
 
     Item { Layout.fillWidth: true }
@@ -144,6 +120,17 @@ RowLayout {
                 }
             }
 
+            // Keyboard: Tab-reachable, Enter / Space activate, focus ring below.
+            activeFocusOnTab: true
+            Keys.onReturnPressed: (event) => { headerRoot.toggleNotificationPanel(); event.accepted = true }
+            Keys.onEnterPressed:  (event) => { headerRoot.toggleNotificationPanel(); event.accepted = true }
+            Keys.onSpacePressed:  (event) => { headerRoot.toggleNotificationPanel(); event.accepted = true }
+            Accessible.role: Accessible.Button
+            Accessible.name: "Notifications"
+            Accessible.onPressAction: headerRoot.toggleNotificationPanel()
+
+            FocusRing {}
+
             MouseArea {
                 id: notifMa
                 anchors.fill: parent
@@ -179,6 +166,17 @@ RowLayout {
                 color: headerRoot.editMode ? "#FFFFFF" : TitanTheme.textPrimary
             }
 
+            // Keyboard: Tab-reachable, Enter / Space activate, focus ring below.
+            activeFocusOnTab: true
+            Keys.onReturnPressed: (event) => { headerRoot.toggleEditMode(); event.accepted = true }
+            Keys.onEnterPressed:  (event) => { headerRoot.toggleEditMode(); event.accepted = true }
+            Keys.onSpacePressed:  (event) => { headerRoot.toggleEditMode(); event.accepted = true }
+            Accessible.role: Accessible.Button
+            Accessible.name: "Edit quick panel"
+            Accessible.onPressAction: headerRoot.toggleEditMode()
+
+            FocusRing {}
+
             MouseArea {
                 id: editMa
                 anchors.fill: parent
@@ -210,15 +208,23 @@ RowLayout {
                 color: TitanTheme.textPrimary
             }
 
+            // Keyboard: Tab-reachable, Enter / Space activate, focus ring below.
+            activeFocusOnTab: true
+            Keys.onReturnPressed: (event) => { openSettingsAction(); event.accepted = true }
+            Keys.onEnterPressed:  (event) => { openSettingsAction(); event.accepted = true }
+            Keys.onSpacePressed:  (event) => { openSettingsAction(); event.accepted = true }
+            Accessible.role: Accessible.Button
+            Accessible.name: "Settings"
+            Accessible.onPressAction: openSettingsAction()
+
+            FocusRing {}
+
             MouseArea {
                 id: setMa
                 anchors.fill: parent
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
-                onClicked: {
-                    if (typeof systemCtrl !== "undefined" && systemCtrl)
-                        systemCtrl.openSettings();
-                }
+                onClicked: openSettingsAction()
             }
         }
 
@@ -245,6 +251,17 @@ RowLayout {
                 font.pixelSize: 14
                 color: headerRoot.showPowerMenu ? TitanTheme.accentText : (pwrMa.containsMouse ? TitanTheme.red : TitanTheme.textPrimary)
             }
+
+            // Keyboard: Tab-reachable, Enter / Space activate, focus ring below.
+            activeFocusOnTab: true
+            Keys.onReturnPressed: (event) => { headerRoot.togglePowerMenu(); event.accepted = true }
+            Keys.onEnterPressed:  (event) => { headerRoot.togglePowerMenu(); event.accepted = true }
+            Keys.onSpacePressed:  (event) => { headerRoot.togglePowerMenu(); event.accepted = true }
+            Accessible.role: Accessible.Button
+            Accessible.name: "Power menu"
+            Accessible.onPressAction: headerRoot.togglePowerMenu()
+
+            FocusRing {}
 
             MouseArea {
                 id: pwrMa

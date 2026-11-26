@@ -1,5 +1,6 @@
 #include "profilemanager.h"
 #include "adblocker.h"
+#include "TitanPalette.h"
 #include <QStandardPaths>
 #include <QDir>
 #include <QFile>
@@ -36,7 +37,7 @@ void ProfileManager::initialize(AdBlocker *adBlocker)
         UserProfile def;
         def.id = QStringLiteral("default");
         def.name = QStringLiteral("Personal");
-        def.avatarColor = QStringLiteral("#89b4fa");
+        def.avatarColor = TitanPalette::hex(TitanPalette::accent());
         def.avatarIcon = QStringLiteral("user");
         def.email = QStringLiteral("");
         def.isDefault = true;
@@ -89,7 +90,7 @@ UserProfile ProfileManager::activeProfile() const
     UserProfile fallback;
     fallback.id = QStringLiteral("default");
     fallback.name = QStringLiteral("Personal");
-    fallback.avatarColor = QStringLiteral("#89b4fa");
+    fallback.avatarColor = TitanPalette::hex(TitanPalette::accent());
     fallback.avatarIcon = QStringLiteral("user");
     return fallback;
 }
@@ -113,7 +114,7 @@ UserProfile ProfileManager::createProfile(const QString &name, const QString &co
     UserProfile p;
     p.id = QStringLiteral("profile_%1").arg(QDateTime::currentMSecsSinceEpoch());
     p.name = name.trimmed().isEmpty() ? QStringLiteral("New Profile") : name.trimmed();
-    p.avatarColor = color.isEmpty() ? QStringLiteral("#89b4fa") : color;
+    p.avatarColor = color.isEmpty() ? TitanPalette::hex(TitanPalette::accent()) : color;
     p.avatarIcon = icon.isEmpty() ? QStringLiteral("user") : icon;
     p.email = email.trimmed();
     p.isDefault = false;
@@ -315,7 +316,7 @@ void ProfileManager::loadFromDisk()
         UserProfile p;
         p.id = obj.value(QStringLiteral("id")).toString();
         p.name = obj.value(QStringLiteral("name")).toString();
-        p.avatarColor = obj.value(QStringLiteral("avatarColor")).toString(QStringLiteral("#89b4fa"));
+        p.avatarColor = obj.value(QStringLiteral("avatarColor")).toString(TitanPalette::hex(TitanPalette::accent()));
         p.avatarIcon = obj.value(QStringLiteral("avatarIcon")).toString(QStringLiteral("user"));
         p.email = obj.value(QStringLiteral("email")).toString();
         p.isDefault = obj.value(QStringLiteral("isDefault")).toBool(false);

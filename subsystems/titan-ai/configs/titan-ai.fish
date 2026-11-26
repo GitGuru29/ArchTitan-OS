@@ -1,0 +1,25 @@
+# fish completions for titan-ai
+complete -c titan-ai -f
+
+complete -c titan-ai -n '__fish_use_subcommand' -a 'chat' -d 'Interactive chat session'
+complete -c titan-ai -n '__fish_use_subcommand' -a 'ask' -d 'Ask a single question'
+complete -c titan-ai -n '__fish_use_subcommand' -a 'search' -d 'Google Search grounding via Gemini'
+complete -c titan-ai -n '__fish_use_subcommand' -a 'setup' -d 'Google-first setup with API key fallback'
+complete -c titan-ai -n '__fish_use_subcommand' -a 'status' -d 'Show providers and auth methods'
+complete -c titan-ai -n '__fish_use_subcommand' -a 'auth' -d 'Google sign-in management'
+complete -c titan-ai -n '__fish_use_subcommand' -a 'config' -d 'Manage titan-ai.json'
+complete -c titan-ai -n '__fish_use_subcommand' -a 'docs' -d 'Print the Google sign-in guide'
+
+complete -c titan-ai -s p -l provider -r -a 'openai chatgpt claude anthropic gemini google auto' -d 'AI provider'
+complete -c titan-ai -s m -l model -r -d 'Override model'
+complete -c titan-ai -l system -r -d 'System prompt'
+complete -c titan-ai -l max-tokens -r -d 'Maximum output tokens'
+complete -c titan-ai -l temperature -r -d 'Sampling temperature'
+complete -c titan-ai -l timeout -r -d 'Request timeout in seconds'
+complete -c titan-ai -l all -d 'Ask every configured provider'
+complete -c titan-ai -s j -l json -d 'Print full JSON response'
+complete -c titan-ai -n '__fish_seen_subcommand_from search' -l links -d 'Print only source links'
+complete -c titan-ai -n '__fish_seen_subcommand_from auth; and __fish_is_nth_token 2' -a 'google status logout'
+complete -c titan-ai -n '__fish_seen_subcommand_from auth' -l device -d 'Device-code sign-in'
+complete -c titan-ai -n '__fish_seen_subcommand_from auth' -l setup -d 'Guided Google Desktop-app client setup'
+complete -c titan-ai -n '__fish_seen_subcommand_from config; and __fish_is_nth_token 2' -a 'show path edit set unset'

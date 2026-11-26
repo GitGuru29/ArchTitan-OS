@@ -10,6 +10,10 @@
 #include <filesystem>
 #include <cstring>
 #include <cstdlib>
+#include <cctype>
+#include <algorithm>
+#include <unordered_set>
+#include <chrono>
 #include <unistd.h>
 #include <poll.h>
 #include <sys/socket.h>
@@ -18,6 +22,185 @@
 namespace fs = std::filesystem;
 
 namespace thm {
+
+namespace {
+
+long long now_steady_ms() {
+    using namespace std::chrono;
+    return duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
+}
+
+std::vector<std::string> split_tokens(const std::string& s) {
+    std::vector<std::string> out;
+    std::istringstream ss(s);
+    std::string tok;
+    while (ss >> tok) out.push_back(tok);
+    return out;
+}
+
+bool has_token(const std::vector<std::string>& toks, const char* name) {
+    for (const auto& t : toks)
+        if (t == name) return true;
+    return false;
+}
+
+std::vector<std::string> normalized_tokens(const std::string& s) {
+    std::string clean;
+    clean.reserve(s.size());
+    for (unsigned char c : s)
+        clean.push_back(std::isalnum(c) ? static_cast<char>(std::tolower(c)) : ' ');
+    std::istringstream ss(clean);
+    std::vector<std::string> out;
+    std::string tok;
+    while (ss >> tok) out.push_back(tok);
+    return out;
+}
+
+std::string canonical_token(const std::string& t) {
+    if (t == "chromium" || t == "googlechrome") return "chrome";
+    if (t == "firefoxesr") return "firefox";
+    if (t == "visualstudiocode" || t == "vscodium") return "code";
+    return t;
+}
+
+std::vector<std::string> identity_tokens(const std::string& value) {
+    std::vector<std::string> out;
+    for (auto& t : normalized_tokens(value)) {
+        t = canonical_token(t);
+        if (t.size() >= 3) out.push_back(t);
+    }
+    return out;
+}
+
+bool significant_class_token(const std::string& t) {
+    static const std::unordered_set<std::string> generic = {
+        "com", "org", "net", "io", "app", "apps", "exe", "bin", "usr",
+        "local", "share", "lib", "lib64", "google", "microsoft", "inc",
+        "linux", "x11", "wayland", "desktop", "default", "client",
+        "clients", "window", "windows", "visual", "studio", "jetbrains",
+        "application", "launcher", "main", "root", "the", "new"
+    };
+    return t.size() >= 3 && generic.find(t) == generic.end();
+}
+
+bool token_match(const std::string& a, const std::string& b) {
+    if (a == b) return true;
+    const size_t shortest = std::min(a.size(), b.size());
+    return shortest >= 4 &&
+           a.compare(0, shortest, b, 0, shortest) == 0;
+}
+
+std::string read_first_line(const std::string& path) {
+    std::ifstream f(path);
+    std::string line;
+    std::getline(f, line);
+    while (!line.empty() && (line.back() == '\n' || line.back() == '\r' ||
+                             line.back() == ' '  || line.back() == '\t'))
+        line.pop_back();
+    return line;
+}
+
+bool write_line(const std::string& path, const std::string& value) {
+    std::ofstream f(path);
+    if (!f.is_open()) return false;
+    f << value;
+    f.flush();
+    const bool ok = f.good();
+    f.close();
+    return ok;
+}
+
+// Check /run/systemd/sessions/* for IDLE_HINT=1 or IDLE_HINT=yes
+bool systemd_session_idle_hint() {
+    std::error_code ec;
+    for (const auto& entry : fs::directory_iterator("/run/systemd/sessions", ec)) {
+        if (!entry.is_regular_file(ec)) continue;
+        const std::string fname = entry.path().filename().string();
+        if (fname.find(".ref") != std::string::npos) continue;
+        std::ifstream f(entry.path());
+        std::string line;
+        while (std::getline(f, line)) {
+            if (line == "IDLE_HINT=1" || line == "IDLE_HINT=yes")
+                return true;
+        }
+    }
+    return false;
+}
+
+// A graphical session exists only if logind reports an active wayland/x11
+// session. Headless multi-user.target (the QEMU A/B harness, CI, servers) has
+// none, so THM may safely treat a long-running bulk workload as unattended.
+bool systemd_graphical_session_active() {
+    std::error_code ec;
+    for (const auto& entry : fs::directory_iterator("/run/systemd/sessions", ec)) {
+        if (!entry.is_regular_file(ec)) continue;
+        const std::string fname = entry.path().filename().string();
+        if (fname.find(".ref") != std::string::npos) continue;
+
+        bool graphical = false;
+        bool active    = false;
+        std::ifstream f(entry.path());
+        std::string line;
+        while (std::getline(f, line)) {
+            if (line == "TYPE=wayland" || line == "TYPE=x11" ||
+                line == "TYPE=wayland,x11")
+                graphical = true;
+            if (line == "ACTIVE=1" || line == "STATE=active")
+                active = true;
+        }
+        if (graphical && active) return true;
+    }
+    return false;
+}
+
+} // namespace
+
+// ─────────────────────────────────────────────────────────────────────────────
+// window_context_matches — bind Hyprland active-window class to a process root.
+//
+// Hyprland's `activewindow` event carries class/title, not a PID. We therefore
+// require the class to match the process identity (comm, exe basename, argv0
+// basename). The title is deliberately NOT evidence: a headless `g++ main.cpp`
+// must not inherit a focused editor whose title contains "main.cpp".
+// ─────────────────────────────────────────────────────────────────────────────
+bool window_context_matches(const std::string& window_class,
+                            const std::string& comm,
+                            const std::string& exe,
+                            const std::string& cmdline) {
+    std::vector<std::string> class_tokens;
+    for (auto t : normalized_tokens(window_class)) {
+        t = canonical_token(t);
+        if (significant_class_token(t)) class_tokens.push_back(t);
+    }
+    if (class_tokens.empty()) return false;
+
+    std::vector<std::string> ids;
+    auto add_identity = [&ids](const std::string& value) {
+        for (auto& t : identity_tokens(value)) ids.push_back(t);
+    };
+    add_identity(comm);
+    if (!exe.empty()) add_identity(fs::path(exe).filename().string());
+    if (!cmdline.empty()) {
+        std::string argv0(cmdline.c_str()); // /proc cmdline is NUL-separated
+        if (!argv0.empty()) add_identity(fs::path(argv0).filename().string());
+    }
+    if (ids.empty()) return false;
+
+    for (const auto& c : class_tokens)
+        for (const auto& i : ids)
+            if (token_match(c, i)) return true;
+    return false;
+}
+
+void bind_window_context(Workload& workload,
+                         const WorkspaceState* ws,
+                         const ProcessNode* root) {
+    if (!ws || !root || ws->active_window_class.empty()) return;
+    if (!window_context_matches(ws->active_window_class,
+                                root->comm, root->exe, root->cmdline)) return;
+    workload.window_class = ws->active_window_class;
+    workload.window_title = ws->active_window_title;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Hyprland IPC socket discovery.
@@ -37,6 +220,7 @@ std::string WorkspaceMonitor::discover_socket_path() {
         std::string p = std::string(xdg) + "/hypr/" + sig + "/.socket2.sock";
         std::error_code ec;
         if (fs::exists(p, ec)) {
+            std::lock_guard<std::mutex> lk(conn_mtx_);
             hypr_runtime_dir_  = xdg;
             hypr_instance_sig_ = sig;
             return p;
@@ -45,9 +229,14 @@ std::string WorkspaceMonitor::discover_socket_path() {
 
     // 2) Discover the active instance under /run/user/<uid>/hypr/<instance>/.
     std::string best;
+    std::string best_dir;
+    std::string best_sig;
     fs::file_time_type best_time{};
     std::error_code ec;
-    for (const auto& userdir : fs::directory_iterator("/run/user", ec)) {
+    // THM_RUN_USER_DIR overrides the scan root (test seam; default /run/user).
+    const char* root_env = std::getenv("THM_RUN_USER_DIR");
+    const fs::path run_user = (root_env && *root_env) ? root_env : "/run/user";
+    for (const auto& userdir : fs::directory_iterator(run_user, ec)) {
         if (!userdir.is_directory())
             continue;
         fs::path hypr = userdir.path() / "hypr";
@@ -65,35 +254,59 @@ std::string WorkspaceMonitor::discover_socket_path() {
             if (ec3)
                 t = fs::file_time_type{};
             if (best.empty() || t > best_time) {
-                best               = sock.string();
-                best_time          = t;
-                hypr_runtime_dir_  = userdir.path().string();
-                hypr_instance_sig_ = inst.path().filename().string();
+                best      = sock.string();
+                best_time = t;
+                best_dir  = userdir.path().string();
+                best_sig  = inst.path().filename().string();
             }
         }
     }
-    if (!best.empty())
-        std::cerr << "[WS] Discovered Hyprland instance: " << best << "\n";
+    if (!best.empty()) {
+        std::lock_guard<std::mutex> lk(conn_mtx_);
+        hypr_runtime_dir_  = best_dir;
+        hypr_instance_sig_ = best_sig;
+    }
     return best;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// start / stop
+// start / stop / user presence
 // ─────────────────────────────────────────────────────────────────────────────
+void WorkspaceMonitor::mark_activity() {
+    last_activity_ms_.store(now_steady_ms(), std::memory_order_relaxed);
+}
+
+long long WorkspaceMonitor::seconds_since_last_activity() const {
+    const long long last = last_activity_ms_.load(std::memory_order_relaxed);
+    if (last <= 0) return 0;
+    const long long delta = now_steady_ms() - last;
+    return delta > 0 ? (delta / 1000) : 0;
+}
+
+bool WorkspaceMonitor::user_unattended(long idle_threshold_s) const {
+    if (systemd_session_idle_hint()) return true;
+
+    const bool ever = ever_connected_.load(std::memory_order_relaxed);
+    const bool now  = connected_.load(std::memory_order_relaxed);
+
+    if (!ever) {
+        // No compositor was ever available. A headless build host has nobody
+        // whose latency needs protecting; an active graphical session without
+        // Hyprland IPC still counts as a user (we only have Hyprland as the
+        // primary live context source).
+        return !systemd_graphical_session_active();
+    }
+
+    // Hyprland IPC was up and dropped: fail safe on the side of interactivity.
+    if (!now) return false;
+    return seconds_since_last_activity() >= idle_threshold_s;
+}
+
 bool WorkspaceMonitor::start() {
-    sock_path_ = discover_socket_path();
-    if (sock_path_.empty()) {
-        std::cerr << "[WS] No Hyprland instance found — "
-                  << "workspace monitoring disabled.\n";
-        return false;
-    }
-    if (!fs::exists(sock_path_)) {
-        std::cerr << "[WS] Hyprland socket not found: " << sock_path_ << "\n";
-        return false;
-    }
-    running_ = true;
+    if (running_.exchange(true))
+        return true; // already started
+    mark_activity();
     listener_thread_ = std::thread(&WorkspaceMonitor::listen_loop, this);
-    std::cout << "[WS] Listening on " << sock_path_ << "\n";
     return true;
 }
 
@@ -101,18 +314,61 @@ void WorkspaceMonitor::stop() {
     running_ = false;
     if (listener_thread_.joinable())
         listener_thread_.join();
+    connected_ = false;
+}
+
+void WorkspaceMonitor::sleep_while_running(int ms) {
+    // Chunked so stop() never waits more than ~100ms for the thread to notice.
+    for (int waited = 0; waited < ms && running_; waited += 100)
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// listen_loop — blocking read from Hyprland socket2 (event stream)
+// listen_loop — discover → connect → stream, retrying for the daemon's lifetime.
+//
+// THM is a system service and can come up before the SDDM autologin session has
+// created Hyprland's socket (the daemon used to look exactly once and then run
+// "headless" forever). It must also survive Hyprland exiting or restarting.
+// Failures are logged once per outage rather than on every retry.
 // ─────────────────────────────────────────────────────────────────────────────
 void WorkspaceMonitor::listen_loop() {
-    std::string path = sock_path_;
+    constexpr int kRetryMs = 2000;
+    bool announced_wait = false;
 
+    while (running_) {
+        const std::string path = discover_socket_path();
+        if (path.empty()) {
+            if (!announced_wait) {
+                std::cerr << "[WS] No Hyprland instance yet — will keep retrying "
+                             "(workspace monitoring pending).\n";
+                announced_wait = true;
+            }
+            sleep_while_running(kRetryMs);
+            continue;
+        }
+
+        if (listen_once(path)) {
+            // Was connected; it dropped (compositor exited/restarted).
+            if (running_)
+                std::cerr << "[WS] Hyprland connection lost — reconnecting.\n";
+            announced_wait = false;
+        } else if (!announced_wait) {
+            std::cerr << "[WS] Hyprland socket not accepting connections yet — "
+                         "will keep retrying.\n";
+            announced_wait = true;
+        }
+        sleep_while_running(kRetryMs);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// listen_once — one connection's lifetime: blocking read from socket2 (events)
+// ─────────────────────────────────────────────────────────────────────────────
+bool WorkspaceMonitor::listen_once(const std::string& path) {
     int fd = socket(AF_UNIX, SOCK_STREAM, 0);
     if (fd < 0) {
         std::cerr << "[WS] socket() failed: " << std::strerror(errno) << "\n";
-        return;
+        return false;
     }
 
     struct sockaddr_un addr{};
@@ -120,10 +376,13 @@ void WorkspaceMonitor::listen_loop() {
     std::strncpy(addr.sun_path, path.c_str(), sizeof(addr.sun_path) - 1);
 
     if (connect(fd, reinterpret_cast<struct sockaddr*>(&addr), sizeof(addr)) < 0) {
-        std::cerr << "[WS] connect() failed: " << std::strerror(errno) << "\n";
         close(fd);
-        return;
+        return false;
     }
+
+    connected_ = true;
+    ever_connected_ = true;
+    std::cout << "[WS] Listening on " << path << "\n";
 
     char buf[4096];
     std::string leftover;
@@ -163,7 +422,9 @@ void WorkspaceMonitor::listen_loop() {
         }
     }
 
+    connected_ = false;
     close(fd);
+    return true;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -181,6 +442,14 @@ void WorkspaceMonitor::handle_event(const std::string& line) {
     std::string event   = line.substr(0, split);
     std::string payload = line.substr(split + 2);
 
+    if (event == "workspace" || event == "workspacev2" ||
+        event == "focusedmon" || event == "activewindow" ||
+        event == "activewindowv2" || event == "openwindow" ||
+        event == "closewindow" || event == "movewindow" ||
+        event == "fullscreen") {
+        mark_activity();
+    }
+
     if (event == "workspace") {
         int ws_id = 0;
         try { ws_id = std::stoi(payload); } catch (...) { return; }
@@ -192,9 +461,13 @@ void WorkspaceMonitor::handle_event(const std::string& line) {
             // Mark previous workspace as unfocused
             if (workspaces_.count(prev))
                 workspaces_[prev].is_focused = false;
-            // Mark new workspace as focused
+            // Mark new workspace as focused. Stamp the Hyprland event so the
+            // v3.4 context layer can protect the recently-left workspace for
+            // kRecentFocusWindowS after the user switches away.
             workspaces_[ws_id].id = ws_id;
             workspaces_[ws_id].is_focused = true;
+            workspaces_[ws_id].last_focused = ms_clock::now();
+            workspaces_[ws_id].last_user_activity = ms_clock::now();
         }
 
         if (ws_cb_) ws_cb_(ws_id, true);
@@ -235,9 +508,16 @@ void WorkspaceMonitor::refresh_visibility() {
     // As a root system service we must inject the session env so hyprctl can
     // locate the compositor; otherwise it exits silently with no output.
     std::string cmd;
-    if (!hypr_runtime_dir_.empty() && !hypr_instance_sig_.empty()) {
-        cmd = "env XDG_RUNTIME_DIR=" + hypr_runtime_dir_ +
-              " HYPRLAND_INSTANCE_SIGNATURE=" + hypr_instance_sig_ +
+    std::string rdir, isig;
+    {
+        // Snapshot: the listener thread may re-discover these concurrently.
+        std::lock_guard<std::mutex> lk(conn_mtx_);
+        rdir = hypr_runtime_dir_;
+        isig = hypr_instance_sig_;
+    }
+    if (!rdir.empty() && !isig.empty()) {
+        cmd = "env XDG_RUNTIME_DIR=" + rdir +
+              " HYPRLAND_INSTANCE_SIGNATURE=" + isig +
               " hyprctl monitors -j 2>/dev/null";
     } else {
         cmd = "hyprctl monitors -j 2>/dev/null";
@@ -294,24 +574,57 @@ void WorkspaceMonitor::refresh_visibility() {
 GovernorHint WorkspaceMonitor::compute_governor(
         const std::unordered_map<uint32_t, Workload>& workloads,
         PressureLevel pressure,
-        GovernorHint current) {
+        GovernorHint current,
+        PressureLevel cpu_pressure,
+        bool thermally_constrained) {
 
+    bool any_active     = false;
     bool any_building   = false;
     bool any_latency    = false;
     bool all_idle       = true;
 
     for (const auto& [id, wl] : workloads) {
-        if (wl.state == WorkloadState::ACTIVE ||
-            wl.state == WorkloadState::BACKGROUND_EXECUTING) {
+        // Observation-only workloads are unclassified, NOT idle. A game,
+        // Blender render or training job that the classifier does not yet know
+        // is still real demand: ignoring it used to leave all_idle=true and
+        // pin the governor at POWERSAVE under NORMAL pressure. Only observed
+        // workloads with measurable CPU use (or confirmed executing state)
+        // count, so a file manager window does not block idle downclocking.
+        if (wl.observed &&
+            wl.cpu_pct < OBSERVED_CPU_DEMAND_PCT &&
+            wl.state != WorkloadState::BACKGROUND_EXECUTING) continue;
+        if (wl.state == WorkloadState::ACTIVE) {
+            any_active = true;
+            all_idle   = false;
+        } else if (wl.state == WorkloadState::BACKGROUND_EXECUTING) {
             all_idle = false;
         }
+        // v3.3: a background game or GPU dataloader is still demand — it keeps
+        // a full slice and must not be clocked down just because its workspace
+        // lost focus (streaming while playing, training while browsing).
+        if (wl.latency_critical || wl.gpu_feeding) {
+            any_active = true;
+            all_idle   = false;
+            any_latency = true;
+        }
         if (wl.state == WorkloadState::BACKGROUND_EXECUTING && wl.is_building)
+            any_building = true;
+        // A focused render / compile / training job gets the same boost as a
+        // classic build daemon, but only while it is actually consuming CPU.
+        if (wl.state == WorkloadState::ACTIVE && wl.throughput_bulk &&
+            wl.cpu_pct >= OBSERVED_CPU_DEMAND_PCT)
             any_building = true;
         if (wl.state == WorkloadState::ACTIVE && wl.latency_sensitive)
             any_latency = true;
     }
 
-    if (any_building || any_latency) {
+    const bool cpu_contended_active =
+        (cpu_pressure >= PressureLevel::MODERATE) && any_active;
+
+    if (any_building || any_latency || cpu_contended_active) {
+        if (thermally_constrained)
+            return GovernorHint::SCHEDUTIL;
+
         const bool may_hold_performance =
             (current == GovernorHint::PERFORMANCE)
                 ? (pressure <= PressureLevel::MODERATE)
@@ -320,37 +633,122 @@ GovernorHint WorkspaceMonitor::compute_governor(
         return GovernorHint::SCHEDUTIL;
     }
 
-    if (all_idle && pressure == PressureLevel::NORMAL) return GovernorHint::POWERSAVE;
+    if (all_idle && pressure == PressureLevel::NORMAL &&
+        cpu_pressure == PressureLevel::NORMAL) {
+        return GovernorHint::POWERSAVE;
+    }
     return GovernorHint::SCHEDUTIL;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// apply_governor — write to all CPU scaling_governor files
+// Governor translation — hints are abstract; kernels expose different names
 // ─────────────────────────────────────────────────────────────────────────────
-bool WorkspaceMonitor::apply_governor(GovernorHint hint) {
-    const char* name = "schedutil";
+std::string choose_scaling_governor(GovernorHint hint,
+                                    const std::string& available) {
+    const auto toks = split_tokens(available);
+    if (toks.empty()) return "";
+
     switch (hint) {
-        case GovernorHint::POWERSAVE:   name = "powersave";   break;
-        case GovernorHint::SCHEDUTIL:   name = "schedutil";   break;
-        case GovernorHint::PERFORMANCE: name = "performance"; break;
+        case GovernorHint::PERFORMANCE:
+            if (has_token(toks, "performance")) return "performance";
+            break;
+        case GovernorHint::POWERSAVE:
+            if (has_token(toks, "powersave")) return "powersave";
+            if (has_token(toks, "ondemand"))  return "ondemand";
+            if (has_token(toks, "schedutil")) return "schedutil";
+            break;
+        case GovernorHint::SCHEDUTIL:
+            if (has_token(toks, "schedutil"))    return "schedutil";
+            if (has_token(toks, "ondemand"))     return "ondemand";
+            if (has_token(toks, "conservative")) return "conservative";
+            // intel_pstate/amd-pstate active mode: "powersave" is the balanced,
+            // kernel-autoscaling governor (not a fixed minimum frequency).
+            if (has_token(toks, "powersave"))    return "powersave";
+            break;
+    }
+    return toks.front(); // last resort: whatever the platform considers default
+}
+
+std::string choose_energy_preference(GovernorHint hint,
+                                     const std::string& available) {
+    const auto toks = split_tokens(available);
+    if (toks.empty()) return "";
+
+    switch (hint) {
+        case GovernorHint::PERFORMANCE:
+            if (has_token(toks, "performance"))        return "performance";
+            if (has_token(toks, "balance_performance")) return "balance_performance";
+            break;
+        case GovernorHint::SCHEDUTIL:
+            if (has_token(toks, "balance_performance")) return "balance_performance";
+            if (has_token(toks, "default"))             return "default";
+            if (has_token(toks, "balance_power"))       return "balance_power";
+            break;
+        case GovernorHint::POWERSAVE:
+            if (has_token(toks, "power"))               return "power";
+            if (has_token(toks, "balance_power"))       return "balance_power";
+            if (has_token(toks, "default"))             return "default";
+            break;
+    }
+    return "";
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// apply_governor — program scaling_governor + energy_performance_preference
+//
+// Writes are change-detected: steady state costs only the sysfs reads needed to
+// notice an external change, never a write per CPU per tick. Returns the
+// governor name applied to the first policy ("" when no cpufreq driver exists).
+// ─────────────────────────────────────────────────────────────────────────────
+std::string WorkspaceMonitor::apply_governor(GovernorHint hint) {
+    std::string applied;
+    bool found_policy = false;
+
+    // error_code overloads throughout: a partially delegated/restricted sysfs
+    // must not throw out of the 200 ms daemon loop.
+    std::error_code ec;
+    fs::directory_iterator it("/sys/devices/system/cpu", ec);
+    const fs::directory_iterator end;
+    for (; !ec && it != end; it.increment(ec)) {
+        const std::string cpu_dir = it->path().string();
+        const std::string dir     = cpu_dir + "/cpufreq";
+        const std::string gov_path = dir + "/scaling_governor";
+
+        std::error_code path_ec;
+        if (!fs::exists(gov_path, path_ec)) continue;
+
+        found_policy = true;
+
+        const std::string avail = read_first_line(dir + "/scaling_available_governors");
+        const std::string target = choose_scaling_governor(hint, avail);
+        if (!target.empty()) {
+            std::string actual = read_first_line(gov_path);
+            if (actual != target) {
+                write_line(gov_path, target);
+                // Report what the kernel accepted, not what we asked for. A
+                // restricted/undelegated sysfs can silently reject the write.
+                const std::string after = read_first_line(gov_path);
+                if (!after.empty()) actual = after;
+            }
+            if (applied.empty())
+                applied = actual.empty() ? target : actual;
+        }
+
+        // HWP/EPP gives finer power/performance control on pstate drivers, where
+        // "powersave" and "schedutil" can map to the same governor.
+        const std::string epp_path = dir + "/energy_performance_preference";
+        if (fs::exists(epp_path, path_ec)) {
+            const std::string epp_avail =
+                read_first_line(dir + "/energy_performance_available_preferences");
+            const std::string pref = choose_energy_preference(hint, epp_avail);
+            if (!pref.empty() && read_first_line(epp_path) != pref)
+                write_line(epp_path, pref);
+        }
     }
 
-    bool ok = true;
-    try {
-        for (const auto& entry : fs::directory_iterator("/sys/devices/system/cpu")) {
-            std::string gov_path = entry.path().string() + "/cpufreq/scaling_governor";
-            if (!fs::exists(gov_path)) continue;
-            std::ofstream f(gov_path);
-            if (f.is_open()) {
-                f << name;
-                ok &= f.good();
-            }
-        }
-    } catch (...) {
-        std::cerr << "[Governor] Failed to enumerate CPUs\n";
-        return false;
-    }
-    return ok;
+    if (ec)
+        std::cerr << "[Governor] Failed to enumerate CPUs: " << ec.message() << "\n";
+    return found_policy ? applied : std::string();
 }
 
 } // namespace thm

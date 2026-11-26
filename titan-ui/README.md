@@ -2,8 +2,13 @@
 
 The shared design system for **every** ArchTitan surface. It exists so the whole
 OS — Hyprland shell configs, QML apps and Qt Widgets apps — speaks one visual
-language: a **Catppuccin Mocha** base with **Samsung One UI 9.0** geometry and a
+language: a **Catppuccin-compatible** base with **desktop-first geometry** and a
 **wallpaper-adaptive accent**.
+
+TDL 2.0 deliberately moves away from phone-style squircles: compact radii,
+larger body type, opaque cards by default, glass reserved for true overlays, and
+focus/pressed states that are visible without hover. Catppuccin remains a
+supported palette, but it is no longer the whole identity.
 
 > **Rule #1:** never hardcode a colour. Use a `TitanTheme` token (QML) or a
 > `TitanPalette` value (C++). The `scripts/colour-lint.py` check enforces this.
@@ -58,8 +63,9 @@ share the exact same palette. `accent()`/`accentFg()` read
 | **Borders** | `border`, `borderSubtle`, `borderHover`, `borderStrong` |
 | **Text** | `textHigh`, `textMid`, `textLow`, `textOnAccent` |
 | **Status** | `success`, `warning`, `danger`, `info`, `teal`, `peach`, `mauve`, `pink` |
-| **Type** | `fontFamily` (Inter), `monoFamily` (JetBrainsMono Nerd Font), `sizeDisplay…sizeCaption`, `weightRegular…weightBold` |
-| **Radii** | `radiusSm`…`radiusWindow`, `radiusCard`, `radiusControl`, `radiusSlider`, `radiusPill` |
+| **Type** | `fontFamily` (Inter), `monoFamily` (JetBrainsMono Nerd Font), `sizeDisplay`, `sizeHeadline`, `sizeTitle`, `sizeSubtitle`, `sizeBody`, `sizeLabel`, `sizeCaption`, `lineHeightTight`, `lineHeightBody`, `weightRegular…weightBold` |
+| **Radii** | `radiusSm`…`radiusWindow`, `radiusCard`, `radiusControl`, `radiusSlider`, `radiusRound`, `radiusPill` |
+| **Interaction** | `stateHover`, `statePressed`, `stateSelected`, `focusRing`, `focusRingWidth`, `focusRingOffset`, `scrim` |
 | **Spacing** | `space1`…`space8` (4‑point grid) |
 | **Motion** | `durFast` `durBase` `durSlow` `durShimmer`, `easingStandard` `easingEnter` `easingExit` `easingEmphasis`, `pressScale` |
 
@@ -74,11 +80,11 @@ scripts branch on file type accordingly.
 | Component | Purpose |
 | :-- | :-- |
 | `TitanButton` | Primary/secondary/ghost/danger button (press-scale feedback) |
-| `TitanCard` | Bento card container with optional title/subtitle |
+| `TitanCard` | Opaque card container by default; opt into glass with `glass: true` |
 | `TitanGlassPanel` | Frosted overlay surface |
 | `TitanSwitch` / `TitanSlider` / `TitanProgress` | Form & value controls |
-| `TitanToggleTile` | One UI quick-toggle squircle tile |
-| `TitanPill` / `TitanBadge` | Status chips |
+| `TitanToggleTile` | Compact toggle tile with a restrained active tint |
+| `TitanPill` / `TitanBadge` | Clickable, focusable chips / static labels |
 | `TitanSidebarItem` | Settings navigation row |
 | `TitanIcon` | Nerd Font glyph **or** image at a fixed size |
 | `TitanDivider` | Hairline separator |
@@ -113,11 +119,19 @@ All checks are pure-stdlib Python and run in CI
 (`.github/workflows/ui-consistency.yml`):
 
 ```bash
+python3 scripts/self-test.py        # prove each checker fails on injected drift
 python3 scripts/colour-lint.py      # every colour literal is a TDL token/value
+python3 scripts/palette-parity.py   # C++ TitanPalette ≡ QML TitanTheme tokens
 python3 scripts/config-drift.py     # etc/skel ≡ root, live variant documented
 python3 scripts/contrast-audit.py   # WCAG 2.1 contrast for token pairings
 ```
 
+- `colour-lint` scans QML, CSS, rasi, conf, QSS, Calamares `*.desc`, the GRUB
+  `theme.txt`, and C++ (`.cpp/.h/.hpp/.cc`) — so the shell, the Qt Widgets apps
+  and the boot/installer surfaces all obey one palette.
+- `palette-parity` keeps `TitanPalette.h` in lockstep with `TitanTheme.qml`
+  (same token set, same Mocha fallback, same derived alphas, and the copy
+  installed into `airootfs/usr/include/archtitan/` byte-identical).
 - **Allowlist** genuine data/artwork in `scripts/colour-allow.txt`. For a few
   deliberate lines inside an otherwise-conforming file, append an inline
   `// tdl-allow` comment on the line instead.

@@ -1,6 +1,6 @@
 import QtQuick
-import ArchTitanSettings
 import ArchTitan.TitanUI
+import ArchTitanSettings
 
 Rectangle {
     property string text: "Active"

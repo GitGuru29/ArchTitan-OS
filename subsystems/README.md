@@ -9,11 +9,13 @@ This folder contains all subsystems of ArchTitan OS. Each subsystem has an **ide
 | Subsystem | Owner | Status | Folder |
 |---|---|---|---|
 | Titan Hardware Manager | @GitGuru29 | ✅ Active | [`titan-hwm/`](titan-hwm/) |
+| TitanFocus | @GitGuru29 | ✅ Active | [`titan-focus/`](titan-focus/) |
 | Titan Media HUD | @GitGuru29 | ✅ Active | [`titan-media-hud/`](titan-media-hud/) |
+| Titan Workspace HUD | @GitGuru29 | ✅ Active | [`titan-workspace-hud/`](titan-workspace-hud/) |
 | TitanFetch | @GitGuru29 | ✅ Active | [`titan-fetch/`](titan-fetch/) |
 | Titan Sandbox | @GitGuru29 | ✅ Active | [`titan-sandbox/`](titan-sandbox/) |
 | Auto GPU Switcher | @GitGuru29 | 🚧 Planned | [`auto-gpu-switcher/`](auto-gpu-switcher/) |
-| TITAN AI | Teammate | 🚧 In Development | [`titan-ai/`](titan-ai/) |
+| TITAN AI | Teammate | ✅ Active (C++ engine + Kitty shortcut) | [`titan-ai/`](titan-ai/) |
 | TITAN Task Manager | Teammate | 🚧 In Development | [`titan-task-manager/`](titan-task-manager/) |
 | TITAN Share | Teammate | 🚧 In Development | [`titan-share/`](titan-share/) |
 | TITAN Mirror | Teammate | 🚧 In Development | [`titan-mirror/`](titan-mirror/) |

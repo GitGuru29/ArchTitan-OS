@@ -1,30 +1,34 @@
 #!/usr/bin/env python3
 """ArchTitan TDL contrast audit (WCAG 2.1).
 
-Parses the static colour tokens out of ``titan-ui/qml/style/TitanTheme.qml`` and
-checks a set of foreground/background pairings used throughout the shell against
-WCAG relative-luminance contrast thresholds. Translucent backgrounds (AARRGGBB)
-are composited over an opaque backdrop before measuring.
+Parses the colour tokens out of the baseline theme definition
+(``airootfs/usr/share/archtitan/themes/mocha.json`` — TitanTheme.qml now derives
+its colours from ThemeBackend at runtime) and checks a set of
+foreground/background pairings used throughout the shell against WCAG
+relative-luminance contrast thresholds. Translucent backgrounds (AARRGGBB) are
+composited over an opaque backdrop before measuring.
 
 Exit status: 0 when every pair meets its target, 1 otherwise.
 """
 
 from __future__ import annotations
 
-import re
+import json
 import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-THEME = REPO / "titan-ui/qml/style/TitanTheme.qml"
+THEME = REPO / "airootfs/usr/share/archtitan/themes/mocha.json"
+
+# Status roles read straight from the theme palette under the same name.
+ROLES = (
+    "textHigh", "textMid", "textLow",
+    "success", "warning", "danger", "teal", "peach", "mauve", "pink",
+)
 
 # Default adaptive accent + its auto-selected foreground (see themebackend.cpp).
 ACCENT = "#89B4FA"
 ACCENT_FG = "#11111B"
-
-TOKEN_RE = re.compile(
-    r'property\s+color\s+(\w+)\s*:\s*"(#[0-9a-fA-F]{6,8})"'
-)
 
 # (foreground, background, min-ratio, label). Backdrop for translucent bg.
 PAIRS = [
@@ -49,10 +53,27 @@ PAIRS = [
 
 
 def parse_tokens() -> dict[str, str]:
+    """Colour tokens for the audit, from the baseline theme definition.
+
+    TitanTheme.qml derives every colour from ThemeBackend at runtime, so the
+    authoritative values live in the shipped theme JSONs. `bg0` is the deepest
+    surface (crust); the other roles keep their palette names.
+    """
+    theme = json.loads(THEME.read_text(encoding="utf-8"))
+    palette = theme.get("palette", {})
+
     tokens: dict[str, str] = {}
-    for name, value in TOKEN_RE.findall(THEME.read_text(encoding="utf-8")):
-        tokens[name] = value
-    return tokens
+    for name in ("crust", "base", "surface0") + ROLES:
+        value = palette.get(name)
+        if isinstance(value, str):
+            tokens[name] = value
+    # `bg0` is the audit's name for the deepest surface (crust).
+    tokens["bg0"] = palette.get("crust", "")
+
+    tokens["accent"] = theme.get("accent", ACCENT)
+    # `info` is the accent unless the theme overrides it (see themebackend.cpp).
+    tokens["info"] = palette.get("info") or theme.get("accent", ACCENT)
+    return {name: value for name, value in tokens.items() if value}
 
 
 def to_rgba(value: str) -> tuple[float, float, float, float]:

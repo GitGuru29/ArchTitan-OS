@@ -12,9 +12,17 @@ Rectangle {
     Layout.fillWidth: true
     Layout.preferredHeight: 74
     radius: TitanTheme.radiusBento
-    color: active ? TitanTheme.accentBlue : (tileMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgOneUICard)
-    border.color: active ? TitanTheme.borderActive : (tileMa.containsMouse ? TitanTheme.borderHover : TitanTheme.borderGlass)
-    border.width: 1
+    color: active ? TitanTheme.accentBlue : (tileMa.containsMouse || activeFocus ? TitanTheme.bgHover : TitanTheme.bgOneUICard)
+    border.color: activeFocus ? TitanTheme.accent
+                  : active ? TitanTheme.borderActive
+                  : (tileMa.containsMouse ? TitanTheme.borderHover : TitanTheme.borderGlass)
+    border.width: activeFocus ? 2 : 1
+
+    // Keyboard: reachable with Tab / arrows, activated with Enter or Space.
+    activeFocusOnTab: true
+    Keys.onReturnPressed: (event) => { tileRoot.clicked(); event.accepted = true }
+    Keys.onEnterPressed:  (event) => { tileRoot.clicked(); event.accepted = true }
+    Keys.onSpacePressed:  (event) => { tileRoot.clicked(); event.accepted = true }
     clip: true
 
     property bool active: false
@@ -24,6 +32,8 @@ Rectangle {
     property color activeAccent: TitanTheme.accentBlue
 
     signal clicked()
+    signal toggleClicked()
+    signal detailClicked()
 
     // Tactile Liquid Touch: spring bounce on hover and press
     scale: tileMa.pressed ? 0.96 : (tileMa.containsMouse ? 1.02 : 1.0)
@@ -41,12 +51,16 @@ Rectangle {
         anchors.bottomMargin: 10
         spacing: 12
 
-        // Icon Medallion
+        // Icon Medallion (Tap to quick toggle)
         Rectangle {
+            id: iconMedallion
             Layout.preferredWidth: 42
             Layout.preferredHeight: 42
             radius: 21
-            color: tileRoot.active ? "#38FFFFFF" : TitanTheme.bgOneUIPill
+            color: tileRoot.active ? "#38FFFFFF" : (iconMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgOneUIPill)
+            z: 2
+
+            Behavior on color { ColorAnimation { duration: 120 } }
 
             Text {
                 anchors.centerIn: parent
@@ -54,6 +68,16 @@ Rectangle {
                 font.family: TitanTheme.monoFamily
                 font.pixelSize: 18
                 color: tileRoot.active ? "#FFFFFF" : TitanTheme.textMuted
+            }
+
+            MouseArea {
+                id: iconMa
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                    tileRoot.toggleClicked();
+                }
             }
         }
 
@@ -95,9 +119,16 @@ Rectangle {
         anchors.fill: parent
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
-        onClicked: tileRoot.clicked()
+        onClicked: {
+            tileRoot.detailClicked();
+            tileRoot.clicked();
+        }
     }
 
     Accessible.role: Accessible.Button
     Accessible.name: title
+    Accessible.onPressAction: {
+        tileRoot.detailClicked();
+        tileRoot.clicked();
+    }
 }

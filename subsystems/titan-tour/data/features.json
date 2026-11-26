@@ -1,0 +1,132 @@
+{
+  "steps": [
+    {
+      "id": "welcome",
+      "index": 1,
+      "scene": "welcome",
+      "eyebrow": "ARCHTITAN OS",
+      "title": "Rise, Titan.",
+      "subtitle": "A new desktop. A smarter way to work.",
+      "body": "Discover what your desktop can do.",
+      "shortcut": "",
+      "badge": "Welcome",
+      "prompt": "Press Enter or click Explore ArchTitan to begin."
+    },
+    {
+      "id": "desktop",
+      "index": 2,
+      "scene": "desktop",
+      "feature": "desktop",
+      "eyebrow": "02 — YOUR DESKTOP",
+      "title": "Your Desktop",
+      "subtitle": "A clean, powerful and beautiful workspace.",
+      "body": "Waybar, Dynamic Workspaces, and Modern Glass UI.",
+      "shortcut": "",
+      "badge": "Desktop",
+      "prompt": "Click Waybar, Dynamic Workspaces, or Modern Glass UI to inspect."
+    },
+    {
+      "id": "spotlight",
+      "index": 3,
+      "scene": "spotlight",
+      "feature": "spotlight",
+      "eyebrow": "03 — EVERYTHING, INSTANTLY",
+      "title": "Everything, Instantly",
+      "subtitle": "Find apps, files, and more with Titan Spotlight.",
+      "body": "Tap Super to search applications, files, or calculate expressions instantly.",
+      "shortcut": "Super",
+      "badge": "Titan Spotlight",
+      "prompt": "Try searching for an application or typing a math calculation."
+    },
+    {
+      "id": "workspace",
+      "index": 4,
+      "scene": "workspace",
+      "feature": "workspace",
+      "eyebrow": "04 — YOUR WORKSPACE. YOUR FLOW.",
+      "title": "Your Workspace. Your Flow.",
+      "subtitle": "Organize your work with Mission Control.",
+      "body": "Switch between ten workspaces or drag windows across desktops.",
+      "shortcut": "Super + Tab",
+      "badge": "Workspace HUD",
+      "prompt": "Click a workspace thumbnail or press Super + Tab to open Mission Control."
+    },
+    {
+      "id": "quicksettings",
+      "index": 5,
+      "scene": "quicksettings",
+      "feature": "quicksettings",
+      "eyebrow": "05 — CONTROL EVERYTHING",
+      "title": "Control Everything",
+      "subtitle": "Manage connectivity, sound, brightness and more from one place.",
+      "body": "Wi-Fi, Bluetooth, PipeWire audio, brightness, power profile, DND and notifications.",
+      "shortcut": "Super + N",
+      "badge": "QuickSettings",
+      "prompt": "Try toggling a control or adjusting a slider."
+    },
+    {
+      "id": "media",
+      "index": 6,
+      "scene": "media",
+      "feature": "media",
+      "eyebrow": "06 — ALWAYS IN THE LOOP",
+      "title": "Always in the Loop",
+      "subtitle": "Enjoy a sleek media HUD with real-time controls.",
+      "body": "Dynamic Island MPRIS media controls and contextual system capsule.",
+      "shortcut": "Super + M",
+      "badge": "Media HUD",
+      "prompt": "Press Super + M or click the media capsule to toggle the live HUD."
+    },
+    {
+      "id": "intelligence",
+      "index": 7,
+      "scene": "intelligence",
+      "feature": "sysmon",
+      "eyebrow": "07 — INTELLIGENCE UNDER THE HOOD",
+      "title": "Intelligence Under the Hood",
+      "subtitle": "THM intelligently manages resources for smooth performance.",
+      "body": "Real-time CPU, RAM, thermal and PSI workload orchestration at 5 Hz.",
+      "shortcut": "Left Hotzone",
+      "badge": "THM & Sysmon",
+      "prompt": "Click the telemetry card or dwell on the left screen edge to open Sysmon."
+    },
+    {
+      "id": "security",
+      "index": 8,
+      "scene": "security",
+      "feature": "security",
+      "eyebrow": "08 — PROTECTION BY DESIGN",
+      "title": "Protection by Design",
+      "subtitle": "Stay safe with Titan Sandbox, ArchTitan Guard and snapshots.",
+      "body": "Namespace application isolation, display manager protection, and bootable BTRFS snapshots.",
+      "shortcut": "",
+      "badge": "Security",
+      "prompt": "Protected automatically out of the box."
+    },
+    {
+      "id": "personalization",
+      "index": 9,
+      "scene": "personalization",
+      "feature": "personalize",
+      "eyebrow": "09 — MAKE IT YOURS",
+      "title": "Make It Yours",
+      "subtitle": "Customize your experience with themes, wallpapers and more.",
+      "body": "Preview themes and bespoke wallpapers safely.",
+      "shortcut": "Super + ,",
+      "badge": "Personalization",
+      "prompt": "Click any accent swatch or floating wallpaper card to preview."
+    },
+    {
+      "id": "completion",
+      "index": 10,
+      "scene": "completion",
+      "eyebrow": "10 — YOU'RE READY",
+      "title": "You're Ready",
+      "subtitle": "Your workspace. Your rules. Your Titan.",
+      "body": "Enter ArchTitan or explore features again anytime with Super + F1.",
+      "shortcut": "Super + F1",
+      "badge": "Ready",
+      "prompt": "Click Enter ArchTitan to begin."
+    }
+  ]
+}

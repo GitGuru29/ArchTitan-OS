@@ -68,10 +68,82 @@ std::string serialize_snapshot(const TelemetrySnapshot& s) {
       << ",\"mem_used_pct\":"   << f2(s.mem_used_pct)
       << ",\"mem_total_kb\":"   << s.mem_total_kb
       << ",\"mem_available_kb\":" << s.mem_available_kb
+      << ",\"bg_memory_high_bytes\":" << s.background_memory_high_bytes
+      << ",\"latency_memory_high_bytes\":" << s.latency_memory_high_bytes
+      << ",\"protected_memory_low_bytes\":" << s.protected_memory_low_bytes
+      << ",\"memory_enforcement\":" << (s.memory_enforcement_active ? "true" : "false")
+      << ",\"enforcement_degraded\":" << (s.enforcement_degraded ? "true" : "false")
+      << ",\"destructive_reclaim_enabled\":"
+        << (s.destructive_reclaim_enabled ? "true" : "false")
+      << '}';
+    o << ",\"cpu\":{"
+      << "\"psi_valid\":"  << (s.cpu_psi_valid ? "true" : "false")
+      << ",\"pressure\":\"" << esc(s.cpu_pressure_level) << '"'
+      << ",\"composite_pressure\":\"" << esc(s.composite_pressure_level) << '"'
+      << ",\"psi_some_avg10\":"  << f2(s.cpu_psi_avg10)
+      << ",\"psi_some_avg60\":"  << f2(s.cpu_psi_avg60)
+      << ",\"psi_some_avg300\":" << f2(s.cpu_psi_avg300)
+      << ",\"psi_some_inst\":"   << f2(s.cpu_psi_inst)
+      << ",\"load1\":"  << f2(s.load1)
+      << ",\"load5\":"  << f2(s.load5)
+      << ",\"load15\":" << f2(s.load15)
+      << ",\"load_ratio\":" << f2(s.load_ratio)
+      << ",\"online_cpus\":" << s.online_cpus
+      << ",\"runnable\":" << s.runnable_procs
+      << ",\"total\":"    << s.total_procs
+      << ",\"protected_weight\":" << s.protected_cpu_weight
+      << ",\"active_weight\":" << s.active_cpu_weight
+      << ",\"latency_weight\":" << s.latency_cpu_weight
+      << ",\"background_weight\":" << s.background_cpu_weight
+      << ",\"background_cpu_max_pct\":" << f2(s.background_cpu_max_pct)
+      << ",\"headroom_engaged\":" << (s.cpu_headroom_engaged ? "true" : "false")
+      << ",\"reserved_cores\":" << s.reserved_headroom_cores
+      << ",\"bandwidth_loan_cores\":" << s.bandwidth_loan_cores
+      << ",\"smt_isolation\":" << (s.smt_isolation_active ? "true" : "false")
+      << ",\"isolated_cores\":" << s.isolated_physical_cores
+      << ",\"latency_cpuset\":\"" << s.latency_cpuset << "\""
+      << ",\"background_cpuset\":\"" << s.background_cpuset << "\""
+      << ",\"input_feedforward\":" << (s.input_feedforward_active ? "true" : "false")
+      << ",\"input_age_ms\":" << s.input_age_ms
+      << ",\"background_idle\":"  << (s.background_cpu_idle ? "true" : "false")
+      << ",\"unattended_lift\":"  << (s.unattended_lift ? "true" : "false")
+      << ",\"temp_c\":" << f2(s.cpu_temp_c)
+      << ",\"bg_nr_periods\":" << s.bg_nr_periods
+      << ",\"bg_nr_throttled\":" << s.bg_nr_throttled
+      << ",\"bg_throttled_usec\":" << s.bg_throttled_usec
       << '}';
     o << ",\"governor\":\"" << esc(s.governor) << '"';
     o << ",\"workload_count\":" << s.workload_count;
     o << ",\"active_workloads\":" << s.active_workloads;
+    o << ",\"classified_workloads\":" << s.classified_workloads;
+    o << ",\"observed_workloads\":" << s.observed_workloads;
+    o << ",\"dependency\":{"
+      << "\"summary\":\"" << esc(s.dependency_summary) << '"'
+      << ",\"nodes\":" << s.dependency_nodes
+      << ",\"edges\":" << s.dependency_edges
+      << ",\"shielded\":" << s.dependency_shielded
+      << '}';
+    o << ",\"processes\":{"
+      << "\"seen\":"      << s.processes_seen
+      << ",\"protected\":" << s.processes_protected
+      << ",\"assigned\":"  << s.processes_assigned
+      << ",\"unmanaged\":" << s.processes_unmanaged
+      << ",\"hyprland_connected\":" << (s.hyprland_connected ? "true" : "false")
+      << '}';
+
+    o << ",\"top_unmanaged\":[";
+    for (size_t i = 0; i < s.top_unmanaged.size(); ++i) {
+        const auto& u = s.top_unmanaged[i];
+        if (i) o << ',';
+        o << '{'
+          << "\"pid\":"    << u.pid
+          << ",\"comm\":\"" << esc(u.comm) << '"'
+          << ",\"cpu_pct\":" << f2(u.cpu_pct)
+          << ",\"mem_mb\":"  << (u.rss_kb / 1024)
+          << ",\"reason\":\"" << esc(u.reason) << '"'
+          << '}';
+    }
+    o << ']';
 
     o << ",\"last_action\":";
     if (s.has_last_action && !s.last_action.empty()) {
@@ -91,11 +163,22 @@ std::string serialize_snapshot(const TelemetrySnapshot& s) {
           << "\"id\":"        << w.id
           << ",\"pid\":"      << w.root_pid
           << ",\"workspace\":" << w.workspace_id
+          << ",\"window_class\":\"" << esc(w.window_class) << '"'
+          << ",\"window_title\":\"" << esc(w.window_title) << '"'
           << ",\"name\":\""   << esc(w.name) << '"'
           << ",\"type\":\""   << esc(w.type) << '"'
           << ",\"state\":\""  << esc(w.state) << '"'
           << ",\"pids\":"     << w.pid_count
           << ",\"mem_mb\":"   << (w.mem_kb / 1024)
+          << ",\"cpu_pct\":"  << f2(w.cpu_pct)
+          << ",\"observed\":" << (w.observed ? "true" : "false")
+          << ",\"latency_critical\":" << (w.latency_critical ? "true" : "false")
+          << ",\"throughput_bulk\":"  << (w.throughput_bulk ? "true" : "false")
+          << ",\"gpu_feeding\":"      << (w.gpu_feeding ? "true" : "false")
+          << ",\"dependency_providers\":" << w.dependency_providers
+          << ",\"dependency_dependents\":" << w.dependency_dependents
+          << ",\"protected_by_dependents\":"
+            << (w.protected_by_dependents ? "true" : "false")
           << '}';
     }
     o << "]}";

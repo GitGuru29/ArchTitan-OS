@@ -7,12 +7,16 @@ of files to rewrite as arguments.
 """
 from __future__ import annotations
 
+import json
 import re
 import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-TOKEN_FILE = REPO / "titan-ui" / "qml" / "style" / "TitanTheme.qml"
+# TitanTheme.qml derives its colours from ThemeBackend at runtime; the shipped
+# baseline theme definition is the palette this helper snaps literals onto.
+BASELINE_THEME = (REPO / "airootfs" / "usr" / "share" / "archtitan"
+                  / "themes" / "mocha.json")
 
 HEX_RE = re.compile(r"#([0-9a-fA-F]{6}|[0-9a-fA-F]{8})\b")
 # (?<!\.) excludes Qt.rgba(r,g,b,a), whose args are 0..1 floats (not bytes).
@@ -23,15 +27,20 @@ NEUTRALS = {"ffffff", "000000"}
 
 
 def load_palette() -> dict[str, tuple[int, int, int]]:
-    text = TOKEN_FILE.read_text(encoding="utf-8")
-    # Only SOLID 6-digit tokens are valid match targets. Translucent glass
-    # tokens (#AARRGGBB) are excluded so surfs snap to real solid surfaces
-    # rather than to an arbitrary glass RGB.
+    """Opaque TDL tokens, taken from the baseline theme definition."""
+    theme = json.loads(BASELINE_THEME.read_text(encoding="utf-8"))
+    values = list(theme.get("palette", {}).values())
+    values += [theme.get("accent", ""), theme.get("accent2", "")]
+
     pal: dict[str, tuple[int, int, int]] = {}
-    for h in re.findall(r'"#([0-9a-fA-F]{6})"', text):
-        pal[h.lower()] = tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
-    pal["89b4fa"] = (0x89, 0xB4, 0xFA)  # accent default
-    pal["252838"] = (0x25, 0x28, 0x38)  # border (not quoted as a bare hex)
+    for value in values:
+        if not isinstance(value, str):
+            continue
+        digits = value.strip().lstrip("#")
+        if re.fullmatch(r"[0-9a-fA-F]{6}", digits):
+            key = digits.lower()
+            pal[key] = tuple(int(key[i:i + 2], 16) for i in (0, 2, 4))
+    pal.setdefault("89b4fa", (0x89, 0xB4, 0xFA))  # accent default
     return pal
 
 

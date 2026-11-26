@@ -1,0 +1,506 @@
+#!/usr/bin/env python3
+"""titan-git-hud — ArchTitan Contextual Developer & Git HUD for Waybar.
+Dynamically detects the active IDE, terminal, or code editor via Hyprland IPC,
+resolves the current Git repository and programming language, and renders
+a live glowing bento pill with branch status, uncommitted diff badges,
+rich commit tooltips, and one-click actions (lazygit, remote, copy branch).
+"""
+from __future__ import annotations
+
+import argparse
+import html
+import json
+import os
+import re
+import select
+import signal
+import socket
+import subprocess
+import sys
+import time
+
+STATE_FILE = os.path.join(
+    os.environ.get("XDG_RUNTIME_DIR", "/tmp"),
+    f"titan-git-hud-{os.getuid()}.json"
+)
+
+EXT_MAP = {
+    r"\.(cpp|cxx|cc|c|h|hpp)$": ("󰙲", "C++"),
+    r"\.py$": ("󰌠", "Python"),
+    r"\.rs$": ("󱘗", "Rust"),
+    r"\.qml$": ("󰆧", "QML"),
+    r"\.(ts|tsx)$": ("󰛦", "TS"),
+    r"\.(js|jsx)$": ("󰌞", "JS"),
+    r"\.(sh|bash|zsh)$": ("󱆃", "Shell"),
+    r"\.(html|css|scss)$": ("󰌝", "Web"),
+    r"\.go$": ("󰟓", "Go"),
+    r"\.lua$": ("󰢱", "Lua"),
+    r"\.md$": ("󰍔", "MD"),
+    r"\.(json|toml|yaml|yml)$": ("󰒓", "Config"),
+}
+
+
+def detect_language_from_title(title: str) -> tuple[str | None, str | None]:
+    for token in title.split():
+        token = token.strip("[](),:\"'")
+        for pattern, (icon, name) in EXT_MAP.items():
+            if re.search(pattern, token, re.IGNORECASE):
+                return icon, name
+    return None, None
+
+
+def detect_app_context(win_class: str, title: str) -> tuple[str | None, str | None]:
+    w_class = (win_class or "").lower()
+    title_l = (title or "").lower()
+
+    icon, lang = detect_language_from_title(title)
+    if icon:
+        return icon, lang
+
+    if any(t in w_class for t in ["kitty", "alacritty", "terminal", "foot", "konsole"]):
+        if "nvim" in title_l or "vim" in title_l:
+            return "", "Neovim"
+        return "󱆃", "Term"
+    if any(e in w_class for e in ["code", "antigravity", "cursor", "sublime", "kate"]):
+        return "󰨞", "IDE"
+
+    return None, None
+
+
+def get_active_window() -> dict:
+    try:
+        out = subprocess.check_output(["hyprctl", "activewindow", "-j"], timeout=0.3)
+        return json.loads(out)
+    except Exception:
+        return {}
+
+
+def find_git_root(path: str) -> str | None:
+    curr = os.path.abspath(path)
+    while curr and curr != "/":
+        if os.path.exists(os.path.join(curr, ".git")):
+            return curr
+        parent = os.path.dirname(curr)
+        if parent == curr:
+            break
+        curr = parent
+    return None
+
+
+def find_repo_from_pid(pid: int | None) -> str | None:
+    if not pid:
+        return None
+    candidates: list[str] = []
+    try:
+        cwd = os.readlink(f"/proc/{pid}/cwd")
+        if cwd and os.path.isdir(cwd):
+            candidates.append(cwd)
+    except Exception:
+        pass
+
+    try:
+        children = subprocess.check_output(
+            ["pgrep", "-P", str(pid)], timeout=0.25
+        ).decode().split()
+        for c in children:
+            try:
+                ccwd = os.readlink(f"/proc/{c}/cwd")
+                if ccwd and os.path.isdir(ccwd):
+                    candidates.append(ccwd)
+            except Exception:
+                pass
+            try:
+                gchildren = subprocess.check_output(
+                    ["pgrep", "-P", str(c)], timeout=0.25
+                ).decode().split()
+                for gc in gchildren:
+                    try:
+                        gccwd = os.readlink(f"/proc/{gc}/cwd")
+                        if gccwd and os.path.isdir(gccwd):
+                            candidates.append(gccwd)
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+    for d in candidates:
+        repo = find_git_root(d)
+        if repo:
+            return repo
+    return None
+
+
+def check_title_for_workspace(title: str) -> str | None:
+    parts = title.split(" - ")
+    home = os.path.expanduser("~")
+    for part in parts:
+        part = part.strip()
+        for root in [
+            home,
+            os.path.join(home, "projects"),
+            os.path.join(home, "dev"),
+            os.path.join(home, "src"),
+        ]:
+            candidate = os.path.join(root, part)
+            if os.path.isdir(candidate):
+                repo = find_git_root(candidate)
+                if repo:
+                    return repo
+    return None
+
+
+def get_remote_url(repo_path: str) -> str:
+    try:
+        url = subprocess.check_output(
+            ["git", "-C", repo_path, "remote", "get-url", "origin"],
+            stderr=subprocess.DEVNULL,
+            timeout=0.3,
+        ).decode().strip()
+        if url.startswith("git@"):
+            match = re.match(r"git@([^:]+):(.+?)(?:\.git)?$", url)
+            if match:
+                url = f"https://{match.group(1)}/{match.group(2)}"
+        elif url.endswith(".git"):
+            url = url[:-4]
+        return url
+    except Exception:
+        return ""
+
+
+def get_git_info(repo_path: str | None) -> dict | None:
+    if not repo_path or not os.path.isdir(repo_path):
+        return None
+    try:
+        branch = subprocess.check_output(
+            ["git", "-C", repo_path, "symbolic-ref", "--short", "HEAD"],
+            stderr=subprocess.DEVNULL,
+            timeout=0.3,
+        ).decode().strip()
+    except Exception:
+        try:
+            branch = subprocess.check_output(
+                ["git", "-C", repo_path, "rev-parse", "--short", "HEAD"],
+                stderr=subprocess.DEVNULL,
+                timeout=0.3,
+            ).decode().strip()
+        except Exception:
+            branch = "HEAD"
+
+    ahead, behind = 0, 0
+    try:
+        ab = subprocess.check_output(
+            ["git", "-C", repo_path, "rev-list", "--left-right", "--count", "HEAD...@{u}"],
+            stderr=subprocess.DEVNULL,
+            timeout=0.3,
+        ).decode().strip().split()
+        if len(ab) == 2:
+            ahead, behind = int(ab[0]), int(ab[1])
+    except Exception:
+        pass
+
+    staged, modified, untracked, conflicts = 0, 0, 0, 0
+    try:
+        status_lines = subprocess.check_output(
+            ["git", "-C", repo_path, "status", "--porcelain=v1"],
+            stderr=subprocess.DEVNULL,
+            timeout=0.3,
+        ).decode().splitlines()
+        for line in status_lines:
+            if len(line) < 2:
+                continue
+            x, y = line[0], line[1]
+            if x in "MADRC":
+                staged += 1
+            if y in "MD":
+                modified += 1
+            if x == "?" and y == "?":
+                untracked += 1
+            if x in "UAD" and y in "UAD":
+                conflicts += 1
+    except Exception:
+        pass
+
+    last_commit = ""
+    try:
+        last_commit = subprocess.check_output(
+            ["git", "-C", repo_path, "log", "-1", "--format=%h %s"],
+            stderr=subprocess.DEVNULL,
+            timeout=0.3,
+        ).decode().strip()
+    except Exception:
+        pass
+
+    repo_name = os.path.basename(repo_path)
+    remote_url = get_remote_url(repo_path)
+    return {
+        "repo": repo_name,
+        "path": repo_path,
+        "branch": branch,
+        "ahead": ahead,
+        "behind": behind,
+        "staged": staged,
+        "modified": modified,
+        "untracked": untracked,
+        "conflicts": conflicts,
+        "last_commit": last_commit,
+        "remote_url": remote_url,
+    }
+
+
+def save_state(info: dict | None) -> None:
+    try:
+        if info and info.get("path"):
+            with open(STATE_FILE, "w", encoding="utf-8") as f:
+                json.dump(info, f)
+    except Exception:
+        pass
+
+
+def load_state() -> dict | None:
+    try:
+        if os.path.exists(STATE_FILE):
+            with open(STATE_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+    except Exception:
+        pass
+    return None
+
+
+def run_action(action: str) -> None:
+    state = load_state()
+    if not state or not state.get("path"):
+        # Fallback 1: inspect active window directly
+        win = get_active_window()
+        pid = win.get("pid")
+        title = win.get("title", "")
+        repo = find_repo_from_pid(pid)
+        if not repo and title:
+            repo = check_title_for_workspace(title)
+        if not repo:
+            repo = find_git_root(os.getcwd())
+        if repo:
+            state = get_git_info(repo)
+
+    if not state or not state.get("path"):
+        subprocess.run([
+            "notify-send", "-i", "dialog-warning", "Git HUD", "No active Git repository detected."
+        ])
+        sys.exit(0)
+
+    path = state["path"]
+    branch = state.get("branch", "main")
+    remote = state.get("remote_url", "")
+    if not remote:
+        remote = get_remote_url(path)
+
+    if action == "terminal":
+        has_lazygit = subprocess.run(["which", "lazygit"], capture_output=True).returncode == 0
+        cmd = ["kitty", "--directory", path, "-e", "lazygit"] if has_lazygit else ["kitty", "--directory", path, "--hold", "-e", "git", "status"]
+        subprocess.Popen(cmd, start_new_session=True)
+
+    elif action == "remote":
+        if remote:
+            subprocess.Popen(
+                ["xdg-open", remote],
+                start_new_session=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            subprocess.run([
+                "notify-send", "-i", "git", "Git HUD", f"Opening repository:\n{remote}"
+            ])
+        else:
+            subprocess.run([
+                "notify-send", "-i", "dialog-warning", "Git HUD", "No remote tracking URL found for this repository."
+            ])
+
+    elif action == "copy":
+        copied = False
+        try:
+            p = subprocess.Popen(["wl-copy", branch], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            p.communicate(timeout=1.0)
+            copied = True
+        except Exception:
+            pass
+        if not copied:
+            try:
+                p = subprocess.Popen(["xclip", "-selection", "clipboard"], stdin=subprocess.PIPE)
+                p.communicate(input=branch.encode(), timeout=1.0)
+                copied = True
+            except Exception:
+                pass
+        subprocess.run([
+            "notify-send", "-i", "vcs-branch", "Git HUD", f"Branch '{branch}' copied to clipboard."
+        ])
+
+    elif action == "status":
+        print(json.dumps(state, indent=2))
+
+
+def stream_daemon() -> None:
+    # Ensure unbuffered stdout
+    sys.stdout.reconfigure(line_buffering=True)
+
+    sock_path = ""
+    his = os.environ.get("HYPRLAND_INSTANCE_SIGNATURE", "")
+    xdg = os.environ.get("XDG_RUNTIME_DIR", "")
+    if his and xdg:
+        sock_candidate = os.path.join(xdg, "hypr", his, ".socket2.sock")
+        if os.path.exists(sock_candidate):
+            sock_path = sock_candidate
+
+    hypr_sock = None
+    if sock_path:
+        try:
+            hypr_sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+            hypr_sock.connect(sock_path)
+            hypr_sock.setblocking(False)
+        except Exception:
+            hypr_sock = None
+
+    last_known_repo: str | None = None
+    last_known_time: float = 0.0
+
+    def sig_handler(*_):
+        if hypr_sock:
+            hypr_sock.close()
+        sys.exit(0)
+
+    signal.signal(signal.SIGINT, sig_handler)
+    signal.signal(signal.SIGTERM, sig_handler)
+
+    while True:
+        # Detect active window
+        win = get_active_window()
+        pid = win.get("pid")
+        title = win.get("title", "")
+        win_class = win.get("class", "")
+
+        icon, lang = detect_app_context(win_class, title)
+        repo = find_repo_from_pid(pid)
+        if not repo and title:
+            repo = check_title_for_workspace(title)
+
+        now = time.time()
+        if repo:
+            last_known_repo = repo
+            last_known_time = now
+        elif last_known_repo and (now - last_known_time < 300):
+            # Grace period: keep last repo visible for 5 minutes if browsing docs on same workspace
+            w_class_lower = win_class.lower()
+            if any(b in w_class_lower for b in ["firefox", "chromium", "chrome", "zen", "brave", "titanbrowser"]):
+                repo = last_known_repo
+
+        git_info = get_git_info(repo) if repo else None
+        save_state(git_info)
+
+        if git_info:
+            badges: list[str] = []
+            if git_info["staged"] > 0:
+                badges.append(f"+{git_info['staged']}")
+            if git_info["modified"] > 0:
+                badges.append(f"*{git_info['modified']}")
+            if git_info["untracked"] > 0:
+                badges.append(f"?{git_info['untracked']}")
+            if git_info["ahead"] > 0:
+                badges.append(f"⇡{git_info['ahead']}")
+            if git_info["behind"] > 0:
+                badges.append(f"⇣{git_info['behind']}")
+
+            badge_str = " ".join(badges)
+            classes = ["git-hud", "active"]
+            if git_info["conflicts"] > 0:
+                classes.append("conflict")
+            elif git_info["staged"] > 0:
+                classes.append("staged")
+            elif git_info["modified"] > 0:
+                classes.append("dirty")
+            elif git_info["ahead"] > 0 or git_info["behind"] > 0:
+                classes.append("diverged")
+            else:
+                classes.append("clean")
+
+            prefix = f"{icon} {lang} · " if (icon and lang) else ""
+            if badge_str:
+                text = f"{prefix}󰊢 {git_info['branch']}  {badge_str}"
+            else:
+                text = f"{prefix}󰊢 {git_info['branch']}"
+
+            tt = [
+                f"<b><span color='#94e2d5'>{html.escape(git_info['repo'])}</span></b> · <span color='#00d2ff'>󰊢 {html.escape(git_info['branch'])}</span>",
+                f"<span alpha='65%'>{html.escape(git_info['path'])}</span>",
+                "",
+            ]
+            if git_info["last_commit"]:
+                tt.append(f"<b>Commit:</b> {html.escape(git_info['last_commit'])}")
+
+            status_parts = []
+            if git_info["staged"] > 0:
+                status_parts.append(f"<span color='#a6e3a1'>+{git_info['staged']} staged</span>")
+            if git_info["modified"] > 0:
+                status_parts.append(f"<span color='#f9e2af'>*{git_info['modified']} modified</span>")
+            if git_info["untracked"] > 0:
+                status_parts.append(f"<span color='#cba6f7'>?{git_info['untracked']} untracked</span>")
+            if not status_parts:
+                status_parts.append("<span color='#94e2d5'>✓ Working tree clean</span>")
+            tt.append(" · ".join(status_parts))
+
+            if git_info["ahead"] > 0 or git_info["behind"] > 0:
+                tt.append(f"<b>Remote:</b> ⇡{git_info['ahead']} ahead, ⇣{git_info['behind']} behind")
+            elif git_info["remote_url"]:
+                tt.append("<b>Remote:</b> <span color='#89b4fa'>Up to date with origin</span>")
+
+            tt.append("")
+            tt.append("<span alpha='60%'>Click: lazygit · Right-click: Open remote · Middle-click: Copy branch</span>")
+
+            out_data = {
+                "text": text,
+                "alt": git_info["branch"],
+                "tooltip": "\n".join(tt),
+                "class": classes,
+            }
+        else:
+            out_data = {
+                "text": "",
+                "alt": "",
+                "tooltip": "",
+                "class": ["git-hud", "collapsed"],
+            }
+
+        print(json.dumps(out_data), flush=True)
+
+        # Wait for socket event or 2-second timeout
+        if hypr_sock:
+            try:
+                r, _, _ = select.select([hypr_sock], [], [], 2.0)
+                if r:
+                    # Flush socket buffer
+                    try:
+                        hypr_sock.recv(4096)
+                    except Exception:
+                        pass
+            except Exception:
+                time.sleep(2.0)
+        else:
+            time.sleep(2.0)
+
+
+def main():
+    parser = argparse.ArgumentParser(description="ArchTitan Contextual Git HUD for Waybar")
+    parser.add_argument(
+        "--action",
+        choices=["terminal", "remote", "copy", "status"],
+        help="Perform interactive action on current repository",
+    )
+    args = parser.parse_args()
+
+    if args.action:
+        run_action(args.action)
+    else:
+        stream_daemon()
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,93 @@
+/init: line 7: memdiskfind: not found
+P+q6E616D65\[18t[!p]104\[0m[?7h[1G[0J]3008;start=c36c9488b2a74de1a65f0a2229308d5e;user=root;hostname=archiso;machineid=bb13acca97294787a4a8a2501cee974c;bootid=3f4c1208a4a443299d3602c9ea1377b3;pid=1;pidfdid=1;comm=systemd;type=boot\[!p]104\[0m[?7h[1G[0J7[32766;32766H[6n8[!p]104\[0m[?7h[1G[0J7[32766;32766H[6n8]3008;start=3fb5bd40a9cb4eaa9089af6a5bdf4fd9;user=root;hostname=archiso;machineid=bb13acca97294787a4a8a2501cee974c;bootid=3f4c1208a4a443299d3602c9ea1377b3;pid=575;pidfdid=4376;comm=(temd-firstboot);servicename=systemd-firstboot.service;invocationid=2f378c4bc3fc426cba5942f8afe1a[!p]104\[0m[?7h[1G[0J7[32766;32766H[6n8[!p]104\[0m[?7h[1G[0J7[32766;32766H[6n8]3008;start=21e917d0b19c4238b6cb1d5a25ac1c3c;user=root;hostname=archiso;machineid=bb13acca97294787a4a8a2501cee974c;bootid=3f4c1208a4a443299d3602c9ea1377b3;pid=732;pidfdid=4456;comm=(agetty);servicename=serial-getty@ttyS0.service;invocationid=611c537449a649a1bf805a3fa1381129;type=service\P+q6E616D65\
+033[1m033[38;2;137;180;250m  ArchTitan OS 033[0m — Linux 7.2.15-arch1-1 (archiso)
+033[2m033[38;2;166;173;200m  Titan shell · tty ttyS0 · 04:23:25033[0m
+archiso login: root
+To install [38;2;23;147;209mArch Linux[0m follow the installation guide:
+https://wiki.archlinux.org/title/Installation_guide
+
+For Wi-Fi, authenticate to the wireless network using the [35miwctl[0m utility.
+For mobile broadband (WWAN) modems, connect with the [35mmmcli[0m utility.
+Ethernet, WLAN and WWAN interfaces using DHCP should work automatically.
+
+After connecting to the internet, the installation guide can be accessed
+via the convenience script [35mInstallation_guide[0m.
+
+[41m [41m [41m [40m [44m [40m [41m [46m [45m [41m [46m [43m [41m [44m [45m [40m [44m [40m [41m [44m [41m [41m [46m [42m [41m [44m [43m [41m [45m [40m [40m [44m [40m [41m [44m [42m [41m [46m [44m [41m [46m [47m [0m
+]3008;start=c6ef94f5bf9e4cf38ec8c50c5a04e542;user=root;hostname=archiso;machineid=bb13acca97294787a4a8a2501cee974c;bootid=3f4c1208a4a443299d3602c9ea1377b3;pid=732;pidfdid=4456;comm=login;targetuser=root;sessionid=3;type=session\fish: Unknown command: fastfetch
+~/.config/fish/config.fish (line 3): 
+    fastfetch
+    ^~~~~~~~^
+from sourcing file ~/.config/fish/config.fish
+	called during startup
+[?u[>0q]11;?\[?1049hP+q696e646e\P+q71756572792d6f732d6e616d65\[?1049l[0cWelcome to fish, the friendly interactive shell
+Type [32mhelp[m for instructions on how to use fish
+]7;file://archiso/root]0;~\[m]11;?\[6n[0c[?2004h[?2031h[>4;1m=[K]133;A;click_events=1\[J
+[K[38;2;0;210;255m[1;48;2;0;210;255;38;2;11;14;20m 󰣇 TITAN [0m[48;2;30;38;56;38;2;0;210;255m[1;38;2;205;214;244m  ~ [0m[48;2;17;22;34;38;2;30;38;56m[0m[38;2;17;22;34m[0m 
+[38;2;0;210;255m◆[0m  ]133;B\[K[3Ce[4Cx[5Ce[6Cc[7C [8Cb[9Ca[10Cs[11Ch[12C [13C-[14C-[15Cn[16Co[17Cp[18Cr[19Co[20Cf[21Ci[22Cl[23Ce[24C [25C-[26C-[27Cn[28Co[29Cr[30Cc[31C[?2004l[?2031l[>4;0m>[28Dexec bash [36m--noprofile[39m [36m--norc[39m[31C
+[m]133;C;cmdline_url=exec%20bash%20--noprofile%20--norc\]0;exec bash --noprofil ~\[m[?2004hbash-5.3# 
+[?2004l[?2004hbash-5.3# echo __LOGIN_OK__$((41+1))
+[?2004l__LOGIN_OK__42
+[?2004hbash-5.3# mkdir -p /bench && mount /dev/disk/by-label/BENCHDISK /bench && chmod +x /bench/guest/tstress && echo MOUNTOK; echo __BENCHEDGE_1=$?
+[?2004lMOUNTOK
+__BENCHEDGE_1=0
+[?2004hbash-5.3# systemctl is-active titan-hwm; echo __BENCHEDGE_2=$?
+[?2004lactive
+__BENCHEDGE_2=0
+[?2004hbash-5.3# ls /sys/fs/cgroup/archtitan.slice/ 2>/dev/null; echo __BENCHEDGE_3=$?
+[?2004larchtitan-active.slice	    cpu.stat		 memory.numa_stat
+archtitan-background.slice  cpu.stat.local	 memory.oom.group
+archtitan-frozen.slice	    cpu.uclamp.max	 memory.peak
+archtitan-protected.slice   cpu.uclamp.min	 memory.pressure
+cgroup.controllers	    cpu.weight		 memory.reclaim
+cgroup.events		    cpu.weight.nice	 memory.stat
+cgroup.freeze		    io.bfq.weight	 memory.swap.current
+cgroup.kill		    io.latency		 memory.swap.events
+cgroup.max.depth	    io.max		 memory.swap.high
+cgroup.max.descendants	    io.pressure		 memory.swap.max
+cgroup.pressure		    io.prio.class	 memory.swap.peak
+cgroup.procs		    io.stat		 memory.zswap.current
+cgroup.stat		    io.weight		 memory.zswap.max
+cgroup.stat.local	    irq.pressure	 memory.zswap.writeback
+cgroup.subtree_control	    memory.current	 pids.current
+cgroup.threads		    memory.events	 pids.events
+cgroup.type		    memory.events.local  pids.events.local
+cpu.idle		    memory.high		 pids.max
+cpu.max			    memory.low		 pids.peak
+cpu.max.burst		    memory.max		 titan-hwm.service
+cpu.pressure		    memory.min
+__BENCHEDGE_3=0
+[?2004hbash-5.3# ps -o pid,%cpu,rss,etime,comm -p $(systemctl show -p MainPID --value titan-hwm); echo __BENCHEDGE_4=$?
+[?2004l    PID %CPU   RSS     ELAPSED COMMAND
+    626 28.5  5464       00:19 titan-hwm-daemo
+__BENCHEDGE_4=0
+[?2004hbash-5.3# nproc; free -m | head -2; uname -r; echo __BENCHEDGE_5=$?
+[?2004l2
+               total        used        free      shared  buff/cache   available
+Mem:            3906         423        2356          11        1353        3483
+7.2.15-arch1-1
+__BENCHEDGE_5=0
+[?2004hbash-5.3# bash /bench/guest/scenario.sh --arm A --dir /bench/results/A-20261112-095221 --quick; echo __BENCHEDGE_6=$?
+[?2004l=== [SCENARIO:A] environment recorded ===
+arm=A quick=1 date=2026-11-12T04:23:36+00:00
+kernel=7.2.15-arch1-1
+cmdline=archisobasedir=arch archisosearchuuid=2026-11-11-18-34-38-00 splash quiet loglevel=3 rd.udev.log_level=3 vt.global_cursor_default=0 plymouth.ignore-serial-consoles consoleblank=0 console=ttyS0,115200 systemd.unit=multi-user.target plymouth.enable=0 disablehooks=plymouth
+nproc=2
+               total        used        free      shared  buff/cache   available
+Mem:            3906         422        2356          11        1354        3484
+Swap:              0           0           0
+cgroup_v2=cgroup2fs
+thm_present=yes
+gcc 16.2.1+r23+gd564253eb6c8-1
+make 4.4.1-3
+=== [SCENARIO:A] ARM A: THM v3 ACTIVE (systemctl: active) ===
+=== [SCENARIO:A] 2G swap enabled on bench disk ===
+=== [SCENARIO:A] warm-up compile (populates squashfs header cache before calibration) ===
+=== [SCENARIO:A] warm-up compile: 15619 ms (excluded from metrics) ===
+=== [SCENARIO:A] calibrating one TU (gcc RSS/time evidence) ===
+=== [SCENARIO:A] calibration: calib_tu_ms=21085 calib_tu_rss_mb=87 calib_exit=0 ===
+=== [SCENARIO:A] compile loop started (make -j2, continuous rounds) ===
+=== [SCENARIO:A] probe + 2 idle apps (400MB each) started (CWD=/bench/proj) ===
+=== [SCENARIO:A] collector started (pid 1768, 260s budget) ===
+=== [SCENARIO:A] PHASE baseline (25s) — reference metrics ===
+=== [SCENARIO:A] PHASE ramp — hog burst 1500MB then 200MB/10s (cap 3200MB) ===

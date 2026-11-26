@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "id": "nord",
+  "name": "Nord",
+  "isDark": true,
+  "accent": "#88C0D0",
+  "accent2": "#B48EAD",
+  "wallpaper": "/usr/share/backgrounds/archtitan/1-nord.png",
+  "source": "nordtheme/nord (src/nord.scss)",
+  "palette": {
+    "crust": "#2E3440",
+    "mantle": "#343B49",
+    "base": "#3B4252",
+    "surface0": "#434C5E",
+    "surface1": "#4C566A",
+    "surface2": "#616E88",
+    "surface3": "#7B88A1",
+    "border": "#434C5E",
+    "textHigh": "#ECEFF4",
+    "textMid": "#D8DEE9",
+    "textLow": "#7B88A1",
+    "success": "#A3BE8C",
+    "warning": "#EBCB8B",
+    "danger": "#BF616A",
+    "teal": "#8FBCBB",
+    "mauve": "#B48EAD",
+    "peach": "#D08770",
+    "pink": "#B48EAD"
+  }
+}

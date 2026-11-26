@@ -1,37 +1,52 @@
 #!/usr/bin/env bash
-# cycle_power.sh
+# titan-cycle-power
 # Cycles: Power Saver -> Balanced -> Performance -> Power Saver
-# Uses net.hadess.PowerProfiles (confirmed working on this system)
+# Talks to power-profiles-daemon via D-Bus Properties (supports both net.hadess.PowerProfiles
+# and org.freedesktop.UPower.PowerProfiles) with powerprofilesctl fallback.
 
 CURRENT=$(busctl get-property net.hadess.PowerProfiles \
     /net/hadess/PowerProfiles \
     net.hadess.PowerProfiles \
     ActiveProfile 2>/dev/null | awk -F'"' '{print $2}')
 
-# Debug — log to a temp file so we can verify it's reading correctly
-echo "[cycle_power] Current: '$CURRENT' at $(date)" >> /tmp/cycle_power.log
+if [[ -z "$CURRENT" ]]; then
+    CURRENT=$(busctl get-property org.freedesktop.UPower.PowerProfiles \
+        /org/freedesktop/UPower/PowerProfiles \
+        org.freedesktop.UPower.PowerProfiles \
+        ActiveProfile 2>/dev/null | awk -F'"' '{print $2}')
+fi
+
+if [[ -z "$CURRENT" ]] && command -v powerprofilesctl >/dev/null 2>&1; then
+    CURRENT=$(powerprofilesctl get 2>/dev/null)
+fi
 
 case "$CURRENT" in
     "power-saver")
         NEXT="balanced"
         LABEL="Balanced"
+        ICON="power-profile-balanced"
         ;;
     "balanced")
         NEXT="performance"
         LABEL="Performance"
+        ICON="power-profile-performance"
         ;;
     *)
-        # performance OR empty/unknown → go to power-saver
         NEXT="power-saver"
         LABEL="Power Saver"
+        ICON="power-profile-power-saver"
         ;;
 esac
 
-echo "[cycle_power] Switching to: '$NEXT'" >> /tmp/cycle_power.log
-
+# Try D-Bus net.hadess.PowerProfiles
 busctl set-property net.hadess.PowerProfiles \
     /net/hadess/PowerProfiles \
     net.hadess.PowerProfiles \
-    ActiveProfile s "$NEXT" 2>&1 | tee -a /tmp/cycle_power.log
+    ActiveProfile s "$NEXT" 2>/dev/null || \
+busctl set-property org.freedesktop.UPower.PowerProfiles \
+    /org/freedesktop/UPower/PowerProfiles \
+    org.freedesktop.UPower.PowerProfiles \
+    ActiveProfile s "$NEXT" 2>/dev/null || \
+powerprofilesctl set "$NEXT" 2>/dev/null || true
 
-notify-send -a "Power Manager" "Power Profile" "Switched to $LABEL" -t 2000
+notify-send -a "Power Manager" -i "$ICON" "Power Profile" "Switched to $LABEL" -t 2000 2>/dev/null || true

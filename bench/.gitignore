@@ -1,0 +1,6 @@
+# benchmark artifacts (large binary image / run-specific temporary mounts)
+bench.img
+results/
+guest/tstress
+__pycache__/
+host/__pycache__/

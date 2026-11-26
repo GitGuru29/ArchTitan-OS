@@ -15,6 +15,7 @@
 #include <QVBoxLayout>
 #include <QScrollArea>
 #include <QMouseEvent>
+#include <QKeyEvent>
 #include <QProgressBar>
 #include <QShortcut>
 #include <QKeySequence>
@@ -44,23 +45,29 @@ static const char *kSettingsUrl = "titan://settings";
 static const char *kTheme = R"(
 /* Global Window Container */
 QMainWindow, QWidget#CentralContainer {
-    background: #11111b;
-    color: #cdd6f4;
+    background: @crust;
+    color: @textHigh;
     font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     font-size: 13px;
 }
 
 /* ── 1. Top Chrome Container ─────────────────────────────────────────────── */
 QWidget#TopChrome {
-    background: #11111b;
-    border-bottom: 1px solid rgba(137, 180, 250, 0.16);
+    background: @crust;
+    border-bottom: 1px solid rgba(@accentRGB, 0.16);
+}
+
+/* Reveal strip shown only while the startpage chrome is auto-hidden */
+QWidget#TopHoverSensor {
+    background: rgba(@accentRGB, 0.28);
+    border-bottom: 1px solid rgba(@accentRGB, 0.4);
 }
 
 QToolTip {
-    background: #181825;
-    border: 1px solid rgba(137, 180, 250, 0.35);
+    background: @mantle;
+    border: 1px solid rgba(@accentRGB, 0.35);
     border-radius: 6px;
-    color: #cdd6f4;
+    color: @textHigh;
     padding: 4px 8px;
     font-size: 11px;
     font-family: "Inter", sans-serif;
@@ -68,7 +75,7 @@ QToolTip {
 
 /* ── Top Tab Strip Bar (38px) ── */
 QWidget#TopBar {
-    background: #11111b;
+    background: @crust;
     min-height: 38px;
     max-height: 38px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.04);
@@ -86,11 +93,11 @@ QTabBar {
 }
 
 QTabBar::tab {
-    background: rgba(17, 17, 27, 0.5);
+    background: rgba(@crustRGB, 0.5);
     border: 1px solid rgba(255, 255, 255, 0.05);
     border-top: 2px solid transparent;
     border-radius: 6px;
-    color: #a6adc8;
+    color: @textMid;
     padding: 0 10px;
     margin: 0 2px;
     font-size: 12px;
@@ -101,17 +108,17 @@ QTabBar::tab {
 }
 
 QTabBar::tab:selected {
-    background: #181825;
-    border: 1px solid rgba(137, 180, 250, 0.35);
-    border-top: 2px solid #89b4fa;
-    color: #cdd6f4;
+    background: @mantle;
+    border: 1px solid rgba(@accentRGB, 0.35);
+    border-top: 2px solid @accent;
+    color: @textHigh;
     font-weight: 600;
 }
 
 QTabBar::tab:hover:!selected {
-    background: rgba(24, 24, 37, 0.7);
-    border-color: rgba(137, 180, 250, 0.2);
-    color: #cdd6f4;
+    background: rgba(@mantleRGB, 0.7);
+    border-color: rgba(@accentRGB, 0.2);
+    color: @textHigh;
 }
 
 QTabBar::close-button {
@@ -121,15 +128,15 @@ QTabBar::close-button {
     border-radius: 3px;
 }
 QTabBar::close-button:hover {
-    background: rgba(243, 139, 168, 0.35);
-    color: #cdd6f4;
+    background: rgba(@dangerRGB, 0.35);
+    color: @textHigh;
 }
 
 QToolButton#AddTabButton {
     background: transparent;
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 6px;
-    color: #a6adc8;
+    color: @textMid;
     padding: 0;
     margin: 0;
     min-width: 26px;
@@ -138,16 +145,16 @@ QToolButton#AddTabButton {
     max-height: 26px;
 }
 QToolButton#AddTabButton:hover {
-    background: rgba(137, 180, 250, 0.15);
-    border-color: #89b4fa;
-    color: #89b4fa;
+    background: rgba(@accentRGB, 0.15);
+    border-color: @accent;
+    color: @accent;
 }
 
 /* Window Controls */
 QToolButton#WinBtn {
     background: transparent;
     border: none;
-    color: #7f849c;
+    color: @textLow;
     font-size: 11px;
     min-width: 28px;
     max-width: 28px;
@@ -159,12 +166,12 @@ QToolButton#WinBtn {
 }
 QToolButton#WinBtn:hover {
     background: rgba(255, 255, 255, 0.08);
-    color: #cdd6f4;
+    color: @textHigh;
 }
 QToolButton#WinBtnClose {
     background: transparent;
     border: none;
-    color: #7f849c;
+    color: @textLow;
     font-size: 11px;
     min-width: 28px;
     max-width: 28px;
@@ -175,13 +182,13 @@ QToolButton#WinBtnClose {
     padding: 0;
 }
 QToolButton#WinBtnClose:hover {
-    background: #f38ba8;
-    color: #cdd6f4;
+    background: @danger;
+    color: @textHigh;
 }
 
 /* ── 2. Unified Navigation Toolbar (42px) ──────────────────────────────── */
 QWidget#NavBar {
-    background: #11111b;
+    background: @crust;
     min-height: 42px;
     max-height: 42px;
 }
@@ -192,49 +199,49 @@ QToolButton#NavBtn {
     border-radius: 6px;
     padding: 0;
     margin: 0;
-    color: #a6adc8;
+    color: @textMid;
     min-width: 30px;
     min-height: 30px;
     max-width: 30px;
     max-height: 30px;
 }
 QToolButton#NavBtn:hover {
-    background: rgba(137, 180, 250, 0.12);
-    color: #cdd6f4;
+    background: rgba(@accentRGB, 0.12);
+    color: @textHigh;
 }
 QToolButton#NavBtn:disabled {
-    color: rgba(166, 173, 200, 0.25);
+    color: rgba(@textMidRGB, 0.25);
 }
 
 /* Omnibox / Search Capsule */
 QLineEdit#AddressBar {
-    background: #181825;
-    border: 1px solid rgba(137, 180, 250, 0.18);
+    background: @mantle;
+    border: 1px solid rgba(@accentRGB, 0.18);
     border-radius: 8px;
-    color: #cdd6f4;
+    color: @textHigh;
     padding: 0 10px;
     font-size: 13px;
-    selection-background-color: #89b4fa;
+    selection-background-color: @accent;
     min-height: 32px;
     max-height: 32px;
     height: 32px;
 }
 QLineEdit#AddressBar:hover {
-    background: #181825;
-    border-color: rgba(137, 180, 250, 0.32);
+    background: @mantle;
+    border-color: rgba(@accentRGB, 0.32);
 }
 QLineEdit#AddressBar:focus {
-    background: #181825;
-    border: 1px solid #89b4fa;
-    color: #cdd6f4;
+    background: @mantle;
+    border: 1px solid @accent;
+    color: @textHigh;
 }
 
 /* Action Badges & Buttons in Toolbar */
 QToolButton#ShieldBadgeBtn {
-    background: rgba(166, 227, 161, 0.1);
-    border: 1px solid rgba(166, 227, 161, 0.25);
+    background: rgba(@successRGB, 0.1);
+    border: 1px solid rgba(@successRGB, 0.25);
     border-radius: 6px;
-    color: #a6e3a1;
+    color: @success;
     font-size: 11px;
     font-weight: 600;
     padding: 0 10px;
@@ -244,15 +251,15 @@ QToolButton#ShieldBadgeBtn {
     margin: 0;
 }
 QToolButton#ShieldBadgeBtn:hover {
-    background: rgba(166, 227, 161, 0.2);
-    border-color: #a6e3a1;
+    background: rgba(@successRGB, 0.2);
+    border-color: @success;
 }
 
 QToolButton#DevBadgeBtn {
-    background: rgba(137, 180, 250, 0.08);
-    border: 1px solid rgba(137, 180, 250, 0.2);
+    background: rgba(@accentRGB, 0.08);
+    border: 1px solid rgba(@accentRGB, 0.2);
     border-radius: 6px;
-    color: #89b4fa;
+    color: @accent;
     font-size: 11px;
     font-weight: 600;
     padding: 0 10px;
@@ -262,15 +269,15 @@ QToolButton#DevBadgeBtn {
     margin: 0;
 }
 QToolButton#DevBadgeBtn:hover {
-    background: rgba(137, 180, 250, 0.18);
-    border-color: #89b4fa;
+    background: rgba(@accentRGB, 0.18);
+    border-color: @accent;
 }
 
 QToolButton#AvatarBtn {
-    background: qlineargradient(x1:0,y1:0,x2:1,y2:1, stop:0 #cba6f7, stop:1 #cba6f7);
-    border: 1px solid rgba(203, 166, 247, 0.3);
+    background: qlineargradient(x1:0,y1:0,x2:1,y2:1, stop:0 @mauve, stop:1 @mauve);
+    border: 1px solid rgba(@mauveRGB, 0.3);
     border-radius: 14px;
-    color: #cdd6f4;
+    color: @textHigh;
     font-weight: 700;
     font-size: 11px;
     min-width: 28px;
@@ -281,7 +288,7 @@ QToolButton#AvatarBtn {
     padding: 0;
 }
 QToolButton#AvatarBtn:hover {
-    border-color: #cba6f7;
+    border-color: @mauve;
 }
 
 /* ── 4. Progress Bar & Floating Widgets ──────────────────────────────── */
@@ -292,34 +299,34 @@ QProgressBar {
 }
 QProgressBar::chunk {
     background: qlineargradient(x1:0,y1:0,x2:1,y2:0,
-        stop:0 #89b4fa, stop:0.5 #89b4fa, stop:1 #cba6f7);
+        stop:0 @accent, stop:0.5 @accent, stop:1 @mauve);
 }
 
 /* Find Bar */
 QWidget#FindBar {
-    background: #11111b;
-    border-bottom: 1px solid rgba(137, 180, 250, 0.3);
+    background: @crust;
+    border-bottom: 1px solid rgba(@accentRGB, 0.3);
     padding: 4px 12px;
 }
 QLineEdit#FindEdit {
-    background: #11111b;
+    background: @crust;
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 5px;
-    color: #cdd6f4;
+    color: @textHigh;
     padding: 3px 8px;
     font-size: 12px;
     min-width: 180px;
 }
 QLineEdit#FindEdit:focus {
-    border-color: #89b4fa;
+    border-color: @accent;
 }
 
 /* Toast Notification */
 QLabel#ToastLabel {
-    background: rgba(17, 17, 27, 0.95);
-    border: 1px solid rgba(137, 180, 250, 0.4);
+    background: rgba(@crustRGB, 0.95);
+    border: 1px solid rgba(@accentRGB, 0.4);
     border-radius: 8px;
-    color: #cdd6f4;
+    color: @textHigh;
     font-size: 12px;
     font-weight: 600;
     padding: 8px 16px;
@@ -327,11 +334,11 @@ QLabel#ToastLabel {
 
 /* Menus & Popups */
 QMenu {
-    background: #11111b;
-    border: 1px solid rgba(137, 180, 250, 0.25);
+    background: @crust;
+    border: 1px solid rgba(@accentRGB, 0.25);
     border-radius: 8px;
     padding: 6px;
-    color: #cdd6f4;
+    color: @textHigh;
     font-size: 12px;
 }
 QMenu::item {
@@ -339,8 +346,8 @@ QMenu::item {
     border-radius: 5px;
 }
 QMenu::item:selected {
-    background: rgba(137, 180, 250, 0.15);
-    color: #89b4fa;
+    background: rgba(@accentRGB, 0.15);
+    color: @accent;
 }
 QMenu::separator {
     height: 1px;
@@ -350,10 +357,10 @@ QMenu::separator {
 
 /* Tooltips */
 QToolTip {
-    background: #11111b;
-    border: 1px solid rgba(137, 180, 250, 0.3);
+    background: @crust;
+    border: 1px solid rgba(@accentRGB, 0.3);
     border-radius: 5px;
-    color: #cdd6f4;
+    color: @textHigh;
     padding: 4px 8px;
     font-size: 11px;
 }
@@ -365,10 +372,11 @@ Browser::Browser(AdBlocker *adBlocker, QWidget *parent)
 {
     setWindowTitle(QStringLiteral("Titan Browser"));
     resize(1360, 840);
-    setStyleSheet(QString::fromUtf8(kTheme));
+    setStyleSheet(TitanPalette::qss(QString::fromUtf8(kTheme)));
 
     loadPersistentUserData();
     setupUi();
+    refreshAddressSuggestions();
     newTab(QUrl(QString::fromUtf8(kHomeUrl)));
 
     connect(&ProfileManager::instance(), &ProfileManager::activeProfileChanged, this, [this](const UserProfile &) {
@@ -389,18 +397,11 @@ Browser::Browser(AdBlocker *adBlocker, QWidget *parent)
         });
         m_statsTimer->start();
 
-        // Guardian heartbeat timer for instant ad skip across YouTube & Spotify SPA routes
-        auto *guardianTimer = new QTimer(this);
-        guardianTimer->setInterval(350);
-        connect(guardianTimer, &QTimer::timeout, this, [this] {
-            if (auto *v = currentView()) {
-                const QString host = v->url().host().toLower();
-                if (host.contains(QStringLiteral("youtube.com")) || host.contains(QStringLiteral("spotify.com"))) {
-                    m_adBlocker->injectContentScriptIntoView(v);
-                }
-            }
-        });
-        guardianTimer->start();
+        // NOTE: there is intentionally no periodic "guardian" re-injection of
+        // the content script. It is installed once per document by the
+        // QWebEngineScript in main.cpp; re-injecting every 350ms stacked up
+        // unlimited setInterval/MutationObserver instances inside the page and
+        // pinned the CPU (and grew RSS) the longer a tab stayed open.
     }
 
     // Tab Memory Saver background checker (every 60s)
@@ -569,6 +570,16 @@ void Browser::setupUi()
     mainVLayout->setContentsMargins(0, 0, 0, 0);
     mainVLayout->setSpacing(0);
     setCentralWidget(centralContainer);
+
+    // Thin strip at the very top, visible only while the chrome is hidden.
+    // Hovering it restores the toolbar, so the auto-hide is discoverable.
+    m_topHoverSensor = new QWidget(centralContainer);
+    m_topHoverSensor->setObjectName(QStringLiteral("TopHoverSensor"));
+    m_topHoverSensor->setFixedHeight(4);
+    m_topHoverSensor->setToolTip(QStringLiteral("Hover to show the toolbar"));
+    m_topHoverSensor->installEventFilter(this);
+    m_topHoverSensor->hide();
+    mainVLayout->addWidget(m_topHoverSensor);
 
     m_tabs = new TabWidget(this);
 
@@ -855,57 +866,16 @@ void Browser::setupUi()
     new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_Minus), this, [this]{ zoomOut(); });
     new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_0), this, [this]{ zoomReset(); });
 
-    // Keyboard Shortcuts
-    new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_T), this, [this]{ newTab(); });
-    new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_W), this, [this]{ closeCurrentTab(); });
-    new QShortcut(QKeySequence::Refresh, this, [this]{ reloadOrStop(); });
-    new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_L), this, [this]{
-        if (m_topChrome) m_topChrome->show();
-        m_addressBar->setFocus();
-        m_addressBar->selectAll();
-    });
+    // Display shortcuts — registered once. Ctrl+K belongs to the command
+    // palette above; the AI panel moved to Ctrl+Shift+K to avoid the clash.
     new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_Backslash), this, [this]{
         if (m_topChrome) m_topChrome->setVisible(!m_topChrome->isVisible());
     });
     new QShortcut(QKeySequence(Qt::Key_F11), this, [this]{
-        if (m_topChrome) m_topChrome->setVisible(!m_topChrome->isVisible());
+        if (isFullScreen()) showNormal(); else showFullScreen();
     });
-    new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_K), this, [this]{ onAICoreClicked(); });
-    new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_F), this, [this]{ toggleFindInPage(); });
-    new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_B), this, [this]{ onBookmarksClicked(); });
-    new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_H), this, [this]{ onHistoryClicked(); });
-    new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_J), this, [this]{ onDownloadsClicked(); });
-    new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_Comma), this, [this]{ onSettingsClicked(); });
-    new QShortcut(QKeySequence(Qt::ALT | Qt::Key_Left), this, [this]{ navigateBack(); });
-    new QShortcut(QKeySequence(Qt::ALT | Qt::Key_Right), this, [this]{ navigateForward(); });
-    new QShortcut(QKeySequence(Qt::ALT | Qt::Key_H), this, [this]{ onHomeClicked(); });
-    new QShortcut(QKeySequence(Qt::ALT | Qt::Key_S), this, [this]{ onSpacesClicked(); });
-
-    // Tab Switching Shortcuts (Ctrl+Tab, Ctrl+Shift+Tab, Ctrl+Shift+A, Ctrl+1..9)
-    new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_Tab), this, [this]{
-        if (m_tabs && m_tabs->count() > 1) {
-            m_tabs->setCurrentIndex((m_tabs->currentIndex() + 1) % m_tabs->count());
-        }
-    });
-    new QShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_Backtab), this, [this]{
-        if (m_tabs && m_tabs->count() > 1) {
-            m_tabs->setCurrentIndex((m_tabs->currentIndex() - 1 + m_tabs->count()) % m_tabs->count());
-        }
-    });
-    new QShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_A), this, [this]{ onTabSearchClicked(); });
-    for (int i = 1; i <= 8; ++i) {
-        new QShortcut(QKeySequence(QStringLiteral("Ctrl+%1").arg(i)), this, [this, i]{
-            if (m_tabs && (i - 1) < m_tabs->count()) m_tabs->setCurrentIndex(i - 1);
-        });
-    }
-    new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_9), this, [this]{
-        if (m_tabs && m_tabs->count() > 0) m_tabs->setCurrentIndex(m_tabs->count() - 1);
-    });
-
-    new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_Plus), this, [this]{ zoomIn(); });
-    new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_Equal), this, [this]{ zoomIn(); });
-    new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_Minus), this, [this]{ zoomOut(); });
-    new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_0), this, [this]{ zoomReset(); });
+    new QShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_K), this, [this]{ onAICoreClicked(); });
+    new QShortcut(QKeySequence(QStringLiteral("Ctrl+/")), this, [this]{ showShortcutHelp(); });
 }
 
 /* ─── Find in Page ─────────────────────────────────────────────────────── */
@@ -921,12 +891,13 @@ void Browser::setupFindBar(QVBoxLayout *layout)
     m_findEdit->setObjectName(QStringLiteral("FindEdit"));
     m_findEdit->setPlaceholderText(QStringLiteral("Find in page..."));
     m_findEdit->setClearButtonEnabled(true);
+    m_findEdit->installEventFilter(this); // Esc closes the bar (see eventFilter)
     connect(m_findEdit, &QLineEdit::textChanged, this, &Browser::onFindTextChanged);
     connect(m_findEdit, &QLineEdit::returnPressed, this, &Browser::findNext);
     findLayout->addWidget(m_findEdit);
 
     m_findCountLabel = new QLabel(QStringLiteral(""), m_findBar);
-    m_findCountLabel->setStyleSheet(QStringLiteral("color: #a6adc8; font-size: 11px; font-weight: 500;"));
+    m_findCountLabel->setStyleSheet(TitanPalette::qss(QStringLiteral("color: @textMid; font-size: 11px; font-weight: 500;")));
     findLayout->addWidget(m_findCountLabel);
 
     m_findPrevBtn = new QToolButton(m_findBar);
@@ -1138,11 +1109,23 @@ bool Browser::isBookmarked(const QUrl &url) const
     return false;
 }
 
+void Browser::refreshAddressSuggestions()
+{
+    if (!m_addressBar) return;
+    QStringList bookmarks, history;
+    for (const auto &b : m_bookmarks)
+        if (!b.url.isEmpty()) bookmarks << b.url.toString();
+    for (const auto &h : m_history)
+        if (!h.url.isEmpty()) history << h.url.toString();
+    m_addressBar->setSuggestions(history, bookmarks);
+}
+
 void Browser::addBookmark(const QString &title, const QUrl &url)
 {
     if (isBookmarked(url)) return;
     m_bookmarks.append({title.isEmpty() ? url.toString() : title, url, QDateTime::currentDateTime()});
     savePersistentUserData();
+    refreshAddressSuggestions();
 }
 
 void Browser::removeBookmark(const QUrl &url)
@@ -1154,6 +1137,7 @@ void Browser::removeBookmark(const QUrl &url)
         }
     }
     savePersistentUserData();
+    refreshAddressSuggestions();
 }
 
 void Browser::addHistoryRecord(const QString &title, const QUrl &url)
@@ -1161,6 +1145,7 @@ void Browser::addHistoryRecord(const QString &title, const QUrl &url)
     if (url.scheme() == QStringLiteral("qrc") || url.isEmpty()) return;
     m_history.prepend({title.isEmpty() ? url.toString() : title, url, QDateTime::currentDateTime()});
     if (m_history.size() > 500) m_history.removeLast();
+    refreshAddressSuggestions();
 }
 
 void Browser::onBookmarkClicked(const QUrl &url)
@@ -1184,13 +1169,13 @@ void Browser::onTabSearchClicked()
     if (!m_tabs || m_tabs->count() == 0) return;
 
     auto *menu = new QMenu(this);
-    menu->setStyleSheet(QStringLiteral(R"(
+    menu->setStyleSheet(TitanPalette::qss(QStringLiteral(R"(
         QMenu {
-            background: rgba(17, 17, 27, 0.95);
-            border: 1px solid rgba(137, 180, 250, 0.35);
+            background: rgba(@crustRGB, 0.95);
+            border: 1px solid rgba(@accentRGB, 0.35);
             border-radius: 10px;
             padding: 8px;
-            color: #cdd6f4;
+            color: @textHigh;
             font-family: "Outfit", -apple-system, sans-serif;
             min-width: 300px;
         }
@@ -1201,15 +1186,15 @@ void Browser::onTabSearchClicked()
             margin: 2px 0;
         }
         QMenu::item:selected {
-            background: rgba(137, 180, 250, 0.2);
-            color: #89b4fa;
+            background: rgba(@accentRGB, 0.2);
+            color: @accent;
         }
         QMenu::separator {
             height: 1px;
-            background: rgba(137, 180, 250, 0.15);
+            background: rgba(@accentRGB, 0.15);
             margin: 6px 4px;
         }
-    )"));
+    )")));
 
     auto *headerAct = menu->addAction(QStringLiteral("🗂 Open Tabs (%1)").arg(m_tabs->count()));
     headerAct->setEnabled(false);
@@ -1258,13 +1243,27 @@ void Browser::updateChromeVisibility()
     // Auto-hide top chrome ONLY when on a single home tab
     if (isHome && tabCount <= 1) {
         m_topChrome->hide();
+        if (m_topHoverSensor) m_topHoverSensor->show();
     } else {
         m_topChrome->show();
+        if (m_topHoverSensor) m_topHoverSensor->hide();
     }
 }
 
 bool Browser::eventFilter(QObject *watched, QEvent *event)
 {
+    if (watched == m_findEdit && event->type() == QEvent::KeyPress) {
+        auto *keyEvent = static_cast<QKeyEvent *>(event);
+        if (keyEvent->key() == Qt::Key_Escape) {
+            closeFindBar();
+            return true;
+        }
+    }
+    if (watched == m_topHoverSensor &&
+        (event->type() == QEvent::Enter || event->type() == QEvent::MouseButtonPress)) {
+        if (m_topChrome && !m_topChrome->isVisible()) m_topChrome->show();
+        return false;
+    }
     if (event->type() == QEvent::MouseMove) {
         auto *mouseEvent = static_cast<QMouseEvent *>(event);
         if (mouseEvent->pos().y() <= 6 && m_topChrome && !m_topChrome->isVisible()) {
@@ -1276,6 +1275,28 @@ bool Browser::eventFilter(QObject *watched, QEvent *event)
         }
     }
     return QMainWindow::eventFilter(watched, event);
+}
+
+void Browser::keyPressEvent(QKeyEvent *event)
+{
+    if (event->key() == Qt::Key_Escape) {
+        // Close Find first (its tooltip already promises Esc), then drop focus
+        // from the omnibox, then leave fullscreen — in that order.
+        if (m_findBar && m_findBar->isVisible()) {
+            closeFindBar();
+            return;
+        }
+        if (m_addressBar && m_addressBar->hasFocus()) {
+            m_addressBar->clearFocus();
+            updateChromeVisibility();
+            return;
+        }
+        if (isFullScreen()) {
+            showNormal();
+            return;
+        }
+    }
+    QMainWindow::keyPressEvent(event);
 }
 
 /* ─── Rail & Chrome Actions ────────────────────────────────────────────── */
@@ -1466,13 +1487,13 @@ void Browser::onDevToolsClicked()
 void Browser::onCommandPaletteClicked()
 {
     auto *menu = new QMenu(this);
-    menu->setStyleSheet(QStringLiteral(R"(
+    menu->setStyleSheet(TitanPalette::qss(QStringLiteral(R"(
         QMenu {
-            background: #181825;
-            border: 1px solid rgba(137, 180, 250, 0.35);
+            background: @mantle;
+            border: 1px solid rgba(@accentRGB, 0.35);
             border-radius: 10px;
             padding: 6px;
-            color: #cdd6f4;
+            color: @textHigh;
             font-size: 13px;
         }
         QMenu::item {
@@ -1481,15 +1502,15 @@ void Browser::onCommandPaletteClicked()
             margin: 2px 4px;
         }
         QMenu::item:selected {
-            background: rgba(137, 180, 250, 0.16);
-            color: #89b4fa;
+            background: rgba(@accentRGB, 0.16);
+            color: @accent;
         }
         QMenu::separator {
             height: 1px;
             background: rgba(255, 255, 255, 0.08);
             margin: 4px 6px;
         }
-    )"));
+    )")));
 
     auto *newTabAct = menu->addAction(QIcon(QStringLiteral(":/icons/plus.svg")), QStringLiteral("New Tab (Ctrl+T)"));
     connect(newTabAct, &QAction::triggered, this, [this]{ newTab(); });
@@ -1530,11 +1551,11 @@ void Browser::updateProfileAvatar()
     if (!p.email.isEmpty()) tip += QStringLiteral(" (%1)").arg(p.email);
     m_avatarBtn->setToolTip(tip);
 
-    QString color = p.avatarColor.isEmpty() ? QStringLiteral("#89b4fa") : p.avatarColor;
-    m_avatarBtn->setStyleSheet(QStringLiteral(R"(
+    QString color = p.avatarColor.isEmpty() ? TitanPalette::hex(TitanPalette::accent()) : p.avatarColor;
+    m_avatarBtn->setStyleSheet(TitanPalette::qss(QStringLiteral(R"(
         QToolButton#AvatarBtn {
             background-color: %1;
-            color: #cdd6f4;
+            color: @textHigh;
             font-weight: 700;
             font-size: 11px;
             border-radius: 12px;
@@ -1547,9 +1568,9 @@ void Browser::updateProfileAvatar()
             margin: 0 4px;
         }
         QToolButton#AvatarBtn:hover {
-            border: 1.5px solid #cdd6f4;
+            border: 1.5px solid @textHigh;
         }
-    )").arg(color));
+    )").arg(color)));
 }
 
 void Browser::switchProfile(const QString &profileId)
@@ -1567,42 +1588,42 @@ void Browser::showAddProfileDialog()
     QDialog dlg(this);
     dlg.setWindowTitle(QStringLiteral("Add New Profile"));
     dlg.setFixedSize(360, 240);
-    dlg.setStyleSheet(QStringLiteral(R"(
+    dlg.setStyleSheet(TitanPalette::qss(QStringLiteral(R"(
         QDialog {
-            background: #11111b;
-            color: #cdd6f4;
+            background: @crust;
+            color: @textHigh;
             font-family: 'Inter', sans-serif;
         }
-        QLabel { color: #a6adc8; font-size: 12px; }
+        QLabel { color: @textMid; font-size: 12px; }
         QLineEdit {
-            background: #181825;
-            border: 1px solid rgba(137, 180, 250, 0.3);
+            background: @mantle;
+            border: 1px solid rgba(@accentRGB, 0.3);
             border-radius: 6px;
-            color: #cdd6f4;
+            color: @textHigh;
             padding: 6px 10px;
             font-size: 13px;
         }
-        QLineEdit:focus { border-color: #89b4fa; }
+        QLineEdit:focus { border-color: @accent; }
         QComboBox {
-            background: #181825;
-            border: 1px solid rgba(137, 180, 250, 0.3);
+            background: @mantle;
+            border: 1px solid rgba(@accentRGB, 0.3);
             border-radius: 6px;
-            color: #cdd6f4;
+            color: @textHigh;
             padding: 6px 10px;
         }
         QPushButton {
-            background: rgba(137, 180, 250, 0.15);
-            border: 1px solid rgba(137, 180, 250, 0.4);
+            background: rgba(@accentRGB, 0.15);
+            border: 1px solid rgba(@accentRGB, 0.4);
             border-radius: 6px;
-            color: #89b4fa;
+            color: @accent;
             padding: 6px 14px;
             font-weight: 600;
         }
         QPushButton:hover {
-            background: #89b4fa;
-            color: #11111b;
+            background: @accent;
+            color: @crust;
         }
-    )"));
+    )")));
 
     auto *layout = new QVBoxLayout(&dlg);
     layout->setSpacing(12);
@@ -1649,42 +1670,42 @@ void Browser::showEditProfileDialog()
     QDialog dlg(this);
     dlg.setWindowTitle(QStringLiteral("Edit Profile"));
     dlg.setFixedSize(360, 240);
-    dlg.setStyleSheet(QStringLiteral(R"(
+    dlg.setStyleSheet(TitanPalette::qss(QStringLiteral(R"(
         QDialog {
-            background: #11111b;
-            color: #cdd6f4;
+            background: @crust;
+            color: @textHigh;
             font-family: 'Inter', sans-serif;
         }
-        QLabel { color: #a6adc8; font-size: 12px; }
+        QLabel { color: @textMid; font-size: 12px; }
         QLineEdit {
-            background: #181825;
-            border: 1px solid rgba(137, 180, 250, 0.3);
+            background: @mantle;
+            border: 1px solid rgba(@accentRGB, 0.3);
             border-radius: 6px;
-            color: #cdd6f4;
+            color: @textHigh;
             padding: 6px 10px;
             font-size: 13px;
         }
-        QLineEdit:focus { border-color: #89b4fa; }
+        QLineEdit:focus { border-color: @accent; }
         QComboBox {
-            background: #181825;
-            border: 1px solid rgba(137, 180, 250, 0.3);
+            background: @mantle;
+            border: 1px solid rgba(@accentRGB, 0.3);
             border-radius: 6px;
-            color: #cdd6f4;
+            color: @textHigh;
             padding: 6px 10px;
         }
         QPushButton {
-            background: rgba(137, 180, 250, 0.15);
-            border: 1px solid rgba(137, 180, 250, 0.4);
+            background: rgba(@accentRGB, 0.15);
+            border: 1px solid rgba(@accentRGB, 0.4);
             border-radius: 6px;
-            color: #89b4fa;
+            color: @accent;
             padding: 6px 14px;
             font-weight: 600;
         }
         QPushButton:hover {
-            background: #89b4fa;
-            color: #11111b;
+            background: @accent;
+            color: @crust;
         }
-    )"));
+    )")));
 
     auto *layout = new QVBoxLayout(&dlg);
     layout->setSpacing(12);
@@ -1738,13 +1759,13 @@ void Browser::onProfileClicked()
 {
     UserProfile active = ProfileManager::instance().activeProfile();
     auto *menu = new QMenu(this);
-    menu->setStyleSheet(QStringLiteral(R"(
+    menu->setStyleSheet(TitanPalette::qss(QStringLiteral(R"(
         QMenu {
-            background: #11111b;
-            border: 1px solid rgba(137, 180, 250, 0.25);
+            background: @crust;
+            border: 1px solid rgba(@accentRGB, 0.25);
             border-radius: 10px;
             padding: 8px;
-            color: #cdd6f4;
+            color: @textHigh;
             font-size: 12.5px;
             font-family: 'Inter', sans-serif;
         }
@@ -1753,15 +1774,15 @@ void Browser::onProfileClicked()
             border-radius: 6px;
         }
         QMenu::item:selected {
-            background: rgba(137, 180, 250, 0.16);
-            color: #89b4fa;
+            background: rgba(@accentRGB, 0.16);
+            color: @accent;
         }
         QMenu::separator {
             height: 1px;
             background: rgba(255, 255, 255, 0.08);
             margin: 6px 4px;
         }
-    )"));
+    )")));
 
     // Header: Active Profile
     QString activeTitle = QStringLiteral("👤 Current: %1").arg(active.name);
@@ -1981,6 +2002,60 @@ void Browser::onLoadFinished(bool ok)
             showLoadError(v->url());
     }
     updateNavigationButtons();
+}
+
+void Browser::showShortcutHelp()
+{
+    auto *dlg = new QDialog(this);
+    dlg->setWindowTitle(QStringLiteral("Titan Browser — Keyboard Shortcuts"));
+    dlg->setModal(false);
+    dlg->setAttribute(Qt::WA_DeleteOnClose);
+
+    auto *layout = new QVBoxLayout(dlg);
+    auto *label = new QLabel(dlg);
+    label->setTextFormat(Qt::RichText);
+    label->setText(QStringLiteral(
+        "<h3>Navigation</h3>"
+        "<table cellpadding='3'>"
+        "<tr><td><b>Ctrl+L</b></td><td>Focus address bar</td></tr>"
+        "<tr><td><b>Alt+← / Alt+→</b></td><td>Back / Forward</td></tr>"
+        "<tr><td><b>Alt+H</b></td><td>Home</td></tr>"
+        "<tr><td><b>Ctrl+R</b></td><td>Reload / Stop</td></tr>"
+        "</table>"
+        "<h3>Tabs</h3>"
+        "<table cellpadding='3'>"
+        "<tr><td><b>Ctrl+T</b></td><td>New tab</td></tr>"
+        "<tr><td><b>Ctrl+W</b></td><td>Close tab</td></tr>"
+        "<tr><td><b>Ctrl+Tab</b></td><td>Next tab</td></tr>"
+        "<tr><td><b>Ctrl+Shift+Tab</b></td><td>Previous tab</td></tr>"
+        "<tr><td><b>Ctrl+1…9</b></td><td>Jump to tab</td></tr>"
+        "<tr><td><b>Ctrl+Shift+A</b></td><td>Search open tabs</td></tr>"
+        "</table>"
+        "<h3>Tools</h3>"
+        "<table cellpadding='3'>"
+        "<tr><td><b>Ctrl+F</b></td><td>Find in page (Esc to close)</td></tr>"
+        "<tr><td><b>Ctrl+K</b></td><td>Command palette</td></tr>"
+        "<tr><td><b>Ctrl+Shift+K</b></td><td>AI panel</td></tr>"
+        "<tr><td><b>Ctrl+B / H / J</b></td><td>Bookmarks / History / Downloads</td></tr>"
+        "<tr><td><b>Ctrl+,</b></td><td>Settings</td></tr>"
+        "<tr><td><b>F12</b></td><td>Developer tools</td></tr>"
+        "<tr><td><b>Ctrl+ + / - / 0</b></td><td>Zoom in / out / reset</td></tr>"
+        "<tr><td><b>F11</b></td><td>Fullscreen</td></tr>"
+        "<tr><td><b>Ctrl+\\</b></td><td>Toggle toolbar</td></tr>"
+        "<tr><td><b>Ctrl+/</b></td><td>This cheat sheet</td></tr>"
+        "</table>"));
+    label->setStyleSheet(TitanPalette::qss(QStringLiteral(
+        "QLabel { color: @textHigh; font-family: 'Inter', sans-serif; font-size: 12px; }"
+        "h3 { color: @accent; font-size: 13px; margin-top: 10px; }"
+        "td { padding-right: 14px; }")));
+    layout->addWidget(label);
+
+    auto *closeBtn = new QPushButton(QStringLiteral("Close"), dlg);
+    connect(closeBtn, &QPushButton::clicked, dlg, &QDialog::close);
+    layout->addWidget(closeBtn, 0, Qt::AlignRight);
+
+    dlg->resize(420, 560);
+    dlg->show();
 }
 
 void Browser::showLoadError(const QUrl &url)

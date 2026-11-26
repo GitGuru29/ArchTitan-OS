@@ -37,9 +37,6 @@ declare -A APP_POLICY=(
     [brave]="browser.toml"
     [falkon]="browser.toml"
     [firefox-developer-edition]="browser.toml"
-    # Settings & System Control
-    [archtitan-settings]="general-gui.toml"
-    [titan-settings]="general-gui.toml"
     # Media
     [mpv]="media.toml"
     [vlc]="media.toml"
@@ -61,9 +58,7 @@ declare -A APP_POLICY=(
     [zed]="system-dev.toml"
     [nvim]="system-dev.toml"
     [kitty]="system-dev.toml"
-    [alacritty]="system-dev.toml"
-    # Rofi/wofi launcher — general-gui (it's not a dev tool)
-    [rofi]="general-gui.toml"
+    # Launchers
     [wofi]="general-gui.toml"
 )
 
@@ -95,6 +90,14 @@ fi
 CMD="$1"
 shift
 BINARY="$(basename "$CMD")"
+
+# Core system utilities, control panels, installers, and desktop shell overlays run directly unsandboxed
+case "$BINARY" in
+    archtitan-settings|titan-settings|calamares|launch-installer|titan-shell|titan-quicksettings|titan-menu|titan-sysmon|titan-spotlight|titan-tour|titan-powermenu)
+        exec "$CMD" "$@"
+        ;;
+esac
+
 POLICY="$(resolve_policy "$BINARY")"
 
 # Fall back to unknown.toml if the resolved file doesn't exist
@@ -139,7 +142,7 @@ mkdir -p "$REGISTRY_DIR" 2>/dev/null || true
 # FALLBACK: If sandboxd fails for any reason (namespace errors, permission
 # denied, policy parse failure), launch the app directly unsandboxed.
 # This prevents silent keybinding death on the installed OS.
-if "$SANDBOXD" "$POLICY" "$CMD" "$@" 2>>"$LOG" | \
+if ("$SANDBOXD" "$POLICY" "$CMD" "$@" 2>>"$LOG" 2>/dev/null || "$SANDBOXD" "$POLICY" "$CMD" "$@") | \
 while IFS= read -r line; do
     if [[ "$line" == SANDBOX_PID=* ]]; then
         BOX_PID="${line#SANDBOX_PID=}"

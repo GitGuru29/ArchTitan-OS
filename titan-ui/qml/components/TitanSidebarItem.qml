@@ -12,9 +12,9 @@ Rectangle {
     signal clicked()
 
     implicitWidth: 200
-    implicitHeight: 42
+    implicitHeight: 40
     radius: TitanTheme.radiusMd
-    color: active ? TitanTheme.accentSoft : (hover.hovered ? TitanTheme.bg4 : "transparent")
+    color: active ? TitanTheme.accentSoft : (hover.hovered ? TitanTheme.stateHover : "transparent")
     Behavior on color { ColorAnimation { duration: TitanTheme.durFast } }
 
     Rectangle {

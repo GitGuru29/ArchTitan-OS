@@ -29,18 +29,43 @@ struct TelemetryWorkload {
     uint32_t    id           = 0;
     pid_t       root_pid     = 0;
     int         workspace_id = -1;
+    std::string window_class;         // v3.9 bound Hyprland class (may be empty)
+    std::string window_title;         // v3.9 bound Hyprland title (may be empty)
     std::string name;                 // root cmdline (human label)
     std::string type;                 // to_string(WorkloadType)
     std::string state;                // to_string(WorkloadState)
     int         pid_count    = 0;
     long        mem_kb       = 0;     // summed RSS of member PIDs
+    float       cpu_pct      = 0.0f;  // summed CPU% of member PIDs
+    bool        observed     = false; // telemetry-only (no enforcement authority)
+    // v3.3 intent — shows why a workload landed in a particular CPU slice.
+    bool        latency_critical = false;
+    bool        throughput_bulk  = false;
+    bool        gpu_feeding      = false;
+    // v3.10 dependency graph: providers this workload needs and workloads
+    // that depend on it. `protected_by_dependents` blocks reclaim.
+    int         dependency_providers   = 0;
+    int         dependency_dependents  = 0;
+    bool        protected_by_dependents = false;
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// UnmanagedProc — a process tree root THM sees but does not manage.
+// Surfaced by `titan-hwm scan` so an empty registry is never a mystery.
+// ─────────────────────────────────────────────────────────────────────────────
+struct UnmanagedProc {
+    pid_t       pid      = 0;
+    std::string comm;
+    float       cpu_pct  = 0.0f;
+    long        rss_kb   = 0;
+    std::string reason;               // why it is not a tracked workload
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TelemetrySnapshot — full daemon state for one tick.
 // ─────────────────────────────────────────────────────────────────────────────
 struct TelemetrySnapshot {
-    std::string version     = "3.1.0";
+    std::string version     = "3.3.0";
     long long   timestamp_ms = 0;     // wall clock (epoch ms)
     long long   uptime_seconds = 0;
 
@@ -52,10 +77,72 @@ struct TelemetrySnapshot {
     long        mem_total_kb     = 0;
     long        mem_available_kb = 0;
 
+    // Kernel-native memory orchestration (v3.3-R2)
+    long        background_memory_high_bytes = 0; // 0 == max
+    long        latency_memory_high_bytes    = 0; // 0 == max
+    long        protected_memory_low_bytes   = 0; // 0 == no protection
+    bool        memory_enforcement_active    = false;
+    bool        enforcement_degraded          = false;
+    bool        destructive_reclaim_enabled   = false;
+
+    // CPU pressure & asymmetric scheduling (HC-CPU-1: scheduling/headroom only, never kills)
+    std::string cpu_pressure_level       = "NORMAL";
+    std::string composite_pressure_level = "NORMAL";
+    bool        cpu_psi_valid    = false;
+    float       cpu_psi_avg10    = 0.0f;
+    float       cpu_psi_avg60    = 0.0f;
+    float       cpu_psi_avg300   = 0.0f;
+    float       cpu_psi_inst     = -1.0f; // per-tick PSI delta (-1 = unavailable)
+    float       load1            = 0.0f;
+    float       load5            = 0.0f;
+    float       load15           = 0.0f;
+    float       load_ratio       = 0.0f;
+    int         online_cpus      = 1;
+    int         runnable_procs   = 0;
+    int         total_procs      = 0;
+    int         protected_cpu_weight   = 2000;
+    int         active_cpu_weight      = 500;
+    int         latency_cpu_weight     = 450;
+    int         background_cpu_weight  = 50;
+    float       background_cpu_max_pct = 100.0f;
+    bool        cpu_headroom_engaged   = false;
+    int         reserved_headroom_cores = 0; // v3.4 adaptive reservation (logical CPUs)
+    int         bandwidth_loan_cores    = 0; // v3.8 lent from idle reservation
+    bool        smt_isolation_active    = false; // v3.5 whole-core placement in effect
+    int         isolated_physical_cores = 0;
+    std::string latency_cpuset;                  // e.g. "0,4,1,5"
+    std::string background_cpuset;               // e.g. "2,3,6,7"
+    bool        input_feedforward_active = false; // v3.6 short boost after real input
+    long        input_age_ms             = -1;    // age of last observed event
+    bool        background_cpu_idle    = false;
+    bool        unattended_lift        = false;
+    float       cpu_temp_c             = 0.0f;
+    unsigned long long bg_nr_periods   = 0;
+    unsigned long long bg_nr_throttled = 0;
+    unsigned long long bg_throttled_usec = 0;
+
     // Orchestration
     std::string governor = "schedutil";      // powersave|schedutil|performance
-    int         workload_count   = 0;
-    int         active_workloads = 0;
+    int         workload_count      = 0;     // all tracked entries
+    int         active_workloads    = 0;     // ACTIVE + BACKGROUND_EXECUTING
+    int         classified_workloads = 0;    // non-observed (enforcement-eligible)
+    int         observed_workloads   = 0;    // telemetry-only
+
+    // v3.10 workload dependency graph
+    std::string dependency_summary;
+    int         dependency_nodes     = 0;
+    int         dependency_edges     = 0;
+    int         dependency_shielded  = 0;    // nodes with active dependents
+
+    // Process inventory — makes `0 workloads` self-explanatory.
+    int         processes_seen      = 0;
+    int         processes_protected = 0;
+    int         processes_assigned  = 0;     // covered by a tracked workload
+    int         processes_unmanaged = 0;     // seen, not protected, not assigned
+    bool        hyprland_connected  = false;
+
+    // Top unmanaged user processes (bounded list, sorted by CPU desc).
+    std::vector<UnmanagedProc> top_unmanaged;
 
     // Most recent non-trivial enforcement action ("" when none yet).
     bool        has_last_action = false;

@@ -55,55 +55,151 @@ graph TD
 
 | Component | Function | Configuration File Location |
 | :--- | :--- | :--- |
-| **Hyprland** | Wayland Tiling Compositor (v0.53+/v0.56+ block syntax) | `~/.config/hypr/hyprland.lua` (falls back to `.conf` if absent) |
+| **Hyprland** | Wayland Tiling Compositor (v0.53+/v0.56+ Lua & block syntax) | `~/.config/hypr/hyprland.lua` (falls back to `.conf` if absent) |
 | **Waybar** | Top dark-pill status panel with center media capsule & THM badge | `~/.config/waybar/config` & `style.css` |
-| **Titan Media HUD** | Dynamic Island overlay & power menu | `subsystems/titan-media-hud/` |
-| **TitanBrowser** | First-party Qt6 WebEngine browser | `titan-browser-source/` |
+| **Titan Spotlight** | macOS-style native app launcher, instant calculator & search modal | `subsystems/titan-spotlight/` (`titan-spotlight`) |
+| **Titan Menu** | Native Wayland layer-shell command palette & shortcuts cheat sheet | `subsystems/titan-menu/` (`titan-menu`) |
+| **Titan Workspace HUD** | 10-Workspace interactive Mission Control overlay | `subsystems/titan-workspace-hud/` (`titan-workspace-hud`) |
+| **Titan Quick Settings** | Obsidian glassmorphic control drawer & notification center | `subsystems/titan-quicksettings/` (`titan-quicksettings`) |
+| **Titan Media HUD** | Dynamic Island overlay & playback controller | `subsystems/titan-media-hud/` (`titan-media-hud`) |
+| **Titan Power Menu** | Native C++/Qt6 glass session & power overlay (Lock, Sleep, Logout, Reboot, Shutdown) | `subsystems/titan-powermenu/` (`titan-powermenu`) |
+| **Titan System Monitor** | Hardware telemetry, GPU/CPU gauges, thermal state | `subsystems/titan-sysmon/` (`titan-sysmon`) |
+| **Titan Hotzones** | Edge & corner pointer dwell gesture daemon with LayerShell OSD | `subsystems/titan-hotzones/` (`titan-hotzones`, `titan-zone-osd`) |
+| **Titan Wallpaper Picker** | Fluid thumbnail grid wallpaper browser & boot persistence | `subsystems/titan-wallpaper-picker/` (`titan-wallpaper-picker`) |
+| **Titan Tour v2** | 3-island Liquid Glass Bento welcome walkthrough | `subsystems/titan-tour/` (`titan-tour`) |
+| **TitanBrowser** | First-party Qt6 WebEngine browser | `titan-browser-source/` (`titanbrowser`) |
 | **ArchTitan Settings** | System configuration GUI | `archtitan-settings/` |
-| **Rofi (Wayland)** | Application launcher, window switcher, power menu | `~/.config/rofi/config.rasi` |
+| **SwayNC** | Lightweight Wayland notification daemon backend | `~/.config/swaync/` |
 | **Kitty** | GPU-accelerated terminal emulator | `~/.config/kitty/kitty.conf` |
 | **Fish Shell** | Interactive shell with auto-suggestions & syntax highlighting | `~/.config/fish/config.fish` |
 | **Starship** | Cross-shell developer prompt | `~/.config/starship.toml` |
-| **Dunst** | Notification daemon styled with rounded borders | `~/.config/dunst/dunstrc` |
 
 ---
 
 ## Essential Keybindings Reference
 
-All keybindings use the **Super** key (Windows/Cmd key) as the main modifier:
+All keybindings use the **Super** key (Windows/Cmd key) as the primary modifier:
 
-### System & Launchers
+### 1. System Overlays & Launchers
+
+| Keybinding | Action | Command / Target |
+| :--- | :--- | :--- |
+| <kbd>Super</kbd> *(Single Tap)* | Open **Titan Spotlight** (macOS-style Search, Calculator & Launcher) | `titan-spotlight --toggle` |
+| <kbd>Super</kbd> + <kbd>Space</kbd> | Open **ArchTitan Menu** (Central Command Palette) | `titan-menu --toggle` |
+| <kbd>Super</kbd> + <kbd>K</kbd> | **Shortcuts & Command Palette** | `titan-menu --toggle` |
+| <kbd>Super</kbd> + <kbd>Tab</kbd> | Toggle **Titan Workspace HUD** (10-Workspace Mission Control Grid) | `titan-workspace-hud --toggle` |
+| <kbd>Super</kbd> + <kbd>N</kbd> | **Quick Settings & Notification Center** | `titan-quicksettings --toggle` |
+| <kbd>Super</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd> | **Titan System Monitor (Telemetry Sidebar)** | `titan-sysmon --toggle` |
+| <kbd>Super</kbd> + <kbd>M</kbd> | **Media Island HUD Overlay** | `titan-media-hud --toggle` |
+| <kbd>Super</kbd> + <kbd>\\</kbd> or <kbd>Super</kbd> + <kbd>Shift</kbd> + <kbd>\\</kbd> | **Wallpaper Picker** | `titan-wallpaper-picker` |
+| <kbd>Super</kbd> + <kbd>V</kbd> | Open **Spotlight Clipboard History Manager** | `titan-spotlight --clipboard` |
+| <kbd>Super</kbd> + <kbd>Escape</kbd> | Open **Titan Power Menu** | `titan-powermenu --toggle` |
+
+### 2. Applications
+
+| Keybinding | Action | Command |
+| :--- | :--- | :--- |
+| <kbd>Super</kbd> + <kbd>Return</kbd> | Kitty Terminal | `kitty` |
+| <kbd>Super</kbd> + <kbd>W</kbd> | Default Web Browser | `titanbrowser` |
+| <kbd>Super</kbd> + <kbd>E</kbd> | Ranger File Manager | `kitty -e ranger` |
+| <kbd>Super</kbd> + <kbd>C</kbd> | Code Editor | `code` (VS Code) |
+| <kbd>Super</kbd> + <kbd>X</kbd> | Terminal Text Editor | `kitty -e nano` |
+| <kbd>Super</kbd> + <kbd>,</kbd> *(comma)* | **ArchTitan Settings Panel** | `archtitan-settings` |
+| <kbd>Super</kbd> + <kbd>I</kbd> | Calamares Installer *(Live ISO)* / Settings *(Installed)* | `launch-installer` / `archtitan-settings` |
+| <kbd>Ctrl</kbd> + <kbd>Super</kbd> + <kbd>V</kbd> | Audio Mixer | `pavucontrol` |
+| <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Esc</kbd> | Task Manager | `kitty -e btop` |
+
+#### Terminal profile
+
+The shipped Kitty setup mirrors the host system's terminal: JetBrains Mono at
+11pt, beam cursor with trail, `window_margin_width 21.75`, Fish + Starship, and
+the split-pane `search.py` kitten. The default `archtitan` theme carries
+`"terminalProfile": "host"`, so `titan-theme` regenerates the exact host
+palette (including the extended `color232`–`color255` slots used by Starship).
+Switching to any other theme keeps those prompt slots while deriving the base
+colours from the new palette.
 
 | Keybinding | Action |
 | :--- | :--- |
-| <kbd>Super</kbd> + <kbd>Return</kbd> | Open Kitty Terminal |
-| <kbd>Super</kbd> / <kbd>Super</kbd> + <kbd>Space</kbd> | Open Rofi App Launcher |
-| <kbd>Super</kbd> + <kbd>W</kbd> | Launch Default Web Browser (**TitanBrowser**) |
-| <kbd>Super</kbd> + <kbd>E</kbd> | Launch Ranger File Manager |
-| <kbd>Super</kbd> + <kbd>I</kbd> | Launch Calamares Graphical Installer (via `launch-installer`) |
-| <kbd>Super</kbd> + <kbd>V</kbd> | Open Rofi Clipboard History Manager |
-| <kbd>Super</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd> | Take Region Screenshot (via `grim` + `slurp`) |
-| <kbd>Super</kbd> + <kbd>Escape</kbd> | Open Titan Power Menu / Rofi Power Menu |
+| <kbd>Ctrl</kbd> + <kbd>C</kbd> | Copy, or interrupt when a command is running |
+| <kbd>Ctrl</kbd> + <kbd>F</kbd> / <kbd>Super</kbd> + <kbd>F</kbd> | Open the split-pane search kitten |
+| <kbd>F3</kbd> / <kbd>Shift</kbd> + <kbd>F3</kbd> | Previous / next search match (inside search) |
+| <kbd>Page Up</kbd> / <kbd>Page Down</kbd> | Scroll one screen |
+| <kbd>Ctrl</kbd> + <kbd>+</kbd> / <kbd>-</kbd> / <kbd>0</kbd> | Increase / decrease / reset font size |
 
-### Window Management
+### 3. Screen Capture & Tools
+
+| Keybinding | Action | Command |
+| :--- | :--- | :--- |
+| <kbd>Super</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd> | Interactive Region Screenshot to Clipboard | `grim -g "$(slurp)" - \| wl-copy` |
+| <kbd>Print</kbd> | Interactive Region Screenshot to Clipboard | `grim -g "$(slurp)" - \| wl-copy` |
+
+### 4. Window Management & Tiling
 
 | Keybinding | Action |
 | :--- | :--- |
 | <kbd>Super</kbd> + <kbd>Q</kbd> | Close active window |
+| <kbd>Super</kbd> + <kbd>Shift</kbd> + <kbd>Alt</kbd> + <kbd>Q</kbd> | Forcefully kill focused window (`hyprctl kill`) |
+| <kbd>Super</kbd> + <kbd>Alt</kbd> + <kbd>Space</kbd> | Toggle Floating / Tiling mode |
 | <kbd>Super</kbd> + <kbd>F</kbd> | Toggle Fullscreen mode |
-| <kbd>Super</kbd> + <kbd>Shift</kbd> + <kbd>Space</kbd> | Toggle Floating mode for active window |
-| <kbd>Super</kbd> + <kbd>H</kbd> / <kbd>J</kbd> / <kbd>K</kbd> / <kbd>L</kbd> | Move focus Left / Down / Up / Right |
-| <kbd>Super</kbd> + <kbd>Shift</kbd> + <kbd>H</kbd> / <kbd>J</kbd> / <kbd>K</kbd> / <kbd>L</kbd> | Move window position Left / Down / Up / Right |
+| <kbd>Super</kbd> + <kbd>D</kbd> | Toggle Maximized mode (fullscreen with desktop gaps) |
+| <kbd>Super</kbd> + <kbd>P</kbd> | Toggle Pseudo-tiling mode (dwindle layout) |
+| <kbd>Super</kbd> + <kbd>J</kbd> | Toggle split orientation (horizontal vs vertical) |
+| <kbd>Super</kbd> + <kbd>←</kbd> / <kbd>→</kbd> / <kbd>↑</kbd> / <kbd>↓</kbd> | Move focus Left / Right / Up / Down |
+| <kbd>Super</kbd> + <kbd>Shift</kbd> + <kbd>←</kbd> / <kbd>→</kbd> / <kbd>↑</kbd> / <kbd>↓</kbd> | Move window position Left / Right / Up / Down |
 | <kbd>Super</kbd> + Left Click Drag | Move floating window |
 | <kbd>Super</kbd> + Right Click Drag | Resize floating window |
 
-### Workspaces
+### 5. Workspaces & Scratchpad
 
 | Keybinding | Action |
 | :--- | :--- |
-| <kbd>Super</kbd> + <kbd>1</kbd> .. <kbd>9</kbd> | Switch to Workspace 1 .. 9 |
+| <kbd>Super</kbd> + <kbd>1</kbd> .. <kbd>9</kbd> | Switch directly to Workspace 1 .. 9 |
 | <kbd>Super</kbd> + <kbd>Shift</kbd> + <kbd>1</kbd> .. <kbd>9</kbd> | Move active window to Workspace 1 .. 9 |
-| <kbd>Super</kbd> + <kbd>Mouse Scroll</kbd> | Cycle through active workspaces |
+| <kbd>Ctrl</kbd> + <kbd>Super</kbd> + <kbd>←</kbd> / <kbd>→</kbd> | Switch to Previous / Next workspace |
+| <kbd>Super</kbd> + <kbd>Page_Up</kbd> / <kbd>Page_Down</kbd> | Switch to Previous / Next workspace |
+| <kbd>Super</kbd> + Mouse Scroll | Cycle through active workspaces |
+| <kbd>Super</kbd> + <kbd>S</kbd> | Toggle Scratchpad / Special workspace (`special:magic`) |
+| <kbd>Super</kbd> + <kbd>Alt</kbd> + <kbd>S</kbd> | Move focused window into Scratchpad |
+
+### 6. Session & Power
+
+| Keybinding | Action |
+| :--- | :--- |
+| <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>Delete</kbd> | Open **Titan Power Menu** (`titan-powermenu`) |
+| <kbd>Super</kbd> + <kbd>L</kbd> | Lock screen (`hyprlock` / `swaylock`) *(disabled on live ISO)* |
+| <kbd>Super</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd> | Suspend / Sleep system (`systemctl suspend -i`) |
+
+### 7. Touchpad Gestures
+
+| Gesture | Action |
+| :--- | :--- |
+| **3-Finger Horizontal Swipe** | Workspace slide (1:1 continuous trackpad swipe) |
+| **3-Finger Swipe Down** | Close active window |
+| **3-Finger Swipe Up** | Open App Overview / Search |
+| **4-Finger Swipe Up** | Toggle Scratchpad (`special:magic`) |
+| **4-Finger Swipe Down** | Show Desktop (toggle `showdesktop` special workspace) |
+
+### 8. Hardware & Media Keys
+
+| Key | Action | Command |
+| :--- | :--- | :--- |
+| <kbd>XF86AudioPlay</kbd> | Play / Pause playback | `playerctl play-pause` |
+| <kbd>XF86AudioNext</kbd> | Next audio track | `playerctl next` |
+| <kbd>XF86AudioPrev</kbd> | Previous audio track | `playerctl previous` |
+| <kbd>XF86AudioRaiseVolume</kbd> | Volume Up (+5%) | `wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+` |
+| <kbd>XF86AudioLowerVolume</kbd> | Volume Down (-5%) | `wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-` |
+| <kbd>XF86AudioMute</kbd> | Toggle Audio Mute | `wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle` |
+
+---
+
+### 9. Live ISO Key Behaviors
+
+On live mkarchiso media (`/run/archiso`), specific key behaviors ensure a safe, frictionless test environment:
+- **<kbd>Super</kbd> + <kbd>I</kbd>**: Dispatches `launch-installer` (Calamares GUI) with proper Wayland root socket permissions, rather than opening settings.
+- **<kbd>Super</kbd> + <kbd>L</kbd>**: Explicitly disabled (`:`) on the live ISO to avoid locking users out of a session with an unknown password.
+- **<kbd>XF86Sleep</kbd>**: Swallowed on the live ISO to prevent accidental suspend while evaluating or installing.
+- **Sandbox Bypass**: App launches automatically bypass `titan-sandboxd` namespace wrapping on the live squashfs filesystem to prevent silent launch failures.
 
 ---
 
@@ -181,3 +277,27 @@ Waybar features a dark pill design language matching the technical Linux aesthet
 - **Center Media Capsule Trigger**: Interactive central module that displays current media/audio track and triggers the **Titan Media HUD** Dynamic Island overlay when clicked.
 - **THM Workload Badge**: Displays current workload profile (`[SYS]`, `[WEB]`, `[AND]`, `[CAS]`) in vibrant accent colors.
 - **Hardware Telemetry**: Displays live CPU usage %, RAM consumption %, CPU temperature, and active PipeWire volume level.
+
+---
+
+## Edge Dwell Gestures & Hotzones
+
+ArchTitan OS ships **Titan Hotzones** (`titan-hotzones`), allowing users to trigger system overlays by resting the mouse cursor along the monitor's perimeter:
+
+- **Left Center Dwell**: Toggles the **Titan System Monitor** (`titan-sysmon`) telemetry sidebar.
+- **Top Left Corner**: Opens the central **Titan Menu** (`titan-menu`) command palette.
+- **Top Right Corner**: Opens the **Titan Quick Settings** (`titan-quicksettings`) obsidian drawer.
+- **Bottom Center Dwell**: Toggles the **Titan Workspace HUD** (`titan-workspace-hud`).
+
+A full-screen Wayland LayerShell overlay (`titan-zone-osd`) renders an interactive filling arc ring during the 250ms dwell window, providing instant visual feedback. See [Titan Hotzones & Zone OSD](Titan-Hotzones) for complete details.
+
+---
+
+## First-Boot Ceremony & Plymouth Splash
+
+ArchTitan greets users on their very first boot with the cinematic **"Rise, Titan."** ceremony:
+- **10 Chromatic Orbs**: Fluid orbit and gravity-drop physics tuned to Catppuccin Sapphire and Lavender accents.
+- **Typographic Baseline Alignment**: Exact vertical and horizontal alignment between the animated emblem and text.
+- **Atomic One-Shot Handover**: The first-boot ceremony plays only once; subsequent startups display the streamlined daily boot splash.
+
+For technical implementation and scripts, see [Boot Ceremony & Splash](Boot-Ceremony-and-Splash).

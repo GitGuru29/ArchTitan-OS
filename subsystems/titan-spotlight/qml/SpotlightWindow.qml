@@ -1,0 +1,95 @@
+import QtQuick
+import QtQuick.Window
+import ArchTitan.TitanUI
+
+Window {
+    id: root
+
+    width: Screen.width
+    height: Screen.height
+
+    flags: Qt.FramelessWindowHint
+    color: "transparent"
+    visible: false
+    title: "titan-spotlight"
+
+    property bool spotlightOpen: false
+
+    function openSpotlight() {
+        spotlightOpen = true;
+        visible = true;
+        requestActivate();
+        Qt.callLater(function () {
+            card.input.inputItem.forceActiveFocus();
+        });
+    }
+
+    function closeSpotlight() {
+        spotlightOpen = false;
+        closeTimer.restart();
+    }
+
+    function toggleSpotlight() {
+        if (spotlightOpen) closeSpotlight();
+        else openSpotlight();
+    }
+
+    Timer {
+        id: closeTimer
+        interval: 150
+        onTriggered: {
+            if (!root.spotlightOpen) {
+                root.visible = false;
+            }
+        }
+    }
+
+    // Scrim (click-away background with ambient wallpaper light passthrough)
+    Rectangle {
+        id: scrim
+        anchors.fill: parent
+        color: TitanTheme.scrim
+        opacity: root.spotlightOpen ? 1.0 : 0.0
+
+        Behavior on opacity {
+            NumberAnimation { duration: TitanTheme.durBase; easing.type: TitanTheme.easingStandard }
+        }
+
+        MouseArea {
+            anchors.fill: parent
+            onClicked: root.closeSpotlight()
+        }
+    }
+
+    // Spotlight Floating Liquid Glass Card
+    SpotlightCard {
+        id: card
+        width: 780
+        x: (root.width - width) / 2
+        y: Math.max(30, (root.height - height) / 2 - 20)
+
+        opacity: root.spotlightOpen ? 1.0 : 0.0
+        scale: root.spotlightOpen ? 1.0 : 0.96
+        transformOrigin: Item.Center
+
+        Behavior on opacity {
+            NumberAnimation { duration: TitanTheme.durBase; easing.type: TitanTheme.easingStandard }
+        }
+        Behavior on scale {
+            NumberAnimation { duration: TitanTheme.durBase; easing.type: TitanTheme.easingStandard }
+        }
+
+        // Prevent click events from reaching scrim
+        MouseArea {
+            anchors.fill: parent
+            z: -1
+            preventStealing: true
+        }
+    }
+
+    Item {
+        anchors.fill: parent
+        focus: true
+        Keys.onEscapePressed: root.closeSpotlight()
+    }
+}

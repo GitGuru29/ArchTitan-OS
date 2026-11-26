@@ -16,13 +16,7 @@ namespace thm {
 // Read utime + stime from /proc/<pid>/stat (fields 14 + 15)
 // Returns -1 on failure (process gone)
 // ─────────────────────────────────────────────────────────────────────────────
-long ExecutionDetector::read_cpu_ticks(pid_t pid) {
-    std::ifstream f("/proc/" + std::to_string(pid) + "/stat");
-    if (!f.is_open()) return -1;
-
-    std::string line;
-    if (!std::getline(f, line)) return -1;
-
+long ExecutionDetector::parse_cpu_ticks(const std::string& line) {
     // Find end of comm field (handles spaces in comm)
     auto rparen = line.rfind(')');
     if (rparen == std::string::npos) return -1;
@@ -45,6 +39,14 @@ long ExecutionDetector::read_cpu_ticks(pid_t pid) {
     return -1;
 }
 
+long ExecutionDetector::read_cpu_ticks(pid_t pid) {
+    std::ifstream f("/proc/" + std::to_string(pid) + "/stat");
+    if (!f.is_open()) return -1;
+    std::string line;
+    if (!std::getline(f, line)) return -1;
+    return parse_cpu_ticks(line);
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Compute % CPU from tick delta over sample_ms
 // Kernel clock ticks = sysconf(_SC_CLK_TCK), typically 100
@@ -62,12 +64,13 @@ float ExecutionDetector::cpu_pct(long t0, long t1, int sample_ms) {
 // detect — update node.activity and node.idle_count
 // ─────────────────────────────────────────────────────────────────────────────
 void ExecutionDetector::detect(ProcessNode& node,
-                                const std::vector<pid_t>& prev_children) {
+                                const std::vector<pid_t>& prev_children,
+                                long sampled_ticks) {
     const pid_t pid = node.pid;
 
     // ── Signal 1: CPU tick delta (tick-to-tick non-blocking observation) ─
     long t0 = prev_ticks_.count(pid) ? prev_ticks_[pid] : -1;
-    long t1 = read_cpu_ticks(pid);
+    long t1 = (sampled_ticks >= 0) ? sampled_ticks : read_cpu_ticks(pid);
 
     if (t1 < 0) {
         // Process is gone (or /proc unreadable) — drop its baseline so
@@ -75,19 +78,36 @@ void ExecutionDetector::detect(ProcessNode& node,
         // PID ever observed (including short-lived and reclaimed workloads)
         // is retained for the lifetime of the daemon.
         prev_ticks_.erase(pid);
+        last_sample_.erase(pid);
+    }
+
+    // Measured sampling interval (ms) for this PID. Falls back to the
+    // configured window on the first observation.
+    int sample_ms = cfg_.sample_ms;
+    auto now = ms_clock::now();
+    auto ls_it = last_sample_.find(pid);
+    if (ls_it != last_sample_.end()) {
+        long measured = std::chrono::duration_cast<std::chrono::milliseconds>(
+                            now - ls_it->second).count();
+        if (measured > 0) sample_ms = static_cast<int>(measured);
     }
 
     bool cpu_active = false;
     if (t0 >= 0 && t1 >= 0) {
-        cpu_active = cpu_pct(t0, t1, cfg_.sample_ms) >= cfg_.idle_cpu_pct;
+        node.cpu_pct = cpu_pct(t0, t1, sample_ms);
+        cpu_active = node.cpu_pct >= cfg_.idle_cpu_pct;
     } else if (t1 >= 0) {
+        node.cpu_pct = 0.0f;
         // First observation: initialize baseline; if kernel state is R or D, flag active
         if (node.proc_state == 'R' || node.proc_state == 'D')
             cpu_active = true;
     }
 
     // Update baseline for next call
-    if (t1 >= 0) prev_ticks_[pid] = t1;
+    if (t1 >= 0) {
+        prev_ticks_[pid] = t1;
+        last_sample_[pid] = now;
+    }
     node.cpu_ticks = (t1 >= 0) ? t1 : node.cpu_ticks;
 
     // ── Signal 2: Child set changed ────────────────────────────────────────
@@ -165,6 +185,7 @@ void ExecutionDetector::update_baseline(pid_t pid, long ticks) {
 
 void ExecutionDetector::remove_baseline(pid_t pid) {
     prev_ticks_.erase(pid);
+    last_sample_.erase(pid);
 }
 
 } // namespace thm

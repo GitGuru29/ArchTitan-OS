@@ -31,11 +31,25 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Checker self-test (guards the guards)
+        run: python3 scripts/self-test.py
+
       - name: Colour palette lint (Titan Design Language)
         run: python3 scripts/colour-lint.py
+
+      - name: C++/QML palette parity (TitanPalette vs TitanTheme)
+        run: python3 scripts/palette-parity.py
 
       - name: Config tree drift (skel / root / live)
         run: python3 scripts/config-drift.py
 
       - name: Contrast audit (WCAG 2.1)
         run: python3 scripts/contrast-audit.py
+
+      - name: No committed artefacts (bytecode / build output / ISO)
+        run: |
+          bad=$(git ls-files | grep -E '(__pycache__|\.py[co]$|/build/|\.iso$)' || true)
+          if [ -n "$bad" ]; then
+            echo "::error::generated artefacts must not be tracked:"; echo "$bad"; exit 1
+          fi
+          echo "clean"

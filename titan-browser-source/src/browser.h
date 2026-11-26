@@ -92,6 +92,7 @@ private slots:
 
 protected:
     bool eventFilter(QObject *watched, QEvent *event) override;
+    void keyPressEvent(QKeyEvent *event) override;
 
 private:
     void setupUi();
@@ -106,6 +107,8 @@ private:
     void showEditProfileDialog();
     void loadPersistentUserData();
     void savePersistentUserData();
+    void refreshAddressSuggestions();
+    void showShortcutHelp();
     QWebEngineView *currentView() const;
     void showLoadError(const QUrl &url);
 

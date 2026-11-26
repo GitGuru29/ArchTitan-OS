@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Controls.Basic
-import ArchTitanSettings
 import ArchTitan.TitanUI
+import ArchTitanSettings
 
 Rectangle {
     id: root

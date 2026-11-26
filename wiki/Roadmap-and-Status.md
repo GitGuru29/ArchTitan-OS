@@ -10,7 +10,14 @@ This page tracks the current implementation state of **ArchTitan OS** components
 | :--- | :--- | :--- | :--- | :--- |
 | **archiso ISO Builder** | @GitGuru29 (Lead) | Build Pipeline | 🟢 **Shipped** | Full UEFI bootable ISO profile with zstd compression (2 CPU limit) and custom overlay |
 | **Hyprland Compositor** | @GitGuru29 (Lead) | Desktop Environment | 🟢 **Shipped** | v0.53+/v0.56+ window rules, Aquamarine VM backend, Catppuccin Mocha styling |
-| **Titan Hardware Manager (`titan-hwm`)** | @GitGuru29 (Lead) | System Daemon | 🟢 **Shipped (v3.1)** | C++20 autonomous resource orchestrator managing cgroup v2 slices, multi-signal fusion, 39-scenario failure test matrix (`titan-hwm-v3/`) |
+| **Titan Hardware Manager (`titan-hwm`)** | @GitGuru29 (Lead) | System Daemon | 🟢 **Shipped (v3.10)** | C++17 autonomous resource orchestrator managing cgroup v2 slices, multi-signal fusion, workload dependency graph, 49-scenario failure test matrix (`titan-hwm-v3/`) |
+| **Titan System Monitor (`titan-sysmon`)** | @GitGuru29 (Lead) | Desktop Sidebar | 🟢 **Shipped** | Left-anchored 450px LayerShell sidebar, Hero Gauges, QML THM properties (`subsystems/titan-sysmon/`) |
+| **Titan Quick Settings (`titan-quicksettings`)**| @GitGuru29 (Lead) | Control Drawer | 🟢 **Shipped** | Obsidian glassmorphic control drawer & notification center (`subsystems/titan-quicksettings/`) |
+| **Titan Menu (`titan-menu`)** | @GitGuru29 (Lead) | Command Palette | 🟢 **Shipped** | Native Wayland layer-shell command palette & shortcuts cheat sheet (`subsystems/titan-menu/`) |
+| **Titan Tour v2 (`titan-tour`)** | @GitGuru29 (Lead) | Onboarding | 🟢 **Shipped** | 3-island Liquid Glass Bento walkthrough with first-boot sentinel (`subsystems/titan-tour/`) |
+| **Titan Hotzones (`titan-hotzones`)** | @GitGuru29 (Lead) | Pointer Gestures | 🟢 **Shipped** | 7 pointer dwell zones, 250ms dwell, exclusion box hysteresis, LayerShell OSD (`subsystems/titan-hotzones/`) |
+| **Titan Wallpaper Picker** | @GitGuru29 (Lead) | Desktop Tool | 🟢 **Shipped** | Fluid thumbnail grid modal & boot restoration daemon (`subsystems/titan-wallpaper-picker/`) |
+| **Boot Ceremony & Splash** | @GitGuru29 (Lead) | Boot Experience | 🟢 **Shipped** | "Rise, Titan." 10-orb Plymouth boot animation with atomic first-boot handover (`airootfs/usr/share/plymouth/themes/`) |
 | **TitanFetch (CLI & GUI)** | @GitGuru29 (Lead) | System Info | 🟢 **Shipped** | Qt6 telemetry dashboard & C++ sysfs reader (`subsystems/titan-fetch/`) |
 | **Titan Sandbox (`titan-sandboxd`)** | @GitGuru29 (Lead) | Isolation | 🟢 **Shipped (Core)** | Linux namespaces, seccomp-bpf filters, capability drops (`subsystems/titan-sandbox/`) |
 | **TitanBrowser (`titanbrowser`)** | @GitGuru29 (Lead) | Browser | 🟢 **Shipped** | First-party Qt6 WebEngine browser with low-memory tuning (`titan-browser-source/`) |
@@ -18,6 +25,7 @@ This page tracks the current implementation state of **ArchTitan OS** components
 | **Titan Media HUD (`titan-media-hud`)** | @GitGuru29 (Lead) | Desktop Overlay | 🟢 **Shipped** | Dynamic Island overlay, Waybar center capsule, GPU & context HUD (`subsystems/titan-media-hud/`) |
 | **Waybar Integration** | @GitGuru29 (Lead) | Desktop Panel | 🟢 **Shipped** | Dark pill bar with center media capsule trigger and active THM workload badge |
 | **Calamares Installer** | @GitGuru29 (Lead) | Installation | 🟢 **Shipped** | Calamares graphical installer integrated with `launch-installer` Wayland/XWayland root socket helper |
+| **BTRFS Snapshot Hook** | @GitGuru29 (Lead) | System Recovery | 🟢 **Shipped** | Automatic pacman hook triggering snapper pre/post snapshots with GRUB boot entries |
 | **QEMU Test Runner (`run-vm.sh`)** | @GitGuru29 (Lead) | Developer Utilities | 🟢 **Shipped** | Bash script with ISO auto-detection in `out/`/`Downloads/`, persistent disk, and EFI validation |
 | **Auto GPU Switcher** | @GitGuru29 (Lead) | Performance | 🟡 **In Development** | Dynamic iGPU/dGPU offloading with THM thermal integration (`subsystems/auto-gpu-switcher/`) |
 | **TITAN AI** | Teammate | Intelligence | 🟡 **In Development** | Repository introspection & developer AI assistant subsystem (`subsystems/titan-ai/`) |
@@ -32,7 +40,7 @@ This page tracks the current implementation state of **ArchTitan OS** components
 ```mermaid
 timeline
     title ArchTitan OS Release Roadmap
-    section Milestone 1.0 (Current - Shipped)
+    section Milestone 1.0 (Shipped)
         Base ISO Build Pipeline : archiso, zstd 2-CPU limit
         Hyprland & Redesigned Waybar : Catppuccin Mocha theme, dark pill bar & media capsule
         Titan Hardware Manager : cgroup v2, PSI escalation, CLI
@@ -41,14 +49,22 @@ timeline
         ArchTitan Settings : First-party system control center
         Titan Media HUD : Dynamic Island overlay & power menu
         Calamares Installer : launch-installer Wayland socket integration
-    section Milestone 1.1 (Next)
+    section Milestone 1.1 (Shipped)
+        Titan System Monitor : Left-docked 450px telemetry sidebar with Hero Gauges
+        Titan Quick Settings : Obsidian glass drawer & notification center
+        Titan Menu : Native LayerShell command palette & shortcut cheat sheet
+        Titan Tour v2 : 3-island Liquid Glass Bento welcome walkthrough
+        Titan Hotzones : 7 pointer dwell zones with LayerShell OSD
+        Titan Wallpaper Picker : Fluid thumbnail gallery with boot persistence
+        Boot Ceremony & Splash : "Rise, Titan." 10 chromatic orbs first-boot ceremony
+        BTRFS Snapshot Hook : Automated pre/post pacman snapshots & rollback
+    section Milestone 1.2 (Active)
         TitanShare P2P Daemon : C++ mDNS daemon + Android Compose App
-        BTRFS Snapshot Hook : Automatic pacman snapshot generation
-        Auto GPU Switcher : GUI iGPU/dGPU profile switching
+        Auto GPU Switcher : GUI iGPU/dGPU profile switching with THM thermals
     section Milestone 2.0 (Future)
-        TitanMirror Engine : ADB-less Wayland screen mirroring
+        TitanMirror Engine : Low-latency Wayland screen mirroring
         AI Project Analyzer : Repository introspection engine
-        Custom TUI Installer : Standalone light-weight installer
+        Custom TUI Installer : Standalone lightweight installer
 ```
 
 ---
@@ -58,7 +74,8 @@ timeline
 ### Milestone 1.0 — Core Foundation (Shipped)
 - **Goal**: Deliver a stable, bootable developer-focused Arch distribution with first-party cgroup resource management and custom Qt6 desktop applications.
 - **Key Deliverables**:
-  - `titan-hwm-daemon` (THM v3.1) C++20 autonomous resource daemon running as `titan-hwm.service` with `archtitan.slice` cgroup delegation.
+  - `titan-hwm-daemon` (THM v3.10) C++17 autonomous resource daemon (C++20 bench harness only) running as `titan-hwm.service` with `archtitan.slice` cgroup delegation.
+  - Cross-root dependency graph (IDE ↔ LSP ↔ build ↔ shared project) guarding reclaim decisions.
   - Hyprland Wayland environment preconfigured with Catppuccin Mocha styling, updated v0.53+/v0.56+ window rules, and VM GPU rendering support (`AQ_NO_MODIFIERS=1`).
   - Compiled C++/Qt6 `titanfetch` system information tool.
   - Native `titanbrowser` Qt6 WebEngine browser with low-memory tuning as default browser (`Super + W`).
@@ -68,11 +85,24 @@ timeline
 
 ---
 
-### Milestone 1.1 — Ecosystem & Recovery (Active Development)
-- **Goal**: Introduce cross-device local file sharing and automated system recovery.
+### Milestone 1.1 — Interaction Layer & Visual Polish (Shipped)
+- **Goal**: Provide an elite, cohesive Wayland desktop experience with native LayerShell overlays, telemetry sidebars, pointer dwell gestures, and cinematic boot ceremonies.
+- **Key Deliverables**:
+  - **Titan System Monitor (`titan-sysmon`)**: Precision 450px left sidebar with Hero Gauges, QML THM properties, thermal monitoring, and Hyprland blur isolation.
+  - **Titan Quick Settings (`titan-quicksettings`)**: Obsidian glass control drawer with quick toggles, slider controls, and notification center (<kbd>Super</kbd> + <kbd>N</kbd>).
+  - **Titan Menu (`titan-menu`)**: Unified command palette and shortcut reference (<kbd>Super</kbd> + <kbd>Space</kbd>).
+  - **Titan Tour v2 (`titan-tour`)**: 3-island Liquid Glass Bento welcome walkthrough showcasing ArchTitan capabilities.
+  - **Titan Hotzones (`titan-hotzones`)**: 7-zone cursor dwell gestures with LayerShell visual arc OSD (`titan-zone-osd`).
+  - **Titan Wallpaper Picker (`titan-wallpaper-picker`)**: Fluid visual thumbnail gallery with boot persistence (<kbd>Super</kbd> + <kbd>\\</kbd>).
+  - **Boot Ceremony & Splash**: Plymouth "Rise, Titan." 10 chromatic orbs first-boot ceremony and daily splash with atomic handover.
+  - **BTRFS Rollback**: Pacman hooks that trigger snapper snapshots prior to package updates, exposing boot entries in GRUB.
+
+---
+
+### Milestone 1.2 — Cross-Device Ecosystem & GPU Dynamics (Active Development)
+- **Goal**: Introduce cross-device local file sharing and intelligent GPU switching.
 - **Key Features**:
   - **TitanShare**: Local network peer-to-peer file transfer system (mDNS discovery, secure UNIX sockets, Jetpack Compose Android client).
-  - **BTRFS Rollback**: Pacman hooks that trigger snapper snapshots prior to package updates, exposing boot entries in GRUB.
   - **Auto GPU Switcher**: Dynamic GPU profile switching based on active THM workload (routing compile/render tasks to dGPU).
 
 ---

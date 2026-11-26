@@ -6,6 +6,9 @@
 #include <QDebug>
 #include <QSettings>
 #include <QStandardPaths>
+#include <QFileSystemWatcher>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <unistd.h>
 #include <pwd.h>
 
@@ -53,13 +56,44 @@ QString SystemController::userName() const
 SystemController::SystemController(QObject *parent)
     : QObject(parent)
     , m_timer(new QTimer(this))
+    , m_glassApplyTimer(new QTimer(this))
+    , m_themeWatcher(new QFileSystemWatcher(this))
 {
+    m_glassApplyTimer->setSingleShot(true);
+    connect(m_glassApplyTimer, &QTimer::timeout, this, [this]() {
+        QProcess::startDetached("titan-theme", {"glass", QString::number(m_glassOpacity), "--quiet"});
+    });
     updateUptime();
     updateDate();
     updateBrightness();
     updateTheme();
     updateScreenRecording();
     updateAirplaneMode();
+    updateStats();
+
+    QString cfgDir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
+    QSettings settings(cfgDir + "/archtitan/settings.ini", QSettings::IniFormat);
+    int savedIconSize = settings.value("quicksettings/globalIconSize", 48).toInt();
+    if (savedIconSize >= 30 && savedIconSize <= 80) {
+        m_globalIconSize = savedIconSize;
+    }
+
+    QString themeFile = cfgDir + "/archtitan/theme.json";
+    if (QFile::exists(themeFile)) {
+        m_themeWatcher->addPath(themeFile);
+    } else {
+        QDir().mkpath(cfgDir + "/archtitan");
+        m_themeWatcher->addPath(cfgDir + "/archtitan");
+    }
+
+    auto onThemeChanged = [this, themeFile](const QString &) {
+        updateTheme();
+        if (!m_themeWatcher->files().contains(themeFile) && QFile::exists(themeFile)) {
+            m_themeWatcher->addPath(themeFile);
+        }
+    };
+    connect(m_themeWatcher, &QFileSystemWatcher::fileChanged, this, onThemeChanged);
+    connect(m_themeWatcher, &QFileSystemWatcher::directoryChanged, this, onThemeChanged);
 
     connect(m_timer, &QTimer::timeout, this, [this]() {
         updateUptime();
@@ -68,8 +102,9 @@ SystemController::SystemController(QObject *parent)
         updateTheme();
         updateScreenRecording();
         updateAirplaneMode();
+        updateStats();
     });
-    m_timer->start(3000); // Check every 3s
+    m_timer->start(2000); // Check every 2s
 }
 
 void SystemController::updateUptime()
@@ -154,6 +189,38 @@ void SystemController::setBrightness(int value)
     QProcess::startDetached("brightnessctl", {"set", QString("%1%").arg(value)});
 }
 
+void SystemController::setGlassOpacity(int value)
+{
+    value = qBound(10, value, 95);
+    if (value == m_glassOpacity)
+        return;
+
+    m_glassOpacity = value;
+    emit glassOpacityChanged();
+
+    QString cfgDir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
+    QString themeFile = cfgDir + "/archtitan/theme.json";
+    QJsonObject rootObj;
+
+    QFile readFile(themeFile);
+    if (readFile.open(QIODevice::ReadOnly)) {
+        rootObj = QJsonDocument::fromJson(readFile.readAll()).object();
+        readFile.close();
+    }
+
+    rootObj["glassOpacity"] = std::round((value / 100.0) * 100.0) / 100.0;
+
+    QFile writeFile(themeFile);
+    if (writeFile.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+        writeFile.write(QJsonDocument(rootObj).toJson(QJsonDocument::Indented));
+        writeFile.close();
+    }
+
+    if (m_glassApplyTimer) {
+        m_glassApplyTimer->start(350);
+    }
+}
+
 void SystemController::refresh()
 {
     updateUptime();
@@ -162,6 +229,7 @@ void SystemController::refresh()
     updateTheme();
     updateScreenRecording();
     updateAirplaneMode();
+    updateStats();
 }
 
 void SystemController::setCaffeineActive(bool active)
@@ -183,6 +251,12 @@ void SystemController::setThemeDark(bool dark)
         m_themeDark = dark;
         emit themeDarkChanged();
     }
+    m_themeSwitching = true;
+    m_themeSwitchingTime = QDateTime::currentMSecsSinceEpoch();
+
+    // Switch OS theme via ArchTitan central theme engine
+    QProcess::startDetached("titan-theme", {"mode", dark ? "dark" : "light"});
+
     QString scheme = dark ? "prefer-dark" : "prefer-light";
     QString gtkTheme = dark ? "adw-gtk3-dark" : "adw-gtk3";
     QProcess::startDetached("gsettings", {"set", "org.gnome.desktop.interface", "color-scheme", scheme});
@@ -196,6 +270,56 @@ void SystemController::setThemeDark(bool dark)
 
 void SystemController::updateTheme()
 {
+    // If a theme switch is actively in flight, avoid stale reads / race conditions reverting the toggle
+    if (m_themeSwitching) {
+        if (QDateTime::currentMSecsSinceEpoch() - m_themeSwitchingTime < 4000) {
+            QString cfgDir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
+            QFile file(cfgDir + "/archtitan/theme.json");
+            if (file.open(QIODevice::ReadOnly)) {
+                QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
+                if (doc.isObject()) {
+                    bool dark = doc.object().value("isDark").toBool(true);
+                    if (dark == m_themeDark) {
+                        m_themeSwitching = false; // Target theme verified on disk
+                    }
+                    if (doc.object().contains("glassOpacity")) {
+                        int g = static_cast<int>(std::round(doc.object().value("glassOpacity").toDouble(0.35) * 100.0));
+                        g = qBound(10, g, 95);
+                        if (m_glassOpacity != g) {
+                            m_glassOpacity = g;
+                            emit glassOpacityChanged();
+                        }
+                    }
+                }
+            }
+            return;
+        } else {
+            m_themeSwitching = false; // Transition grace period elapsed
+        }
+    }
+
+    QString cfgDir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
+    QFile file(cfgDir + "/archtitan/theme.json");
+    if (file.open(QIODevice::ReadOnly)) {
+        QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
+        if (doc.isObject()) {
+            bool dark = doc.object().value("isDark").toBool(true);
+            if (m_themeDark != dark) {
+                m_themeDark = dark;
+                emit themeDarkChanged();
+            }
+            if (doc.object().contains("glassOpacity")) {
+                int g = static_cast<int>(std::round(doc.object().value("glassOpacity").toDouble(0.35) * 100.0));
+                g = qBound(10, g, 95);
+                if (m_glassOpacity != g) {
+                    m_glassOpacity = g;
+                    emit glassOpacityChanged();
+                }
+            }
+            return;
+        }
+    }
+
     QProcess proc;
     proc.start("gsettings", {"get", "org.gnome.desktop.interface", "color-scheme"});
     if (proc.waitForFinished(300)) {
@@ -326,7 +450,7 @@ void SystemController::updateAirplaneMode()
 
 void SystemController::openClipboard()
 {
-    QProcess::startDetached("bash", {"-c", "cliphist list | rofi -dmenu -p 'Clipboard' | cliphist decode | wl-copy"});
+    QProcess::startDetached("titan-spotlight", {"--clipboard"});
 }
 
 void SystemController::openSettings()
@@ -342,7 +466,7 @@ void SystemController::openPowerMenu()
 
 void SystemController::lockSession()
 {
-    QProcess::startDetached("bash", {"-c", "pidof hyprlock || hyprlock || swaylock -f -c 0b0e14 || loginctl lock-session"});
+    QProcess::startDetached("bash", {"-c", "pidof hyprlock || hyprlock || swaylock -f -c 11111b || loginctl lock-session"});
 }
 
 void SystemController::suspendSession()
@@ -411,4 +535,406 @@ void SystemController::resetTileVisibility()
     settings.sync();
     m_tileVisibilityRevision++;
     emit tileVisibilityChanged();
+}
+
+QStringList SystemController::getActionOrder() const
+{
+    QString cfgDir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
+    QSettings settings(cfgDir + "/archtitan/settings.ini", QSettings::IniFormat);
+    const QStringList defaultOrder = {
+        "region", "capture", "record", "colorPick", "caffeine",
+        "mic", "gameMode", "clipboard", "virtualInput", "airplane",
+        "focus", "dark", "night"
+    };
+    QVariant val = settings.value("quicksettings/actionOrder");
+    if (!val.isValid()) {
+        val = settings.value("quicksettings/actionorder");
+    }
+    if (!val.isValid()) {
+        return defaultOrder;
+    }
+
+    QStringList rawList;
+    if (val.typeId() == QMetaType::QStringList) {
+        rawList = val.toStringList();
+        // If single string item contains commas, split it
+        if (rawList.size() == 1 && rawList.first().contains(',')) {
+            rawList = rawList.first().split(',', Qt::SkipEmptyParts);
+        }
+    } else {
+        rawList = val.toString().split(',', Qt::SkipEmptyParts);
+    }
+
+    QStringList result;
+    for (QString k : rawList) {
+        k = k.remove('"').remove('\'').trimmed();
+        if (defaultOrder.contains(k) && !result.contains(k)) {
+            result.append(k);
+        }
+    }
+
+    for (const QString &key : defaultOrder) {
+        if (!result.contains(key)) {
+            result.append(key);
+        }
+    }
+    return result;
+}
+
+void SystemController::setActionOrder(const QStringList &order)
+{
+    QString cfgDir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
+    QSettings settings(cfgDir + "/archtitan/settings.ini", QSettings::IniFormat);
+    settings.setValue("quicksettings/actionOrder", order.join(","));
+    settings.sync();
+    m_tileVisibilityRevision++;
+    emit tileVisibilityChanged();
+}
+
+void SystemController::moveActionOrder(int fromIndex, int toIndex)
+{
+    QStringList order = getActionOrder();
+    if (fromIndex < 0 || fromIndex >= order.size() || toIndex < 0 || toIndex >= order.size() || fromIndex == toIndex) {
+        return;
+    }
+    order.move(fromIndex, toIndex);
+    setActionOrder(order);
+}
+
+void SystemController::setGlobalIconSize(int size)
+{
+    size = qBound(32, size, 72);
+    if (m_globalIconSize != size) {
+        m_globalIconSize = size;
+        QString cfgDir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
+        QSettings settings(cfgDir + "/archtitan/settings.ini", QSettings::IniFormat);
+        settings.setValue("quicksettings/globalIconSize", m_globalIconSize);
+        settings.sync();
+        m_tileVisibilityRevision++;
+        emit iconSizesChanged();
+        emit tileVisibilityChanged();
+    }
+}
+
+QString SystemController::getActionSize(const QString &key) const
+{
+    QString cfgDir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
+    QSettings settings(cfgDir + "/archtitan/settings.ini", QSettings::IniFormat);
+    return settings.value("quicksettings/actionSize_" + key, "default").toString();
+}
+
+void SystemController::setActionSize(const QString &key, const QString &size)
+{
+    QString cfgDir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
+    QSettings settings(cfgDir + "/archtitan/settings.ini", QSettings::IniFormat);
+    settings.setValue("quicksettings/actionSize_" + key, size);
+    settings.sync();
+    m_tileVisibilityRevision++;
+    emit iconSizesChanged();
+    emit tileVisibilityChanged();
+}
+
+int SystemController::getEffectiveActionSize(const QString &key) const
+{
+    QString sz = getActionSize(key).toLower();
+    if (sz == "small" || sz == "s") return 38;
+    if (sz == "medium" || sz == "m") return 48;
+    if (sz == "large" || sz == "l") return 56;
+    if (sz == "huge" || sz == "xl") return 64;
+    bool ok = false;
+    int n = sz.toInt(&ok);
+    if (ok && n >= 30 && n <= 80) return n;
+    return m_globalIconSize;
+}
+
+void SystemController::cycleActionSize(const QString &key)
+{
+    QString cur = getActionSize(key).toLower();
+    QString next = "default";
+    if (cur == "default") next = "large";
+    else if (cur == "large") next = "huge";
+    else if (cur == "huge") next = "small";
+    else if (cur == "small") next = "medium";
+    else if (cur == "medium") next = "default";
+    setActionSize(key, next);
+}
+
+void SystemController::updateStats()
+{
+    bool changed = false;
+
+    // 1. CPU Usage via /proc/stat
+    QFile statFile("/proc/stat");
+    if (statFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QByteArray line = statFile.readLine();
+        statFile.close();
+        if (line.startsWith("cpu ")) {
+            QList<QByteArray> parts = line.simplified().split(' ');
+            if (parts.size() >= 5) {
+                unsigned long long user = parts[1].toULongLong();
+                unsigned long long nice = parts[2].toULongLong();
+                unsigned long long system = parts[3].toULongLong();
+                unsigned long long idle = parts[4].toULongLong();
+                unsigned long long iowait = (parts.size() > 5) ? parts[5].toULongLong() : 0;
+                unsigned long long irq = (parts.size() > 6) ? parts[6].toULongLong() : 0;
+                unsigned long long softirq = (parts.size() > 7) ? parts[7].toULongLong() : 0;
+                unsigned long long steal = (parts.size() > 8) ? parts[8].toULongLong() : 0;
+
+                unsigned long long totalIdle = idle + iowait;
+                unsigned long long total = user + nice + system + totalIdle + irq + softirq + steal;
+
+                if (m_prevCpuTotal > 0 && total > m_prevCpuTotal) {
+                    unsigned long long diffTotal = total - m_prevCpuTotal;
+                    unsigned long long diffIdle = totalIdle - m_prevCpuIdle;
+                    if (diffTotal > 0) {
+                        int usage = static_cast<int>(100 * (diffTotal - diffIdle) / diffTotal);
+                        usage = qBound(0, usage, 100);
+                        if (usage != m_cpuUsage) {
+                            m_cpuUsage = usage;
+                            changed = true;
+                        }
+                    }
+                }
+                m_prevCpuIdle = totalIdle;
+                m_prevCpuTotal = total;
+            }
+        }
+    }
+
+    // 2. RAM Usage via /proc/meminfo
+    QFile memFile("/proc/meminfo");
+    if (memFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        unsigned long long memTotal = 0;
+        unsigned long long memAvailable = 0;
+        const QByteArray all = memFile.readAll();
+        memFile.close();
+        for (const QByteArray &line : all.split('\n')) {
+            if (line.startsWith("MemTotal:")) {
+                auto parts = line.simplified().split(' ');
+                if (parts.size() >= 2) memTotal = parts[1].toULongLong();
+            } else if (line.startsWith("MemAvailable:")) {
+                auto parts = line.simplified().split(' ');
+                if (parts.size() >= 2) {
+                    memAvailable = parts[1].toULongLong();
+                    break;
+                }
+            }
+        }
+        if (memTotal > 0) {
+            int ram = static_cast<int>(100 * (memTotal - memAvailable) / memTotal);
+            ram = qBound(0, ram, 100);
+            if (ram != m_ramUsage) {
+                m_ramUsage = ram;
+                changed = true;
+            }
+        }
+    }
+
+    // 3. Battery via /sys/class/power_supply/
+    QDir powerDir("/sys/class/power_supply");
+    QStringList bats = powerDir.entryList({"BAT*", "battery*"}, QDir::Dirs | QDir::NoDotAndDotDot);
+    if (!bats.isEmpty()) {
+        if (!m_hasBattery) {
+            m_hasBattery = true;
+            changed = true;
+        }
+        QString batPath = powerDir.absoluteFilePath(bats.first());
+        QFile capFile(batPath + "/capacity");
+        if (capFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            int cap = capFile.readAll().trimmed().toInt();
+            cap = qBound(0, cap, 100);
+            capFile.close();
+            if (cap != m_batteryPercent) {
+                m_batteryPercent = cap;
+                changed = true;
+            }
+        }
+        QString st;
+        QFile statusFile(batPath + "/status");
+        if (statusFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            st = QString::fromUtf8(statusFile.readAll()).trimmed();
+            statusFile.close();
+        }
+
+        // Check AC/ADP adapter online status as well
+        bool acOnline = false;
+        QStringList adapters = powerDir.entryList({"ADP*", "AC*", "ACAD*", "ucsi*"}, QDir::Dirs | QDir::NoDotAndDotDot);
+        for (const QString &adp : adapters) {
+            QFile onlineFile(powerDir.absoluteFilePath(adp) + "/online");
+            if (onlineFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+                if (onlineFile.readAll().trimmed() == "1") {
+                    acOnline = true;
+                }
+                onlineFile.close();
+            }
+        }
+
+        bool charging = (st == "Charging") || (acOnline && st != "Discharging");
+        if (charging != m_batteryCharging) {
+            m_batteryCharging = charging;
+            changed = true;
+        }
+    } else {
+        if (m_hasBattery) {
+            m_hasBattery = false;
+            changed = true;
+        }
+    }
+
+    if (changed) {
+        emit statsChanged();
+    }
+}
+
+QStringList SystemController::getSectionOrder() const
+{
+    QString cfgDir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
+    QSettings settings(cfgDir + "/archtitan/settings.ini", QSettings::IniFormat);
+    const QStringList defaultOrder = {
+        "connectivity", "focusCluster", "sliders", "liquidGlass", "media", "pulse", "actions", "calendar"
+    };
+    QVariant val = settings.value("quicksettings/sectionOrder");
+    if (!val.isValid()) {
+        val = settings.value("quicksettings/sectionorder");
+    }
+    if (!val.isValid()) {
+        return defaultOrder;
+    }
+
+    QStringList rawList;
+    if (val.typeId() == QMetaType::QStringList) {
+        rawList = val.toStringList();
+        if (rawList.size() == 1 && rawList.first().contains(',')) {
+            rawList = rawList.first().split(',', Qt::SkipEmptyParts);
+        }
+    } else {
+        rawList = val.toString().split(',', Qt::SkipEmptyParts);
+    }
+
+    QStringList result;
+    for (QString s : rawList) {
+        s = s.remove('"').remove('\'').trimmed();
+        if (s == "nowPlaying" || s == "music") s = "media";
+        if (s == "performance") s = "pulse";
+        if (s == "topSplit" || s == "topRow") {
+            if (!result.contains("connectivity")) result.append("connectivity");
+            if (!result.contains("focusCluster")) result.append("focusCluster");
+            continue;
+        }
+        if (defaultOrder.contains(s) && !result.contains(s)) {
+            result.append(s);
+        }
+    }
+
+    // Ensure all core sections are present so nothing is ever omitted
+    for (const QString &s : defaultOrder) {
+        if (!result.contains(s)) {
+            result.append(s);
+        }
+    }
+
+    if (result.isEmpty()) {
+        return defaultOrder;
+    }
+    return result;
+}
+
+void SystemController::setSectionOrder(const QStringList &order)
+{
+    QString cfgDir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
+    QSettings settings(cfgDir + "/archtitan/settings.ini", QSettings::IniFormat);
+    settings.setValue("quicksettings/sectionOrder", order.join(","));
+    settings.sync();
+    m_tileVisibilityRevision++;
+    emit tileVisibilityChanged();
+}
+
+void SystemController::moveSectionOrder(int fromIndex, int toIndex)
+{
+    QStringList order = getSectionOrder();
+    if (fromIndex < 0 || fromIndex >= order.size() || toIndex < 0 || toIndex >= order.size() || fromIndex == toIndex) {
+        return;
+    }
+    order.move(fromIndex, toIndex);
+    setSectionOrder(order);
+}
+
+void SystemController::addSection(const QString &sectionKey)
+{
+    QStringList order = getSectionOrder();
+    if (!order.contains(sectionKey)) {
+        order.append(sectionKey);
+        setSectionOrder(order);
+    }
+}
+
+void SystemController::removeSection(const QString &sectionKey)
+{
+    QStringList order = getSectionOrder();
+    if (order.contains(sectionKey)) {
+        order.removeAll(sectionKey);
+        setSectionOrder(order);
+    }
+}
+
+void SystemController::splitTopRow()
+{
+    QStringList order = getSectionOrder();
+    int idx = order.indexOf("topRow");
+    if (idx != -1) {
+        order.removeAt(idx);
+        order.insert(idx, "connectivity");
+        order.append("music"); // Moves music player to bottom
+        setSectionOrder(order);
+        setWidgetSize("music", "expanded");
+    }
+}
+
+void SystemController::mergeTopRow()
+{
+    QStringList order = getSectionOrder();
+    order.removeAll("connectivity");
+    order.removeAll("music");
+    order.prepend("topRow");
+    setSectionOrder(order);
+    setWidgetSize("music", "compact");
+}
+
+QString SystemController::getWidgetSize(const QString &widgetKey, const QString &defaultSize) const
+{
+    QString cfgDir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
+    QSettings settings(cfgDir + "/archtitan/settings.ini", QSettings::IniFormat);
+    return settings.value("quicksettings/widgetSize_" + widgetKey, defaultSize).toString();
+}
+
+void SystemController::setWidgetSize(const QString &widgetKey, const QString &size)
+{
+    QString cfgDir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
+    QSettings settings(cfgDir + "/archtitan/settings.ini", QSettings::IniFormat);
+    settings.setValue("quicksettings/widgetSize_" + widgetKey, size);
+    settings.sync();
+    m_tileVisibilityRevision++;
+    emit tileVisibilityChanged();
+}
+
+void SystemController::toggleWidgetSize(const QString &widgetKey)
+{
+    if (widgetKey == "actions" || widgetKey == "actionGrid") {
+        QString cur = getWidgetSize(widgetKey, "compact");
+        setWidgetSize(widgetKey, (cur == "compact") ? "wide" : "compact");
+    } else if (widgetKey == "calendar") {
+        QString cur = getWidgetSize(widgetKey, "compact");
+        setWidgetSize(widgetKey, (cur == "compact") ? "expanded" : "compact");
+    } else if (widgetKey == "sliders" || widgetKey == "liquidGlass") {
+        QString cur = getWidgetSize(widgetKey, "full");
+        setWidgetSize(widgetKey, (cur == "full") ? "half" : "full");
+    } else {
+        QString cur = getWidgetSize(widgetKey, "half");
+        setWidgetSize(widgetKey, (cur == "half") ? "full" : "half");
+    }
+}
+
+void SystemController::toggleFocusMode()
+{
+    QProcess::startDetached(QStringLiteral("titan-focus"), {QStringLiteral("--dnd")});
 }

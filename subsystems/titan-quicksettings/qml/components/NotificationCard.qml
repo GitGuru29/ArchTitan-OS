@@ -32,7 +32,7 @@ Rectangle {
         case "antigravity": return TitanTheme.accent;
         case "terminal":    return TitanTheme.green;
         case "message":     return TitanTheme.yellow;
-        default:            return TitanTheme.lavender;
+        default:            return TitanTheme.accent;
         }
     }
 

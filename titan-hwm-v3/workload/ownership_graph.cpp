@@ -52,6 +52,51 @@ std::string OwnershipGraph::read_cwd(pid_t pid) {
     return std::string(buf);
 }
 
+std::string OwnershipGraph::read_exe(pid_t pid) {
+    char buf[4096];
+    std::string link = "/proc/" + std::to_string(pid) + "/exe";
+    ssize_t len = readlink(link.c_str(), buf, sizeof(buf) - 1);
+    if (len <= 0) return {};
+    buf[len] = '\0';
+    // readlink may append " (deleted)" for removed binaries
+    std::string s(buf);
+    auto space = s.find(" (deleted)");
+    if (space != std::string::npos) s = s.substr(0, space);
+    return s;
+}
+
+std::string OwnershipGraph::read_cgroup(pid_t pid) {
+    std::ifstream f("/proc/" + std::to_string(pid) + "/cgroup");
+    std::string line;
+    // Prefer controller-agnostic lines; look for app/scope/unit
+    while (std::getline(f, line)) {
+        // format: hierarchy-id:controller-list:cgroup-path
+        if (line.find(".scope") != std::string::npos ||
+            line.find("app.slice") != std::string::npos ||
+            line.find("user.slice") != std::string::npos) {
+            // return the cgroup path part
+            auto colon = line.rfind(':');
+            if (colon != std::string::npos && colon + 1 < line.size())
+                return line.substr(colon + 1);
+        }
+    }
+    // fallback: last line's path
+    f.clear();
+    f.seekg(0);
+    std::string last;
+    while (std::getline(f, line)) {
+        auto colon = line.rfind(':');
+        if (colon != std::string::npos && colon + 1 < line.size())
+            last = line.substr(colon + 1);
+    }
+    return last;
+}
+
+pid_t OwnershipGraph::read_sid(pid_t pid) {
+    // Use getsid; include unistd
+    return ::getsid(pid);
+}
+
 WorkloadType OwnershipGraph::infer_from_cwd(const std::string& cwd) {
     if (cwd.empty()) return WorkloadType::NEUTRAL;
     for (const auto& marker : cwd_markers()) {

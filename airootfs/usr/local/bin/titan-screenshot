@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+# titan-screenshot — ArchTitan luxury screenshot utility
+# Provides interactive area snip, full screen capture, or focused window grab.
+# Automatically copies to clipboard, saves with timestamp, plays shutter sound,
+# and displays rich notification preview.
+
+set -euo pipefail
+
+TARGET_DIR="${XDG_PICTURES_DIR:-$HOME/Pictures}/Screenshots"
+mkdir -p "$TARGET_DIR"
+
+TIMESTAMP="$(date +'%Y-%m-%d_%H-%M-%S')"
+FILE="${TARGET_DIR}/Screenshot_${TIMESTAMP}.png"
+MODE="${1:---area}"
+
+play_shutter() {
+    local snd="/usr/share/sounds/freedesktop/stereo/camera-shutter.oga"
+    if [[ -f "$snd" ]]; then
+        if command -v pw-play >/dev/null 2>&1; then
+            pw-play "$snd" >/dev/null 2>&1 &
+        elif command -v paplay >/dev/null 2>&1; then
+            paplay "$snd" >/dev/null 2>&1 &
+        fi
+    fi
+}
+
+notify_success() {
+    local target="$1"
+    notify-send -u low \
+        -i "$target" \
+        -a "ArchTitan" \
+        "Screenshot Captured" \
+        "Saved to ~/Pictures/Screenshots & copied to clipboard" 2>/dev/null || true
+}
+
+case "$MODE" in
+    --area|-a)
+        # Interactive region select with ArchTitan cyan styling
+        # If user aborts (Esc or right-click), slurp exits non-zero; handle gracefully without error
+        GEOM="$(slurp -d -c "00d2ff88" -b "00000044" -s "00d2ff22" -w 2 2>/dev/null || true)"
+        if [[ -z "$GEOM" ]]; then
+            exit 0
+        fi
+        grim -g "$GEOM" "$FILE"
+        ;;
+    --full|-f)
+        grim "$FILE"
+        ;;
+    --window|-w)
+        # Grab active window geometry via hyprctl
+        GEOM="$(hyprctl activewindow -j 2>/dev/null | jq -r '"\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"' 2>/dev/null || true)"
+        if [[ -z "$GEOM" || "$GEOM" == "null,null nullxnull" ]]; then
+            grim "$FILE"
+        else
+            grim -g "$GEOM" "$FILE"
+        fi
+        ;;
+    *)
+        echo "Usage: titan-screenshot [--area|--full|--window]" >&2
+        exit 1
+        ;;
+esac
+
+if [[ -f "$FILE" ]]; then
+    wl-copy -t image/png < "$FILE" 2>/dev/null || true
+    play_shutter
+    notify_success "$FILE"
+fi

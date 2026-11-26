@@ -1,0 +1,13 @@
+[Desktop Entry]
+Name=ArchTitan Virtual Tour
+GenericName=System Tour & Onboarding
+Comment=Cinematic interactive walkthrough and guide for ArchTitan OS
+Exec=titan-tour --force
+Icon=archtitan-logo
+Terminal=false
+Type=Application
+Categories=System;Utility;Core;
+Keywords=tour;welcome;guide;help;onboarding;archtitan;
+StartupNotify=true
+StartupWMClass=titan-tour
+

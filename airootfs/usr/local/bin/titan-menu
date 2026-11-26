@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Wrapper shim forwarding to unified titan-shell
+SHELL_BIN="$(command -v titan-shell 2>/dev/null || echo "/usr/local/bin/titan-shell")"
+
+if [[ "$*" == *"-d"* ]] || [[ "$*" == *"--daemon"* ]]; then
+    if ! pgrep -x titan-shell >/dev/null; then
+        exec "$SHELL_BIN" --daemon
+    fi
+    exit 0
+fi
+
+if [[ "$*" == *"--show"* ]]; then
+    exec "$SHELL_BIN" --show-menu
+elif [[ "$*" == *"--hide"* ]]; then
+    exec "$SHELL_BIN" --hide-menu
+else
+    exec "$SHELL_BIN" --menu
+fi

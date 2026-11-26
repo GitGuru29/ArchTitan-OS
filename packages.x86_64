@@ -73,13 +73,13 @@ hypridle
 hyprlock
 waybar
 kitty
-rofi-wayland
-rofi-emoji
 swaybg
 swaylock
 swaync
+swayosd
 grim
 slurp
+wf-recorder
 wl-clipboard
 cliphist
 hyprpicker
@@ -97,7 +97,9 @@ pipewire-jack
 wireplumber
 pavucontrol
 playerctl
+cava
 brightnessctl
+power-profiles-daemon
 
 # ── Display Manager & Installer ───────────────────────────────────────────────
 sddm
@@ -106,13 +108,17 @@ calamares
 partitionmanager
 polkit-kde-agent
 
-# ── Look & Feel (Fonts & Icons) ───────────────────────────────────────────────
+# ── Look & Feel (Fonts, Icons, Cursors, Qt Theming) ───────────────────────────
 inter-font
 ttf-jetbrains-mono-nerd
 noto-fonts
 noto-fonts-emoji
 papirus-icon-theme
+breeze-cursors
+sound-theme-freedesktop
+qt5ct
 xdg-utils
+libnotify
 xdg-user-dirs
 
 # ── Qt Runtimes ───────────────────────────────────────────────────────────────
@@ -134,13 +140,16 @@ nodejs
 npm
 python
 github-cli
+lazygit
 
 # ── Terminal Productivity & Utilities ─────────────────────────────────────────
 fish
 starship
+eza
 btop
 zellij
 ranger
+nano
 ripgrep
 fd
 tree

@@ -3,599 +3,301 @@ import QtQuick.Layouts
 import "../style"
 
 /**
- * QuickToggleGrid — Samsung One UI 9.0 Bento-Box Quick Settings cluster.
+ * QuickToggleGrid — ArchTitan macOS Control Center Bento Dashboard.
  *
- * Squircles, thick pill sliders, and circular action toggles matching the One UI 9.0 design.
+ * Implements the authentic macOS Control Center layout:
+ * - Row 1: 3-Row Connectivity Stack (Left) + Focus / Night Shift / Dark Mode Cluster (Right)
+ * - Row 2: Display & Sound Embedded-Icon Capsule Sliders (Side-by-Side or Stacked)
+ * - Row 3: Liquid Glass / Frosted Blur Capsule Slider
+ * - Row 4: Now Playing Media Card (Left) + Titan Pulse Ring Gauges (Right)
+ * - Row 5: Frameless Utility Squircles Grid
+ * - Row 6: Collapsible Mini-Calendar Strip
  */
 ColumnLayout {
     id: bentoRoot
     Layout.fillWidth: true
-    spacing: 12
+    spacing: 8
 
-    // ── 1. Top Connectivity Bento (Wi-Fi & Bluetooth) ────────────────────────
-    RowLayout {
-        Layout.fillWidth: true
-        spacing: 10
+    property int revision: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.tileVisibilityRevision : 0
+    property int dragSourceCardIndex: -1
+    property int hoverTargetCardIndex: -1
 
-        OneUIConnectivityTile {
-            active: (typeof networkCtrl !== "undefined" && networkCtrl) ? networkCtrl.wifiEnabled : false
-            iconGlyph: "\uf1eb"
-            title: "Wi-Fi"
-            subtitle: (typeof networkCtrl !== "undefined" && networkCtrl && networkCtrl.wifiEnabled)
-                      ? networkCtrl.ssid : "Disconnected"
-            onClicked: {
-                if (typeof networkCtrl !== "undefined" && networkCtrl)
-                    networkCtrl.toggleWifi()
+    readonly property var rawSectionOrder: {
+        var rev = revision;
+        return (typeof systemCtrl !== "undefined" && systemCtrl)
+               ? systemCtrl.getSectionOrder()
+               : ["connectivity", "focusCluster", "sliders", "liquidGlass", "media", "pulse"];
+    }
+
+    readonly property var sectionOrder: {
+        var list = [];
+        for (var i = 0; i < rawSectionOrder.length; ++i) {
+            var s = rawSectionOrder[i];
+            // "actions" lives inside the stepped Bottleneck Dock at the bottom of the popover
+            if (s !== "actions" && s !== "calendar") {
+                list.push(s);
             }
         }
+        return list;
+    }
 
-        OneUIConnectivityTile {
-            active: (typeof bluetoothCtrl !== "undefined" && bluetoothCtrl) ? bluetoothCtrl.powered : false
-            iconGlyph: "\uf294"
-            title: "Bluetooth"
-            subtitle: (typeof bluetoothCtrl !== "undefined" && bluetoothCtrl && bluetoothCtrl.powered)
-                      ? bluetoothCtrl.statusText : "Off"
-            onClicked: {
-                if (typeof bluetoothCtrl !== "undefined" && bluetoothCtrl)
-                    bluetoothCtrl.toggleBluetooth()
+    function getDefaultSizeForSection(secKey) {
+        if (secKey === "actions" || secKey === "liquidGlass" || secKey === "calendar" || secKey === "sliders")
+            return "full";
+        return "half";
+    }
+
+    function computeLayoutRows() {
+        var order = sectionOrder;
+        var rows = [];
+        var i = 0;
+        while (i < order.length) {
+            var secKey = order[i];
+            var defaultSize = getDefaultSizeForSection(secKey);
+            var size = (typeof systemCtrl !== "undefined" && systemCtrl)
+                       ? systemCtrl.getWidgetSize(secKey, defaultSize)
+                       : defaultSize;
+
+            if (size === "half" && (i + 1) < order.length) {
+                var nextSecKey = order[i + 1];
+                var nextDefaultSize = getDefaultSizeForSection(nextSecKey);
+                var nextSize = (typeof systemCtrl !== "undefined" && systemCtrl)
+                               ? systemCtrl.getWidgetSize(nextSecKey, nextDefaultSize)
+                               : nextDefaultSize;
+                if (nextSize === "half") {
+                    rows.push({
+                        isPair: true,
+                        item1: secKey,
+                        index1: i,
+                        item2: nextSecKey,
+                        index2: i + 1
+                    });
+                    i += 2;
+                    continue;
+                }
+            }
+
+            rows.push({
+                isPair: false,
+                item1: secKey,
+                index1: i,
+                isHalf: (size === "half")
+            });
+            i += 1;
+        }
+        return rows;
+    }
+
+    function getComponentForSection(key, isHalf) {
+        switch (key) {
+            case "connectivity": return connectivityComponent;
+            case "focusCluster": return focusClusterComponent;
+            case "sliders":      return isHalf ? slidersHalfComponent : slidersFullComponent;
+            case "media":        return mediaComponent;
+            case "pulse":        return pulseComponent;
+            case "actions":      return actionsComponent;
+            case "liquidGlass":  return liquidGlassComponent;
+            case "calendar":     return calendarComponent;
+            default:             return null;
+        }
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    //  SECTION COMPONENTS
+    // ═════════════════════════════════════════════════════════════════════════
+
+    Component {
+        id: connectivityComponent
+        UnifiedConnectivityModule {
+            width: parent ? parent.width : undefined
+            onOpenWifiRequested: {
+                if (typeof rootWindow !== "undefined" && rootWindow)
+                    rootWindow.showWifiPage = true;
             }
         }
     }
 
-    // ── 2. Primary 4-Toggle Card (Dark mode, Eye shield, DND, Mic mute) ──────
-    Rectangle {
-        Layout.fillWidth: true
-        implicitHeight: primaryCol.implicitHeight + 20
-        radius: TitanTheme.radiusBento
-        color: TitanTheme.bgOneUICard
-        border.color: TitanTheme.borderGlass
-        border.width: 1
-        clip: true
-
-        RowLayout {
-            id: primaryCol
-            anchors.fill: parent
-            anchors.margins: 12
-            spacing: 0
-
-            // Dark Mode
-            Item {
-                Layout.fillWidth: true
-                height: 72
-                OneUICircleButton {
-                    anchors.centerIn: parent
-                    iconGlyph: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.themeDark)
-                               ? "\uf186" // moon
-                               : "\uf185" // sun
-                    label: "Dark mode"
-                    statusText: active ? "On" : "Off"
-                    active: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.themeDark : true
-                    onClicked: {
-                        if (typeof systemCtrl !== "undefined" && systemCtrl)
-                            systemCtrl.themeDark = !systemCtrl.themeDark
-                    }
-                }
-            }
-
-            // Eye Shield
-            Item {
-                Layout.fillWidth: true
-                height: 72
-                OneUICircleButton {
-                    anchors.centerIn: parent
-                    iconGlyph: "\uf06e" // eye
-                    label: "Eye shield"
-                    statusText: active ? "On" : "Off"
-                    active: (typeof nightLightCtrl !== "undefined" && nightLightCtrl) ? nightLightCtrl.active : false
-                    activeColor: TitanTheme.accentBlue
-                    onClicked: {
-                        if (typeof nightLightCtrl !== "undefined" && nightLightCtrl)
-                            nightLightCtrl.toggleNightLight()
-                    }
-                }
-            }
-
-            // Do Not Disturb
-            Item {
-                Layout.fillWidth: true
-                height: 72
-                OneUICircleButton {
-                    anchors.centerIn: parent
-                    iconGlyph: "\uf05e" // ban / dnd
-                    label: "Do not disturb"
-                    statusText: active ? "On" : "Off"
-                    active: (typeof notifServer !== "undefined" && notifServer) ? notifServer.dndActive : false
-                    activeColor: TitanTheme.accentBlue
-                    onClicked: {
-                        if (typeof notifServer !== "undefined" && notifServer)
-                            notifServer.toggleDnd()
-                    }
-                }
-            }
-
-            // Mic Mute
-            Item {
-                Layout.fillWidth: true
-                height: 72
-                OneUICircleButton {
-                    anchors.centerIn: parent
-                    iconGlyph: (typeof audioCtrl !== "undefined" && audioCtrl && audioCtrl.sourceMuted) ? "\uf131" : "\uf130"
-                    label: "Mic mute"
-                    statusText: active ? "On" : "Off"
-                    active: (typeof audioCtrl !== "undefined" && audioCtrl) ? audioCtrl.sourceMuted : false
-                    activeColor: TitanTheme.red
-                    onClicked: {
-                        if (typeof audioCtrl !== "undefined" && audioCtrl)
-                            audioCtrl.toggleSourceMute()
-                    }
-                }
-            }
+    Component {
+        id: focusClusterComponent
+        MacFocusClusterModule {
+            width: parent ? parent.width : undefined
         }
     }
 
-    // ── 3. Thick Pill Sliders Bento (Brightness & Volume) ────────────────────
-    Rectangle {
-        Layout.fillWidth: true
-        implicitHeight: sliderCol.implicitHeight + 24
-        radius: TitanTheme.radiusBento
-        color: TitanTheme.bgOneUICard
-        border.color: TitanTheme.borderGlass
-        border.width: 1
-        clip: true
-        visible: (typeof systemCtrl !== "undefined" && systemCtrl)
-                 ? (systemCtrl.tileVisibilityRevision >= 0 && systemCtrl.getTileVisible("sliders", true)) : true
-
+    Component {
+        id: slidersHalfComponent
         ColumnLayout {
-            id: sliderCol
-            anchors.fill: parent
-            anchors.margins: 12
-            spacing: 10
+            width: parent ? parent.width : undefined
+            spacing: 8
 
-            // Display Brightness Slider
-            OneUISlider {
+            TitanSliderModule {
+                Layout.fillWidth: true
+                title: "Display"
                 iconGlyph: "\uf185" // sun
-                from: 0
-                to: 100
-                value: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.brightness : 80
-                fillAccent: TitanTheme.accentBlue
+                value: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.brightness : 75
                 onChanged: (v) => {
-                    if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.setBrightness(v)
+                    if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.setBrightness(v);
                 }
             }
 
-            // Sound Volume Slider
-            OneUISlider {
-                iconGlyph: {
-                    if (muted) return "\uf026";
-                    if (value <= 30) return "\uf027";
-                    return "\uf028";
-                }
-                from: 0
-                to: 100
+            TitanSliderModule {
+                Layout.fillWidth: true
+                title: "Sound"
+                iconGlyph: "\uf028" // speaker
+                showOutputButton: true
                 value: (typeof audioCtrl !== "undefined" && audioCtrl) ? audioCtrl.sinkVolume : 60
-                muted: typeof audioCtrl !== "undefined" && audioCtrl && audioCtrl.sinkMuted
-                fillAccent: TitanTheme.accentBlue
                 onChanged: (v) => {
-                    if (typeof audioCtrl !== "undefined" && audioCtrl) audioCtrl.setVolume(v)
+                    if (typeof audioCtrl !== "undefined" && audioCtrl) audioCtrl.setVolume(v);
                 }
             }
         }
     }
 
-    // ── 4. Circular Quick Action Toggles (Reflowing Grid) ───────────────────
-    Rectangle {
-        id: actionTilesCard
-        Layout.fillWidth: true
-        implicitHeight: actionGrid.implicitHeight + 24
-        radius: TitanTheme.radiusBento
-        color: TitanTheme.bgOneUICard
-        border.color: TitanTheme.borderGlass
-        border.width: 1
-        clip: true
-        visible: (showCapture || showColorPick || showGameMode || showClipboard ||
-                  showCaffeine || showVirtualInput || showRecord || showAirplane)
-
-        readonly property bool showCapture: (typeof systemCtrl !== "undefined" && systemCtrl)
-                                            ? (systemCtrl.tileVisibilityRevision >= 0 && systemCtrl.getTileVisible("capture", true)) : true
-        readonly property bool showColorPick: (typeof systemCtrl !== "undefined" && systemCtrl)
-                                              ? (systemCtrl.tileVisibilityRevision >= 0 && systemCtrl.getTileVisible("colorPick", true)) : true
-        readonly property bool showGameMode: (typeof systemCtrl !== "undefined" && systemCtrl)
-                                             ? (systemCtrl.tileVisibilityRevision >= 0 && systemCtrl.getTileVisible("gameMode", true)) : true
-        readonly property bool showClipboard: (typeof systemCtrl !== "undefined" && systemCtrl)
-                                              ? (systemCtrl.tileVisibilityRevision >= 0 && systemCtrl.getTileVisible("clipboard", true)) : true
-        readonly property bool showCaffeine: (typeof systemCtrl !== "undefined" && systemCtrl)
-                                             ? (systemCtrl.tileVisibilityRevision >= 0 && systemCtrl.getTileVisible("caffeine", true)) : true
-        readonly property bool showVirtualInput: (typeof systemCtrl !== "undefined" && systemCtrl)
-                                                 ? (systemCtrl.tileVisibilityRevision >= 0 && systemCtrl.getTileVisible("virtualInput", true)) : true
-        readonly property bool showRecord: (typeof systemCtrl !== "undefined" && systemCtrl)
-                                           ? (systemCtrl.tileVisibilityRevision >= 0 && systemCtrl.getTileVisible("record", true)) : true
-        readonly property bool showAirplane: (typeof systemCtrl !== "undefined" && systemCtrl)
-                                             ? (systemCtrl.tileVisibilityRevision >= 0 && systemCtrl.getTileVisible("airplane", true)) : true
-
-        GridLayout {
-            id: actionGrid
-            anchors.fill: parent
-            anchors.margins: 12
-            columns: 4
-            rowSpacing: 12
-            columnSpacing: 0
-
-            // Capture
-            Item {
-                visible: actionTilesCard.showCapture
-                Layout.fillWidth: true
-                height: 68
-                OneUICircleButton {
-                    anchors.centerIn: parent
-                    iconGlyph: "\uf030" // camera
-                    label: "Capture"
-                    active: false
-                    onClicked: {
-                        if (typeof systemCtrl !== "undefined" && systemCtrl)
-                            systemCtrl.takeScreenshot()
-                    }
-                }
-            }
-
-            // Color pick
-            Item {
-                visible: actionTilesCard.showColorPick
-                Layout.fillWidth: true
-                height: 68
-                OneUICircleButton {
-                    anchors.centerIn: parent
-                    iconGlyph: "\uf1fb" // color picker
-                    label: "Color pick"
-                    active: false
-                    onClicked: {
-                        if (typeof systemCtrl !== "undefined" && systemCtrl)
-                            systemCtrl.pickColor()
-                    }
-                }
-            }
-
-            // Game mode
-            Item {
-                visible: actionTilesCard.showGameMode
-                Layout.fillWidth: true
-                height: 68
-                OneUICircleButton {
-                    anchors.centerIn: parent
-                    iconGlyph: "\uf11b" // game mode
-                    label: "Game mode"
-                    active: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.gameModeActive : false
-                    activeColor: TitanTheme.green
-                    onClicked: {
-                        if (typeof systemCtrl !== "undefined" && systemCtrl)
-                            systemCtrl.gameModeActive = !systemCtrl.gameModeActive
-                    }
-                }
-            }
-
-            // Clipboard
-            Item {
-                visible: actionTilesCard.showClipboard
-                Layout.fillWidth: true
-                height: 68
-                OneUICircleButton {
-                    anchors.centerIn: parent
-                    iconGlyph: "\uf0ea" // clipboard
-                    label: "Clipboard"
-                    active: false
-                    onClicked: {
-                        if (typeof systemCtrl !== "undefined" && systemCtrl)
-                            systemCtrl.openClipboard()
-                    }
-                }
-            }
-
-            // Awake
-            Item {
-                visible: actionTilesCard.showCaffeine
-                Layout.fillWidth: true
-                height: 68
-                OneUICircleButton {
-                    anchors.centerIn: parent
-                    iconGlyph: "\uf0f4" // caffeine
-                    label: "Awake"
-                    active: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.caffeineActive : false
-                    activeColor: TitanTheme.yellow
-                    onClicked: {
-                        if (typeof systemCtrl !== "undefined" && systemCtrl)
-                            systemCtrl.caffeineActive = !systemCtrl.caffeineActive
-                    }
-                }
-            }
-
-            // Virtual input
-            Item {
-                visible: actionTilesCard.showVirtualInput
-                Layout.fillWidth: true
-                height: 68
-                OneUICircleButton {
-                    anchors.centerIn: parent
-                    iconGlyph: "\uf11c" // keyboard
-                    label: "Virtual input"
-                    active: false
-                    onClicked: {
-                        if (typeof systemCtrl !== "undefined" && systemCtrl)
-                            systemCtrl.toggleVirtualKeyboard()
-                    }
-                }
-            }
-
-            // Screen record
-            Item {
-                visible: actionTilesCard.showRecord
-                Layout.fillWidth: true
-                height: 68
-                OneUICircleButton {
-                    anchors.centerIn: parent
-                    iconGlyph: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.screenRecordingActive)
-                               ? "\uf04d" // stop square
-                               : "\uf111" // record circle
-                    label: (typeof systemCtrl !== "undefined" && systemCtrl && systemCtrl.screenRecordingActive)
-                           ? "Recording"
-                           : "Record"
-                    active: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.screenRecordingActive : false
-                    activeColor: TitanTheme.red
-                    onClicked: {
-                        if (typeof systemCtrl !== "undefined" && systemCtrl)
-                            systemCtrl.toggleScreenRecording()
-                    }
-                }
-            }
-
-            // Airplane
-            Item {
-                visible: actionTilesCard.showAirplane
-                Layout.fillWidth: true
-                height: 68
-                OneUICircleButton {
-                    anchors.centerIn: parent
-                    iconGlyph: "\uf072" // airplane
-                    label: "Airplane"
-                    active: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.airplaneMode : false
-                    activeColor: TitanTheme.accentBlue
-                    onClicked: {
-                        if (typeof systemCtrl !== "undefined" && systemCtrl)
-                            systemCtrl.toggleAirplaneMode()
-                    }
-                }
-            }
-        }
-    }
-
-    // ── 5. Bottom Device & Media Control Tiles ──────────────────────────────
-    Rectangle {
-        Layout.fillWidth: true
-        height: 50
-        radius: 20
-        color: medMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgOneUICard
-        border.color: TitanTheme.borderGlass
-        border.width: 1
-        clip: true
-        visible: (typeof systemCtrl !== "undefined" && systemCtrl)
-                 ? (systemCtrl.tileVisibilityRevision >= 0 && systemCtrl.getTileVisible("deviceMedia", true)) : true
-
-        // Tactile Liquid Touch: spring bounce on hover and press
-        scale: medMa.pressed ? 0.97 : (medMa.containsMouse ? 1.015 : 1.0)
-        Behavior on scale {
-            NumberAnimation { duration: 130; easing.type: Easing.OutQuad }
-        }
-
+    Component {
+        id: slidersFullComponent
         RowLayout {
-            anchors.fill: parent
-            anchors.leftMargin: 14
-            anchors.rightMargin: 14
-            spacing: 10
+            width: parent ? parent.width : undefined
+            implicitHeight: 64
+            spacing: 8
 
-            Rectangle {
-                width: 32
-                height: 32
-                radius: 16
-                color: TitanTheme.bgOneUIPill
-
-                Text {
-                    anchors.centerIn: parent
-                    text: "\uf001" // music
-                    font.family: TitanTheme.monoFamily
-                    font.pixelSize: 13
-                    color: TitanTheme.accentBlue
-                }
-            }
-
-            ColumnLayout {
+            TitanSliderModule {
+                Layout.preferredWidth: (parent.width - 8) / 2
                 Layout.fillWidth: true
-                spacing: 1
-
-                Text {
-                    text: "Media output"
-                    font.family: TitanTheme.fontFamily
-                    font.pixelSize: 12
-                    font.weight: Font.DemiBold
-                    color: TitanTheme.textPrimary
-                }
-
-                Text {
-                    text: "No device connected"
-                    font.family: TitanTheme.fontFamily
-                    font.pixelSize: 10
-                    color: TitanTheme.textSubtle
+                title: "Display"
+                iconGlyph: "\uf185" // sun
+                value: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.brightness : 75
+                onChanged: (v) => {
+                    if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.setBrightness(v);
                 }
             }
 
-            Text {
-                text: "\uf054"
-                font.family: TitanTheme.monoFamily
-                font.pixelSize: 10
-                color: TitanTheme.textSubtle
-            }
-        }
-
-        MouseArea {
-            id: medMa
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: {
-                if (typeof systemCtrl !== "undefined" && systemCtrl)
-                    systemCtrl.openMediaWidget()
+            TitanSliderModule {
+                Layout.preferredWidth: (parent.width - 8) / 2
+                Layout.fillWidth: true
+                title: "Sound"
+                iconGlyph: "\uf028" // speaker
+                showOutputButton: true
+                value: (typeof audioCtrl !== "undefined" && audioCtrl) ? audioCtrl.sinkVolume : 60
+                onChanged: (v) => {
+                    if (typeof audioCtrl !== "undefined" && audioCtrl) audioCtrl.setVolume(v);
+                }
             }
         }
     }
 
-    Rectangle {
-        Layout.fillWidth: true
-        height: 50
-        radius: 20
-        color: devMa.containsMouse ? TitanTheme.bgHover : TitanTheme.bgOneUICard
-        border.color: TitanTheme.borderGlass
-        border.width: 1
-        clip: true
-
-        // Tactile Liquid Touch: spring bounce on hover and press
-        scale: devMa.pressed ? 0.97 : (devMa.containsMouse ? 1.015 : 1.0)
-        Behavior on scale {
-            NumberAnimation { duration: 130; easing.type: Easing.OutQuad }
+    Component {
+        id: mediaComponent
+        NowPlayingModule {
+            width: parent ? parent.width : undefined
         }
+    }
 
+    Component {
+        id: pulseComponent
+        TitanPulseModule {
+            width: parent ? parent.width : undefined
+        }
+    }
+
+    Component {
+        id: actionsComponent
+        TitanActionGrid {
+            width: parent ? parent.width : undefined
+        }
+    }
+
+    Component {
+        id: liquidGlassComponent
         RowLayout {
-            anchors.fill: parent
-            anchors.leftMargin: 14
-            anchors.rightMargin: 14
-            spacing: 10
+            width: parent ? parent.width : undefined
+            implicitHeight: 50
+            spacing: 8
 
-            Rectangle {
-                width: 32
-                height: 32
-                radius: 16
-                color: TitanTheme.bgOneUIPill
-
-                Text {
-                    anchors.centerIn: parent
-                    text: "\uf10b" // mobile / device
-                    font.family: TitanTheme.monoFamily
-                    font.pixelSize: 14
-                    color: TitanTheme.textSecondary
-                }
-            }
-
-            ColumnLayout {
+            // Left Card: Headerless Capsule Slider (Contrast / Warmth — matches Row 3 left of mockup)
+            TitanSliderModule {
+                Layout.preferredWidth: (parent.width - 8) / 2
                 Layout.fillWidth: true
-                spacing: 1
-
-                Text {
-                    text: "Device control"
-                    font.family: TitanTheme.fontFamily
-                    font.pixelSize: 12
-                    font.weight: Font.DemiBold
-                    color: TitanTheme.textPrimary
-                }
-
-                Text {
-                    text: "Manage connected devices"
-                    font.family: TitanTheme.fontFamily
-                    font.pixelSize: 10
-                    color: TitanTheme.textSubtle
-                }
+                showHeader: false
+                title: "Warmth"
+                iconGlyph: "\uf042" // contrast / moon
+                value: 75
             }
 
-            Text {
-                text: "\uf054"
-                font.family: TitanTheme.monoFamily
-                font.pixelSize: 10
-                color: TitanTheme.textSubtle
-            }
-        }
-
-        MouseArea {
-            id: devMa
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: {
-                if (typeof systemCtrl !== "undefined" && systemCtrl)
-                    systemCtrl.openSettings()
+            // Right Card: Liquid Glass Thumb Slider (matches Row 3 right of mockup)
+            TitanSliderModule {
+                Layout.preferredWidth: (parent.width - 8) / 2
+                Layout.fillWidth: true
+                title: "Liquid Glass"
+                thumbStyle: true
+                value: (typeof systemCtrl !== "undefined" && systemCtrl) ? systemCtrl.glassOpacity : 68
+                onChanged: (v) => {
+                    if (typeof systemCtrl !== "undefined" && systemCtrl) systemCtrl.setGlassOpacity(v);
+                }
             }
         }
     }
 
-    // ── 6. Power & Session Bento Tile ───────────────────────────────────────
-    Rectangle {
-        Layout.fillWidth: true
-        height: 50
-        radius: 20
-        color: pwrTileMa.containsMouse ? Qt.rgba(TitanTheme.red.r, TitanTheme.red.g, TitanTheme.red.b, 0.16) : TitanTheme.bgOneUICard
-        border.color: pwrTileMa.containsMouse ? Qt.rgba(TitanTheme.red.r, TitanTheme.red.g, TitanTheme.red.b, 0.45) : TitanTheme.borderGlass
-        border.width: 1
-        clip: true
-
-        // Tactile Liquid Touch: spring bounce on hover and press
-        scale: pwrTileMa.pressed ? 0.97 : (pwrTileMa.containsMouse ? 1.015 : 1.0)
-        Behavior on scale {
-            NumberAnimation { duration: 130; easing.type: Easing.OutQuad }
+    Component {
+        id: calendarComponent
+        CalendarFooter {
+            width: parent ? parent.width : undefined
         }
+    }
 
-        RowLayout {
-            anchors.fill: parent
-            anchors.leftMargin: 14
-            anchors.rightMargin: 14
-            spacing: 10
+    // ═════════════════════════════════════════════════════════════════════════
+    //  DYNAMIC BENTO ROWS (Modular, Reorderable & Resizable)
+    // ═════════════════════════════════════════════════════════════════════════
+    Repeater {
+        model: bentoRoot.computeLayoutRows()
 
-            Rectangle {
-                width: 32
-                height: 32
-                radius: 16
-                color: Qt.rgba(TitanTheme.red.r, TitanTheme.red.g, TitanTheme.red.b, 0.2)
+        delegate: Item {
+            Layout.fillWidth: true
+            implicitHeight: (rowData && rowData.isPair) ? rowContent.implicitHeight : singleCard.implicitHeight
 
-                Text {
-                    anchors.centerIn: parent
-                    text: "\uf011" // power
-                    font.family: TitanTheme.monoFamily
-                    font.pixelSize: 13
-                    color: TitanTheme.red
+            readonly property var rowData: modelData
+
+            // Single Row with 2 Paired Half-Width Cards
+            RowLayout {
+                id: rowContent
+                anchors.fill: parent
+                spacing: 8
+                visible: (rowData && rowData.isPair)
+
+                BentoSectionCard {
+                    Layout.preferredWidth: (parent.width - 8) / 2
+                    Layout.fillWidth: true
+                    sectionKey: (rowData && rowData.item1) ? rowData.item1 : ""
+                    orderIndex: (rowData && typeof rowData.index1 !== "undefined") ? rowData.index1 : -1
+                    totalSections: bentoRoot.sectionOrder.length
+                    isHalfWidth: true
+                    sourceComponent: (rowData && rowData.item1) ? bentoRoot.getComponentForSection(rowData.item1, true) : null
+                }
+
+                BentoSectionCard {
+                    Layout.preferredWidth: (parent.width - 8) / 2
+                    Layout.fillWidth: true
+                    sectionKey: (rowData && rowData.item2) ? rowData.item2 : ""
+                    orderIndex: (rowData && typeof rowData.index2 !== "undefined") ? rowData.index2 : -1
+                    totalSections: bentoRoot.sectionOrder.length
+                    isHalfWidth: true
+                    sourceComponent: (rowData && rowData.item2) ? bentoRoot.getComponentForSection(rowData.item2, true) : null
                 }
             }
 
-            ColumnLayout {
-                Layout.fillWidth: true
-                spacing: 1
+            // Single Row with 1 Full-Width Card (or single un-paired half card)
+            Item {
+                anchors.fill: parent
+                implicitHeight: singleCard.implicitHeight
+                visible: (rowData && !rowData.isPair)
 
-                Text {
-                    text: "Power menu"
-                    font.family: TitanTheme.fontFamily
-                    font.pixelSize: 12
-                    font.weight: Font.DemiBold
-                    color: TitanTheme.textPrimary
-                }
-
-                Text {
-                    text: "Lock, sleep, restart or power off"
-                    font.family: TitanTheme.fontFamily
-                    font.pixelSize: 10
-                    color: TitanTheme.textSubtle
-                }
-            }
-
-            Text {
-                text: "\uf054"
-                font.family: TitanTheme.monoFamily
-                font.pixelSize: 10
-                color: TitanTheme.textSubtle
-            }
-        }
-
-        MouseArea {
-            id: pwrTileMa
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: {
-                if (typeof rootWindow !== "undefined" && rootWindow) {
-                    rootWindow.showPowerMenu = true;
-                } else if (typeof systemCtrl !== "undefined" && systemCtrl) {
-                    systemCtrl.openPowerMenu();
+                BentoSectionCard {
+                    id: singleCard
+                    width: parent.width
+                    sectionKey: (rowData && rowData.item1) ? rowData.item1 : ""
+                    orderIndex: (rowData && typeof rowData.index1 !== "undefined") ? rowData.index1 : -1
+                    totalSections: bentoRoot.sectionOrder.length
+                    isHalfWidth: (rowData && typeof rowData.isHalf !== "undefined") ? rowData.isHalf : false
+                    sourceComponent: (rowData && rowData.item1) ? bentoRoot.getComponentForSection(rowData.item1, rowData.isHalf) : null
                 }
             }
         }

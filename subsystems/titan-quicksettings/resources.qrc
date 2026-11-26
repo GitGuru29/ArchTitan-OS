@@ -5,6 +5,7 @@
         <file>qml/style/TitanTheme.qml</file>
         <file>qml/style/qmldir</file>
         <file>qml/components/HavenIcon.qml</file>
+        <file>qml/components/FocusRing.qml</file>
         <file>qml/components/IconButton.qml</file>
         <file>qml/components/GridTile.qml</file>
         <file>qml/components/LevelSlider.qml</file>
@@ -23,5 +24,22 @@
         <file>qml/components/OneUINotificationCard.qml</file>
         <file>qml/components/QuickSettingsCustomizer.qml</file>
         <file>qml/components/OneUIPowerMenu.qml</file>
+        <file>qml/components/OneUIWifiPage.qml</file>
+        <file>qml/components/SquareMusicWidget.qml</file>
+        <file>qml/components/SquareConnectivityWidget.qml</file>
+        <file>qml/components/CircularActionGrid.qml</file>
+        <file>qml/components/PerformanceWidget.qml</file>
+        <file>qml/components/BatteryWidget.qml</file>
+        <file>qml/components/BannerMusicWidget.qml</file>
+        <file>qml/components/TitanHeader.qml</file>
+        <file>qml/components/UnifiedConnectivityModule.qml</file>
+        <file>qml/components/TitanSliderModule.qml</file>
+        <file>qml/components/NowPlayingModule.qml</file>
+        <file>qml/components/TitanActionTile.qml</file>
+        <file>qml/components/TitanActionGrid.qml</file>
+        <file>qml/components/TitanPulseModule.qml</file>
+        <file>qml/components/BentoSectionCard.qml</file>
+        <file>qml/components/MacFocusClusterModule.qml</file>
+        <file>qml/components/TitanFooterBar.qml</file>
     </qresource>
 </RCC>

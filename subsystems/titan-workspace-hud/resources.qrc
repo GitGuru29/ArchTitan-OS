@@ -1,0 +1,8 @@
+<RCC>
+    <qresource prefix="/">
+        <file>qml/WorkspaceHudWindow.qml</file>
+        <file>qml/WorkspaceGrid.qml</file>
+        <file>qml/WorkspaceCard.qml</file>
+        <file>qml/WindowTile.qml</file>
+    </qresource>
+</RCC>

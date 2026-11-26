@@ -1,5 +1,6 @@
 #include "tabwidget.h"
 #include "profilemanager.h"
+#include "TitanPalette.h"
 
 #include <QTabBar>
 #include <QStackedWidget>
@@ -13,6 +14,9 @@
 #include <QDateTime>
 #include <QFileDialog>
 #include <QStandardPaths>
+#include <QMouseEvent>
+#include <QSettings>
+#include <QWebEngineSettings>
 
 class TitanWebPage : public QWebEnginePage
 {
@@ -56,6 +60,27 @@ TabWidget::TabWidget(QWidget *parent) : QObject(parent)
     connect(m_tabBar, &QTabBar::tabCloseRequested, this, &TabWidget::onTabCloseRequested);
     connect(m_tabBar, &QTabBar::currentChanged, this, &TabWidget::onCurrentTabChanged);
     connect(m_tabBar, &QTabBar::customContextMenuRequested, this, &TabWidget::onTabBarContextMenu);
+
+    // Middle-click a tab to close it (standard browser behaviour).
+    m_tabBar->installEventFilter(this);
+
+    QSettings features(QStringLiteral("ArchTitan"), QStringLiteral("TitanBrowserFeatures"));
+    m_memorySaverEnabled = features.value(QStringLiteral("memsaver"), true).toBool();
+}
+
+bool TabWidget::eventFilter(QObject *watched, QEvent *event)
+{
+    if (watched == m_tabBar && event->type() == QEvent::MouseButtonRelease) {
+        auto *mouseEvent = static_cast<QMouseEvent *>(event);
+        if (mouseEvent->button() == Qt::MiddleButton) {
+            const int index = m_tabBar->tabAt(mouseEvent->pos());
+            if (index >= 0) {
+                onTabCloseRequested(index);
+                return true;
+            }
+        }
+    }
+    return QObject::eventFilter(watched, event);
 }
 
 QWidget *TabWidget::newTab(const QUrl &url)
@@ -71,6 +96,25 @@ QWidget *TabWidget::newTab(const QUrl &url)
 
     connect(page, &TitanWebPage::internalNavigationRequested, this, [this, view](const QUrl &reqUrl) {
         QString reqStr = reqUrl.toString();
+        // Settings → Performance toggles. Persist for next launch and apply to
+        // the running default profile immediately.
+        if (reqStr.startsWith(QStringLiteral("titan://action/set-feature/"))) {
+            const QStringList parts = reqStr.split(u'/');
+            if (parts.size() >= 6) {
+                const QString name = parts.at(4);
+                const bool enabled = parts.at(5) == QStringLiteral("1");
+                QSettings features(QStringLiteral("ArchTitan"), QStringLiteral("TitanBrowserFeatures"));
+                auto *settings = QWebEngineProfile::defaultProfile()->settings();
+                if (name == QStringLiteral("webgl")) {
+                    features.setValue(QStringLiteral("webgl"), enabled);
+                    settings->setAttribute(QWebEngineSettings::WebGLEnabled, enabled);
+                } else if (name == QStringLiteral("pdf")) {
+                    features.setValue(QStringLiteral("pdf"), enabled);
+                    settings->setAttribute(QWebEngineSettings::PdfViewerEnabled, enabled);
+                }
+            }
+            return;
+        }
         if (reqStr.startsWith(QStringLiteral("titan://action/change-download-dir"))) {
             QString currentDir = ProfileManager::instance().downloadPath();
             QString newDir = QFileDialog::getExistingDirectory(
@@ -100,6 +144,14 @@ QWidget *TabWidget::newTab(const QUrl &url)
             QString escapedDir = currentDir;
             escapedDir.replace(QStringLiteral("\\"), QStringLiteral("\\\\")).replace(QStringLiteral("'"), QStringLiteral("\\'"));
             view->page()->runJavaScript(QStringLiteral("if (window.updateDownloadDirLabel) window.updateDownloadDirLabel('%1');").arg(escapedDir));
+
+            // Reflect the persisted feature flags in the Performance toggles.
+            QSettings features(QStringLiteral("ArchTitan"), QStringLiteral("TitanBrowserFeatures"));
+            const QString webgl = features.value(QStringLiteral("webgl"), false).toBool() ? QStringLiteral("true") : QStringLiteral("false");
+            const QString pdf   = features.value(QStringLiteral("pdf"),   false).toBool() ? QStringLiteral("true") : QStringLiteral("false");
+            view->page()->runJavaScript(
+                QStringLiteral("if (window.setFeatureState) { window.setFeatureState('webgl', %1); window.setFeatureState('pdf', %2); }")
+                    .arg(webgl, pdf));
         }
     });
 
@@ -118,6 +170,8 @@ QWidget *TabWidget::newTab(const QUrl &url)
 
     connectView(view);
     m_tabUrls[view] = finalUrl;
+    if (m_isSuspended.value(view, false))
+        view->page()->setLifecycleState(QWebEnginePage::LifecycleState::Active);
     m_lastAccessed[view] = QDateTime::currentDateTime();
     m_isSuspended[view] = false;
 
@@ -182,6 +236,8 @@ void TabWidget::loadInTab(int index, const QUrl &url)
         emit urlChanged(url);
     }
 
+    if (m_isSuspended.value(view, false))
+        view->page()->setLifecycleState(QWebEnginePage::LifecycleState::Active);
     m_lastAccessed[view] = QDateTime::currentDateTime();
     m_isSuspended[view] = false;
 }
@@ -267,7 +323,9 @@ void TabWidget::connectView(QWebEngineView *view)
             } else {
                 displayTitle = title.trimmed().isEmpty() ? QStringLiteral("New Tab") : title.trimmed();
             }
-            m_tabBar->setTabText(idx, displayTitle.left(20));
+            // Let QTabBar's ElideRight mode handle truncation — a hard 20-char
+            // cutoff made most titles unreadable and wasted tab width.
+            m_tabBar->setTabText(idx, displayTitle);
             m_tabBar->setTabToolTip(idx, title);
         }
         if (view == m_stack->currentWidget()) emit titleChanged(title);
@@ -332,6 +390,12 @@ void TabWidget::onCurrentTabChanged(int index)
         if (w) {
             m_lastAccessed[w] = QDateTime::currentDateTime();
             if (auto *v = qobject_cast<QWebEngineView*>(w)) {
+                // Bring a discarded tab back to life before reporting its URL.
+                if (m_isSuspended.value(v, false) || m_isFrozen.value(v, false)) {
+                    v->page()->setLifecycleState(QWebEnginePage::LifecycleState::Active);
+                    m_isSuspended[v] = false;
+                    m_isFrozen[v] = false;
+                }
                 QUrl u = tabUrl(index);
                 emit urlChanged(u);
                 emit titleChanged(v->title());
@@ -353,6 +417,7 @@ void TabWidget::onTabCloseRequested(int index)
         m_tabUrls.remove(w);
         m_lastAccessed.remove(w);
         m_isSuspended.remove(w);
+        m_isFrozen.remove(w);
         m_stack->removeWidget(w);
         w->deleteLater();
     }
@@ -430,13 +495,19 @@ void TabWidget::checkAndSuspendInactiveTabs()
         if (!v || v == active) continue;
 
         if (v->page()->recentlyAudible()) continue;
+        if (m_isSuspended.value(v, false)) continue;
+
+        // Internal pages cost nothing — don't discard the startpage HUD.
+        const QUrl u = tabUrl(i);
+        if (u.scheme() == QStringLiteral("qrc") || u.scheme() == QStringLiteral("titan"))
+            continue;
 
         QDateTime lastUsed = m_lastAccessed.value(v, now);
         if (lastUsed.secsTo(now) > 900) { // 15 min inactive
-            if (!m_isSuspended.value(v, false)) {
-                m_isSuspended[v] = true;
-                v->page()->runJavaScript(QStringLiteral("if (window.onTabSuspend) window.onTabSuspend();"));
-            }
+            // Real Chromium lifecycle suspension: releases the renderer
+            // process, unlike the old no-op window.onTabSuspend() hook.
+            m_isSuspended[v] = true;
+            v->page()->setLifecycleState(QWebEnginePage::LifecycleState::Discarded);
         }
     }
 }
@@ -447,13 +518,13 @@ void TabWidget::onTabBarContextMenu(const QPoint &pos)
     if (index < 0) return;
 
     auto *menu = new QMenu(m_tabBar);
-    menu->setStyleSheet(QStringLiteral(R"(
+    menu->setStyleSheet(TitanPalette::qss(QStringLiteral(R"(
         QMenu {
-            background: #11111b;
-            border: 1px solid rgba(137, 180, 250, 0.25);
+            background: @crust;
+            border: 1px solid rgba(@accentRGB, 0.25);
             border-radius: 8px;
             padding: 5px;
-            color: #cdd6f4;
+            color: @textHigh;
             font-size: 12px;
         }
         QMenu::item {
@@ -461,10 +532,10 @@ void TabWidget::onTabBarContextMenu(const QPoint &pos)
             border-radius: 5px;
         }
         QMenu::item:selected {
-            background: rgba(137, 180, 250, 0.15);
-            color: #89b4fa;
+            background: rgba(@accentRGB, 0.15);
+            color: @accent;
         }
-    )"));
+    )")));
 
     auto *reloadAct = menu->addAction(QStringLiteral("Reload Tab"));
     connect(reloadAct, &QAction::triggered, this, [this, index]{ reloadTab(index); });
@@ -497,3 +568,4 @@ void TabWidget::onTabBarContextMenu(const QPoint &pos)
 }
 
 #include "tabwidget.moc"
+

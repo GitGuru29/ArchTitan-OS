@@ -23,15 +23,23 @@ Rectangle {
 
     signal clicked()
 
+    // Keyboard: reachable with Tab / arrows, activated with Enter or Space.
+    activeFocusOnTab: true
+    Keys.onReturnPressed: (event) => { pillRoot.clicked(); event.accepted = true }
+    Keys.onEnterPressed:  (event) => { pillRoot.clicked(); event.accepted = true }
+    Keys.onSpacePressed:  (event) => { pillRoot.clicked(); event.accepted = true }
+
     radius: TitanTheme.radiusPill
     color: {
         if (ma.pressed) return active ? Qt.darker(accent, 1.15) : TitanTheme.bgPressed;
         if (active) return accent;
-        if (ma.containsMouse) return TitanTheme.bgHover;
+        if (ma.containsMouse || activeFocus) return TitanTheme.bgHover;
         return TitanTheme.bgSurfaceAlt;
     }
-    border.color: active ? accent : (ma.containsMouse ? TitanTheme.borderHover : TitanTheme.borderSubtle)
-    border.width: 1
+    border.color: activeFocus ? TitanTheme.accent
+                  : active ? accent
+                  : (ma.containsMouse ? TitanTheme.borderHover : TitanTheme.borderSubtle)
+    border.width: activeFocus ? 2 : 1
 
     Behavior on color { ColorAnimation { duration: 130 } }
     Behavior on border.color { ColorAnimation { duration: 130 } }

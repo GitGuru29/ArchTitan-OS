@@ -1,0 +1,40 @@
+{
+  "releases": [
+    {
+      "version": "2.0.0",
+      "title": "ArchTitan 2.0",
+      "tagline": "A new era of desktop computing.",
+      "highlights": [
+        {
+          "id": "control-center",
+          "title": "Redesigned Titan Control Center",
+          "body": "Liquid Glass quick toggles with expandable Wi-Fi, Bluetooth, audio sink and power profile sub-drawers.",
+          "feature": "quicksettings",
+          "glyph": "󰒓"
+        },
+        {
+          "id": "workspace-hud",
+          "title": "2×5 Mission Control Workspace Matrix",
+          "body": "Instant drag-and-drop window relocation across ten workspaces with 1:1 touchpad gesture stepping.",
+          "feature": "workspace",
+          "glyph": "󰕮"
+        },
+        {
+          "id": "thm-v34",
+          "title": "THM v3.4 Workload Orchestration",
+          "body": "5 Hz Hyprland-context CPU & memory plane management with bounded 30s recent-focus protection.",
+          "feature": "sysmon",
+          "glyph": "󰻠"
+        },
+        {
+          "id": "personalization",
+          "title": "11 Curated Themes & Adaptive Glass",
+          "body": "Switch seamlessly between ArchTitan Signature, Catppuccin Mocha, Nord, Tokyo Night, Dracula and more.",
+          "feature": "personalize",
+          "glyph": "󰏘"
+        }
+      ]
+    }
+  ]
+}
+

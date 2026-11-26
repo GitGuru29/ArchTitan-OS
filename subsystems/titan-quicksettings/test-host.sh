@@ -5,7 +5,13 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 BUILD_DIR="$SCRIPT_DIR/build"
+
+# Set up runtime library and QML import paths for host execution
+export QML_IMPORT_PATH="$REPO_DIR/airootfs/usr/lib/qt6/qml:${QML_IMPORT_PATH:-}"
+export QML2_IMPORT_PATH="$REPO_DIR/airootfs/usr/lib/qt6/qml:${QML2_IMPORT_PATH:-}"
+export LD_LIBRARY_PATH="$REPO_DIR/airootfs/usr/lib:$REPO_DIR/titan-ui/build:${LD_LIBRARY_PATH:-}"
 
 # Use the freshly built binary
 BIN="$BUILD_DIR/titan-quicksettings"

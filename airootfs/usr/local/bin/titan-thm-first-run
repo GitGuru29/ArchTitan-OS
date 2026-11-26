@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# Titan Hardware Manager first-run onboarding
+FLAG="$HOME/.config/archtitan/.thm-first-run-done"
+
+[ -f "$FLAG" ] && exit 0
+
+mkdir -p "$(dirname "$FLAG")"
+
+# Show onboarding in a floating terminal
+if command -v kitty >/dev/null 2>&1; then
+  kitty --class titan-thm-onboard -e sh -c '
+clear
+echo "╭─────────────────────────────────────────────────────────────╮"
+echo "│           Welcome to Titan Hardware Manager (THM) v3      │"
+echo "╰─────────────────────────────────────────────────────────────╯"
+echo
+echo "THM watches your process trees and keeps heavy background apps in check"
+echo "only when your system is actually under memory pressure."
+echo
+echo "Key things to know:"
+echo "  • Classified workloads = dev/build/VM/service (can be managed under pressure)"
+echo "  • Observed workloads   = everything else (always untouched, fully visible)"
+echo "  • CPU pressure is never used to reclaim — only memory pressure matters"
+echo "  • THM is tree-based, not profile-based"
+echo
+echo "Quick commands:"
+echo "  titan-hwm help      - Show all commands"
+echo "  titan-hwm status    - Live daemon state"
+echo "  titan-hwm scan      - See why workloads are tracked"
+echo "  titan-hwm top       - Top by CPU"
+echo "  titan-hwm explain   - Deep dive into a workload"
+echo
+echo "Shortcuts:"
+echo "  Super+Shift+H       - THM quick view"
+echo "  Super+Shift+T       - THM top list"
+echo "  Click THM in Waybar - Quick status/scan"
+echo
+echo "Press Enter to continue..."
+read -r _
+' >/dev/null 2>&1 &
+elif command -v alacritty >/dev/null 2>&1; then
+  alacritty -e sh -c 'clear; echo "Titan Hardware Manager (THM) v3"; echo; echo "Run: titan-hwm help"; echo; read -r _' >/dev/null 2>&1 &
+elif command -v foot >/dev/null 2>&1; then
+  foot sh -c 'clear; echo "Titan Hardware Manager (THM) v3"; echo "Run: titan-hwm help"; echo; read -r _' >/dev/null 2>&1 &
+fi
+
+notify-send "Titan Hardware Manager (THM)" "New to THM? Run 'titan-hwm help' or press Super+Shift+H" -u normal -t 6000 2>/dev/null
+
+touch "$FLAG"

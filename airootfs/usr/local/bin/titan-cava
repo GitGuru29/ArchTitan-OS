@@ -1,0 +1,130 @@
+#!/usr/bin/env python3
+"""titan-cava — ArchTitan dynamic Cava audio visualizer for Waybar.
+Auto-reveals with animated equalizer bars only when audio/music is actively playing.
+Collapses into silence when playback pauses, stops, or goes silent.
+"""
+from __future__ import annotations
+
+import json
+import os
+import signal
+import subprocess
+import sys
+import tempfile
+import time
+
+BAR_GLYPHS = [" ", "▂", "▃", "▄", "▅", "▆", "▇", "█"]
+CONF_TEMPLATE = """[general]
+bars = 8
+framerate = 30
+autosens = 1
+[input]
+method = pulse
+source = auto
+[output]
+method = raw
+raw_target = /dev/stdout
+data_format = ascii
+ascii_max_range = 7
+bar_delimiter = 59
+"""
+
+
+def get_mpris_info() -> str:
+    try:
+        res = subprocess.run(
+            ["playerctl", "metadata", "--format", "{{title}} — {{artist}}"],
+            capture_output=True,
+            text=True,
+            timeout=0.2,
+        )
+        if res.returncode == 0:
+            return res.stdout.strip()
+    except Exception:
+        pass
+    return ""
+
+
+def main():
+    conf_file = tempfile.NamedTemporaryFile("w", suffix=".conf", delete=False)
+    conf_file.write(CONF_TEMPLATE)
+    conf_file.flush()
+    conf_file.close()
+
+    cava_proc: subprocess.Popen | None = None
+
+    def cleanup(*_):
+        if cava_proc:
+            try:
+                cava_proc.terminate()
+            except Exception:
+                pass
+        try:
+            os.unlink(conf_file.name)
+        except OSError:
+            pass
+        sys.exit(0)
+
+    signal.signal(signal.SIGTERM, cleanup)
+    signal.signal(signal.SIGINT, cleanup)
+
+    cava_proc = subprocess.Popen(
+        ["cava", "-p", conf_file.name],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        text=True,
+    )
+
+    silent_frames = 0
+    was_visible = False
+    last_mpris_check = 0.0
+    cached_title = ""
+
+    # Initial emission
+    print(json.dumps({"text": "", "class": "silent"}), flush=True)
+
+    try:
+        for line in cava_proc.stdout:
+            if not line:
+                continue
+
+            parts = [int(p) for p in line.strip().split(";") if p.strip().isdigit()]
+            if not parts:
+                continue
+
+            has_sound = any(val > 0 for val in parts)
+
+            if has_sound:
+                silent_frames = 0
+                now = time.time()
+                if now - last_mpris_check > 2.0:
+                    cached_title = get_mpris_info()
+                    last_mpris_check = now
+
+                bars = "".join(BAR_GLYPHS[min(val, len(BAR_GLYPHS) - 1)] for val in parts)
+                tooltip = f"Now Playing:\n{cached_title}" if cached_title else "Audio Visualizer"
+                print(
+                    json.dumps({
+                        "text": f"󰝚  {bars}",
+                        "tooltip": tooltip,
+                        "class": "playing",
+                    }),
+                    flush=True,
+                )
+                was_visible = True
+            else:
+                silent_frames += 1
+                # When silent for ~10 frames (approx 0.3s), collapse module
+                if silent_frames >= 10:
+                    if was_visible:
+                        print(json.dumps({"text": "", "class": "silent"}), flush=True)
+                        was_visible = False
+
+    except Exception:
+        pass
+    finally:
+        cleanup()
+
+
+if __name__ == "__main__":
+    main()

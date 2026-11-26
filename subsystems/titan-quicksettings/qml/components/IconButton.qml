@@ -30,6 +30,12 @@ Item {
 
     signal clicked()
 
+    // Keyboard: reachable with Tab / arrows, activated with Enter or Space.
+    activeFocusOnTab: true
+    Keys.onReturnPressed: (event) => { btnRoot.clicked(); event.accepted = true }
+    Keys.onEnterPressed:  (event) => { btnRoot.clicked(); event.accepted = true }
+    Keys.onSpacePressed:  (event) => { btnRoot.clicked(); event.accepted = true }
+
     // ── Tooltip (QtQuick.Controls) ───────────────────────────────────────────
     ToolTip.visible: ma.containsMouse && tip.length > 0
     ToolTip.text: tip
@@ -58,8 +64,10 @@ Item {
             if (ma.containsMouse) return btnRoot.bgHover;
             return btnRoot.bg;
         }
-        border.color: ma.containsMouse || btnRoot.active ? TitanTheme.borderHover : TitanTheme.borderSubtle
-        border.width: 1
+        border.color: btnRoot.activeFocus ? TitanTheme.accent
+                      : ma.containsMouse || btnRoot.active ? TitanTheme.borderHover
+                      : TitanTheme.borderSubtle
+        border.width: btnRoot.activeFocus ? 2 : 1
 
         Behavior on color { ColorAnimation { duration: 120 } }
 

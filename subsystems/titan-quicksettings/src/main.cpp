@@ -3,6 +3,7 @@
 #include <QQmlContext>
 #include <QQuickWindow>
 #include <QCommandLineParser>
+#include <QDateTime>
 #include <QSettings>
 #include <QDir>
 #include <QStandardPaths>
@@ -34,11 +35,11 @@ static void ensureDefaultConfig()
         //   panel_width:       drawer width in px (default 420)
         //   panel_height:      fallback height in px (used if stretch_to_bottom=false)
         //   stretch_to_bottom: stretch drawer from bar to workspace foot (default true)
-        cfg.setValue("top_margin",        4);
+        cfg.setValue("top_margin",        8);
         cfg.setValue("bottom_margin",      8);
         cfg.setValue("right_margin",       8);
-        cfg.setValue("panel_width",      420);
-        cfg.setValue("panel_height",     860);
+        cfg.setValue("panel_width",      450);
+        cfg.setValue("panel_height",     720);
         cfg.setValue("stretch_to_bottom", true);
         cfg.endGroup();
         cfg.sync();
@@ -61,11 +62,11 @@ static LayoutConfig readConfig()
     QSettings cfg(configPath(), QSettings::IniFormat);
     cfg.beginGroup("layout");
     LayoutConfig lc;
-    lc.topMargin        = cfg.value("top_margin",        4).toInt();
+    lc.topMargin        = cfg.value("top_margin",        8).toInt();
     lc.bottomMargin     = cfg.value("bottom_margin",      8).toInt();
     lc.rightMargin      = cfg.value("right_margin",       8).toInt();
-    lc.panelWidth       = cfg.value("panel_width",      420).toInt();
-    lc.panelHeight      = cfg.value("panel_height",     860).toInt();
+    lc.panelWidth       = cfg.value("panel_width",      450).toInt();
+    lc.panelHeight      = cfg.value("panel_height",     720).toInt();
     lc.stretchToBottom  = cfg.value("stretch_to_bottom", true).toBool();
     cfg.endGroup();
     return lc;
@@ -79,6 +80,7 @@ static LayoutConfig readConfig()
 #include "audiocontroller.h"
 #include "nightlightcontroller.h"
 #include "notificationserver.h"
+#include "mpriscontroller.h"
 
 int main(int argc, char *argv[])
 {
@@ -105,6 +107,21 @@ int main(int argc, char *argv[])
                 return 0;
             }
             return 0;
+        } else if (arg == "--notifications" || arg == "-n") {
+            if (IpcServer::sendCommand("NOTIFICATIONS")) {
+                return 0;
+            }
+            break;
+        } else if (arg == "--wifi" || arg == "-w") {
+            if (IpcServer::sendCommand("WIFI")) {
+                return 0;
+            }
+            break;
+        } else if (arg == "--edit" || arg == "-e") {
+            if (IpcServer::sendCommand("EDIT")) {
+                return 0;
+            }
+            break;
         } else if (arg == "--set-margin" && i + 1 < argc) {
             // Quick CLI override: titan-quicksettings --set-margin top=N
             // Writes to config.ini so it persists on next daemon restart.
@@ -168,6 +185,14 @@ int main(int argc, char *argv[])
     parser.addOption(hideOption);
     parser.process(app);
 
+    if (parser.isSet(toggleOption)) {
+        if (IpcServer::sendCommand("toggle")) return 0;
+    } else if (parser.isSet(showOption)) {
+        if (IpcServer::sendCommand("show")) return 0;
+    } else if (parser.isSet(hideOption)) {
+        if (IpcServer::sendCommand("hide")) return 0;
+    }
+
     bool startHidden = parser.isSet(daemonOption);
 
     // Initialize backend controllers
@@ -180,16 +205,23 @@ int main(int argc, char *argv[])
     AudioController audioCtrl;
     NightLightController nightCtrl;
     NotificationServer notifServer;
+    MprisController mprisCtrl;
 
     QQmlApplicationEngine engine;
+    engine.addImportPath(QStringLiteral("/usr/lib/qt6/qml"));
+    engine.addImportPath(QDir::currentPath() + QStringLiteral("/airootfs/usr/lib/qt6/qml"));
+    engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/../../../airootfs/usr/lib/qt6/qml"));
+    engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/../../airootfs/usr/lib/qt6/qml"));
     auto *context = engine.rootContext();
     context->setContextProperty("systemCtrl", &systemCtrl);
     context->setContextProperty("networkCtrl", &netCtrl);
     context->setContextProperty("bluetoothCtrl", &btCtrl);
+    context->setContextProperty("btCtrl", &btCtrl);
     context->setContextProperty("audioCtrl", &audioCtrl);
     context->setContextProperty("nightLightCtrl", &nightCtrl);
     context->setContextProperty("notifServer", &notifServer);
     context->setContextProperty("notifModel", notifServer.model());
+    context->setContextProperty("mprisCtrl", &mprisCtrl);
 
     const QUrl url(QStringLiteral("qrc:/qml/QuickSettingsWindow.qml"));
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
@@ -260,6 +292,42 @@ int main(int argc, char *argv[])
         });
         QObject::connect(&ipc, &IpcServer::hideRequested, window, [window]() {
             QMetaObject::invokeMethod(window, "closeDrawer");
+        });
+        QObject::connect(&ipc, &IpcServer::notificationsRequested, window, [window]() {
+            bool isShown = window->property("showNotificationPanel").toBool();
+            bool isOpen = window->property("drawerOpen").toBool();
+            if (!isOpen) {
+                window->setProperty("showNotificationPanel", true);
+                QMetaObject::invokeMethod(window, "openDrawer");
+            } else {
+                window->setProperty("showNotificationPanel", !isShown);
+            }
+        });
+        QObject::connect(&ipc, &IpcServer::wifiRequested, window, [window]() {
+            window->setProperty("showWifiPage", true);
+            QMetaObject::invokeMethod(window, "openDrawer");
+        });
+        QObject::connect(&ipc, &IpcServer::editRequested, window, [window]() {
+            window->setProperty("inPlaceEditMode", true);
+            QMetaObject::invokeMethod(window, "openDrawer");
+        });
+
+        // Dismiss on click-away: a layer-shell surface only receives keyboard
+        // focus once the user clicks it, so stamp the activation time and close
+        // on the first deactivation that follows. The grace period swallows the
+        // activate/deactivate flicker some compositors emit while mapping, and a
+        // panel that was never activated keeps its Esc / hotkey dismissal.
+        QObject::connect(window, &QQuickWindow::activeChanged, window, [window]() {
+            constexpr qint64 graceMs = 400;
+            if (window->isActive()) {
+                window->setProperty("titanFocusArmedAt", QDateTime::currentMSecsSinceEpoch());
+                return;
+            }
+            const qint64 armedAt = window->property("titanFocusArmedAt").toLongLong();
+            if (armedAt > 0 && QDateTime::currentMSecsSinceEpoch() - armedAt >= graceMs) {
+                window->setProperty("titanFocusArmedAt", QVariant(0));
+                QMetaObject::invokeMethod(window, "closeDrawer");
+            }
         });
 
         if (!startHidden) {

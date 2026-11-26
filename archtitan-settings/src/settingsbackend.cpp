@@ -3,16 +3,21 @@
 #include <QDebug>
 #include <QDir>
 #include <QFile>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QTextStream>
 #include <QDBusInterface>
 #include <QDBusReply>
 #include <QDBusVariant>
+#include <QStandardPaths>
 
 SettingsBackend::SettingsBackend(QObject *parent)
     : QObject(parent)
     , m_settings(QStringLiteral("ArchTitan"), QStringLiteral("archtitan-settings"))
 {
     loadSettings();
+    loadThemeState();
+    scanThemes();
 
     // Listen to external D-Bus changes for power profile (try both common service names)
     QDBusConnection::systemBus().connect(
@@ -35,7 +40,7 @@ SettingsBackend::SettingsBackend(QObject *parent)
 
 void SettingsBackend::loadSettings() {
     m_colorTheme   = m_settings.value("appearance/colorTheme",   "Dark").toString();
-    m_accentColor  = m_settings.value("appearance/accentColor",  "#7AA2F7").toString();
+    m_accentColor  = m_settings.value("appearance/accentColor",  "#89B4FA").toString();
     m_glassmorphism= m_settings.value("appearance/glassmorphism", true).toBool();
     m_panelOpacity = m_settings.value("appearance/panelOpacity",  0.88).toDouble();
     m_iconTheme    = m_settings.value("appearance/iconTheme",    "Papirus-Dark").toString();
@@ -53,6 +58,98 @@ void SettingsBackend::loadSettings() {
     m_lockscreenRingColor = m_settings.value("security/lockscreenRingColor", "default").toString();
 }
 
+void SettingsBackend::loadThemeState() {
+    // The theme engine's state file (~/.config/archtitan/theme.json, written by
+    // `titan-theme`) is the source of truth for the desktop's look. Mirror it
+    // into the UI so the appearance page reflects the active theme.
+    const QString path =
+        QDir::homePath() + QStringLiteral("/.config/archtitan/theme.json");
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly)) {
+        m_currentThemeId = QStringLiteral("archtitan");
+        emit currentThemeIdChanged();
+        return;
+    }
+    const QJsonObject theme = QJsonDocument::fromJson(file.readAll()).object();
+    if (theme.isEmpty())
+        return;
+
+    if (theme.contains(QStringLiteral("id"))) {
+        const QString tid = theme.value(QStringLiteral("id")).toString();
+        if (tid != m_currentThemeId) {
+            m_currentThemeId = tid;
+            emit currentThemeIdChanged();
+        }
+    } else {
+        m_currentThemeId = QStringLiteral("archtitan");
+        emit currentThemeIdChanged();
+    }
+
+    if (theme.contains(QStringLiteral("isDark")))
+        m_colorTheme = theme.value(QStringLiteral("isDark")).toBool()
+                           ? QStringLiteral("Dark") : QStringLiteral("Light");
+    const QString accent = theme.value(QStringLiteral("accent")).toString();
+    if (!accent.isEmpty())
+        m_accentColor = accent;
+
+    qDebug() << "[SettingsBackend] Theme state adopted:" << m_currentThemeId << m_colorTheme << m_accentColor;
+}
+
+void SettingsBackend::scanThemes() {
+    m_installedThemes.clear();
+    QString themeDir = QStringLiteral("/usr/share/archtitan/themes");
+    if (!QDir(themeDir).exists()) {
+        themeDir = QDir::currentPath() + QStringLiteral("/airootfs/usr/share/archtitan/themes");
+    }
+    QDir d(themeDir);
+    if (d.exists()) {
+        const QStringList files = d.entryList({QStringLiteral("*.json")}, QDir::Files, QDir::Name);
+        for (const QString &file : files) {
+            QFile f(d.filePath(file));
+            if (!f.open(QIODevice::ReadOnly))
+                continue;
+            const QJsonObject obj = QJsonDocument::fromJson(f.readAll()).object();
+            if (obj.isEmpty())
+                continue;
+
+            QVariantMap item;
+            item[QStringLiteral("id")] = obj.value(QStringLiteral("id")).toString();
+            item[QStringLiteral("name")] = obj.value(QStringLiteral("name")).toString();
+            item[QStringLiteral("isDark")] = obj.value(QStringLiteral("isDark")).toBool(true);
+            item[QStringLiteral("accent")] = obj.value(QStringLiteral("accent")).toString();
+            item[QStringLiteral("accent2")] = obj.value(QStringLiteral("accent2")).toString();
+            item[QStringLiteral("wallpaper")] = obj.value(QStringLiteral("wallpaper")).toString();
+
+            const QJsonObject pal = obj.value(QStringLiteral("palette")).toObject();
+            item[QStringLiteral("base")] = pal.value(QStringLiteral("base")).toString("#1E1E2E");
+            item[QStringLiteral("crust")] = pal.value(QStringLiteral("crust")).toString("#11111B");
+            item[QStringLiteral("textHigh")] = pal.value(QStringLiteral("textHigh")).toString("#CDD6F4");
+
+            m_installedThemes.append(item);
+        }
+    }
+    emit installedThemesChanged();
+}
+
+QString SettingsBackend::currentThemeId() const { return m_currentThemeId; }
+QVariantList SettingsBackend::installedThemes() const { return m_installedThemes; }
+
+void SettingsBackend::applyThemeTemplate(const QString &id) {
+    if (id.isEmpty()) return;
+    m_currentThemeId = id;
+    emit currentThemeIdChanged();
+
+    QString bin = QStandardPaths::findExecutable("titan-theme");
+    if (bin.isEmpty()) bin = QStringLiteral("/usr/local/bin/titan-theme");
+    QProcess::startDetached(bin, {"set", id});
+
+    // Refresh state
+    loadThemeState();
+    emit colorThemeChanged();
+    emit accentColorChanged();
+    emit settingsSaved();
+}
+
 void SettingsBackend::applyAppearance() {
     // 1. Persist to QSettings
     m_settings.setValue("appearance/colorTheme",   m_colorTheme);
@@ -64,12 +161,19 @@ void SettingsBackend::applyAppearance() {
     m_settings.setValue("appearance/fontSize",     m_fontSize);
     m_settings.sync();
 
-    // 2. Apply accent color to Hyprland (border colors)
-    QString hex = m_accentColor;
-    hex.remove('#');
-    QString hyprColor = "0xff" + hex;
-    QProcess::startDetached("hyprctl", {"keyword", "general:col.active_border", hyprColor + " 0xff444444 45deg"});
-    QProcess::startDetached("hyprctl", {"keyword", "general:col.inactive_border", "0xff333333"});
+    // 2. Drive the theme engine. `titan-theme` owns every seam: the QML surfaces
+    //    follow via ThemeBackend's file watcher, and this rewrites Waybar,
+    //    SwayNC, rofi, kitty, hyprlock, GTK, qt5ct and the Hyprland border
+    //    keywords. `mode` no-ops unless the light/dark baseline changes; the
+    //    accent override applies to whatever theme is active. TITAN_QUIET keeps
+    //    this page the sole source of feedback instead of stacking two toasts.
+    const QString mode =
+        (m_colorTheme == QLatin1String("Light")) ? QStringLiteral("light")
+                                                 : QStringLiteral("dark");
+    QProcess::startDetached("bash", {"-c",
+        QStringLiteral("TITAN_QUIET=1 titan-theme mode %1; "
+                       "TITAN_QUIET=1 titan-theme accent %2")
+            .arg(mode, m_accentColor)});
 
     // 3. Apply icon theme via gsettings (GTK apps pick this up)
     QProcess::startDetached("gsettings", {"set", "org.gnome.desktop.interface", "icon-theme", m_iconTheme});
@@ -93,43 +197,73 @@ void SettingsBackend::applySecurity() {
     m_settings.setValue("security/lockscreenRingColor", m_lockscreenRingColor);
     m_settings.sync();
 
-    updateSwayidleConfig();
+    updateIdleConfig();
 
     qDebug() << "[SettingsBackend] Security Applied";
     emit settingsSaved();
 }
 
-void SettingsBackend::updateSwayidleConfig() {
+void SettingsBackend::updateIdleConfig() {
     QProcess::startDetached("bash", {"-c", "hyprctl keyword decoration:screen_shader '' 2>/dev/null"});
 
-    QString swaylockCmd = "swaylock -f";
-    if (m_lockscreenBlur) {
-        swaylockCmd += " --effect-blur 7x5";
-    }
-    if (m_lockscreenRingColor != "default") {
-        swaylockCmd += " --ring-color " + m_lockscreenRingColor + " --inside-color 00000000 --line-color 00000000 --separator-color 00000000";
+    // ArchTitan ships hypridle (not swayidle), with its config at
+    // ~/.config/hypr/hypridle.conf. Generate listeners using the same
+    // `hyprctl dispatch dpms off/on` syntax as the shipped skel config.
+    QString lockCmd = QStringLiteral("swaylock -f");
+    if (m_lockscreenBlur)
+        lockCmd += QStringLiteral(" --effect-blur 7x5");
+    if (m_lockscreenRingColor != QStringLiteral("default")) {
+        lockCmd += QStringLiteral(" --ring-color ") + m_lockscreenRingColor
+                 + QStringLiteral(" --inside-color 00000000 --line-color 00000000 --separator-color 00000000");
     }
 
-    QString swayidleConfig = QString(
-        "timeout %1 'hyprctl dispatch dpmsoff%2' resume 'hyprctl dispatch dpmson'\n"
-        "timeout %3 'systemctl suspend'\n"
-        "before-sleep '%4'\n"
-    ).arg(m_screenTimeout).arg(m_lockOnScreenOff ? QString("; ") + swaylockCmd : "").arg(m_suspendTimeout).arg(swaylockCmd);
+    QString conf = QStringLiteral(
+        "general {\n"
+        "    lock_cmd = %1\n"
+        "    before_sleep_cmd = %1\n"
+        "    after_sleep_cmd = hyprctl dispatch dpms on\n"
+        "    ignore_dbus_inhibit = false\n"
+        "}\n"
+    ).arg(lockCmd);
 
+    // Screen blanking. The UI uses 99999 as the "Never" sentinel.
+    if (m_screenTimeout < 99999) {
+        QString onTimeout = QStringLiteral("hyprctl dispatch dpms off");
+        if (m_lockOnScreenOff)
+            onTimeout += QStringLiteral("; ") + lockCmd + QStringLiteral(" &");
+        // hypridle option keys use hyphens, not underscores.
+        conf += QStringLiteral("\nlistener {\n    timeout = %1\n    on-timeout = %2\n    on-resume = hyprctl dispatch dpms on\n}\n")
+                    .arg(m_screenTimeout).arg(onTimeout);
+    }
+
+    // Suspend
+    if (m_suspendTimeout < 99999) {
+        conf += QStringLiteral("\nlistener {\n    timeout = %1\n    on-timeout = systemctl suspend\n}\n")
+                    .arg(m_suspendTimeout);
+    }
+
+    // Autolock
     if (m_autolockEnabled) {
-        swayidleConfig += QString("timeout %1 '%2'\n").arg(m_autolockDelay).arg(swaylockCmd);
+        conf += QStringLiteral("\nlistener {\n    timeout = %1\n    on-timeout = %2 &\n}\n")
+                    .arg(m_autolockDelay).arg(lockCmd);
     }
 
-    QFile idleConf(QDir::homePath() + "/.config/swayidle/config");
+    const QString hyprDir = QDir::homePath() + QStringLiteral("/.config/hypr");
+    QDir().mkpath(hyprDir);
+    QFile idleConf(hyprDir + QStringLiteral("/hypridle.conf"));
     if (idleConf.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        QTextStream(&idleConf) << swayidleConfig;
+        QTextStream(&idleConf) << conf;
         idleConf.close();
+    } else {
+        qWarning() << "[SettingsBackend] could not write hypridle.conf";
     }
-    QProcess::startDetached("bash", {"-c", "pkill swayidle 2>/dev/null; command -v swayidle >/dev/null && swayidle -w &"});
 
-    if (!m_autolockEnabled) {
-        QProcess::startDetached("pkill", {"swayidle"});
-    }
+    // hypridle is deliberately not autostarted on the live session; start it
+    // here so the configured idle policy actually takes effect.
+    QProcess::startDetached(QStringLiteral("bash"), {
+        QStringLiteral("-c"),
+        QStringLiteral("pkill -x hypridle 2>/dev/null || true; command -v hypridle >/dev/null && hypridle >/dev/null 2>&1 &")
+    });
 }
 
 void SettingsBackend::resetToDefaults() {
@@ -178,7 +312,7 @@ void SettingsBackend::applyPowerProfileNow(const QString &profile)
     }
 }
 
-// Apply screen-off timeout immediately — persists and rewrites swayidle config.
+// Apply screen-off timeout immediately — persists and rewrites hypridle config.
 void SettingsBackend::applyScreenTimeoutNow(int seconds)
 {
     if (m_screenTimeout != seconds) {
@@ -188,13 +322,12 @@ void SettingsBackend::applyScreenTimeoutNow(int seconds)
     m_settings.setValue(QStringLiteral("power/screenTimeout"), seconds);
     m_settings.sync();
 
-    // Rewrite swayidle config with the new screen timeout
-    updateSwayidleConfig();
+    updateIdleConfig();
 
     qDebug() << "[SettingsBackend] Screen timeout applied:" << seconds << "s";
 }
 
-// Apply suspend timeout immediately — persists and rewrites swayidle config.
+// Apply suspend timeout immediately — persists and rewrites hypridle config.
 void SettingsBackend::applySuspendTimeoutNow(int seconds)
 {
     if (m_suspendTimeout != seconds) {
@@ -204,14 +337,9 @@ void SettingsBackend::applySuspendTimeoutNow(int seconds)
     m_settings.setValue(QStringLiteral("power/suspendTimeout"), seconds);
     m_settings.sync();
 
-    // "Never" sentinel (99999) — just kill swayidle so suspend never fires
-    if (seconds >= 99999) {
-        QProcess::startDetached(QStringLiteral("pkill"), {QStringLiteral("swayidle")});
-        qDebug() << "[SettingsBackend] Suspend disabled (Never)";
-        return;
-    }
-
-    updateSwayidleConfig();
+    // "Never" sentinel (99999) is handled inside updateIdleConfig() by simply
+    // omitting the suspend listener; other idle policies stay active.
+    updateIdleConfig();
 
     qDebug() << "[SettingsBackend] Suspend timeout applied:" << seconds << "s";
 }

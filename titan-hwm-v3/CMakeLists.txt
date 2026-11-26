@@ -25,6 +25,9 @@ set(CORE_SRC
     # Phase 2: Process Ownership Graph
     workload/ownership_graph.cpp
 
+    # v3.10: cross-root workload dependency graph
+    workload/dependency_graph.cpp
+
     # Phase 3: FusionClassifier (ported from v2)
     classifier/fusion_classifier.cpp
 
@@ -67,11 +70,14 @@ target_include_directories(thm_core PUBLIC ${CMAKE_SOURCE_DIR})
 add_executable(titan-hwm-daemon daemon/daemon.cpp)
 set_target_properties(titan-hwm-daemon PROPERTIES OUTPUT_NAME "titan-hwm-daemon")
 target_link_libraries(titan-hwm-daemon PRIVATE thm_core pthread)
+# Keep the resident set small: statically linked C++ runtime pulls in only the
+# code actually used instead of mapping ~1.4 MB of libstdc++ text/rodata.
+target_link_options(titan-hwm-daemon PRIVATE -static-libstdc++ -static-libgcc)
 
 # ── CLI executable (Phase 14) ────────────────────────────────────────────────
 add_executable(titan-hwm-cli cli/titan_hwm_cli.cpp)
 set_target_properties(titan-hwm-cli PROPERTIES OUTPUT_NAME "titan-hwm")
-target_link_libraries(titan-hwm-cli PRIVATE pthread)
+target_link_libraries(titan-hwm-cli PRIVATE thm_core pthread)
 
 # ── Test Suite Executable ───────────────────────────────────────────────────
 enable_testing()
@@ -79,10 +85,21 @@ add_executable(thm_test_runner tests/test_runner.cpp)
 target_link_libraries(thm_test_runner PRIVATE thm_core pthread)
 add_test(NAME thm_os_tests COMMAND thm_test_runner)
 
+# ── Pure C++20 FYP Empirical Benchmark Harness ──────────────────────────────
+add_executable(bench_cpu_headroom benchmarks/bench_cpu_headroom.cpp)
+set_target_properties(bench_cpu_headroom PROPERTIES
+    CXX_STANDARD 20
+    CXX_STANDARD_REQUIRED ON
+)
+target_link_libraries(bench_cpu_headroom PRIVATE thm_core pthread)
+
 
 # ── Install targets ──────────────────────────────────────────────────────────
 install(TARGETS titan-hwm-daemon RUNTIME DESTINATION /usr/local/bin)
 install(TARGETS titan-hwm-cli RUNTIME DESTINATION /usr/local/bin)
+install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/bench_cpu_headroom
+        DESTINATION /usr/local/bin
+        RENAME titan-cpu-bench)
 install(FILES archtitan.slice titan-hwm.service
         DESTINATION lib/systemd/system
         COMPONENT systemd)

@@ -1,4 +1,5 @@
 #include <QCommandLineParser>
+#include <QDateTime>
 #include <QDir>
 #include <QFileInfo>
 #include <QGuiApplication>
@@ -36,9 +37,9 @@ void ensureDefaultConfig()
 
     QSettings cfg(path, QSettings::IniFormat);
     cfg.beginGroup(QStringLiteral("layout"));
-    cfg.setValue(QStringLiteral("width"),        420);
-    cfg.setValue(QStringLiteral("margin_top"),     0);
-    cfg.setValue(QStringLiteral("margin_bottom"),  0);
+    cfg.setValue(QStringLiteral("width"),        450);
+    cfg.setValue(QStringLiteral("margin_top"),     6);
+    cfg.setValue(QStringLiteral("margin_bottom"),  6);
     cfg.endGroup();
     cfg.sync();
     std::cout << "[titan-sysmon] Created default config: " << path.toStdString() << "\n";
@@ -51,9 +52,9 @@ LayoutConfig readConfig()
     QSettings cfg(configPath(), QSettings::IniFormat);
     cfg.beginGroup(QStringLiteral("layout"));
     LayoutConfig lc;
-    lc.width        = cfg.value(QStringLiteral("width"),        420).toInt();
-    lc.marginTop    = cfg.value(QStringLiteral("margin_top"),     0).toInt();
-    lc.marginBottom = cfg.value(QStringLiteral("margin_bottom"),  0).toInt();
+    lc.width        = qMax(420, cfg.value(QStringLiteral("width"),        450).toInt());
+    lc.marginTop    = cfg.value(QStringLiteral("margin_top"),     6).toInt();
+    lc.marginBottom = cfg.value(QStringLiteral("margin_bottom"),  6).toInt();
     cfg.endGroup();
     return lc;
 }
@@ -122,6 +123,12 @@ int main(int argc, char *argv[])
     SysmonController sysmon(&gpuModel);
 
     QQmlApplicationEngine engine;
+    engine.addImportPath(QStringLiteral("/usr/lib/qt6/qml"));
+    engine.addImportPath(QStringLiteral("/usr/local/lib/qt6/qml"));
+    const QString devQml = QDir::currentPath() + QStringLiteral("/titan-ui/build/qml");
+    if (QDir(devQml).exists())
+        engine.addImportPath(devQml);
+
     auto *context = engine.rootContext();
     context->setContextProperty("sysmon",   &sysmon);
     context->setContextProperty("gpuModel", &gpuModel);
@@ -166,6 +173,23 @@ int main(int argc, char *argv[])
             });
             QObject::connect(&ipc, &IpcServer::hideRequested, window, [window]() {
                 QMetaObject::invokeMethod(window, "closePanel");
+            });
+
+            // Dismiss on click-away (see titan-quicksettings for the rationale: a
+            // layer surface is only focused after a click, so stamp the
+            // activation and close on the first deactivation that follows, with
+            // a grace period for mapping flicker).
+            QObject::connect(window, &QQuickWindow::activeChanged, window, [window]() {
+                constexpr qint64 graceMs = 400;
+                if (window->isActive()) {
+                    window->setProperty("titanFocusArmedAt", QDateTime::currentMSecsSinceEpoch());
+                    return;
+                }
+                const qint64 armedAt = window->property("titanFocusArmedAt").toLongLong();
+                if (armedAt > 0 && QDateTime::currentMSecsSinceEpoch() - armedAt >= graceMs) {
+                    window->setProperty("titanFocusArmedAt", QVariant(0));
+                    QMetaObject::invokeMethod(window, "closePanel");
+                }
             });
 
             if (!startHidden)

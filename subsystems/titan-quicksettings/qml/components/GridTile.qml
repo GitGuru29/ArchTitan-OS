@@ -22,16 +22,23 @@ Rectangle {
 
     signal activated()
 
+    // Keyboard: reachable with Tab / arrows, activated with Enter or Space.
+    activeFocusOnTab: true
+    Keys.onReturnPressed: (event) => { tileRoot.activated(); event.accepted = true }
+    Keys.onEnterPressed:  (event) => { tileRoot.activated(); event.accepted = true }
+    Keys.onSpacePressed:  (event) => { tileRoot.activated(); event.accepted = true }
+
     radius: 23
     color: {
         if (ma.pressed) return TitanTheme.bgPressed;
         if (active) return TitanTheme.accent;
-        if (ma.containsMouse) return TitanTheme.bgHover;
+        if (ma.containsMouse || activeFocus) return TitanTheme.bgHover;
         return TitanTheme.bgSurfaceAlt;
     }
-    border.color: active ? TitanTheme.borderActive
-                          : (ma.containsMouse ? TitanTheme.borderHover : TitanTheme.borderSubtle)
-    border.width: 1
+    border.color: activeFocus ? TitanTheme.accent
+                  : active ? TitanTheme.borderActive
+                  : (ma.containsMouse ? TitanTheme.borderHover : TitanTheme.borderSubtle)
+    border.width: activeFocus ? 2 : 1
 
     Behavior on color { ColorAnimation { duration: 120 } }
     Behavior on border.color { ColorAnimation { duration: 120 } }
