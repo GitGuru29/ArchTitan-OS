@@ -5,7 +5,7 @@ import ArchTitan.TitanUI
 
 /**
  * TransportButton — Tactile, high-gloss media control button.
- * Renders pure white vector glyphs for Previous, Play/Pause, and Next,
+ * Renders theme-aware vector glyphs for Previous, Play/Pause, and Next,
  * with subtle hover aura and mechanical press scaling.
  */
 Item {
@@ -16,6 +16,7 @@ Item {
     property string iconText: ""
     property int iconSize: 12
     property int hitSize: 34
+    property color glyphColor: "#FFFFFF"
 
     signal activated()
 
@@ -60,7 +61,7 @@ Item {
             anchors.fill: parent
             asynchronous: false
             ShapePath {
-                fillColor: "#FFFFFF"
+                fillColor: btnRoot.glyphColor
                 strokeColor: "transparent"
                 startX: 6; startY: 0
                 PathLine { x: 0; y: 6 }
@@ -68,7 +69,7 @@ Item {
                 PathLine { x: 6; y: 0 }
             }
             ShapePath {
-                fillColor: "#FFFFFF"
+                fillColor: btnRoot.glyphColor
                 strokeColor: "transparent"
                 startX: 14; startY: 0
                 PathLine { x: 8; y: 6 }
@@ -96,13 +97,13 @@ Item {
                 width: 3.5
                 height: 14
                 radius: 1.75
-                color: "#FFFFFF"
+                color: btnRoot.glyphColor
             }
             Rectangle {
                 width: 3.5
                 height: 14
                 radius: 1.75
-                color: "#FFFFFF"
+                color: btnRoot.glyphColor
             }
         }
 
@@ -116,7 +117,7 @@ Item {
             asynchronous: false
 
             ShapePath {
-                fillColor: "#FFFFFF"
+                fillColor: btnRoot.glyphColor
                 strokeColor: "transparent"
                 startX: 1; startY: 0
                 PathLine { x: 12; y: 7 }
@@ -138,7 +139,7 @@ Item {
             anchors.fill: parent
             asynchronous: false
             ShapePath {
-                fillColor: "#FFFFFF"
+                fillColor: btnRoot.glyphColor
                 strokeColor: "transparent"
                 startX: 0; startY: 0
                 PathLine { x: 6; y: 6 }
@@ -146,7 +147,7 @@ Item {
                 PathLine { x: 0; y: 0 }
             }
             ShapePath {
-                fillColor: "#FFFFFF"
+                fillColor: btnRoot.glyphColor
                 strokeColor: "transparent"
                 startX: 8; startY: 0
                 PathLine { x: 14; y: 6 }
@@ -164,7 +165,7 @@ Item {
         font.family: "JetBrainsMono Nerd Font"
         font.pixelSize: btnRoot.iconSize
         font.weight: Font.Bold
-        color: "#FFFFFF"
+        color: btnRoot.glyphColor
     }
 
     MouseArea {

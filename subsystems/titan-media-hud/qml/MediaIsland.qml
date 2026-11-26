@@ -114,7 +114,7 @@ Window {
                         var ctx = getContext("2d")
                         if (!ctx) return
                         ctx.clearRect(0, 0, width, height)
-                        ctx.strokeStyle = "#CBA6F7"
+                        ctx.strokeStyle = accentColor.toString()
                         ctx.lineWidth = 2
                         for (var row = 0; row < 3; row++) {
                             ctx.beginPath()
@@ -249,6 +249,7 @@ Window {
                                 type: "playpause"
                                 isPlaying: Mpris && Mpris.isPlaying
                                 hitSize: 40
+                                glyphColor: (Mpris && Mpris.isPlaying) ? TitanTheme.textOnAccent : "#FFFFFF"
                                 onActivated: if (Mpris) Mpris.playPause()
                             }
                         }
@@ -323,7 +324,7 @@ Window {
                                         var ctx = getContext("2d")
                                         if (!ctx) return
                                         ctx.clearRect(0, 0, width, height)
-                                        ctx.strokeStyle = "#CBA6F7"
+                                        ctx.strokeStyle = accentColor.toString()
                                         ctx.lineWidth = 1
                                         ctx.beginPath()
                                         for (var x = 0; x <= width; x += 4) {
