@@ -1,8 +1,6 @@
 import QtQuick
 import QtQuick.Window
-import QtQuick.Controls
 import QtQuick.Layouts
-import QtQuick.Shapes 1.15
 import ArchTitan.Media 1.0
 import ArchTitan.TitanUI
 
@@ -10,23 +8,21 @@ Window {
     id: root
     title: "titan-media-hud"
     width: 508
-    height: 104
+    height: 116
     color: "transparent"
     visible: false
 
-    // ── CONSTANTS & PALETTE ──────────────────────────────────────────────────
-    readonly property int pillWidth: 476
-    readonly property int pillHeight: 76
-    readonly property int pillRadius: 38 // Perfect capsule pill (height / 2)
+    readonly property int cardWidth: 476
+    readonly property int cardHeight: 88
+    readonly property int cardRadius: 24
+    readonly property bool liquidGlass: true
 
-    // Dynamic accent with fallback to Taylor-grade lavender
-    readonly property color accentColor: (typeof TitanTheme !== "undefined" && TitanTheme.accent)
-                                         ? TitanTheme.accent : "#C084FC"
-    readonly property color glowColor: (typeof TitanTheme !== "undefined" && TitanTheme.accent)
-                                       ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.40)
-                                       : "#50C084FC"
+    readonly property color accentColor: TitanTheme.accent
+    readonly property color cardColor: liquidGlass ? TitanTheme.glassAlt : TitanTheme.base
+    readonly property color textHigh: TitanTheme.textHigh
+    readonly property color textMid: TitanTheme.textMid
+    readonly property color textLow: TitanTheme.textLow
 
-    // Volume toast state
     property bool showVolumeToast: false
     property real currentVolume: Mpris ? Mpris.volume : 1.0
 
@@ -36,515 +32,415 @@ Window {
         onTriggered: root.showVolumeToast = false
     }
 
-    // ── KEYBOARD INTERACTION ────────────────────────────────────────────────
     Item {
         focus: Island.isVisible
         Keys.onEscapePressed: Island.dismiss()
         Keys.onSpacePressed: if (Mpris) Mpris.playPause()
         Keys.onLeftPressed: {
-            if (Mpris && Mpris.length > 0) {
-                var newPos = Math.max(0.0, Mpris.progress - 0.05);
-                Mpris.seek(newPos);
-            }
+            if (Mpris && Mpris.length > 0) Mpris.seek(Math.max(0.0, Mpris.progress - 0.05))
         }
         Keys.onRightPressed: {
-            if (Mpris && Mpris.length > 0) {
-                var newPos = Math.min(1.0, Mpris.progress + 0.05);
-                Mpris.seek(newPos);
-            }
+            if (Mpris && Mpris.length > 0) Mpris.seek(Math.min(1.0, Mpris.progress + 0.05))
         }
     }
 
-    // ── CLIPPING & ANIMATION CONTAINER ──────────────────────────────────────
     Item {
         id: clipContainer
         anchors.fill: parent
-        clip: false
 
-        // ── THE LUXURY CAPSULE PILL ─────────────────────────────────────────
         Item {
             id: islandContent
-            width: root.pillWidth
-            height: root.pillHeight
+            width: root.cardWidth
+            height: root.cardHeight
             anchors.horizontalCenter: parent.horizontalCenter
             y: 12
 
-            // ── LAYER 0: AMBIENT NEON HALO & DROP SHADOW (Behind) ───────────
             Rectangle {
-                id: ambientHalo
                 anchors.fill: parent
-                anchors.margins: -7
-                radius: root.pillRadius + 7
+                anchors.topMargin: 5
+                radius: root.cardRadius
+                color: "#6604080C"
+            }
+
+            Rectangle {
+                anchors.fill: parent
+                anchors.margins: -3
+                radius: root.cardRadius + 3
                 color: "transparent"
-                border.color: (Mpris && Mpris.isPlaying)
-                              ? Qt.rgba(0.65, 0.45, 1.0, 0.32)
-                              : Qt.rgba(0.50, 0.40, 0.8, 0.16)
-                border.width: 3.5
+                border.width: 2
+                border.color: Qt.rgba(accentColor.r, accentColor.g, accentColor.b,
+                                      (Mpris && Mpris.isPlaying) ? 0.28 : 0.12)
 
-                // Soft dark shadow underneath
-                Rectangle {
-                    anchors.fill: parent
-                    anchors.topMargin: 4
-                    radius: parent.radius
-                    color: "#65000000"
-                    z: -1
-                }
-
-                // Breathing pulse when playing
                 SequentialAnimation on opacity {
                     running: Island.isVisible && (Mpris && Mpris.isPlaying)
                     loops: Animation.Infinite
-                    NumberAnimation { from: 0.55; to: 0.95; duration: 1600; easing.type: Easing.InOutQuad }
-                    NumberAnimation { from: 0.95; to: 0.55; duration: 1600; easing.type: Easing.InOutQuad }
+                    NumberAnimation { from: 0.65; to: 1.0; duration: 1600; easing.type: Easing.InOutQuad }
+                    NumberAnimation { from: 1.0; to: 0.65; duration: 1600; easing.type: Easing.InOutQuad }
                 }
             }
 
-            // ── LAYER 1: OUTER OBSIDIAN METALLIC BEZEL (The Rim) ─────────────
             Rectangle {
-                id: outerBezel
+                id: glassCard
                 anchors.fill: parent
-                radius: root.pillRadius
-                color: "#08090E" // Deep obsidian black glass base
-                border.width: 1.5
+                radius: root.cardRadius
+                color: root.cardColor
+                border.width: 1
+                border.color: TitanTheme.borderSubtle
+                clip: true
 
-                // Multi-stop metallic edge reflection
-                border.color: (Mpris && Mpris.isPlaying) ? "#6D28D9" : "#4338CA"
-
-                gradient: Gradient {
-                    orientation: Gradient.Vertical
-                    GradientStop { position: 0.0; color: "#0B0C14" }
-                    GradientStop { position: 0.5; color: "#08090E" }
-                    GradientStop { position: 1.0; color: "#05060A" }
+                Image {
+                    id: ambientArt
+                    anchors.fill: parent
+                    source: Mpris ? Mpris.artUrl : ""
+                    fillMode: Image.PreserveAspectCrop
+                    asynchronous: true
+                    cache: false
+                    smooth: true
+                    scale: 1.3
+                    opacity: 0.20
+                    visible: status === Image.Ready
                 }
 
-                // ── LAYER 2: INNER ELECTRIC NEON CONTOUR RING ────────────────
                 Rectangle {
-                    id: innerNeonLine
                     anchors.fill: parent
-                    anchors.margins: 2
-                    radius: root.pillRadius - 2
-                    color: "transparent"
-                    border.width: 1
+                    color: Qt.rgba(0.07, 0.07, 0.11, root.liquidGlass ? 0.58 : 0.82)
+                }
 
-                    // Dual-accent cyan to lavender neon gradient border
+                Rectangle {
+                    anchors.fill: parent
+                    radius: root.cardRadius
+                    gradient: Gradient {
+                        orientation: Gradient.Vertical
+                        GradientStop { position: 0.0; color: "#22FFFFFF" }
+                        GradientStop { position: 0.42; color: "#06FFFFFF" }
+                        GradientStop { position: 1.0; color: "#14000000" }
+                    }
+                }
+
+                Rectangle {
+                    anchors.top: parent.top
+                    anchors.topMargin: 1
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: parent.width * 0.72
+                    height: 1
                     gradient: Gradient {
                         orientation: Gradient.Horizontal
-                        GradientStop { position: 0.0; color: "#70D6FF" } // Cyan neon glow on top-left
-                        GradientStop { position: 0.45; color: "#A78BFA" } // Lavender
-                        GradientStop { position: 1.0; color: "#C084FC" } // Radiant violet
-                    }
-                    opacity: (Mpris && Mpris.isPlaying) ? 0.70 : 0.40
-                }
-
-                // ── LAYER 3: SPECULAR CURVED GLASS REFLECTIONS (Clipped) ─────
-                Item {
-                    anchors.fill: parent
-                    clip: true
-
-                    // Top crisp 1px specular highlight
-                    Rectangle {
-                        anchors.top: parent.top
-                        anchors.topMargin: 1
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        width: parent.width * 0.72
-                        height: 1
-                        gradient: Gradient {
-                            orientation: Gradient.Horizontal
-                            GradientStop { position: 0.0; color: "transparent" }
-                            GradientStop { position: 0.25; color: "#30FFFFFF" }
-                            GradientStop { position: 0.50; color: "#55FFFFFF" }
-                            GradientStop { position: 0.75; color: "#30FFFFFF" }
-                            GradientStop { position: 1.0; color: "transparent" }
-                        }
-                    }
-
-                    // Angled Diagonal Specular Sheen (Curved Glass Sheen)
-                    Rectangle {
-                        id: diagonalGlassSheen
-                        width: 95
-                        height: 250
-                        x: parent.width * 0.44
-                        y: -85
-                        rotation: -32
-
-                        gradient: Gradient {
-                            orientation: Gradient.Horizontal
-                            GradientStop { position: 0.0; color: "transparent" }
-                            GradientStop { position: 0.30; color: "#00FFFFFF" }
-                            GradientStop { position: 0.48; color: "#22FFFFFF" } // Bright glass glare
-                            GradientStop { position: 0.68; color: "#0AFFFFFF" } // Soft falloff
-                            GradientStop { position: 1.0; color: "transparent" }
-                        }
+                        GradientStop { position: 0.0; color: "transparent" }
+                        GradientStop { position: 0.5; color: "#4DFFFFFF" }
+                        GradientStop { position: 1.0; color: "transparent" }
                     }
                 }
 
-                // ── LAYER 4: PILL CONTENTS ───────────────────────────────────
-                // Mouse wheel handler for volume control anywhere on the pill
-                WheelHandler {
-                    onWheel: (event) => {
-                        if (!Mpris) return;
-                        var delta = event.angleDelta.y > 0 ? 0.05 : -0.05;
-                        var newVol = Math.max(0.0, Math.min(1.0, Mpris.volume + delta));
-                        Mpris.volume = newVol;
-                        root.currentVolume = newVol;
-                        root.showVolumeToast = true;
-                        volumeToastTimer.restart();
-                    }
-                }
-
-                // Left: Album Art
-                AlbumArt {
-                    id: albumArt
-                    anchors.left: parent.left
-                    anchors.leftMargin: 14
-                    anchors.verticalCenter: parent.verticalCenter
-                    artSize: 48
-                    cornerRadius: 12
-                    showGlow: true
-                }
-
-                // Center: Artist, Title, and Scrubber Bar
-                Item {
-                    id: centerSection
-                    anchors.left: albumArt.right
-                    anchors.leftMargin: 13
-                    anchors.right: transportRow.left
-                    anchors.rightMargin: 15
-                    anchors.verticalCenter: parent.verticalCenter
-                    height: 54
-
-                    Column {
-                        anchors.fill: parent
-                        spacing: 2
-
-                        // Top: Artist Name
-                        Text {
-                            width: parent.width
-                            text: (Mpris && Mpris.artist.length > 0) ? Mpris.artist : "ArchTitan Audio"
-                            font.family: "Adwaita Sans, JetBrainsMono Nerd Font, sans-serif"
-                            font.pixelSize: 11
-                            font.weight: Font.DemiBold
-                            color: "#A4A4C8" // Muted lilac slate
-                            elide: Text.ElideRight
-                            maximumLineCount: 1
-                        }
-
-                        // Middle: Track Title
-                        Text {
-                            width: parent.width
-                            text: (Mpris && Mpris.title.length > 0) ? Mpris.title : "No Media Playing"
-                            font.family: "Adwaita Sans, JetBrainsMono Nerd Font, sans-serif"
-                            font.pixelSize: 15
-                            font.weight: Font.Bold
-                            color: "#FFFFFF" // Crisp brilliant white
-                            elide: Text.ElideRight
-                            maximumLineCount: 1
-                        }
-
-                        // Bottom: Interactive Scrubber / Progress Bar
-                        Item {
-                            id: scrubberArea
-                            width: parent.width
-                            height: 18
-
-                            property real scrubProgress: scrubberMouse.isDragging
-                                                         ? scrubberMouse.dragProgress
-                                                         : (Mpris ? Mpris.progress : 0.0)
-
-                            // Track Background
-                            Rectangle {
-                                id: trackBg
-                                anchors.left: parent.left
-                                anchors.right: parent.right
-                                anchors.verticalCenter: parent.verticalCenter
-                                height: 4
-                                radius: 2
-                                color: "#222332" // Dark glass slate
-
-                                // Glowing Progress Fill
-                                Rectangle {
-                                    id: progressFill
-                                    anchors.left: parent.left
-                                    anchors.top: parent.top
-                                    anchors.bottom: parent.bottom
-                                    width: Math.max(0, Math.min(parent.width, parent.width * scrubberArea.scrubProgress))
-                                    radius: 2
-
-                                    gradient: Gradient {
-                                        orientation: Gradient.Horizontal
-                                        GradientStop { position: 0.0; color: "#8B5CF6" } // Violet
-                                        GradientStop { position: 1.0; color: "#C084FC" } // Radiant lavender
-                                    }
-                                }
-                            }
-
-                            // Circular Scrubber Pip (Thumb)
-                            Item {
-                                id: scrubberPip
-                                width: 14
-                                height: 14
-                                x: Math.max(0, Math.min(trackBg.width - width, (trackBg.width * scrubberArea.scrubProgress) - (width / 2)))
-                                anchors.verticalCenter: parent.verticalCenter
-
-                                // Outer glow halo
-                                Rectangle {
-                                    anchors.centerIn: parent
-                                    width: (scrubberMouse.containsMouse || scrubberMouse.isDragging) ? 16 : 12
-                                    height: width
-                                    radius: width / 2
-                                    color: "transparent"
-                                    border.color: "#60C084FC"
-                                    border.width: 1.5
-                                    opacity: (scrubberMouse.containsMouse || scrubberMouse.isDragging) ? 1.0 : 0.6
-
-                                    Behavior on width {
-                                        NumberAnimation { duration: 120; easing.type: Easing.OutQuad }
-                                    }
-                                }
-
-                                // Inner core pip (Pure white with lavender rim)
-                                Rectangle {
-                                    anchors.centerIn: parent
-                                    width: (scrubberMouse.containsMouse || scrubberMouse.isDragging) ? 10 : 8
-                                    height: width
-                                    radius: width / 2
-                                    color: "#FFFFFF"
-                                    border.color: "#A855F7"
-                                    border.width: 1.5
-
-                                    Behavior on width {
-                                        NumberAnimation { duration: 120; easing.type: Easing.OutQuad }
-                                    }
-                                }
-                            }
-
-                            // Interactive Drag & Click Area
-                            MouseArea {
-                                id: scrubberMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-
-                                property bool isDragging: false
-                                property real dragProgress: 0.0
-
-                                onPressed: (mouse) => {
-                                    isDragging = true;
-                                    seekToMouse(mouse.x);
-                                }
-
-                                onPositionChanged: (mouse) => {
-                                    if (isDragging && pressed) {
-                                        seekToMouse(mouse.x);
-                                    }
-                                }
-
-                                onReleased: {
-                                    isDragging = false;
-                                }
-
-                                function seekToMouse(mouseX) {
-                                    if (!Mpris || Mpris.length <= 0) return;
-                                    var norm = Math.max(0.0, Math.min(1.0, mouseX / width));
-                                    dragProgress = norm;
-                                    Mpris.seek(norm);
-                                }
-                            }
-
-                            // Floating Timestamp Tooltip on Hover / Drag
-                            Rectangle {
-                                id: timeTooltip
-                                visible: scrubberMouse.containsMouse || scrubberMouse.isDragging
-                                opacity: visible ? 1.0 : 0.0
-                                anchors.bottom: scrubberPip.top
-                                anchors.bottomMargin: 4
-                                anchors.horizontalCenter: scrubberPip.horizontalCenter
-                                width: timeLabel.implicitWidth + 8
-                                height: 16
-                                radius: 4
-                                color: "#E010111A"
-                                border.color: "#35FFFFFF"
-                                border.width: 1
-                                z: 10
-
-                                Text {
-                                    id: timeLabel
-                                    anchors.centerIn: parent
-                                    text: (Mpris && Mpris.length > 0)
-                                          ? (Mpris.positionText + " / " + Mpris.lengthText)
-                                          : "0:00"
-                                    font.family: "JetBrainsMono Nerd Font"
-                                    font.pixelSize: 9
-                                    font.weight: Font.DemiBold
-                                    color: "#FFFFFF"
-                                }
-
-                                Behavior on opacity { NumberAnimation { duration: 120 } }
-                            }
-                        }
-                    }
-                }
-
-                // Right: Pure White Transport Controls
-                Row {
-                    id: transportRow
-                    anchors.right: parent.right
-                    anchors.rightMargin: 18
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: 8
-
-                    TransportButton {
-                        type: "previous"
-                        hitSize: 32
-                        onActivated: if (Mpris) Mpris.previous()
-                    }
-
-                    TransportButton {
-                        type: "playpause"
-                        isPlaying: Mpris ? Mpris.isPlaying : false
-                        hitSize: 34
-                        onActivated: if (Mpris) Mpris.playPause()
-                    }
-
-                    TransportButton {
-                        type: "next"
-                        hitSize: 32
-                        onActivated: if (Mpris) Mpris.next()
-                    }
-                }
-
-                // ── VOLUME HUD TOAST (Overlaid when scrolling wheel) ─────────
                 Rectangle {
-                    anchors.fill: parent
-                    radius: parent.radius
-                    color: "#EE08090E"
-                    border.color: "#A78BFA"
-                    border.width: 1
-                    visible: root.showVolumeToast
-                    opacity: root.showVolumeToast ? 1.0 : 0.0
+                    id: sheen
+                    width: 78
+                    height: 220
+                    x: -130
+                    y: -70
+                    rotation: -26
+                    visible: root.liquidGlass
+                    gradient: Gradient {
+                        orientation: Gradient.Horizontal
+                        GradientStop { position: 0.0; color: "transparent" }
+                        GradientStop { position: 0.48; color: "#16FFFFFF" }
+                        GradientStop { position: 0.62; color: "#05FFFFFF" }
+                        GradientStop { position: 1.0; color: "transparent" }
+                    }
+                    SequentialAnimation on x {
+                        running: root.visible && root.liquidGlass
+                        loops: Animation.Infinite
+                        NumberAnimation { from: -130; to: root.cardWidth + 40; duration: 4200; easing.type: Easing.InOutSine }
+                        PauseAnimation { duration: 1800 }
+                    }
+                }
+            }
 
-                    Row {
-                        anchors.centerIn: parent
-                        spacing: 12
+            RowLayout {
+                anchors.fill: parent
+                anchors.margins: 12
+                spacing: 12
+                z: 2
 
-                        Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: (root.currentVolume > 0.5) ? "🔊" : (root.currentVolume > 0 ? "🔉" : "🔇")
-                            font.pixelSize: 18
-                            color: "#FFFFFF"
+                AlbumArt {
+                    Layout.preferredWidth: 64
+                    Layout.preferredHeight: 64
+                    Layout.alignment: Qt.AlignVCenter
+                    artSize: 64
+                    cornerRadius: 14
+                    showGlow: false
+                }
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    spacing: 3
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 8
+
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 0
+                            Text {
+                                Layout.fillWidth: true
+                                text: (Mpris && Mpris.title.length > 0) ? Mpris.title : "No Media Playing"
+                                font.pixelSize: 14
+                                font.weight: Font.DemiBold
+                                color: root.textHigh
+                                elide: Text.ElideRight
+                                maximumLineCount: 1
+                            }
+
+                            Text {
+                                Layout.fillWidth: true
+                                text: (Mpris && Mpris.artist.length > 0) ? Mpris.artist : "ArchTitan Audio"
+                                font.pixelSize: 10
+                                color: root.textMid
+                                elide: Text.ElideRight
+                                maximumLineCount: 1
+                            }
                         }
 
                         Rectangle {
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: 180
-                            height: 6
-                            radius: 3
-                            color: "#222332"
+                            id: playBadge
+                            Layout.preferredWidth: 34
+                            Layout.preferredHeight: 34
+                            Layout.alignment: Qt.AlignVCenter
+                            radius: (Mpris && Mpris.isPlaying) ? 17 : 11
+                            color: (Mpris && Mpris.isPlaying) ? accentColor : Qt.rgba(1, 1, 1, 0.07)
+                            border.width: (Mpris && Mpris.isPlaying) ? 0 : 1
+                            border.color: Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.35)
 
-                            Rectangle {
-                                anchors.left: parent.left
-                                anchors.top: parent.top
-                                anchors.bottom: parent.bottom
-                                width: parent.width * root.currentVolume
-                                radius: 3
-                                color: "#C084FC"
+                            Behavior on radius { NumberAnimation { duration: 160 } }
+                            Behavior on color { ColorAnimation { duration: 160 } }
+
+                            TransportButton {
+                                anchors.fill: parent
+                                type: "playpause"
+                                isPlaying: Mpris && Mpris.isPlaying
+                                hitSize: 34
+                                onActivated: if (Mpris) Mpris.playPause()
                             }
-                        }
-
-                        Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: Math.round(root.currentVolume * 100) + "%"
-                            font.family: "JetBrainsMono Nerd Font"
-                            font.pixelSize: 12
-                            font.weight: Font.Bold
-                            color: "#FFFFFF"
                         }
                     }
 
-                    Behavior on opacity { NumberAnimation { duration: 180 } }
+                    Item { Layout.fillHeight: true }
+
+                    Item {
+                        id: progressArea
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 26
+
+                        Text {
+                            anchors.left: parent.left
+                            anchors.bottom: progressRow.top
+                            anchors.bottomMargin: 2
+                            text: (Mpris && Mpris.length > 0) ? (Mpris.positionText + " / " + Mpris.lengthText) : "0:00 / 0:00"
+                            font.pixelSize: 9
+                            color: root.textLow
+                            elide: Text.ElideRight
+                        }
+
+                        RowLayout {
+                            id: progressRow
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            anchors.bottom: parent.bottom
+                            spacing: 6
+
+                            TransportButton {
+                                type: "previous"
+                                hitSize: 22
+                                iconSize: 9
+                                onActivated: if (Mpris) Mpris.previous()
+                            }
+
+                            Item {
+                                id: trackArea
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: 20
+
+                                property bool isDragging: false
+                                property real dragProgress: 0.0
+                                property real scrubProgress: isDragging ? dragProgress : (Mpris ? Mpris.progress : 0.0)
+
+                                Rectangle {
+                                    id: trackBg
+                                    anchors.left: parent.left
+                                    anchors.right: parent.right
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    height: 5
+                                    radius: 2.5
+                                    color: Qt.rgba(TitanTheme.surface1.r, TitanTheme.surface1.g, TitanTheme.surface1.b, 0.75)
+                                }
+
+                                Rectangle {
+                                    id: progressFill
+                                    anchors.left: parent.left
+                                    anchors.top: trackBg.top
+                                    anchors.bottom: trackBg.bottom
+                                    width: Math.max(0, Math.min(trackBg.width, trackBg.width * trackArea.scrubProgress))
+                                    radius: 2.5
+                                    color: accentColor
+                                }
+
+                                Canvas {
+                                    id: waveCanvas
+                                    anchors.fill: trackBg
+                                    visible: Mpris && Mpris.isPlaying
+                                    opacity: 0.5
+                                    onPaint: {
+                                        var ctx = getContext("2d")
+                                        if (!ctx) return
+                                        ctx.clearRect(0, 0, width, height)
+                                        ctx.strokeStyle = "#CBA6F7"
+                                        ctx.lineWidth = 1
+                                        ctx.beginPath()
+                                        for (var x = 0; x <= width; x += 4) {
+                                            var y = height / 2 + Math.sin(x / 8 - Date.now() / 240) * 1.6
+                                            if (x === 0) ctx.moveTo(x, y)
+                                            else ctx.lineTo(x, y)
+                                        }
+                                        ctx.stroke()
+                                    }
+
+                                    Timer {
+                                        interval: 70
+                                        repeat: true
+                                        running: waveCanvas.visible && root.visible
+                                        onTriggered: waveCanvas.requestPaint()
+                                    }
+                                }
+
+                                Rectangle {
+                                    id: pip
+                                    width: 9
+                                    height: 9
+                                    x: Math.max(0, Math.min(trackBg.width - width, trackBg.width * trackArea.scrubProgress - width / 2))
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    radius: 4.5
+                                    color: "#FFFFFF"
+                                    border.color: accentColor
+                                    border.width: 1.5
+                                }
+
+                                MouseArea {
+                                    id: scrubArea
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+
+                                    function seekTo(x) {
+                                        if (!Mpris || Mpris.length <= 0) return
+                                        var norm = Math.max(0.0, Math.min(1.0, x / width))
+                                        trackArea.dragProgress = norm
+                                        Mpris.seek(norm)
+                                    }
+                                    onPressed: (mouse) => { trackArea.isDragging = true; seekTo(mouse.x) }
+                                    onPositionChanged: (mouse) => { if (trackArea.isDragging && pressed) seekTo(mouse.x) }
+                                    onReleased: trackArea.isDragging = false
+                                }
+                            }
+
+                            TransportButton {
+                                type: "next"
+                                hitSize: 22
+                                iconSize: 9
+                                onActivated: if (Mpris) Mpris.next()
+                            }
+                        }
+                    }
                 }
+            }
+
+            WheelHandler {
+                anchors.fill: parent
+                onWheel: (event) => {
+                    if (!Mpris) return
+                    var delta = event.angleDelta.y > 0 ? 0.05 : -0.05
+                    var vol = Math.max(0.0, Math.min(1.0, Mpris.volume + delta))
+                    Mpris.volume = vol
+                    root.currentVolume = vol
+                    root.showVolumeToast = true
+                    volumeToastTimer.restart()
+                }
+            }
+
+            Rectangle {
+                anchors.fill: parent
+                radius: root.cardRadius
+                color: TitanTheme.glass
+                border.color: Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.5)
+                border.width: 1
+                visible: root.showVolumeToast
+                opacity: root.showVolumeToast ? 1.0 : 0.0
+                z: 10
+
+                Row {
+                    anchors.centerIn: parent
+                    spacing: 12
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: root.currentVolume > 0.5 ? "🔊" : (root.currentVolume > 0 ? "🔉" : "🔇")
+                        font.pixelSize: 16
+                        color: root.textHigh
+                    }
+                    Rectangle {
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 180
+                        height: 6
+                        radius: 3
+                        color: TitanTheme.surface1
+                        Rectangle {
+                            anchors.left: parent.left
+                            anchors.top: parent.top
+                            anchors.bottom: parent.bottom
+                            width: parent.width * root.currentVolume
+                            radius: 3
+                            color: accentColor
+                        }
+                    }
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: Math.round(root.currentVolume * 100) + "%"
+                        font.pixelSize: 11
+                        font.weight: Font.Bold
+                        color: root.textHigh
+                    }
+                }
+                Behavior on opacity { NumberAnimation { duration: 180 } }
             }
         }
     }
 
-    // ── INITIAL STATE ────────────────────────────────────────────────────────
     Component.onCompleted: {
         islandContent.opacity = 0.0
         islandContent.scale = 0.85
-        islandContent.y = -60
+        islandContent.y = -50
     }
 
-    // ── OPEN ANIMATION (Springy Emerge from Top) ─────────────────────────────
     ParallelAnimation {
         id: openAnim
-
-        NumberAnimation {
-            target: islandContent
-            property: "opacity"
-            from: 0.0; to: 1.0
-            duration: 150
-            easing.type: Easing.OutQuad
-        }
-
-        NumberAnimation {
-            target: islandContent
-            property: "scale"
-            from: 0.85; to: 1.0
-            duration: 340
-            easing.type: Easing.OutBack
-            easing.overshoot: 1.05
-        }
-
-        NumberAnimation {
-            target: islandContent
-            property: "y"
-            from: -50; to: 12
-            duration: 340
-            easing.type: Easing.OutBack
-            easing.overshoot: 1.04
-        }
-
+        NumberAnimation { target: islandContent; property: "opacity"; from: 0; to: 1; duration: 150 }
+        NumberAnimation { target: islandContent; property: "scale"; from: 0.85; to: 1; duration: 340; easing.type: Easing.OutBack }
+        NumberAnimation { target: islandContent; property: "y"; from: -50; to: 12; duration: 340; easing.type: Easing.OutBack }
         onFinished: Island.onOpenAnimationFinished()
     }
 
-    // ── CLOSE ANIMATION (Retract to Top) ────────────────────────────────────
     ParallelAnimation {
         id: closeAnim
-
-        NumberAnimation {
-            target: islandContent
-            property: "opacity"
-            from: 1.0; to: 0.0
-            duration: 180
-            easing.type: Easing.InQuad
-        }
-
-        NumberAnimation {
-            target: islandContent
-            property: "scale"
-            from: 1.0; to: 0.88
-            duration: 220
-            easing.type: Easing.InBack
-            easing.overshoot: 0.8
-        }
-
-        NumberAnimation {
-            target: islandContent
-            property: "y"
-            from: 12; to: -50
-            duration: 220
-            easing.type: Easing.InCubic
-        }
-
+        NumberAnimation { target: islandContent; property: "opacity"; from: 1; to: 0; duration: 180 }
+        NumberAnimation { target: islandContent; property: "scale"; from: 1; to: 0.88; duration: 220; easing.type: Easing.InBack }
+        NumberAnimation { target: islandContent; property: "y"; from: 12; to: -50; duration: 220; easing.type: Easing.InCubic }
         onFinished: {
             Island.onCloseAnimationFinished()
             root.visible = false
-            islandContent.y = -60
+            islandContent.y = -50
             islandContent.scale = 0.85
         }
     }
 
-    // ── STATE MACHINE CONNECTIONS ────────────────────────────────────────────
     Connections {
         target: Island
 
@@ -553,21 +449,11 @@ Window {
             root.visible = true
             islandContent.y = -50
             islandContent.scale = 0.85
-            islandContent.opacity = 0.0
+            islandContent.opacity = 0
             openAnim.start()
         }
-
-        function onRequestClose() {
-            openAnim.stop()
-            closeAnim.start()
-        }
-
-        function onRequestExpand() {
-            Island.onExpandAnimationFinished()
-        }
-
-        function onRequestCollapse() {
-            Island.onCollapseAnimationFinished()
-        }
+        function onRequestClose() { openAnim.stop(); closeAnim.start() }
+        function onRequestExpand() { Island.onExpandAnimationFinished() }
+        function onRequestCollapse() { Island.onCollapseAnimationFinished() }
     }
 }
