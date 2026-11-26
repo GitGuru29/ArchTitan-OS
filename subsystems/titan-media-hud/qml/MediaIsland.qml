@@ -14,7 +14,7 @@ Window {
 
     readonly property int cardWidth: 476
     readonly property int cardHeight: 88
-    readonly property int cardRadius: 24
+    readonly property int cardRadius: 18
     readonly property bool liquidGlass: (typeof AppearanceSettings !== "undefined") ? AppearanceSettings.glassmorphism : true
 
     readonly property color accentColor: TitanTheme.accent
@@ -157,15 +157,15 @@ Window {
 
             RowLayout {
                 anchors.fill: parent
-                anchors.margins: 12
+                anchors.margins: 8
                 spacing: 12
                 z: 2
 
                 AlbumArt {
-                    Layout.preferredWidth: 64
-                    Layout.preferredHeight: 64
+                    Layout.preferredWidth: 72
+                    Layout.preferredHeight: 72
                     Layout.alignment: Qt.AlignVCenter
-                    artSize: 64
+                    artSize: 72
                     cornerRadius: 14
                     showGlow: false
                 }
@@ -204,10 +204,10 @@ Window {
 
                         Rectangle {
                             id: playBadge
-                            Layout.preferredWidth: 34
-                            Layout.preferredHeight: 34
+                            Layout.preferredWidth: 40
+                            Layout.preferredHeight: 40
                             Layout.alignment: Qt.AlignVCenter
-                            radius: (Mpris && Mpris.isPlaying) ? 17 : 11
+                            radius: (Mpris && Mpris.isPlaying) ? 20 : 13
                             color: (Mpris && Mpris.isPlaying) ? accentColor : Qt.rgba(1, 1, 1, 0.07)
                             border.width: (Mpris && Mpris.isPlaying) ? 0 : 1
                             border.color: Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.35)
@@ -219,7 +219,7 @@ Window {
                                 anchors.fill: parent
                                 type: "playpause"
                                 isPlaying: Mpris && Mpris.isPlaying
-                                hitSize: 34
+                                hitSize: 40
                                 onActivated: if (Mpris) Mpris.playPause()
                             }
                         }
@@ -251,7 +251,7 @@ Window {
 
                             TransportButton {
                                 type: "previous"
-                                hitSize: 22
+                                hitSize: 26
                                 iconSize: 9
                                 onActivated: if (Mpris) Mpris.previous()
                             }
@@ -345,7 +345,7 @@ Window {
 
                             TransportButton {
                                 type: "next"
-                                hitSize: 22
+                                hitSize: 26
                                 iconSize: 9
                                 onActivated: if (Mpris) Mpris.next()
                             }
