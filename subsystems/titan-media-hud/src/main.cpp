@@ -123,12 +123,15 @@ int main(int argc, char *argv[])
 
         auto *layerWindow = LayerShellQt::Window::get(window);
         if (layerWindow) {
-            // Anchor to top edge, centered horizontally (left+right+top = centered top)
-            layerWindow->setAnchors(LayerShellQt::Window::AnchorTop);
+            // Host Super+M sits left of screen centre, just under the bar.
+            layerWindow->setAnchors(LayerShellQt::Window::Anchors(LayerShellQt::Window::AnchorTop | LayerShellQt::Window::AnchorLeft));
+            QScreen *screen = window->screen();
+            const int hostLeft = screen ? (screen->geometry().center().x() - 546) : 0;
+            const int leftMargin = hostLeft > 0 ? hostLeft : 0;
             layerWindow->setLayer(LayerShellQt::Window::LayerOverlay);
 
             // Position just below Waybar: 4px margin + 34px height + 4px gap = 42px
-            layerWindow->setMargins(QMargins(0, 42, 0, 0));
+            layerWindow->setMargins(QMargins(leftMargin, 42, 0, 0));
 
             // Don't reserve exclusive space — this floats over content
             layerWindow->setExclusiveZone(0);
