@@ -105,6 +105,35 @@ Window {
                     anchors.fill: parent
                     color: Qt.rgba(0.07, 0.07, 0.11, root.liquidGlass ? 0.58 : 0.82)
                 }
+                Canvas {
+                    id: ambientWave
+                    anchors.fill: parent
+                    opacity: 0.12
+                    visible: Mpris && Mpris.isPlaying
+                    onPaint: {
+                        var ctx = getContext("2d")
+                        if (!ctx) return
+                        ctx.clearRect(0, 0, width, height)
+                        ctx.strokeStyle = "#CBA6F7"
+                        ctx.lineWidth = 2
+                        for (var row = 0; row < 3; row++) {
+                            ctx.beginPath()
+                            for (var x = 0; x <= width; x += 6) {
+                                var y = height * (0.35 + row * 0.15) + Math.sin(x / 40 - Date.now() / 500 + row) * 6
+                                if (x === 0) ctx.moveTo(x, y)
+                                else ctx.lineTo(x, y)
+                            }
+                            ctx.stroke()
+                        }
+                    }
+                    Timer {
+                        interval: 90
+                        repeat: true
+                        running: visible && root.visible
+                        onTriggered: requestPaint()
+                    }
+                }
+
 
                 Rectangle {
                     anchors.fill: parent
