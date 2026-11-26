@@ -43,6 +43,9 @@ private:
 
     void update_anchors();
     OKLab sample_anchor_curve(float luminance) const;
+
+    // Fast 1024-entry precomputed anchor curve lookup table
+    std::array<OKLab, 1024> m_curve_lut{};
 };
 
 } // namespace taw

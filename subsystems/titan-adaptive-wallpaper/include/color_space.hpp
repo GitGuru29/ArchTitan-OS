@@ -49,6 +49,10 @@ float linear_to_srgb(float c);
 OKLab rgb_to_oklab(const RGB& rgb);
 RGB oklab_to_rgb(const OKLab& lab);
 
+// Fast 8-bit conversions with precomputed lookup tables
+OKLab rgb_u8_to_oklab(uint8_t r, uint8_t g, uint8_t b);
+void oklab_to_rgb_u8(const OKLab& lab, uint8_t& out_r, uint8_t& out_g, uint8_t& out_b);
+
 // Perceptual relative luminance (Rec. 709)
 float relative_luminance(const RGB& rgb);
 

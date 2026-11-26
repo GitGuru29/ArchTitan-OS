@@ -8,6 +8,7 @@
 #include <QFileInfo>
 #include <QDir>
 #include <QThread>
+#include <QTimer>
 
 using namespace taw;
 
@@ -225,26 +226,36 @@ int main(int argc, char* argv[]) {
         QFileSystemWatcher watcher;
 
         const char* home = std::getenv("HOME");
-        std::string theme_file = std::string(home ? home : "/tmp") + "/.config/archtitan/theme.json";
-        std::string wp_file = std::string(home ? home : "/tmp") + "/.config/archtitan/wallpaper";
+        std::string cfg_dir = std::string(home ? home : "/tmp") + "/.config/archtitan";
+        std::string theme_file = cfg_dir + "/theme.json";
+        std::string cfg_file = cfg_dir + "/adaptive-wallpaper.json";
 
         if (QFile::exists(QString::fromStdString(theme_file))) {
             watcher.addPath(QString::fromStdString(theme_file));
             std::cout << "[TAW Daemon] Watching " << theme_file << "\n";
         }
-        if (QFile::exists(QString::fromStdString(wp_file))) {
-            watcher.addPath(QString::fromStdString(wp_file));
-            std::cout << "[TAW Daemon] Watching " << wp_file << "\n";
+        if (QFile::exists(QString::fromStdString(cfg_file))) {
+            watcher.addPath(QString::fromStdString(cfg_file));
+            std::cout << "[TAW Daemon] Watching " << cfg_file << "\n";
         }
+
+        // Single-shot debounce timer so rapid events settle before syncing
+        QTimer debounce_timer;
+        debounce_timer.setSingleShot(true);
+        debounce_timer.setInterval(120);
+
+        QObject::connect(&debounce_timer, &QTimer::timeout, [&]() {
+            engine.load_config();
+            if (engine.is_enabled() && engine.is_auto_sync()) {
+                std::cout << "[TAW Daemon] Triggering sync...\n";
+                engine.sync(false);
+            }
+        });
 
         QObject::connect(&watcher, &QFileSystemWatcher::fileChanged, [&](const QString& path) {
             std::cout << "[TAW Daemon] File changed: " << path.toStdString() << "\n";
-            // Wait brief debounce window so writer flushes
-            QThread::msleep(80);
-            engine.load_config();
-            if (engine.is_enabled() && engine.is_auto_sync()) {
-                engine.sync(false);
-            }
+            debounce_timer.start();
+
             // Re-add path if atomic rename replaced the inode
             if (!watcher.files().contains(path) && QFile::exists(path)) {
                 watcher.addPath(path);
