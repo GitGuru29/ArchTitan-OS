@@ -19,6 +19,7 @@
 - **Media Controls:** Previous, Play/Pause toggle, Next.
 - **Host-style Player Card:** Square cover art, title/artist, time over a wavy seek strip, and an accent play/pause badge.
 - **Liquid Glass:** Frosted album-art backdrop, specular sheen and accent rim that follow the Settings `glassmorphism` toggle.
+- **Theme-Aware Accents:** Album glow, hover borders, transport glyph contrast, and wave visualizer track the active wallpaper accent.
 
 ## Architecture
 ```
