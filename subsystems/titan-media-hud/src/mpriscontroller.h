@@ -30,7 +30,7 @@ class MprisController : public QObject
     Q_PROPERTY(qreal progress READ progress NOTIFY positionChanged)
     Q_PROPERTY(QString positionText READ positionText NOTIFY positionChanged)
     Q_PROPERTY(QString lengthText READ lengthText NOTIFY metadataChanged)
-    Q_PROPERTY(qreal volume READ volume NOTIFY volumeChanged)
+    Q_PROPERTY(qreal volume READ volume WRITE setVolume NOTIFY volumeChanged)
     Q_PROPERTY(bool shuffle READ shuffle NOTIFY shuffleChanged)
     Q_PROPERTY(QString loopStatus READ loopStatus NOTIFY loopStatusChanged)
 
@@ -60,6 +60,7 @@ public slots:
     void next();
     void previous();
     void seek(qreal normalized);
+    void setVolume(qreal vol);
     void refresh();
     void toggleShuffle();
     void cycleLoop();

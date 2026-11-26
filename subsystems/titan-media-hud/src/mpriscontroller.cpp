@@ -256,6 +256,15 @@ void MprisController::seek(qreal normalized)
     QProcess::startDetached("playerctl", QStringList() << "position" << QString::number(targetSeconds, 'f', 2));
 }
 
+void MprisController::setVolume(qreal vol)
+{
+    vol = qBound(0.0, vol, 1.0);
+    if (qAbs(m_volume - vol) < 0.001) return;
+    m_volume = vol;
+    emit volumeChanged();
+    QProcess::startDetached("playerctl", QStringList() << "volume" << QString::number(vol, 'f', 2));
+}
+
 void MprisController::toggleShuffle()
 {
     QProcess::startDetached("playerctl", QStringList() << "shuffle" << "toggle");

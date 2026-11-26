@@ -18,6 +18,7 @@
 
 int main(int argc, char *argv[])
 {
+    bool openOnStart = false;
     // Check for CLI command-mode (e.g. titan-media-hud --toggle)
     if (argc > 1) {
         QString arg = QString::fromLatin1(argv[1]).trimmed().toLower();
@@ -42,6 +43,9 @@ int main(int argc, char *argv[])
                 socket.waitForBytesWritten(300);
                 return 0;
             }
+            if (cmd == "toggle" || cmd == "show") {
+                openOnStart = true;
+            }
         }
     }
 
@@ -49,7 +53,9 @@ int main(int argc, char *argv[])
     qputenv("QSG_RENDER_LOOP", "basic");
     qputenv("QT_QUICK_BACKEND", "software");
     qputenv("QML_DISABLE_DISK_CACHE", "1");
-    qputenv("QT_QPA_PLATFORM", "wayland;xcb");
+    if (!qEnvironmentVariableIsSet("QT_QPA_PLATFORM")) {
+        qputenv("QT_QPA_PLATFORM", "wayland;xcb");
+    }
     qputenv("QT_WAYLAND_DISABLE_WINDOWDECORATION", "1");
 
     QGuiApplication app(argc, argv);
@@ -122,6 +128,10 @@ int main(int argc, char *argv[])
     IpcServer ipcServer(&islandCtrl);
     if (!ipcServer.start()) {
         qWarning() << "Failed to start IPC server — SUPER+M toggle will not work";
+    }
+
+    if (openOnStart) {
+        QTimer::singleShot(200, &islandCtrl, &MediaIslandController::toggle);
     }
 
     return app.exec();
