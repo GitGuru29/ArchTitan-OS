@@ -53,7 +53,7 @@ disown
 mkdir -p "$PERSIST_DIR"
 printf '%s\n%s\n' "$WALLPAPER_PATH" "$SCALE_MODE" > "$PERSIST_FILE"
 
-# ── Sync active wallpaper into theme.json (for hyprlock and Qt backend) ─────
+# ── Sync active wallpaper into theme.json and TAW config ────────────────────
 if [[ -f "${PERSIST_DIR}/theme.json" ]]; then
     python3 -c "
 import json, sys
@@ -70,6 +70,27 @@ try:
 except Exception:
     pass
 " "${PERSIST_DIR}/theme.json" "$WALLPAPER_PATH" 2>/dev/null || true
+fi
+
+# If setting a user original wallpaper (not an internally generated TAW cache variant), update TAW original
+if [[ "$WALLPAPER_PATH" != *"/archtitan/wallpapers/"* ]]; then
+    python3 -c "
+import json, os, sys
+cfg_path = os.path.expanduser('~/.config/archtitan/adaptive-wallpaper.json')
+wp = sys.argv[1]
+try:
+    data = {}
+    if os.path.isfile(cfg_path):
+        with open(cfg_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+    if data.get('originalWallpaper') != wp:
+        data['originalWallpaper'] = wp
+        with open(cfg_path, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+            f.write('\n')
+except Exception:
+    pass
+" "$WALLPAPER_PATH" 2>/dev/null || true
 fi
 
 # ── Retint the Waybar to suit the new wallpaper ─────────────────────────────

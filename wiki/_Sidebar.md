@@ -19,6 +19,7 @@
 - [Titan Media HUD](Titan-Media-HUD)
 - [Titan Hotzones & Zone OSD](Titan-Hotzones)
 - [Titan Wallpaper Picker](Titan-Wallpaper-Picker)
+- [Titan Adaptive Wallpaper](Titan-Adaptive-Wallpaper)
 - [Titan Browser](Titan-Browser)
 - [TitanFetch](TitanFetch)
 - [Titan Share](Titan-Share)

@@ -278,6 +278,207 @@ ScrollView {
                     }
                 }
             }
+
+            // ── Titan Adaptive Wallpaper (TAW) Controls ───────────
+            SettingsCard {
+                Layout.fillWidth: true
+                Layout.topMargin: 6
+
+                ColumnLayout {
+                    anchors.fill: parent
+                    anchors.margins: 16
+                    spacing: 12
+
+                    // Header row: TAW master toggle
+                    RowLayout {
+                        Layout.fillWidth: true
+                        ColumnLayout {
+                            spacing: 3
+                            RowLayout {
+                                spacing: 8
+                                Text {
+                                    text: "Titan Adaptive Wallpaper (TAW)"
+                                    font { pixelSize: 13; family: "Inter" }
+                                    font.weight: Font.SemiBold
+                                    color: root.textHigh
+                                }
+                                Rectangle {
+                                    height: 18; width: 44; radius: 4
+                                    color: WallpaperManager.adaptiveEnabled
+                                           ? Qt.hsla(root.accent.hslHue, root.accent.hslSaturation, root.accent.hslLightness, 0.20)
+                                           : Qt.rgba(1, 1, 1, 0.08)
+                                    border.width: 1
+                                    border.color: WallpaperManager.adaptiveEnabled ? root.accent : globalBorder0
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: WallpaperManager.adaptiveEnabled ? "ACTIVE" : "OFF"
+                                        font { pixelSize: 9; family: "Inter" }
+                                        font.weight: Font.Bold
+                                        color: WallpaperManager.adaptiveEnabled ? root.accent : root.textLow
+                                    }
+                                }
+                            }
+                            Text {
+                                text: "Automatically adapts wallpaper color atmosphere to complement the active desktop theme"
+                                font { pixelSize: 12; family: "Inter" }
+                                color: root.textLow
+                            }
+                        }
+                        Item { Layout.fillWidth: true }
+                        TitanSwitch {
+                            onColor: root.accent
+                            checked: WallpaperManager.adaptiveEnabled
+                            onCheckedChanged: WallpaperManager.setAdaptiveEnabled(checked)
+                        }
+                    }
+
+                    // Expanded controls when TAW is enabled
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 12
+                        visible: WallpaperManager.adaptiveEnabled
+
+                        Rectangle {
+                            Layout.fillWidth: true
+                            height: 1
+                            color: globalBorder1
+                            Layout.topMargin: 4
+                            Layout.bottomMargin: 4
+                        }
+
+                        // Auto theme sync toggle
+                        RowLayout {
+                            Layout.fillWidth: true
+                            ColumnLayout {
+                                spacing: 2
+                                Text {
+                                    text: "Auto Theme Synchronization"
+                                    font { pixelSize: 12; family: "Inter" }
+                                    font.weight: Font.Medium
+                                    color: root.textHigh
+                                }
+                                Text {
+                                    text: "Recolor active wallpaper instantly when switching desktop themes"
+                                    font { pixelSize: 11; family: "Inter" }
+                                    color: root.textLow
+                                }
+                            }
+                            Item { Layout.fillWidth: true }
+                            TitanSwitch {
+                                onColor: root.accent
+                                checked: WallpaperManager.adaptiveAutoSync
+                                onCheckedChanged: WallpaperManager.setAdaptiveAutoSync(checked)
+                            }
+                        }
+
+                        // Color Intensity Slider
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 6
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                Text {
+                                    text: "Color Adaptation Intensity"
+                                    font { pixelSize: 12; family: "Inter" }
+                                    font.weight: Font.Medium
+                                    color: root.textHigh
+                                }
+                                Item { Layout.fillWidth: true }
+                                Text {
+                                    text: Math.round(WallpaperManager.adaptiveIntensity * 100) + "%"
+                                    font { pixelSize: 12; family: "Inter" }
+                                    font.weight: Font.SemiBold
+                                    color: root.accent
+                                }
+                            }
+
+                            TitanSlider {
+                                Layout.fillWidth: true
+                                from: 0.10; to: 1.0; stepSize: 0.05
+                                fillColor: root.accent
+                                value: WallpaperManager.adaptiveIntensity
+                                onValueChanged: WallpaperManager.setAdaptiveIntensity(value)
+                            }
+                        }
+
+                        // Palette selection pills
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 6
+
+                            Text {
+                                text: "Theme Palette Mode"
+                                font { pixelSize: 12; family: "Inter" }
+                                font.weight: Font.Medium
+                                color: root.textHigh
+                            }
+
+                            Flow {
+                                Layout.fillWidth: true
+                                spacing: 6
+
+                                Repeater {
+                                    model: WallpaperManager.paletteList
+                                    delegate: Rectangle {
+                                        height: 26
+                                        width: palText.implicitWidth + 18
+                                        radius: 6
+                                        color: WallpaperManager.adaptivePalette === modelData
+                                               ? Qt.hsla(root.accent.hslHue, root.accent.hslSaturation, root.accent.hslLightness, 0.22)
+                                               : globalBg3
+                                        border.width: 1
+                                        border.color: WallpaperManager.adaptivePalette === modelData
+                                                      ? root.accent
+                                                      : globalBorder0
+
+                                        Text {
+                                            id: palText
+                                            anchors.centerIn: parent
+                                            text: modelData
+                                            font { pixelSize: 11; family: "Inter" }
+                                            font.weight: WallpaperManager.adaptivePalette === modelData ? Font.DemiBold : Font.Normal
+                                            color: WallpaperManager.adaptivePalette === modelData ? root.textHigh : root.textMid
+                                        }
+
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: WallpaperManager.setAdaptivePalette(modelData)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // Action Buttons: Re-sync & Restore
+                        RowLayout {
+                            Layout.fillWidth: true
+                            Layout.topMargin: 4
+                            spacing: 10
+
+                            TitanButton {
+                                text: "Re-sync Wallpaper"
+                                primary: true
+                                width: 140
+                                height: 28
+                                onClicked: WallpaperManager.syncAdaptive()
+                            }
+
+                            TitanButton {
+                                text: "Restore Original"
+                                primary: false
+                                width: 140
+                                height: 28
+                                onClicked: WallpaperManager.restoreOriginal()
+                            }
+
+                            Item { Layout.fillWidth: true }
+                        }
+                    }
+                }
+            }
         }
 
         Item { height: 24 }
