@@ -18,6 +18,7 @@ add_library(titan_adaptive_wallpaper_core STATIC
     include/wallpaper_loader.hpp
     include/taw_engine.hpp
     include/taw_controller.hpp
+    include/sync_lock.hpp
     src/color_space.cpp
     src/theme_palette.cpp
     src/color_transformer.cpp

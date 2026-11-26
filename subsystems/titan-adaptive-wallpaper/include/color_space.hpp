@@ -18,6 +18,10 @@ struct RGB {
 
     static RGB from_hex(const std::string& hex);
 
+    // Strict variant: returns false and leaves `out` untouched for malformed
+    // colours (including 8-digit #RRGGBBAA, which loses only its alpha).
+    static bool from_hex_checked(const std::string& hex, RGB& out);
+
     void to_u8(uint8_t& red, uint8_t& green, uint8_t& blue) const {
         red   = static_cast<uint8_t>(std::clamp(std::round(r * 255.0f), 0.0f, 255.0f));
         green = static_cast<uint8_t>(std::clamp(std::round(g * 255.0f), 0.0f, 255.0f));

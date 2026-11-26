@@ -38,6 +38,18 @@ if [[ ! " $VALID_MODES " == *" $SCALE_MODE "* ]]; then
     exit 1
 fi
 
+# ── Serialise swaybg handoffs ───────────────────────────────────────────────
+# Theme cycling, the TAW daemon and the settings app can all call this at once.
+# Without the lock, delayed killers from older invocations can retire the
+# newest swaybg and leave a black screen. Holding the lock through the handoff
+# means only one process owns swaybg at a time.
+LOCK_DIR="${XDG_RUNTIME_DIR:-/tmp}"
+mkdir -p "$LOCK_DIR"
+exec 9>"${LOCK_DIR}/titan-set-wallpaper.lock"
+if command -v flock >/dev/null 2>&1; then
+    flock -x 9
+fi
+
 # ── Launch new swaybg first for seamless overlap ────────────────────────────
 # Capture running swaybg PIDs so we only retire them AFTER the new swaybg has
 # successfully rendered and presented its layer surface to Wayland.
@@ -45,31 +57,37 @@ fi
 # takes over, completely eliminating the black screen gap.
 OLD_SWAYBG_PIDS=$(pgrep -x swaybg || true)
 
-swaybg -i "$WALLPAPER_PATH" -m "$SCALE_MODE" &
+# Close fd 9 in the child: a long-lived swaybg holding the lock descriptor
+# would keep the flock forever and block every later wallpaper change.
+swaybg -i "$WALLPAPER_PATH" -m "$SCALE_MODE" 9>&- &
 NEW_SWAYBG_PID=$!
 disown
 
-# Gracefully retire the previous swaybg instances once the new surface is up
+# Give the new layer surface time to present before retiring the old ones.
+# This happens inside the lock: no later invocation can start another swaybg
+# in the meantime, so we can never kill a wallpaper newer than our own.
+sleep 0.4
+if ! kill -0 "$NEW_SWAYBG_PID" 2>/dev/null; then
+    echo "titan-set-wallpaper: swaybg exited early; keeping previous wallpaper" >&2
+    exit 1
+fi
 if [[ -n "$OLD_SWAYBG_PIDS" ]]; then
-    (
-        sleep 0.4
-        for pid in $OLD_SWAYBG_PIDS; do
-            if [[ "$pid" != "$NEW_SWAYBG_PID" ]]; then
-                kill "$pid" 2>/dev/null || true
-            fi
-        done
-    ) >/dev/null 2>&1 &
-    disown
+    for pid in $OLD_SWAYBG_PIDS; do
+        if [[ "$pid" != "$NEW_SWAYBG_PID" ]]; then
+            kill "$pid" 2>/dev/null || true
+        fi
+    done
 fi
 
 # ── Persist ─────────────────────────────────────────────────────────────────
 mkdir -p "$PERSIST_DIR"
-printf '%s\n%s\n' "$WALLPAPER_PATH" "$SCALE_MODE" > "$PERSIST_FILE"
+printf '%s\n%s\n' "$WALLPAPER_PATH" "$SCALE_MODE" > "${PERSIST_FILE}.tmp.$$"
+mv -f "${PERSIST_FILE}.tmp.$$" "$PERSIST_FILE"
 
 # ── Sync active wallpaper into theme.json and TAW config ────────────────────
 if [[ -f "${PERSIST_DIR}/theme.json" ]]; then
     python3 -c "
-import json, sys
+import json, os, sys
 p = sys.argv[1]
 wp = sys.argv[2]
 try:
@@ -77,9 +95,11 @@ try:
         d = json.load(f)
     if d.get('wallpaper') != wp:
         d['wallpaper'] = wp
-        with open(p, 'w', encoding='utf-8') as f:
+        tmp = p + '.tmp.' + str(os.getpid())
+        with open(tmp, 'w', encoding='utf-8') as f:
             json.dump(d, f, indent=2, ensure_ascii=False)
             f.write('\n')
+        os.replace(tmp, p)
 except Exception:
     pass
 " "${PERSIST_DIR}/theme.json" "$WALLPAPER_PATH" 2>/dev/null || true
@@ -98,9 +118,11 @@ try:
             data = json.load(f)
     if data.get('originalWallpaper') != wp:
         data['originalWallpaper'] = wp
-        with open(cfg_path, 'w', encoding='utf-8') as f:
+        tmp = cfg_path + '.tmp.' + str(os.getpid())
+        with open(tmp, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
             f.write('\n')
+        os.replace(tmp, cfg_path)
 except Exception:
     pass
 " "$WALLPAPER_PATH" 2>/dev/null || true
@@ -123,9 +145,9 @@ if [[ -z "${TITAN_QUIET:-}" ]]; then
     snd="/usr/share/sounds/freedesktop/stereo/complete.oga"
     if [[ -f "$snd" ]]; then
         if command -v pw-play >/dev/null 2>&1; then
-            pw-play "$snd" >/dev/null 2>&1 &
+            pw-play "$snd" >/dev/null 2>&1 9>&- &
         elif command -v paplay >/dev/null 2>&1; then
-            paplay "$snd" >/dev/null 2>&1 &
+            paplay "$snd" >/dev/null 2>&1 9>&- &
         fi
     fi
 fi

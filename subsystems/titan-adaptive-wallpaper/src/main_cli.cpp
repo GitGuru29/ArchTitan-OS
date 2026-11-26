@@ -242,7 +242,10 @@ int main(int argc, char* argv[]) {
         // Single-shot debounce timer so rapid events settle before syncing
         QTimer debounce_timer;
         debounce_timer.setSingleShot(true);
-        debounce_timer.setInterval(120);
+        // Several files change for a single theme switch (theme.json,
+        // adaptive-wallpaper.json, wallpaper). Let them all settle before
+        // syncing so we do not launch multiple swaybg instances in a row.
+        debounce_timer.setInterval(350);
 
         QObject::connect(&debounce_timer, &QTimer::timeout, [&]() {
             engine.load_config();

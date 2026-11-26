@@ -10,6 +10,7 @@
 #include <QCoreApplication>
 #include <QFileInfo>
 #include <QDir>
+#include <QColor>
 #include <chrono>
 
 using namespace taw;
@@ -161,6 +162,88 @@ void test_caching_and_engine() {
     std::cout << "  ✓ Cache Hit execution:  " << ms_hit << " ms (instantaneous lookup)\n";
 }
 
+void test_palette_robustness() {
+    std::cout << "[TEST] 5. Malformed theme plates & UI palette labels...\n";
+
+    RGB color;
+    assert(RGB::from_hex_checked("#1E66F5FF", color));   // #RRGGBBAA from a theme plate
+    assert(color.to_hex() == "#1E66F5");
+    assert(!RGB::from_hex_checked("#GGHHII", color));
+
+    // A bad swatch must keep the baseline instead of turning every anchor
+    // black (which rendered the desktop as a black screen).
+    auto parsed = ThemePalette::from_json_string(R"({
+        "id": "broken",
+        "accent": "not-a-colour",
+        "palette": { "crust": "#GGHHII", "textHigh": "#FFFFFFFF" }
+    })");
+    assert(parsed.has_value());
+    assert(parsed->accent.to_hex() == ThemePalette::mocha().accent.to_hex());
+    assert(parsed->crust.to_hex() == ThemePalette::mocha().crust.to_hex());
+    assert(parsed->textHigh.to_hex() == "#FFFFFF");
+
+    assert(ThemePalette::from_preset("Catppuccin Mocha")->id == "mocha");
+    assert(ThemePalette::from_preset("AMOLED")->id == "amoled");
+    assert(ThemePalette::from_preset("Rose Pine")->id == "rosepine");
+
+    std::cout << "  ✓ Invalid swatches fall back safely; palette pills resolve.\n";
+}
+
+void test_cache_integrity() {
+    std::cout << "[TEST] 6. Cache integrity & atomic replacement...\n";
+
+    CacheManager cache("/tmp/opencode/taw_test_cache_integrity");
+    cache.clear();
+
+    ThemePalette pal = ThemePalette::nord();
+    TransformOptions opts { 0.70f, true, true, 1.0f, false };
+    QImage img(64, 64, QImage::Format_ARGB32);
+    img.fill(QColor(40, 90, 140, 255));
+
+    assert(cache.save("virtual-source", pal, opts, QImage()).empty());
+    std::string path = cache.save("virtual-source", pal, opts, img);
+    assert(!path.empty() && QFile::exists(QString::fromStdString(path)));
+    assert(cache.lookup("virtual-source", pal, opts).value_or("") == path);
+
+    // A truncated/ corrupt cache entry must never be applied to swaybg.
+    QFile broken(QString::fromStdString(path));
+    assert(broken.open(QIODevice::WriteOnly));
+    broken.write("not a png");
+    broken.close();
+    assert(!cache.lookup("virtual-source", pal, opts).has_value());
+
+    assert(!cache.save("virtual-source", pal, opts, img).empty());
+    assert(cache.lookup("virtual-source", pal, opts).has_value());
+
+    std::cout << "  ✓ Failed saves and corrupt entries are rejected.\n";
+}
+
+void test_amoled_crush() {
+    std::cout << "[TEST] 7. AMOLED crush does not blank the wallpaper...\n";
+
+    QImage src(32, 32, QImage::Format_ARGB32);
+    for (int y = 0; y < src.height(); ++y) {
+        for (int x = 0; x < src.width(); ++x) {
+            src.setPixelColor(x, y, x < 8 ? QColor(0, 0, 0, 128) : QColor(210, 210, 210, 128));
+        }
+    }
+
+    TransformOptions opts;
+    opts.intensity = 1.0f;
+    opts.contrast_boost = 1.0f;
+    opts.amoled_black_crush = true;
+    QImage out = ColorTransformer(ThemePalette::amoled(), opts).transform(src);
+
+    for (int y = 0; y < out.height(); ++y) {
+        for (int x = 0; x < out.width(); ++x) {
+            assert(qAlpha(out.pixel(x, y)) == 128);
+            if (x >= 8) assert(qGreen(out.pixel(x, y)) > 20);
+        }
+    }
+
+    std::cout << "  ✓ Alpha preserved; only true near-blacks are crushed.\n";
+}
+
 int main(int argc, char* argv[]) {
     QCoreApplication app(argc, argv);
     std::cout << "═══════════════════════════════════════════════════════════\n"
@@ -171,6 +254,9 @@ int main(int argc, char* argv[]) {
     test_palette_loading();
     test_milestone_1_transformation();
     test_caching_and_engine();
+    test_palette_robustness();
+    test_cache_integrity();
+    test_amoled_crush();
 
     std::cout << "═══════════════════════════════════════════════════════════\n"
               << " ALL TAW UNIT TESTS & MILESTONES PASSED (100% SUCCESS)\n"

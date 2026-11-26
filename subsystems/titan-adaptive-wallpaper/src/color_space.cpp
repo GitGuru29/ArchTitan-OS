@@ -33,22 +33,53 @@ static inline uint8_t fast_linear_to_u8(float c) {
     return g_linear_to_srgb_u8[idx];
 }
 
-RGB RGB::from_hex(const std::string& hex) {
-    if (hex.empty()) return { 0.0f, 0.0f, 0.0f };
+static int hex_digit(char c) {
+    if (c >= '0' && c <= '9') return c - '0';
+    if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+    if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+    return -1;
+}
+
+bool RGB::from_hex_checked(const std::string& hex, RGB& out) {
+    if (hex.empty()) return false;
     std::string s = hex;
     if (s[0] == '#') s = s.substr(1);
-    if (s.size() == 3) {
+
+    // Expand shorthand (#RGB / #RGBA) to the full form.
+    if (s.size() == 3 || s.size() == 4) {
         std::string expanded;
-        for (char c : s) { expanded += c; expanded += c; }
+        expanded.reserve(s.size() * 2);
+        for (char c : s) {
+            if (hex_digit(c) < 0) return false;
+            expanded += c;
+            expanded += c;
+        }
         s = expanded;
     }
-    if (s.size() < 6) return { 0.0f, 0.0f, 0.0f };
+    if (s.size() != 6 && s.size() != 8) return false;
 
-    unsigned int r_int = 0, g_int = 0, b_int = 0;
-    if (std::sscanf(s.c_str(), "%02x%02x%02x", &r_int, &g_int, &b_int) == 3) {
-        return { r_int / 255.0f, g_int / 255.0f, b_int / 255.0f };
+    // Only the first six nibbles matter — theme plates sometimes carry an
+    // alpha channel, but wallpaper anchors are always opaque.
+    int r = -1, g = -1, b = -1;
+    for (int i = 0; i < 6; ++i) {
+        if (hex_digit(s[i]) < 0) return false;
     }
-    return { 0.0f, 0.0f, 0.0f };
+    r = (hex_digit(s[0]) << 4) | hex_digit(s[1]);
+    g = (hex_digit(s[2]) << 4) | hex_digit(s[3]);
+    b = (hex_digit(s[4]) << 4) | hex_digit(s[5]);
+    if (s.size() == 8) {
+        for (int i = 6; i < 8; ++i) {
+            if (hex_digit(s[i]) < 0) return false;
+        }
+    }
+
+    out = { r / 255.0f, g / 255.0f, b / 255.0f };
+    return true;
+}
+
+RGB RGB::from_hex(const std::string& hex) {
+    RGB out;
+    return RGB::from_hex_checked(hex, out) ? out : RGB { 0.0f, 0.0f, 0.0f };
 }
 
 std::string RGB::to_hex() const {
