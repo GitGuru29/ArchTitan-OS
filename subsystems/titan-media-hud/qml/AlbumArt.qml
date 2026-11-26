@@ -24,7 +24,7 @@ Item {
         height: artRoot.artSize + 8
         radius: artRoot.cornerRadius + 4
         color: "transparent"
-        border.color: Qt.rgba(0.65, 0.54, 0.98, 0.45) // Glowing lavender aura
+        border.color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.45) // Accent aura
         border.width: 2
         visible: artRoot.showGlow && (Mpris && Mpris.isPlaying)
         opacity: 0.4
@@ -44,7 +44,7 @@ Item {
         radius: artRoot.cornerRadius
         clip: true
         color: "#181926"
-        border.color: (Mpris && Mpris.isPlaying) ? Qt.rgba(0.7, 0.6, 1.0, 0.35) : "#20FFFFFF"
+        border.color: (Mpris && Mpris.isPlaying) ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.35) : "#20FFFFFF"
         border.width: 1
 
         // ── FALLBACK (sleek dark gradient + music icon) ──────────────────
@@ -64,7 +64,7 @@ Item {
                 anchors.centerIn: parent
                 text: "♫"
                 font.pixelSize: Math.max(16, Math.round(artRoot.artSize * 0.4))
-                color: (Mpris && Mpris.isPlaying) ? "#C084FC" : "#7C7F93"
+                color: (Mpris && Mpris.isPlaying) ? TitanTheme.accent : "#7C7F93"
                 opacity: 0.9
 
                 SequentialAnimation on scale {

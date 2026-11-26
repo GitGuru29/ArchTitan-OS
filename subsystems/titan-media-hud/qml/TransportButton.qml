@@ -40,7 +40,7 @@ Item {
         height: 32
         radius: 16
         color: btnArea.pressed ? Qt.rgba(1, 1, 1, 0.18) : Qt.rgba(1, 1, 1, 0.10)
-        border.color: Qt.rgba(0.7, 0.6, 1.0, 0.3)
+        border.color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.35)
         border.width: 1
         opacity: btnArea.containsMouse ? 1.0 : 0.0
 
