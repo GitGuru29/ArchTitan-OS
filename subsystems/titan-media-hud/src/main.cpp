@@ -1,6 +1,10 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
+#include <QQmlPropertyMap>
+#include <QSettings>
+#include <QFileSystemWatcher>
+#include <QFileInfo>
 #include <QQuickWindow>
 #include <QScreen>
 #include <QLocalSocket>
@@ -87,6 +91,23 @@ int main(int argc, char *argv[])
     qmlRegisterSingletonInstance<AudioProfileController>("ArchTitan.Media", 1, 0, "AudioProfile", &audioCtrl);
 
     QQmlApplicationEngine engine;
+    // Mirror Settings glassmorphism into QML.
+    auto *appearance = QQmlPropertyMap::create(&app);
+    auto refreshGlass = [appearance]() {
+        QSettings settings(QStringLiteral("ArchTitan"), QStringLiteral("archtitan-settings"));
+        appearance->insert(QStringLiteral("glassmorphism"),
+                           settings.value(QStringLiteral("appearance/glassmorphism"), true).toBool());
+    };
+    refreshGlass();
+    engine.rootContext()->setContextProperty(QStringLiteral("AppearanceSettings"), appearance);
+
+    const QString settingsFile = QSettings(QStringLiteral("ArchTitan"),
+                                           QStringLiteral("archtitan-settings")).fileName();
+    auto *settingsWatcher = new QFileSystemWatcher(&app);
+    settingsWatcher->addPath(QFileInfo(settingsFile).absolutePath());
+    QObject::connect(settingsWatcher, &QFileSystemWatcher::directoryChanged,
+                     &app, refreshGlass);
+
 
     const QUrl url(QStringLiteral("qrc:/qml/MediaIsland.qml"));
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,

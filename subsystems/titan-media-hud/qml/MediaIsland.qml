@@ -15,7 +15,7 @@ Window {
     readonly property int cardWidth: 476
     readonly property int cardHeight: 88
     readonly property int cardRadius: 24
-    readonly property bool liquidGlass: true
+    readonly property bool liquidGlass: (typeof AppearanceSettings !== "undefined") ? AppearanceSettings.glassmorphism : true
 
     readonly property color accentColor: TitanTheme.accent
     readonly property color cardColor: liquidGlass ? TitanTheme.glassAlt : TitanTheme.base
