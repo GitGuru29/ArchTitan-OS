@@ -1,9 +1,9 @@
 # Titan Media HUD (`titan-media-hud`)
 
-**ArchTitan OS — Dynamic Contextual Media Drawer**
+**ArchTitan OS — Host-style Super+M media card**
 
 ## Overview
-`titan-media-hud` is a native Qt6/QML Wayland companion application that provides an interactive media drawer physically attached beneath the top Waybar HUD.
+`titan-media-hud` is a native Qt6/QML Wayland companion application that provides an interactive media drawer positioned left of screen centre beneath the top Waybar, matching the host Super+M overlay.
 
 ## Design Philosophy
 > **"The OS stays invisible until you need it."**
@@ -17,7 +17,9 @@
 - **Dynamic Artwork Caching:** Asynchronously caches local and remote album artwork (`/tmp/titan_media_hud/`).
 - **Interactive Seek Bar:** Live progress tracking and interactive click-to-seek.
 - **Media Controls:** Previous, Play/Pause toggle, Next.
-- **Industrial Styling:** 1px subtle blue accent border, dark translucent surface (`#11111b`), monospace technical typography.
+- **Host-style Player Card:** Square cover art, title/artist, time over a wavy seek strip, and an accent play/pause badge.
+- **Liquid Glass:** Frosted album-art backdrop, specular sheen and accent rim that follow the Settings `glassmorphism` toggle.
+- **Theme-Aware Accents:** Album glow, hover borders, transport glyph contrast, and wave visualizer track the active wallpaper accent.
 
 ## Architecture
 ```

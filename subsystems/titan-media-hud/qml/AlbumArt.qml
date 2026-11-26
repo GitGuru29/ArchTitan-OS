@@ -3,37 +3,37 @@ import ArchTitan.Media 1.0
 import ArchTitan.TitanUI
 
 /**
- * AlbumArt — Rounded album artwork with smooth crossfade,
- * breathing ambient glow when playing, and sleek fallback illustration.
+ * AlbumArt — Rounded squircle album artwork with smooth crossfade,
+ * breathing ambient glow when playing, and sleek obsidian fallback.
  */
 Item {
     id: artRoot
 
-    property int artSize: 44
-    property int cornerRadius: 10
+    property int artSize: 50
+    property int cornerRadius: 13
     property bool showGlow: true
 
     width: artSize
     height: artSize
 
-    // ── AMBIENT GLOW RING (behind art when playing) ──────────────────────
+    // ── AMBIENT NEON GLOW (behind art when playing) ──────────────────────
     Rectangle {
         id: ambientGlow
         anchors.centerIn: parent
-        width: artRoot.artSize + 6
-        height: artRoot.artSize + 6
-        radius: artRoot.cornerRadius + 3
+        width: artRoot.artSize + 8
+        height: artRoot.artSize + 8
+        radius: artRoot.cornerRadius + 4
         color: "transparent"
-        border.color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.38)
-        border.width: 1.5
+        border.color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.45) // Accent aura
+        border.width: 2
         visible: artRoot.showGlow && (Mpris && Mpris.isPlaying)
-        opacity: 0.0
+        opacity: 0.4
 
         SequentialAnimation on opacity {
             running: artRoot.showGlow && (Mpris && Mpris.isPlaying)
             loops: Animation.Infinite
-            NumberAnimation { from: 0.2; to: 0.7; duration: 1200; easing.type: Easing.InOutQuad }
-            NumberAnimation { from: 0.7; to: 0.2; duration: 1200; easing.type: Easing.InOutQuad }
+            NumberAnimation { from: 0.3; to: 0.85; duration: 1400; easing.type: Easing.InOutQuad }
+            NumberAnimation { from: 0.85; to: 0.3; duration: 1400; easing.type: Easing.InOutQuad }
         }
     }
 
@@ -43,8 +43,8 @@ Item {
         anchors.fill: parent
         radius: artRoot.cornerRadius
         clip: true
-        color: TitanTheme.mantle
-        border.color: (Mpris && Mpris.isPlaying) ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.21) : "#20FFFFFF"
+        color: "#181926"
+        border.color: (Mpris && Mpris.isPlaying) ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.35) : "#20FFFFFF"
         border.width: 1
 
         // ── FALLBACK (sleek dark gradient + music icon) ──────────────────
@@ -55,24 +55,23 @@ Item {
             visible: !currentArt.visible || currentArt.status !== Image.Ready
 
             gradient: Gradient {
-                GradientStop { position: 0.0; color: TitanTheme.surface0 }
-                GradientStop { position: 0.5; color: TitanTheme.bg3 }
-                GradientStop { position: 1.0; color: TitanTheme.bg0 }
+                GradientStop { position: 0.0; color: "#28293D" }
+                GradientStop { position: 0.6; color: "#181926" }
+                GradientStop { position: 1.0; color: "#10111A" }
             }
 
             Text {
                 anchors.centerIn: parent
                 text: "♫"
-                font.pixelSize: Math.max(12, Math.round(artRoot.artSize * 0.36))
-                color: (Mpris && Mpris.isPlaying) ? TitanTheme.accent : TitanTheme.surface2
-                opacity: 0.85
+                font.pixelSize: Math.max(16, Math.round(artRoot.artSize * 0.4))
+                color: (Mpris && Mpris.isPlaying) ? TitanTheme.accent : "#7C7F93"
+                opacity: 0.9
 
-                // Subtle pulse when playing without art
                 SequentialAnimation on scale {
                     running: fallback.visible && (Mpris && Mpris.isPlaying)
                     loops: Animation.Infinite
-                    NumberAnimation { from: 1.0; to: 1.15; duration: 800; easing.type: Easing.InOutQuad }
-                    NumberAnimation { from: 1.15; to: 1.0; duration: 800; easing.type: Easing.InOutQuad }
+                    NumberAnimation { from: 1.0; to: 1.12; duration: 900; easing.type: Easing.InOutQuad }
+                    NumberAnimation { from: 1.12; to: 1.0; duration: 900; easing.type: Easing.InOutQuad }
                 }
             }
         }
@@ -102,7 +101,7 @@ Item {
 
             onSourceChanged: {
                 if (outgoingArt.source.toString().length > 0) {
-                    outgoingArt.source = outgoingArt.source
+                    outgoingArt.source = currentArt.source
                     outgoingArt.opacity = 1.0
                     crossfadeOut.start()
                 }
@@ -124,7 +123,7 @@ Item {
             anchors.left: parent.left
             anchors.right: parent.right
             height: 1
-            color: "#25FFFFFF"
+            color: "#30FFFFFF"
         }
     }
 }

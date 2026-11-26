@@ -1,6 +1,10 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
+#include <QQmlPropertyMap>
+#include <QSettings>
+#include <QFileSystemWatcher>
+#include <QFileInfo>
 #include <QQuickWindow>
 #include <QScreen>
 #include <QLocalSocket>
@@ -18,6 +22,7 @@
 
 int main(int argc, char *argv[])
 {
+    bool openOnStart = false;
     // Check for CLI command-mode (e.g. titan-media-hud --toggle)
     if (argc > 1) {
         QString arg = QString::fromLatin1(argv[1]).trimmed().toLower();
@@ -42,6 +47,9 @@ int main(int argc, char *argv[])
                 socket.waitForBytesWritten(300);
                 return 0;
             }
+            if (cmd == "toggle" || cmd == "show") {
+                openOnStart = true;
+            }
         }
     }
 
@@ -49,7 +57,9 @@ int main(int argc, char *argv[])
     qputenv("QSG_RENDER_LOOP", "basic");
     qputenv("QT_QUICK_BACKEND", "software");
     qputenv("QML_DISABLE_DISK_CACHE", "1");
-    qputenv("QT_QPA_PLATFORM", "wayland;xcb");
+    if (!qEnvironmentVariableIsSet("QT_QPA_PLATFORM")) {
+        qputenv("QT_QPA_PLATFORM", "wayland;xcb");
+    }
     qputenv("QT_WAYLAND_DISABLE_WINDOWDECORATION", "1");
 
     QGuiApplication app(argc, argv);
@@ -81,6 +91,23 @@ int main(int argc, char *argv[])
     qmlRegisterSingletonInstance<AudioProfileController>("ArchTitan.Media", 1, 0, "AudioProfile", &audioCtrl);
 
     QQmlApplicationEngine engine;
+    // Mirror Settings glassmorphism into QML.
+    auto *appearance = QQmlPropertyMap::create(&app);
+    auto refreshGlass = [appearance]() {
+        QSettings settings(QStringLiteral("ArchTitan"), QStringLiteral("archtitan-settings"));
+        appearance->insert(QStringLiteral("glassmorphism"),
+                           settings.value(QStringLiteral("appearance/glassmorphism"), true).toBool());
+    };
+    refreshGlass();
+    engine.rootContext()->setContextProperty(QStringLiteral("AppearanceSettings"), appearance);
+
+    const QString settingsFile = QSettings(QStringLiteral("ArchTitan"),
+                                           QStringLiteral("archtitan-settings")).fileName();
+    auto *settingsWatcher = new QFileSystemWatcher(&app);
+    settingsWatcher->addPath(QFileInfo(settingsFile).absolutePath());
+    QObject::connect(settingsWatcher, &QFileSystemWatcher::directoryChanged,
+                     &app, refreshGlass);
+
 
     const QUrl url(QStringLiteral("qrc:/qml/MediaIsland.qml"));
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
@@ -96,12 +123,15 @@ int main(int argc, char *argv[])
 
         auto *layerWindow = LayerShellQt::Window::get(window);
         if (layerWindow) {
-            // Anchor to top edge, centered horizontally (left+right+top = centered top)
-            layerWindow->setAnchors(LayerShellQt::Window::AnchorTop);
+            // Host Super+M sits left of screen centre, just under the bar.
+            layerWindow->setAnchors(LayerShellQt::Window::Anchors(LayerShellQt::Window::AnchorTop | LayerShellQt::Window::AnchorLeft));
+            QScreen *screen = window->screen();
+            const int hostLeft = screen ? (screen->geometry().center().x() - 546) : 0;
+            const int leftMargin = hostLeft > 0 ? hostLeft : 0;
             layerWindow->setLayer(LayerShellQt::Window::LayerOverlay);
 
             // Position just below Waybar: 4px margin + 34px height + 4px gap = 42px
-            layerWindow->setMargins(QMargins(0, 42, 0, 0));
+            layerWindow->setMargins(QMargins(leftMargin, 42, 0, 0));
 
             // Don't reserve exclusive space — this floats over content
             layerWindow->setExclusiveZone(0);
@@ -122,6 +152,10 @@ int main(int argc, char *argv[])
     IpcServer ipcServer(&islandCtrl);
     if (!ipcServer.start()) {
         qWarning() << "Failed to start IPC server — SUPER+M toggle will not work";
+    }
+
+    if (openOnStart) {
+        QTimer::singleShot(200, &islandCtrl, &MediaIslandController::toggle);
     }
 
     return app.exec();

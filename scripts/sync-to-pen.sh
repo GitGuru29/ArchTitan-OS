@@ -27,6 +27,7 @@ BINARIES=(
     "archtitan-settings"
     "titan-set-wallpaper"
     "titan-theme"
+    "titan-media-hud"
     "titan-tour"
     "titan-ai"
     "titan-ai-kitty"
@@ -52,6 +53,11 @@ for bin in "${BINARIES[@]}"; do
         sudo chmod 755 "$dest"
         if [ "$was_immutable" -eq 1 ]; then
             sudo chattr +i "$dest"
+        fi
+        # Also sync to /usr/bin if present
+        if [ -d "$PEN_ROOT/usr/bin" ] && [ "$bin" = "titan-media-hud" ]; then
+            sudo cp -f "$src" "$PEN_ROOT/usr/bin/$bin"
+            sudo chmod 755 "$PEN_ROOT/usr/bin/$bin"
         fi
     else
         echo "  [!] Warning: $src not found, skipping"
@@ -90,9 +96,21 @@ if [ -d "$TARGET_USER_HOME" ]; then
 EOF
     fi
 
+    # Sync Hyprland configs if present
+    if [ -d "$TARGET_USER_HOME/.config/hypr" ]; then
+        cp -f "$REPO_DIR/airootfs/home/archtitan/.config/hypr/hyprland.conf" "$TARGET_USER_HOME/.config/hypr/" 2>/dev/null || true
+        cp -f "$REPO_DIR/airootfs/home/archtitan/.config/hypr/hyprland.lua" "$TARGET_USER_HOME/.config/hypr/" 2>/dev/null || true
+    fi
+
     # Fix ownership to 1000:1000
-    sudo chown -R 1000:1000 "$TARGET_USER_HOME/.config/archtitan" "$TARGET_USER_HOME/.config/systemd" 2>/dev/null || true
+    sudo chown -R 1000:1000 "$TARGET_USER_HOME/.config" 2>/dev/null || true
     echo "  -> User config and systemd auto-start configured."
+fi
+
+# Sync /etc/skel configs
+if [ -d "$PEN_ROOT/etc/skel/.config/hypr" ]; then
+    sudo cp -f "$REPO_DIR/airootfs/etc/skel/.config/hypr/hyprland.conf" "$PEN_ROOT/etc/skel/.config/hypr/"
+    sudo cp -f "$REPO_DIR/airootfs/etc/skel/.config/hypr/hyprland.lua" "$PEN_ROOT/etc/skel/.config/hypr/"
 fi
 
 echo ""
