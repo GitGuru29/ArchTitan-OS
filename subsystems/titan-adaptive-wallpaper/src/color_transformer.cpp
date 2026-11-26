@@ -32,6 +32,12 @@ void ColorTransformer::update_anchors() {
     m_anchors.push_back({ 0.65f, m_palette.oklab_accent2 });
     m_anchors.push_back({ 0.85f, m_palette.oklab_accent });
     m_anchors.push_back({ 1.00f, m_palette.oklab_textHigh });
+
+    // Precompute 1024-entry anchor curve lookup table for ultra-fast per-pixel sampling
+    for (int i = 0; i < 1024; ++i) {
+        float lum = i / 1023.0f;
+        m_curve_lut[i] = sample_anchor_curve(lum);
+    }
 }
 
 OKLab ColorTransformer::sample_anchor_curve(float lum) const {
@@ -124,11 +130,18 @@ QImage ColorTransformer::transform(const QImage& source) const {
     if (source.isNull()) return source;
     if (m_options.intensity <= 0.001f) return source;
 
-    QImage img = source.convertToFormat(QImage::Format_ARGB32_Premultiplied);
+    QImage img = source.convertToFormat(QImage::Format_ARGB32);
     const int width = img.width();
     const int height = img.height();
 
-    #pragma omp parallel for schedule(dynamic, 16) if(height > 64)
+    const float eff_intensity = std::clamp(m_options.intensity, 0.0f, 1.0f);
+    const bool has_contrast_boost = (std::abs(m_options.contrast_boost - 1.0f) > 0.01f);
+    const float contrast_boost = m_options.contrast_boost;
+    const bool amoled_crush = m_options.amoled_black_crush;
+    const bool preserve_highlights = m_options.preserve_highlights;
+    const bool preserve_shadows = m_options.preserve_shadows;
+
+    #pragma omp parallel for schedule(dynamic, 64) if(height > 64)
     for (int y = 0; y < height; ++y) {
         auto* scanline = reinterpret_cast<uint32_t*>(img.scanLine(y));
         for (int x = 0; x < width; ++x) {
@@ -138,11 +151,46 @@ QImage ColorTransformer::transform(const QImage& source) const {
             uint8_t g = (pixel >> 8) & 0xFF;
             uint8_t b = pixel & 0xFF;
 
-            RGB src_rgb = RGB::from_u8(r, g, b);
-            RGB dst_rgb = transform_pixel(src_rgb);
+            OKLab in_lab = rgb_u8_to_oklab(r, g, b);
+            float in_L = in_lab.L;
 
+            if (amoled_crush && in_L < 0.06f) {
+                scanline[x] = (static_cast<uint32_t>(a) << 24);
+                continue;
+            }
+
+            int lut_idx = std::clamp(static_cast<int>(in_L * 1023.0f + 0.5f), 0, 1023);
+            const OKLab& target_lab = m_curve_lut[lut_idx];
+
+            float out_L = in_L;
+            if (has_contrast_boost) {
+                out_L = std::clamp(0.5f + (in_L - 0.5f) * contrast_boost, 0.0f, 1.0f);
+            }
+
+            float in_chroma = in_lab.chroma();
+            float adopt_weight = (in_chroma > 0.12f) ? 0.45f : 0.75f;
+
+            float adapted_a = in_lab.a * (1.0f - adopt_weight) + target_lab.a * adopt_weight;
+            float adapted_b = in_lab.b * (1.0f - adopt_weight) + target_lab.b * adopt_weight;
+
+            float final_a = in_lab.a * (1.0f - eff_intensity) + adapted_a * eff_intensity;
+            float final_b = in_lab.b * (1.0f - eff_intensity) + adapted_b * eff_intensity;
+
+            if (preserve_highlights && in_L > 0.92f) {
+                float white_fade = (1.0f - in_L) * (1.0f / 0.08f);
+                final_a *= white_fade;
+                final_b *= white_fade;
+            }
+
+            if (preserve_shadows && in_L < 0.08f) {
+                float black_fade = in_L * (1.0f / 0.08f);
+                final_a *= black_fade;
+                final_b *= black_fade;
+            }
+
+            OKLab out_lab { out_L, final_a, final_b };
             uint8_t out_r, out_g, out_b;
-            dst_rgb.to_u8(out_r, out_g, out_b);
+            oklab_to_rgb_u8(out_lab, out_r, out_g, out_b);
 
             scanline[x] = (static_cast<uint32_t>(a) << 24) |
                           (static_cast<uint32_t>(out_r) << 16) |

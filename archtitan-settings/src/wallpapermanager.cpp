@@ -172,7 +172,7 @@ void WallpaperManager::syncAdaptive() {
 
     QProcess p;
     p.start(bin, {"sync", "--force"});
-    p.waitForFinished(3000);
+    p.waitForFinished(6000);
     refresh();
 }
 
@@ -185,7 +185,7 @@ void WallpaperManager::restoreOriginal() {
 
     QProcess p;
     p.start(bin, {"restore"});
-    p.waitForFinished(2000);
+    p.waitForFinished(4000);
     refresh();
 }
 
@@ -214,7 +214,7 @@ QString WallpaperManager::previewAdaptive(const QString &path, const QString &pa
 
     QProcess p;
     p.start(bin, args);
-    p.waitForFinished(3000);
+    p.waitForFinished(6000);
     return QString::fromUtf8(p.readAllStandardOutput()).trimmed();
 }
 

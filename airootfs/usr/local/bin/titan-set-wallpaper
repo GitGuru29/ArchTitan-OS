@@ -38,16 +38,29 @@ if [[ ! " $VALID_MODES " == *" $SCALE_MODE "* ]]; then
     exit 1
 fi
 
-# ── Kill existing swaybg ────────────────────────────────────────────────────
-# Use pkill -x for an exact match so we don't kill other sway processes.
-if pkill -x swaybg 2>/dev/null; then
-    sleep 0.15   # brief gap so the new instance doesn't race the old one
-fi
+# ── Launch new swaybg first for seamless overlap ────────────────────────────
+# Capture running swaybg PIDs so we only retire them AFTER the new swaybg has
+# successfully rendered and presented its layer surface to Wayland.
+# This guarantees that the previous wallpaper remains visible until the new one
+# takes over, completely eliminating the black screen gap.
+OLD_SWAYBG_PIDS=$(pgrep -x swaybg || true)
 
-# ── Launch new swaybg ───────────────────────────────────────────────────────
-# Disown immediately — we don't want it in our process group.
 swaybg -i "$WALLPAPER_PATH" -m "$SCALE_MODE" &
+NEW_SWAYBG_PID=$!
 disown
+
+# Gracefully retire the previous swaybg instances once the new surface is up
+if [[ -n "$OLD_SWAYBG_PIDS" ]]; then
+    (
+        sleep 0.4
+        for pid in $OLD_SWAYBG_PIDS; do
+            if [[ "$pid" != "$NEW_SWAYBG_PID" ]]; then
+                kill "$pid" 2>/dev/null || true
+            fi
+        done
+    ) >/dev/null 2>&1 &
+    disown
+fi
 
 # ── Persist ─────────────────────────────────────────────────────────────────
 mkdir -p "$PERSIST_DIR"
@@ -73,7 +86,7 @@ except Exception:
 fi
 
 # If setting a user original wallpaper (not an internally generated TAW cache variant), update TAW original
-if [[ "$WALLPAPER_PATH" != *"/archtitan/wallpapers/"* ]]; then
+if [[ -z "${TITAN_TAW_KEEP_ORIGINAL:-}" ]] && [[ "$WALLPAPER_PATH" != *"/archtitan/wallpapers/"* ]]; then
     python3 -c "
 import json, os, sys
 cfg_path = os.path.expanduser('~/.config/archtitan/adaptive-wallpaper.json')

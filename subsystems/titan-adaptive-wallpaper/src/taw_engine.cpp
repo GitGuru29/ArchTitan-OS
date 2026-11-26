@@ -178,8 +178,30 @@ std::string TAWEngine::adapt_current() {
 }
 
 bool TAWEngine::sync(bool force_reapply) {
-    if (m_config.original_wallpaper.empty()) {
-        return false;
+    if (m_config.original_wallpaper.empty() || !QFile::exists(QString::fromStdString(m_config.original_wallpaper))) {
+        // Fallback: check ~/.config/archtitan/wallpaper or default system background
+        const char* home = std::getenv("HOME");
+        std::string fallback_wp;
+        if (home) {
+            std::string wp_file = std::string(home) + "/.config/archtitan/wallpaper";
+            QFile wpf(QString::fromStdString(wp_file));
+            if (wpf.open(QIODevice::ReadOnly | QIODevice::Text)) {
+                QTextStream in(&wpf);
+                QString line = in.readLine().trimmed();
+                if (!line.isEmpty() && !line.contains("/archtitan/wallpapers/")) {
+                    fallback_wp = line.toStdString();
+                }
+            }
+        }
+        if (fallback_wp.empty() || !QFile::exists(QString::fromStdString(fallback_wp))) {
+            fallback_wp = "/usr/share/backgrounds/archtitan/wallpaper.png";
+        }
+        if (QFile::exists(QString::fromStdString(fallback_wp))) {
+            m_config.original_wallpaper = fallback_wp;
+            save_config();
+        } else {
+            return false;
+        }
     }
 
     if (!m_config.enabled) {
@@ -225,8 +247,13 @@ bool TAWEngine::apply_to_desktop(const std::string& wallpaper_path, const std::s
         bin = QStringLiteral("/home/msfvenom/custom-os-build/airootfs/usr/local/bin/titan-set-wallpaper");
     }
 
-    int ret = QProcess::execute(bin, { QString::fromStdString(wallpaper_path), QString::fromStdString(mode) });
-    return (ret == 0);
+    QProcess proc;
+    QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+    env.insert("TITAN_QUIET", "1");
+    proc.setProcessEnvironment(env);
+    proc.start(bin, { QString::fromStdString(wallpaper_path), QString::fromStdString(mode) });
+    proc.waitForFinished(4000);
+    return (proc.exitCode() == 0);
 }
 
 } // namespace taw
