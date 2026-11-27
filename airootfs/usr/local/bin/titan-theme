@@ -751,10 +751,25 @@ def cmd_set(tid: str, change_wallpaper: bool = True, notify_user: bool = True) -
         die(f"unknown theme '{tid}' (try: titan-theme list)")
     theme = theme_def(tid)
 
-    if not change_wallpaper:
-        cur_wp = active_wallpaper()
-        if cur_wp:
-            theme["wallpaper"] = cur_wp
+    cur_wp = active_wallpaper()
+    if cur_wp and "/archtitan/wallpapers/" in cur_wp:
+        # If active_wallpaper returned a cache variant, recover the original wallpaper
+        taw_cfg_file = os.path.join(CONFIG_HOME, "archtitan", "adaptive-wallpaper.json")
+        if os.path.isfile(taw_cfg_file):
+            try:
+                with open(taw_cfg_file, "r", encoding="utf-8") as f:
+                    orig = json.load(f).get("originalWallpaper", "")
+                if orig and os.path.isfile(orig) and "/archtitan/wallpapers/" not in orig:
+                    cur_wp = orig
+            except Exception:
+                pass
+
+    if (cur_wp and os.path.isfile(cur_wp)
+            and "/archtitan/wallpapers/" not in cur_wp
+            and not use_theme_wallpaper):
+        # Themes and wallpapers are independent by default: keep whatever image
+        # the user has selected. TAW adapts it to the new theme palette.
+        theme["wallpaper"] = cur_wp
 
     write_state(theme)
 
@@ -768,10 +783,11 @@ def cmd_set(tid: str, change_wallpaper: bool = True, notify_user: bool = True) -
                     taw_cfg = json.load(f)
                 if bool(taw_cfg.get("enabled", True)) and bool(taw_cfg.get("autoSync", True)):
                     # Ensure original wallpaper is initialized from current wallpaper if missing
-                    if not taw_cfg.get("originalWallpaper") or not os.path.isfile(taw_cfg.get("originalWallpaper", "")):
-                        cur = active_wallpaper()
-                        if cur and os.path.isfile(cur) and "/archtitan/wallpapers/" not in cur:
-                            taw_cfg["originalWallpaper"] = cur
+                    if (not taw_cfg.get("originalWallpaper")
+                            or not os.path.isfile(taw_cfg.get("originalWallpaper", ""))
+                            or "/archtitan/wallpapers/" in taw_cfg.get("originalWallpaper", "")):
+                        if cur_wp and os.path.isfile(cur_wp) and "/archtitan/wallpapers/" not in cur_wp:
+                            taw_cfg["originalWallpaper"] = cur_wp
                             try:
                                 with open(taw_cfg_file, "w", encoding="utf-8") as fw:
                                     json.dump(taw_cfg, fw, indent=2, ensure_ascii=False)

@@ -69,8 +69,12 @@ void TAWEngine::load_config() {
         m_config.auto_sync = obj["autoSync"].toBool();
     if (obj.contains("intensity") && obj["intensity"].isDouble())
         m_config.intensity = static_cast<float>(obj["intensity"].toDouble());
-    if (obj.contains("originalWallpaper") && obj["originalWallpaper"].isString())
-        m_config.original_wallpaper = obj["originalWallpaper"].toString().toStdString();
+    if (obj.contains("originalWallpaper") && obj["originalWallpaper"].isString()) {
+        std::string ow = obj["originalWallpaper"].toString().toStdString();
+        if (ow.find("/archtitan/wallpapers/") == std::string::npos) {
+            m_config.original_wallpaper = ow;
+        }
+    }
     if (obj.contains("activeThemeId") && obj["activeThemeId"].isString())
         m_config.active_theme_id = obj["activeThemeId"].toString().toStdString();
     if (obj.contains("manualPaletteOverride") && obj["manualPaletteOverride"].isString())
@@ -203,7 +207,10 @@ bool TAWEngine::sync(bool force_reapply) {
         return false;
     }
 
-    if (m_config.original_wallpaper.empty() || !QFile::exists(QString::fromStdString(m_config.original_wallpaper))) {
+    if (m_config.original_wallpaper.empty() ||
+        !QFile::exists(QString::fromStdString(m_config.original_wallpaper)) ||
+        m_config.original_wallpaper.find("/archtitan/wallpapers/") != std::string::npos)
+    {
         // Fallback: check ~/.config/archtitan/wallpaper or default system background
         const char* home = std::getenv("HOME");
         std::string fallback_wp;
@@ -243,11 +250,7 @@ bool TAWEngine::sync(bool force_reapply) {
         return apply_to_desktop(m_config.original_wallpaper);
     }
 
-    // Also reapply when the persisted path drifted (e.g. a stale swaybg or a
-    // theme switch that installed its own wallpaper behind our back).
-    const bool needs_apply = force_reapply ||
-                             adapted_path != m_config.last_adapted_wallpaper ||
-                             persisted_wallpaper() != adapted_path;
+    const bool needs_apply = force_reapply || adapted_path != m_config.last_adapted_wallpaper;
     if (needs_apply) {
         m_config.last_adapted_wallpaper = adapted_path;
         save_config();
