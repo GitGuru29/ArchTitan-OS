@@ -56,16 +56,23 @@ void TAWController::setManualPaletteOverride(const QString& name) {
 }
 
 QStringList TAWController::availablePalettes() const {
-    QStringList list;
-    list << "Auto (Active Theme)"
-         << "Catppuccin Mocha"
-         << "Nord"
-         << "Tokyo Night"
-         << "Dracula"
-         << "Gruvbox"
-         << "Everforest"
-         << "Rosé Pine"
-         << "AMOLED";
+    QStringList list{QStringLiteral("Auto (Active Theme)")};
+
+    for (const std::string& preset : ThemePalette::available_presets()) {
+        const QString id = QString::fromStdString(preset);
+        if (id == QLatin1String("mocha")) list << QStringLiteral("Catppuccin Mocha");
+        else if (id == QLatin1String("latte")) list << QStringLiteral("Catppuccin Latte");
+        else if (id == QLatin1String("tokyonight")) list << QStringLiteral("Tokyo Night");
+        else if (id == QLatin1String("rosepine")) list << QStringLiteral("Rosé Pine");
+        else if (id == QLatin1String("amoled")) list << QStringLiteral("AMOLED");
+        else {
+            QString pretty = id;
+            if (!pretty.isEmpty()) pretty[0] = pretty[0].toUpper();
+            list << pretty;
+        }
+    }
+
+    list.removeDuplicates();
     return list;
 }
 
@@ -87,16 +94,14 @@ QString TAWController::previewAdaptation(const QString& imagePath, const QString
     if (paletteName.isEmpty() || paletteName.contains("Auto", Qt::CaseInsensitive)) {
         pal = m_engine.resolve_effective_palette();
     } else {
-        std::string lower = paletteName.toLower().replace(" ", "").replace("-", "").toStdString();
-        if (lower.find("mocha") != std::string::npos || lower.find("catppuccin") != std::string::npos) pal = ThemePalette::mocha();
-        else if (lower.find("nord") != std::string::npos) pal = ThemePalette::nord();
-        else if (lower.find("tokyo") != std::string::npos) pal = ThemePalette::tokyonight();
-        else if (lower.find("dracula") != std::string::npos) pal = ThemePalette::dracula();
-        else if (lower.find("gruvbox") != std::string::npos) pal = ThemePalette::gruvbox();
-        else if (lower.find("everforest") != std::string::npos) pal = ThemePalette::everforest();
-        else if (lower.find("rose") != std::string::npos) pal = ThemePalette::rosepine();
-        else if (lower.find("amoled") != std::string::npos) pal = ThemePalette::amoled();
-        else pal = m_engine.resolve_effective_palette();
+        const std::string requested = paletteName.toStdString();
+        auto preset = ThemePalette::from_preset(requested);
+        if (preset.has_value()) {
+            pal = *preset;
+        } else {
+            auto from_file = ThemePalette::from_json_file(requested);
+            pal = from_file.value_or(m_engine.resolve_effective_palette());
+        }
     }
 
     std::string res = m_engine.adapt(path, pal, static_cast<float>(intensity));

@@ -293,6 +293,9 @@ bool TAWEngine::apply_to_desktop(const std::string& wallpaper_path, const std::s
     QProcess proc;
     QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
     env.insert("TITAN_QUIET", "1");
+    // The path may be a generated TAW cache variant. Keep theme.json pointing
+    // at the user's original wallpaper so theme switches still adapt it.
+    env.insert("TITAN_TAW_KEEP_ORIGINAL", "1");
     proc.setProcessEnvironment(env);
     proc.start(bin, { QString::fromStdString(wallpaper_path), QString::fromStdString(mode) });
     proc.waitForFinished(4000);

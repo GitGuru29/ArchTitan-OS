@@ -2,6 +2,9 @@
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QQuickWindow>
+#include <QQmlPropertyMap>
+#include <QSettings>
+#include <QFileSystemWatcher>
 #include <QCommandLineParser>
 #include <QCommandLineOption>
 #include <QDir>
@@ -244,6 +247,23 @@ int main(int argc, char *argv[])
     ctx->setContextProperty(QStringLiteral("mprisCtrl"),       &mprisCtrl);
     ctx->setContextProperty(QStringLiteral("notifServer"),     &notifServer);
     ctx->setContextProperty(QStringLiteral("notifModel"),      notifServer.model());
+
+    // Mirror Settings > Appearance > Glassmorphism into QML
+    auto *appearance = QQmlPropertyMap::create(&app);
+    auto refreshGlass = [appearance]() {
+        QSettings settings(QStringLiteral("ArchTitan"), QStringLiteral("archtitan-settings"));
+        appearance->insert(QStringLiteral("glassmorphism"),
+                           settings.value(QStringLiteral("appearance/glassmorphism"), true).toBool());
+    };
+    refreshGlass();
+    ctx->setContextProperty(QStringLiteral("AppearanceSettings"), appearance);
+
+    const QString settingsFile = QSettings(QStringLiteral("ArchTitan"),
+                                           QStringLiteral("archtitan-settings")).fileName();
+    auto *settingsWatcher = new QFileSystemWatcher(&app);
+    settingsWatcher->addPath(QFileInfo(settingsFile).absolutePath());
+    QObject::connect(settingsWatcher, &QFileSystemWatcher::directoryChanged,
+                     &app, refreshGlass);
 
     QObject::connect(&engine, &QQmlApplicationEngine::warnings, [](const QList<QQmlError> &warnings) {
         for (const auto &w : warnings) {

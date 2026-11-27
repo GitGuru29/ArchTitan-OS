@@ -123,9 +123,9 @@ void ShellIpc::dispatchCommand(const QString &cmd)
     else if (c == QStringLiteral("menu-hide")) emit menuHideRequested();
 
     // Workspace HUD
-    else if (c == QStringLiteral("workspace-hud-toggle") || c == QStringLiteral("workspace-hud")) emit workspaceHudToggleRequested();
-    else if (c == QStringLiteral("workspace-hud-show")) emit workspaceHudShowRequested();
-    else if (c == QStringLiteral("workspace-hud-hide")) emit workspaceHudHideRequested();
+    else if (c == QStringLiteral("workspace-hud-toggle") || c == QStringLiteral("workspace-hud") || c == QStringLiteral("toggle")) emit workspaceHudToggleRequested();
+    else if (c == QStringLiteral("workspace-hud-show") || c == QStringLiteral("show") || c == QStringLiteral("hold")) emit workspaceHudShowRequested();
+    else if (c == QStringLiteral("workspace-hud-hide") || c == QStringLiteral("hide") || c == QStringLiteral("release")) emit workspaceHudHideRequested();
 
     else {
         std::cerr << "[titan-shell] Unknown IPC command: " << cmd.toStdString() << "\n";

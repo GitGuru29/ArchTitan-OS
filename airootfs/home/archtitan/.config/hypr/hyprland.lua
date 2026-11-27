@@ -57,6 +57,7 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("systemctl --user restart xdg-desktop-portal-hyprland 2>/dev/null || true")
     hl.exec_cmd("titan-shell --daemon")
     hl.exec_cmd("titan-focus --daemon")
+    hl.exec_cmd("titan-media-hud --daemon")
     hl.exec_cmd("bash -c 'sleep 1 && waybar'")
     hl.exec_cmd("titan-wallpaper-restore")
     hl.exec_cmd("titan-hotzones")
@@ -76,35 +77,18 @@ end)
 
 local mainMod = "SUPER"
 
--- Super-key TAP -> Spotlight, without hijacking Super+<key> chords.
--- A bare `release = true` bind on SUPER_L fires on every Super release,
--- including the one that ends Super+Tab / Super+Space / Super+\. Spotlight
--- then opens with exclusive keyboard focus on top of whatever the chord just
--- opened, so those shortcuts look dead. Instead: arm on press, disarm in every
--- Super chord (see superBind), and only open Spotlight if still armed on
--- release, i.e. Super was tapped on its own.
-local superTapArmed = false
-
+-- Bare Super is intentionally unbound. A release bind on SUPER_L fires on
+-- every Super chord (including Super+M / Super+Tab) and used to stack
+-- Spotlight on top of them, so Spotlight is now only reachable via its
+-- explicit Super+Space / Super+D / Super+R bindings below.
 local function superBind(combo, action, opts)
     hl.bind(combo, function()
-        superTapArmed = false
         if type(action) == "function" then
             action()
         else
             hl.dispatch(action)
         end
     end, opts)
-end
-
-for _, superKey in ipairs({ "SUPER_L", "SUPER_R" }) do
-    hl.bind(superKey, function() superTapArmed = true end,
-        { ignore_mods = true, transparent = true })
-    hl.bind(superKey, function()
-        if superTapArmed then
-            superTapArmed = false
-            hl.dispatch(hl.dsp.exec_cmd("titan-spotlight --toggle"))  -- Windows/Super logo tap opens Spotlight
-        end
-    end, { ignore_mods = true, transparent = true, release = true })
 end
 
 -- Shell & Utilities (ArchTitan Central Command Palette & Spotlight)
