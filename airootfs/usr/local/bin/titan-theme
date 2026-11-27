@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """titan-theme — ArchTitan theme engine.
 
-One command drives the whole desktop between the seven shipped themes
+One command drives the whole desktop between all installed themes
 (usr/share/archtitan/themes/<id>.json): QML surfaces follow automatically via
 ThemeBackend's file watcher, and this tool brings the non-Qt seams — Waybar,
 SwayNC, rofi, kitty, hyprlock, GTK and qt5ct — in line, plus the Hyprland
@@ -13,7 +13,8 @@ any user accent override applied on top).
 Usage:
   titan-theme list                 List installed themes (* marks the active)
   titan-theme current              Print the active theme id
-  titan-theme set <id>             Switch theme: apply + wallpaper + toast
+  titan-theme set <id>             Switch theme, keep the active wallpaper + toast
+  titan-theme set <id> --wallpaper  Switch theme and use its assigned wallpaper
   titan-theme next | prev          Cycle themes (alphabetical by id)
   titan-theme random               Switch to a random theme
   titan-theme accent <#rrggbb>     Override the accent, keep theme + wallpaper
@@ -745,16 +746,21 @@ def active_wallpaper() -> str:
     return read_state().get("wallpaper", "")
 
 
-def cmd_set(tid: str, change_wallpaper: bool = True, notify_user: bool = True) -> None:
+def cmd_set(tid: str, change_wallpaper: bool = True, notify_user: bool = True,
+            use_theme_wallpaper: bool = False) -> None:
     ids = installed_ids()
     if tid not in ids:
         die(f"unknown theme '{tid}' (try: titan-theme list)")
     theme = theme_def(tid)
 
-    if not change_wallpaper:
-        cur_wp = active_wallpaper()
-        if cur_wp:
-            theme["wallpaper"] = cur_wp
+    cur_wp = active_wallpaper()
+    if (cur_wp and os.path.isfile(cur_wp)
+            and "/archtitan/wallpapers/" not in cur_wp
+            and (not change_wallpaper or not use_theme_wallpaper)):
+        # Themes and wallpapers are independent: keep whatever image the user
+        # has selected. TAW adapts it to the new theme; without TAW it is
+        # simply reapplied unchanged instead of jumping to a preset image.
+        theme["wallpaper"] = cur_wp
 
     write_state(theme)
 
@@ -920,7 +926,11 @@ def main(argv: list[str]) -> int:
     elif cmd == "set":
         if not rest:
             die("set: missing theme id")
-        cmd_set(rest[0])
+        use_theme_wallpaper = "--wallpaper" in rest
+        theme_ids = [arg for arg in rest if arg != "--wallpaper"]
+        if len(theme_ids) != 1:
+            die("set: usage: titan-theme set <id> [--wallpaper]")
+        cmd_set(theme_ids[0], use_theme_wallpaper=use_theme_wallpaper)
     elif cmd == "next":
         cmd_cycle(+1)
     elif cmd == "prev":

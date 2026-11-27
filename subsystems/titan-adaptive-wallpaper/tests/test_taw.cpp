@@ -46,6 +46,15 @@ void test_palette_loading() {
     ThemePalette everforest = ThemePalette::everforest();
     assert(everforest.id == "everforest");
 
+    // Installed themes beyond the built-in presets must resolve too.
+    auto kanagawa = ThemePalette::from_preset("kanagawa");
+    assert(kanagawa.has_value());
+    assert(kanagawa->id == "kanagawa");
+    auto latte = ThemePalette::from_preset("Catppuccin Latte");
+    assert(latte.has_value());
+    assert(latte->id == "latte");
+    assert(!latte->isDark);
+
     // Test JSON parser on real system file if present
     std::string test_json = R"({
         "id": "test_theme",
@@ -68,6 +77,7 @@ void test_palette_loading() {
     assert(parsed->accent2.to_hex() == "#A855F7");
 
     std::cout << "  ✓ Built-in palettes (Mocha, Nord, Everforest, etc.) verified.\n";
+    std::cout << "  ✓ Installed theme presets (Kanagawa, Latte) verified.\n";
     std::cout << "  ✓ Arbitrary JSON palette parser verified.\n";
 }
 

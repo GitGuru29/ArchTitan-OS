@@ -67,7 +67,9 @@ mkdir -p "$PERSIST_DIR"
 printf '%s\n%s\n' "$WALLPAPER_PATH" "$SCALE_MODE" > "$PERSIST_FILE"
 
 # ── Sync active wallpaper into theme.json and TAW config ────────────────────
-if [[ -f "${PERSIST_DIR}/theme.json" ]]; then
+# TAW applies generated cache variants with TITAN_TAW_KEEP_ORIGINAL=1; those
+# must not overwrite the user's original wallpaper recorded in theme.json.
+if [[ -z "${TITAN_TAW_KEEP_ORIGINAL:-}" ]] && [[ -f "${PERSIST_DIR}/theme.json" ]]; then
     python3 -c "
 import json, sys
 p = sys.argv[1]

@@ -3,6 +3,10 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QDir>
+#include <QFileInfo>
+#include <QStringList>
+#include <algorithm>
+#include <cctype>
 #include <cstdlib>
 
 namespace taw {
@@ -217,29 +221,79 @@ ThemePalette ThemePalette::amoled() {
     return p;
 }
 
-std::vector<std::string> ThemePalette::available_presets() {
+namespace {
+
+QStringList preset_search_dirs() {
     return {
-        "mocha",
-        "nord",
-        "tokyonight",
-        "dracula",
-        "gruvbox",
-        "everforest",
-        "rosepine",
-        "amoled"
+        QStringLiteral("/usr/share/archtitan/themes"),
+        QDir::currentPath() + QStringLiteral("/airootfs/usr/share/archtitan/themes"),
+        QStringLiteral("/home/msfvenom/custom-os-build/airootfs/usr/share/archtitan/themes")
     };
 }
 
-std::optional<ThemePalette> ThemePalette::from_preset(const std::string& name) {
-    if (name == "mocha" || name == "catppuccin" || name == "catppuccin-mocha") return mocha();
-    if (name == "nord") return nord();
-    if (name == "tokyonight" || name == "tokyo-night") return tokyonight();
-    if (name == "dracula") return dracula();
-    if (name == "gruvbox") return gruvbox();
-    if (name == "everforest") return everforest();
-    if (name == "rosepine" || name == "rose-pine") return rosepine();
-    if (name == "amoled" || name == "pure-black") return amoled();
+std::string normalize_preset_key(const std::string& name) {
+    std::string key;
+    for (unsigned char c : name) {
+        if (std::isalnum(c)) key.push_back(static_cast<char>(std::tolower(c)));
+    }
+    if (key == "catppuccinmocha") key = "mocha";
+    if (key == "catppuccinlatte") key = "latte";
+    if (key == "archtitansignature") key = "archtitan";
+    return key;
+}
+
+std::optional<ThemePalette> from_installed_theme(const std::string& id) {
+    if (id.empty()) return std::nullopt;
+    for (const QString& dir : preset_search_dirs()) {
+        for (const QString& candidate : {
+                 QString::fromStdString(id),
+                 QString::fromStdString(id) + QStringLiteral(".json")}) {
+            QFileInfo file(QDir(dir), candidate);
+            if (file.isFile()) {
+                return ThemePalette::from_json_file(file.absoluteFilePath().toStdString());
+            }
+        }
+    }
     return std::nullopt;
+}
+
+} // namespace
+
+std::vector<std::string> ThemePalette::available_presets() {
+    std::vector<std::string> out = {
+        "mocha", "nord", "tokyonight", "dracula",
+        "gruvbox", "everforest", "rosepine", "amoled"
+    };
+
+    for (const QString& dir : preset_search_dirs()) {
+        QDir d(dir);
+        if (!d.exists()) continue;
+        const QStringList files = d.entryList({QStringLiteral("*.json")}, QDir::Files, QDir::Name);
+        for (const QString& file : files) {
+            auto parsed = from_json_file(d.filePath(file).toStdString());
+            std::string id = parsed.has_value() ? parsed->id
+                                                : QFileInfo(file).completeBaseName().toStdString();
+            if (id.empty()) continue;
+            if (std::find(out.begin(), out.end(), id) == out.end()) out.push_back(id);
+        }
+    }
+    return out;
+}
+
+std::optional<ThemePalette> ThemePalette::from_preset(const std::string& name) {
+    const std::string key = normalize_preset_key(name);
+    if (key == "mocha" || key == "catppuccin") return mocha();
+    if (key == "nord") return nord();
+    if (key == "tokyonight" || key == "tokyo") return tokyonight();
+    if (key == "dracula") return dracula();
+    if (key == "gruvbox") return gruvbox();
+    if (key == "everforest") return everforest();
+    if (key == "rosepine" || key == "rose") return rosepine();
+    if (key == "amoled" || key == "pureblack") return amoled();
+
+    // Any installed theme JSON (archtitan, kanagawa, latte, custom, future
+    // additions) works as a palette without needing a hard-coded preset.
+    return from_installed_theme(key);
 }
 
 static RGB parse_color_prop(const QJsonObject& obj, const QString& key, const RGB& fallback) {
