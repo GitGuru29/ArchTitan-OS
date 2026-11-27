@@ -6,7 +6,9 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QProcess>
+#include <QSaveFile>
 #include <QStandardPaths>
+#include "sync_lock.hpp"
 #include <iostream>
 #include <cstdlib>
 
@@ -67,8 +69,12 @@ void TAWEngine::load_config() {
         m_config.auto_sync = obj["autoSync"].toBool();
     if (obj.contains("intensity") && obj["intensity"].isDouble())
         m_config.intensity = static_cast<float>(obj["intensity"].toDouble());
-    if (obj.contains("originalWallpaper") && obj["originalWallpaper"].isString())
-        m_config.original_wallpaper = obj["originalWallpaper"].toString().toStdString();
+    if (obj.contains("originalWallpaper") && obj["originalWallpaper"].isString()) {
+        std::string ow = obj["originalWallpaper"].toString().toStdString();
+        if (ow.find("/archtitan/wallpapers/") == std::string::npos) {
+            m_config.original_wallpaper = ow;
+        }
+    }
     if (obj.contains("activeThemeId") && obj["activeThemeId"].isString())
         m_config.active_theme_id = obj["activeThemeId"].toString().toStdString();
     if (obj.contains("manualPaletteOverride") && obj["manualPaletteOverride"].isString())
@@ -88,9 +94,13 @@ void TAWEngine::save_config() const {
     obj["lastAdaptedWallpaper"] = QString::fromStdString(m_config.last_adapted_wallpaper);
 
     QJsonDocument doc(obj);
-    QFile file(QString::fromStdString(m_config_path));
+    // QSaveFile writes to a sibling temp file and atomically replaces the
+    // target. The daemon watches this file, so a truncating write made it
+    // parse half a JSON document and sync with stale/empty state.
+    QSaveFile file(QString::fromStdString(m_config_path));
     if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
         file.write(doc.toJson(QJsonDocument::Indented));
+        file.commit();
     }
 }
 
@@ -177,8 +187,30 @@ std::string TAWEngine::adapt_current() {
     return adapt(m_config.original_wallpaper, pal, m_config.intensity);
 }
 
+static std::string persisted_wallpaper() {
+    const char* home = std::getenv("HOME");
+    if (!home) return {};
+    QFile file(QString::fromStdString(std::string(home) + "/.config/archtitan/wallpaper"));
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) return {};
+    QTextStream in(&file);
+    return in.readLine().trimmed().toStdString();
+}
+
 bool TAWEngine::sync(bool force_reapply) {
-    if (m_config.original_wallpaper.empty() || !QFile::exists(QString::fromStdString(m_config.original_wallpaper))) {
+    // Serialise with the daemon and any settings/CLI invocation. Concurrent
+    // syncs used to fight over swaybg and could leave the desktop with no
+    // background layer at all.
+    const QFileInfo cfg_info(QString::fromStdString(m_config_path));
+    SyncLock guard(cfg_info.dir().filePath(QStringLiteral("taw-sync.lock")));
+    if (!guard.acquired()) {
+        std::cerr << "[TAW] Another sync is in progress; leaving current wallpaper untouched.\n";
+        return false;
+    }
+
+    if (m_config.original_wallpaper.empty() ||
+        !QFile::exists(QString::fromStdString(m_config.original_wallpaper)) ||
+        m_config.original_wallpaper.find("/archtitan/wallpapers/") != std::string::npos)
+    {
         // Fallback: check ~/.config/archtitan/wallpaper or default system background
         const char* home = std::getenv("HOME");
         std::string fallback_wp;
@@ -214,13 +246,18 @@ bool TAWEngine::sync(bool force_reapply) {
 
     std::string adapted_path = adapt(m_config.original_wallpaper, pal, m_config.intensity);
     if (adapted_path.empty() || !QFile::exists(QString::fromStdString(adapted_path))) {
-        return false;
+        std::cerr << "[TAW] Adaptation failed; restoring the original wallpaper.\n";
+        return apply_to_desktop(m_config.original_wallpaper);
     }
 
-    if (force_reapply || adapted_path != m_config.last_adapted_wallpaper) {
+    const bool needs_apply = force_reapply || adapted_path != m_config.last_adapted_wallpaper;
+    if (needs_apply) {
         m_config.last_adapted_wallpaper = adapted_path;
         save_config();
-        return apply_to_desktop(adapted_path);
+        if (!apply_to_desktop(adapted_path)) {
+            std::cerr << "[TAW] Could not apply adapted wallpaper; restoring the original.\n";
+            return apply_to_desktop(m_config.original_wallpaper);
+        }
     }
 
     return true;
@@ -228,6 +265,12 @@ bool TAWEngine::sync(bool force_reapply) {
 
 bool TAWEngine::restore_original() {
     if (m_config.original_wallpaper.empty()) return false;
+    const QFileInfo cfg_info(QString::fromStdString(m_config_path));
+    SyncLock guard(cfg_info.dir().filePath(QStringLiteral("taw-sync.lock")));
+    if (!guard.acquired()) {
+        std::cerr << "[TAW] Another sync is in progress; restore skipped.\n";
+        return false;
+    }
     m_config.enabled = false;
     save_config();
     return apply_to_desktop(m_config.original_wallpaper);

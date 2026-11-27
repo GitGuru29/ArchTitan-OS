@@ -3,6 +3,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QDir>
+#include <cctype>
 #include <cstdlib>
 
 namespace taw {
@@ -231,20 +232,35 @@ std::vector<std::string> ThemePalette::available_presets() {
 }
 
 std::optional<ThemePalette> ThemePalette::from_preset(const std::string& name) {
-    if (name == "mocha" || name == "catppuccin" || name == "catppuccin-mocha") return mocha();
-    if (name == "nord") return nord();
-    if (name == "tokyonight" || name == "tokyo-night") return tokyonight();
-    if (name == "dracula") return dracula();
-    if (name == "gruvbox") return gruvbox();
-    if (name == "everforest") return everforest();
-    if (name == "rosepine" || name == "rose-pine") return rosepine();
-    if (name == "amoled" || name == "pure-black") return amoled();
+    // Settings and the CLI use human-readable labels ("Catppuccin Mocha",
+    // "AMOLED"), while presets use lowercase ids. Normalise both forms so a
+    // palette pill can never silently fall back to the previous theme.
+    std::string key;
+    key.reserve(name.size());
+    for (unsigned char c : name) {
+        if (c == ' ' || c == '-' || c == '_') continue;
+        key.push_back(static_cast<char>(std::tolower(c)));
+    }
+
+    if (key == "mocha" || key == "catppuccin" || key == "catppuccinmocha") return mocha();
+    if (key == "nord") return nord();
+    if (key == "tokyonight" || key == "tokyo") return tokyonight();
+    if (key == "dracula") return dracula();
+    if (key == "gruvbox") return gruvbox();
+    if (key == "everforest") return everforest();
+    if (key == "rosepine" || key == "rose") return rosepine();
+    if (key == "amoled" || key == "pureblack") return amoled();
     return std::nullopt;
 }
 
 static RGB parse_color_prop(const QJsonObject& obj, const QString& key, const RGB& fallback) {
     if (obj.contains(key) && obj[key].isString()) {
-        return RGB::from_hex(obj[key].toString().toStdString());
+        RGB parsed;
+        // A malformed swatch must never turn every anchor black (which used to
+        // render the wallpaper as a black screen).
+        if (RGB::from_hex_checked(obj[key].toString().toStdString(), parsed)) {
+            return parsed;
+        }
     }
     return fallback;
 }

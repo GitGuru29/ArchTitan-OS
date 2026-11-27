@@ -5,6 +5,7 @@
 #include <QImage>
 #include <QColor>
 #include <QFile>
+#include <QSaveFile>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <algorithm>
@@ -172,7 +173,9 @@ void WallpaperManager::syncAdaptive() {
 
     QProcess p;
     p.start(bin, {"sync", "--force"});
-    p.waitForFinished(6000);
+    // A cold palette transform can take >10s. Killing it mid-apply was a
+    // direct cause of missing/blank wallpapers.
+    p.waitForFinished(30000);
     refresh();
 }
 
@@ -185,7 +188,7 @@ void WallpaperManager::restoreOriginal() {
 
     QProcess p;
     p.start(bin, {"restore"});
-    p.waitForFinished(4000);
+    p.waitForFinished(10000);
     refresh();
 }
 
@@ -214,7 +217,7 @@ QString WallpaperManager::previewAdaptive(const QString &path, const QString &pa
 
     QProcess p;
     p.start(bin, args);
-    p.waitForFinished(6000);
+    p.waitForFinished(30000);
     return QString::fromUtf8(p.readAllStandardOutput()).trimmed();
 }
 
@@ -242,16 +245,28 @@ void WallpaperManager::saveAdaptiveConfig() {
     QString configPath = QDir::homePath() + "/.config/archtitan/adaptive-wallpaper.json";
     QDir().mkpath(QFileInfo(configPath).dir().path());
 
+    // Preserve engine-owned fields (lastAdaptedWallpaper / activeThemeId).
+    // Dropping them on every slider change forced TAW to re-apply the
+    // wallpaper repeatedly and made rapid palette changes churn swaybg.
     QJsonObject obj;
+    QFile existing(configPath);
+    if (existing.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QJsonDocument oldDoc = QJsonDocument::fromJson(existing.readAll());
+        if (oldDoc.isObject()) obj = oldDoc.object();
+    }
+
     obj["enabled"] = m_adaptiveEnabled;
     obj["autoSync"] = m_adaptiveAutoSync;
     obj["intensity"] = m_adaptiveIntensity;
     obj["originalWallpaper"] = m_originalWallpaper;
     obj["manualPaletteOverride"] = (m_adaptivePalette == "Auto (Active Theme)") ? "" : m_adaptivePalette;
 
-    QFile file(configPath);
+    // Atomic replace: the TAW daemon watches this file and must never see a
+    // half-written JSON document.
+    QSaveFile file(configPath);
     if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
         file.write(QJsonDocument(obj).toJson(QJsonDocument::Indented));
+        file.commit();
     }
 }
 

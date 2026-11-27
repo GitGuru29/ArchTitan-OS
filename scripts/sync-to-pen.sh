@@ -26,6 +26,9 @@ BINARIES=(
     "titan-adaptive-wallpaper"
     "archtitan-settings"
     "titan-set-wallpaper"
+    "titan-wallpaper-restore"
+    "titan-wallpaper-picker"
+    "titan-media-hud"
     "titan-theme"
     "titan-media-hud"
     "titan-tour"
@@ -85,6 +88,9 @@ if [ -d "$TARGET_USER_HOME" ]; then
     # Setup initial adaptive-wallpaper.json if not present
     if [ ! -f "$TARGET_USER_HOME/.config/archtitan/adaptive-wallpaper.json" ]; then
         ACTIVE_WP=$(cat "$TARGET_USER_HOME/.config/archtitan/wallpaper" 2>/dev/null | head -n 1 || echo "")
+        if [ -z "$ACTIVE_WP" ] || [ ! -f "$ACTIVE_WP" ] || [[ "$ACTIVE_WP" == *"/archtitan/wallpapers/"* ]]; then
+            ACTIVE_WP="/usr/share/backgrounds/archtitan/wallpaper.png"
+        fi
         cat <<EOF > "$TARGET_USER_HOME/.config/archtitan/adaptive-wallpaper.json"
 {
   "enabled": true,

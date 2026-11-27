@@ -3,13 +3,15 @@
 #
 # Usage: titan-set-wallpaper <path-to-image> [fill|fit|stretch|tile|center|contain]
 #
-# • Gracefully kills any running swaybg instance first (smooth transition).
-# • Launches new swaybg in background.
-# • Persists the selection so titan-wallpaper-restore can revive it on next login.
-# • Sends a brief notification confirming the change.
-#
-# Persistence file: ~/.config/archtitan/wallpaper
-# (Intentionally NOT inside ~/.config/hypr so hyprpaper doesn't interfere.)
+# • Serialises swaybg handoffs via flock so concurrent invocations never collide.
+# • If TAW is active, transforms the wallpaper upfront so only ONE swaybg instance
+#   is spawned (eliminates double-flicker, race conditions, and black screen gap).
+# • Seamlessly overlaps new swaybg over old swaybg, verifying new surface before
+#   retiring old instances.
+# • Persists the user's REAL wallpaper (never an internal cache variant) into
+#   ~/.config/archtitan/wallpaper and theme.json.
+# • Synchronises active wallpaper with adaptive-wallpaper.json atomically.
+# • Sends a brief notification confirming the change (unless TITAN_QUIET=1).
 
 set -euo pipefail
 
@@ -38,38 +40,107 @@ if [[ ! " $VALID_MODES " == *" $SCALE_MODE "* ]]; then
     exit 1
 fi
 
+# ── Serialise swaybg handoffs ───────────────────────────────────────────────
+# Theme cycling, wallpaper picker, TAW daemon, and settings app can call this.
+# Holding the lock through the handoff guarantees only one process manages
+# swaybg at a time, preventing race conditions and black flashes.
+LOCK_DIR="${XDG_RUNTIME_DIR:-/tmp}"
+mkdir -p "$LOCK_DIR"
+exec 9>"${LOCK_DIR}/titan-set-wallpaper.lock"
+if command -v flock >/dev/null 2>&1; then
+    flock -x 9
+fi
+
+# ── Determine if this is a TAW cache variant or a user original ─────────────
+IS_CACHE_VARIANT=0
+if [[ -n "${TITAN_TAW_KEEP_ORIGINAL:-}" ]] || [[ "$WALLPAPER_PATH" == *"/archtitan/wallpapers/"* ]]; then
+    IS_CACHE_VARIANT=1
+fi
+
+# ── Upfront TAW adaptation ──────────────────────────────────────────────────
+# If a user original wallpaper was passed, and TAW is enabled with autoSync,
+# adapt it immediately BEFORE starting swaybg. This launches swaybg directly
+# with the adapted wallpaper in ONE step, preventing double swaybg spawning,
+# double-rendering, and the 120ms black screen gap.
+DISPLAY_WALLPAPER="$WALLPAPER_PATH"
+ADAPTED_VARIANT=""
+
+if [[ "$IS_CACHE_VARIANT" -eq 0 ]]; then
+    TAW_CFG="${PERSIST_DIR}/adaptive-wallpaper.json"
+    TAW_BIN=""
+    if command -v titan-adaptive-wallpaper >/dev/null 2>&1; then
+        TAW_BIN="titan-adaptive-wallpaper"
+    elif [[ -x "/usr/local/bin/titan-adaptive-wallpaper" ]]; then
+        TAW_BIN="/usr/local/bin/titan-adaptive-wallpaper"
+    fi
+
+    if [[ -n "$TAW_BIN" && -f "$TAW_CFG" ]]; then
+        TAW_ACTIVE=$(python3 -c "
+import json, sys
+try:
+    with open(sys.argv[1]) as f:
+        d = json.load(f)
+    if d.get('enabled', True) and d.get('autoSync', True):
+        print('1')
+    else:
+        print('0')
+except Exception:
+    print('0')
+" "$TAW_CFG" 2>/dev/null || echo "0")
+
+        if [[ "$TAW_ACTIVE" == "1" ]]; then
+            ADAPTED_RESULT=$("$TAW_BIN" transform "$WALLPAPER_PATH" 2>/dev/null || true)
+            if [[ -n "$ADAPTED_RESULT" && -f "$ADAPTED_RESULT" ]]; then
+                DISPLAY_WALLPAPER="$ADAPTED_RESULT"
+                ADAPTED_VARIANT="$ADAPTED_RESULT"
+            fi
+        fi
+    fi
+fi
+
 # ── Launch new swaybg first for seamless overlap ────────────────────────────
 # Capture running swaybg PIDs so we only retire them AFTER the new swaybg has
 # successfully rendered and presented its layer surface to Wayland.
-# This guarantees that the previous wallpaper remains visible until the new one
-# takes over, completely eliminating the black screen gap.
 OLD_SWAYBG_PIDS=$(pgrep -x swaybg || true)
 
-swaybg -i "$WALLPAPER_PATH" -m "$SCALE_MODE" &
+# Close fd 9 in the child so swaybg does not inherit or hold the lock descriptor
+swaybg -i "$DISPLAY_WALLPAPER" -m "$SCALE_MODE" 9>&- &
 NEW_SWAYBG_PID=$!
 disown
 
-# Gracefully retire the previous swaybg instances once the new surface is up
-if [[ -n "$OLD_SWAYBG_PIDS" ]]; then
-    (
-        sleep 0.4
-        for pid in $OLD_SWAYBG_PIDS; do
-            if [[ "$pid" != "$NEW_SWAYBG_PID" ]]; then
-                kill "$pid" 2>/dev/null || true
-            fi
-        done
-    ) >/dev/null 2>&1 &
-    disown
+# Give the new layer surface time to connect and present before retiring old ones.
+# Done inside the lock so no newer wallpaper can be killed out-of-order.
+sleep 0.4
+if ! kill -0 "$NEW_SWAYBG_PID" 2>/dev/null; then
+    echo "titan-set-wallpaper: new swaybg exited early; keeping previous wallpaper" >&2
+    exit 1
 fi
 
-# ── Persist ─────────────────────────────────────────────────────────────────
-mkdir -p "$PERSIST_DIR"
-printf '%s\n%s\n' "$WALLPAPER_PATH" "$SCALE_MODE" > "$PERSIST_FILE"
+if [[ -n "$OLD_SWAYBG_PIDS" ]]; then
+    for pid in $OLD_SWAYBG_PIDS; do
+        if [[ "$pid" != "$NEW_SWAYBG_PID" ]]; then
+            kill "$pid" 2>/dev/null || true
+        fi
+    done
+fi
 
-# ── Sync active wallpaper into theme.json and TAW config ────────────────────
-if [[ -f "${PERSIST_DIR}/theme.json" ]]; then
+# ── Persist user selection ──────────────────────────────────────────────────
+# Persist the REAL source wallpaper path in ~/.config/archtitan/wallpaper.
+# NEVER store an ephemeral cache path into the persistence file!
+mkdir -p "$PERSIST_DIR"
+if [[ "$IS_CACHE_VARIANT" -eq 0 ]]; then
+    printf '%s\n%s\n' "$WALLPAPER_PATH" "$SCALE_MODE" > "${PERSIST_FILE}.tmp.$$"
+    mv -f "${PERSIST_FILE}.tmp.$$" "$PERSIST_FILE"
+elif [[ ! -f "$PERSIST_FILE" ]]; then
+    printf '%s\n%s\n' "$WALLPAPER_PATH" "$SCALE_MODE" > "${PERSIST_FILE}.tmp.$$"
+    mv -f "${PERSIST_FILE}.tmp.$$" "$PERSIST_FILE"
+fi
+
+# ── Sync active wallpaper into theme.json ───────────────────────────────────
+# Keep theme.json pointing to the original wallpaper so theme switches preserve it.
+if [[ "$IS_CACHE_VARIANT" -eq 0 ]] && [[ -f "${PERSIST_DIR}/theme.json" ]]; then
     python3 -c "
-import json, sys
+import json, os, sys
 p = sys.argv[1]
 wp = sys.argv[2]
 try:
@@ -77,45 +148,53 @@ try:
         d = json.load(f)
     if d.get('wallpaper') != wp:
         d['wallpaper'] = wp
-        with open(p, 'w', encoding='utf-8') as f:
+        tmp = p + '.tmp.' + str(os.getpid())
+        with open(tmp, 'w', encoding='utf-8') as f:
             json.dump(d, f, indent=2, ensure_ascii=False)
             f.write('\n')
+        os.replace(tmp, p)
 except Exception:
     pass
 " "${PERSIST_DIR}/theme.json" "$WALLPAPER_PATH" 2>/dev/null || true
 fi
 
-# If setting a user original wallpaper (not an internally generated TAW cache variant), update TAW original
-if [[ -z "${TITAN_TAW_KEEP_ORIGINAL:-}" ]] && [[ "$WALLPAPER_PATH" != *"/archtitan/wallpapers/"* ]]; then
+# ── Sync active wallpaper and last adapted variant into TAW config ──────────
+if [[ "$IS_CACHE_VARIANT" -eq 0 ]]; then
     python3 -c "
 import json, os, sys
-cfg_path = os.path.expanduser('~/.config/archtitan/adaptive-wallpaper.json')
-wp = sys.argv[1]
+cfg_path = sys.argv[1]
+wp = sys.argv[2]
+adapted = sys.argv[3]
 try:
     data = {}
     if os.path.isfile(cfg_path):
         with open(cfg_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
+    changed = False
     if data.get('originalWallpaper') != wp:
         data['originalWallpaper'] = wp
-        with open(cfg_path, 'w', encoding='utf-8') as f:
+        changed = True
+    if adapted and data.get('lastAdaptedWallpaper') != adapted:
+        data['lastAdaptedWallpaper'] = adapted
+        changed = True
+    if changed:
+        tmp = cfg_path + '.tmp.' + str(os.getpid())
+        with open(tmp, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
             f.write('\n')
+        os.replace(tmp, cfg_path)
 except Exception:
     pass
-" "$WALLPAPER_PATH" 2>/dev/null || true
+" "${PERSIST_DIR}/adaptive-wallpaper.json" "$WALLPAPER_PATH" "$ADAPTED_VARIANT" 2>/dev/null || true
 fi
 
-# ── Retint the Waybar to suit the new wallpaper ─────────────────────────────
+# ── Retint Waybar to suit the new wallpaper ─────────────────────────────────
 # Best-effort: a theming failure must never fail the wallpaper change.
-# Suppressed when TITAN_QUIET is set (`titan-theme set/apply` synchronizes Waybar atomically).
 if [[ -z "${TITAN_QUIET:-}" ]]; then
-    titan-waybar-theme "$WALLPAPER_PATH" >/dev/null 2>&1 || true
+    titan-waybar-theme "$DISPLAY_WALLPAPER" >/dev/null 2>&1 || true
 fi
 
 # ── Notify ──────────────────────────────────────────────────────────────────
-# TITAN_QUIET=1 suppresses this toast — `titan-theme set` already sends its
-# own themed notification and doesn't want a duplicate.
 if [[ -z "${TITAN_QUIET:-}" ]]; then
     NAME="$(basename "${WALLPAPER_PATH%.*}")"
     notify-send -u low -i preferences-desktop-wallpaper \
@@ -123,9 +202,9 @@ if [[ -z "${TITAN_QUIET:-}" ]]; then
     snd="/usr/share/sounds/freedesktop/stereo/complete.oga"
     if [[ -f "$snd" ]]; then
         if command -v pw-play >/dev/null 2>&1; then
-            pw-play "$snd" >/dev/null 2>&1 &
+            pw-play "$snd" >/dev/null 2>&1 9>&- &
         elif command -v paplay >/dev/null 2>&1; then
-            paplay "$snd" >/dev/null 2>&1 &
+            paplay "$snd" >/dev/null 2>&1 9>&- &
         fi
     fi
 fi

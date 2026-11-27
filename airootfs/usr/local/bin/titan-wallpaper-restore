@@ -1,41 +1,78 @@
 #!/usr/bin/env bash
 # titan-wallpaper-restore — Restore the user's last wallpaper at session start
 #
-# Called from hyprland.conf via exec-once.  Reads the two-line persistence file
+# Called from hyprland.conf via exec-once. Reads the two-line persistence file
 # written by titan-set-wallpaper:
-#   Line 1 — absolute path to image
+#   Line 1 — absolute path to original image
 #   Line 2 — swaybg scale mode (fill|fit|stretch|tile|center|contain)
 #
-# If no persistence file exists (first boot / live ISO), falls back to the
-# ArchTitan default wallpaper via a plain swaybg call (no notification).
+# If TAW is active and has a valid cached adapted variant, restores that variant
+# immediately for zero-lag themed appearance on login.
 
 set -euo pipefail
 
-PERSIST_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/archtitan/wallpaper"
+PERSIST_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/archtitan"
+PERSIST_FILE="${PERSIST_DIR}/wallpaper"
 DEFAULT_WALLPAPER="/usr/share/backgrounds/archtitan/wallpaper.png"
 DEFAULT_MODE="fill"
 
-# ── Kill any stale swaybg from a previous session ───────────────────────────
-pkill -x swaybg 2>/dev/null || true
-sleep 0.1
+# ── Load persisted original values ──────────────────────────────────────────
+WALLPAPER_PATH="$DEFAULT_WALLPAPER"
+SCALE_MODE="$DEFAULT_MODE"
 
-# ── Load persisted values ────────────────────────────────────────────────────
 if [[ -f "$PERSIST_FILE" ]]; then
-    WALLPAPER_PATH="$(sed -n '1p' "$PERSIST_FILE")"
-    SCALE_MODE="$(sed -n '2p' "$PERSIST_FILE")"
+    P_PATH="$(sed -n '1p' "$PERSIST_FILE" 2>/dev/null || true)"
+    P_MODE="$(sed -n '2p' "$PERSIST_FILE" 2>/dev/null || true)"
 
-    # Sanity checks — fall back if the file is stale/corrupt
-    [[ -f "$WALLPAPER_PATH" ]] || { WALLPAPER_PATH="$DEFAULT_WALLPAPER"; SCALE_MODE="$DEFAULT_MODE"; }
-    [[ -n "$SCALE_MODE" ]]     || SCALE_MODE="$DEFAULT_MODE"
-else
-    WALLPAPER_PATH="$DEFAULT_WALLPAPER"
-    SCALE_MODE="$DEFAULT_MODE"
+    if [[ -n "$P_PATH" && -f "$P_PATH" ]]; then
+        WALLPAPER_PATH="$P_PATH"
+    fi
+    if [[ -n "$P_MODE" ]]; then
+        SCALE_MODE="$P_MODE"
+    fi
 fi
 
-# ── Launch swaybg ────────────────────────────────────────────────────────────
-swaybg -i "$WALLPAPER_PATH" -m "$SCALE_MODE" &
+# ── Check if TAW has a valid adapted variant to restore ─────────────────────
+DISPLAY_WALLPAPER="$WALLPAPER_PATH"
+TAW_CFG="${PERSIST_DIR}/adaptive-wallpaper.json"
+
+if [[ -f "$TAW_CFG" ]]; then
+    ADAPTED_CANDIDATE=$(python3 -c "
+import json, os, sys
+try:
+    with open(sys.argv[1]) as f:
+        d = json.load(f)
+    if d.get('enabled', True):
+        last = d.get('lastAdaptedWallpaper', '')
+        if last and os.path.isfile(last):
+            print(last)
+except Exception:
+    pass
+" "$TAW_CFG" 2>/dev/null || true)
+
+    if [[ -n "$ADAPTED_CANDIDATE" && -f "$ADAPTED_CANDIDATE" ]]; then
+        DISPLAY_WALLPAPER="$ADAPTED_CANDIDATE"
+    fi
+fi
+
+# ── Launch new swaybg with seamless handover ────────────────────────────────
+OLD_SWAYBG_PIDS=$(pgrep -x swaybg || true)
+
+swaybg -i "$DISPLAY_WALLPAPER" -m "$SCALE_MODE" &
+NEW_SWAYBG_PID=$!
 disown
 
-# ── Retint the Waybar to suit the restored wallpaper ─────────────────────────
-# Best-effort: a theming failure must never fail the wallpaper restore.
-titan-waybar-theme "$WALLPAPER_PATH" >/dev/null 2>&1 || true
+# Wait for Wayland layer surface to map, then clean up stale instances
+sleep 0.4
+if kill -0 "$NEW_SWAYBG_PID" 2>/dev/null; then
+    if [[ -n "$OLD_SWAYBG_PIDS" ]]; then
+        for pid in $OLD_SWAYBG_PIDS; do
+            if [[ "$pid" != "$NEW_SWAYBG_PID" ]]; then
+                kill "$pid" 2>/dev/null || true
+            fi
+        done
+    fi
+fi
+
+# ── Retint Waybar to suit the restored wallpaper ────────────────────────────
+titan-waybar-theme "$DISPLAY_WALLPAPER" >/dev/null 2>&1 || true

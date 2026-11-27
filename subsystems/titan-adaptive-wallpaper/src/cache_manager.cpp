@@ -3,6 +3,8 @@
 #include <QFileInfo>
 #include <QDir>
 #include <QDateTime>
+#include <QImageReader>
+#include <QUuid>
 #include <cstdlib>
 
 namespace taw {
@@ -76,7 +78,13 @@ std::optional<std::string> CacheManager::lookup(const std::string& original_path
 
     QFileInfo fi(QString::fromStdString(target_path));
     if (fi.exists() && fi.size() > 0) {
-        return target_path;
+        // A truncated PNG passes the size check but renders as a black screen.
+        // Reading just the header is cheap enough for the cache-hit path.
+        QImageReader reader(QString::fromStdString(target_path));
+        if (reader.canRead() && reader.size().isValid() &&
+            reader.size().width() > 0 && reader.size().height() > 0) {
+            return target_path;
+        }
     }
     return std::nullopt;
 }
@@ -90,12 +98,28 @@ std::string CacheManager::save(const std::string& original_path,
     std::string key = compute_key(original_path, palette, options);
     std::string target_path = m_cache_dir + "/" + key + ".png";
 
-    // Write to a temporary file first then rename atomically
-    QString tmp_path = QString::fromStdString(target_path) + ".tmp." + QString::number(QDateTime::currentMSecsSinceEpoch());
-    transformed_image.save(tmp_path, "PNG");
+    // Unique temp name: several TAW processes can miss the cache for the same
+    // key at once (theme spam / slider). A timestamp-only name let them clobber
+    // each other's temp file and leave no usable wallpaper behind.
+    const QString target = QString::fromStdString(target_path);
+    const QString tmp_path = target + ".tmp." +
+                             QString::number(QDateTime::currentMSecsSinceEpoch()) +
+                             "." + QUuid::createUuid().toString(QUuid::WithoutBraces);
 
-    QFile::remove(QString::fromStdString(target_path));
-    QFile::rename(tmp_path, QString::fromStdString(target_path));
+    if (transformed_image.isNull() || !transformed_image.save(tmp_path, "PNG")) {
+        QFile::remove(tmp_path);
+        return {};
+    }
+
+    // rename(2) replaces the old target atomically on Linux. Never leave a
+    // window where the path exists but points at a half-written image.
+    if (!QFile::rename(tmp_path, target)) {
+        QFile::remove(target);
+        if (!QFile::rename(tmp_path, target)) {
+            QFile::remove(tmp_path);
+            return {};
+        }
+    }
 
     return target_path;
 }

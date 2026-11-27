@@ -239,13 +239,19 @@ int main(int argc, char* argv[]) {
             std::cout << "[TAW Daemon] Watching " << cfg_file << "\n";
         }
 
+        TAWConfig last_config = engine.config();
+
         // Single-shot debounce timer so rapid events settle before syncing
         QTimer debounce_timer;
         debounce_timer.setSingleShot(true);
-        debounce_timer.setInterval(120);
+        // Several files change for a single theme switch (theme.json,
+        // adaptive-wallpaper.json, wallpaper). Let them all settle before
+        // syncing so we do not launch multiple swaybg instances in a row.
+        debounce_timer.setInterval(250);
 
         QObject::connect(&debounce_timer, &QTimer::timeout, [&]() {
             engine.load_config();
+            last_config = engine.config();
             if (engine.is_enabled() && engine.is_auto_sync()) {
                 std::cout << "[TAW Daemon] Triggering sync...\n";
                 engine.sync(false);
@@ -254,6 +260,25 @@ int main(int argc, char* argv[]) {
 
         QObject::connect(&watcher, &QFileSystemWatcher::fileChanged, [&](const QString& path) {
             std::cout << "[TAW Daemon] File changed: " << path.toStdString() << "\n";
+
+            // If only adaptive-wallpaper.json changed, check if any input parameter changed.
+            // When sync() writes lastAdaptedWallpaper, we do not want to trigger another sync!
+            if (path.toStdString() == cfg_file) {
+                TAWEngine probe(cfg_file);
+                const auto& cur = probe.config();
+                bool inputs_changed = (cur.enabled != last_config.enabled) ||
+                                      (cur.auto_sync != last_config.auto_sync) ||
+                                      (std::abs(cur.intensity - last_config.intensity) > 0.01f) ||
+                                      (cur.original_wallpaper != last_config.original_wallpaper) ||
+                                      (cur.manual_palette_override != last_config.manual_palette_override);
+                if (!inputs_changed) {
+                    if (!watcher.files().contains(path) && QFile::exists(path)) {
+                        watcher.addPath(path);
+                    }
+                    return;
+                }
+            }
+
             debounce_timer.start();
 
             // Re-add path if atomic rename replaced the inode
