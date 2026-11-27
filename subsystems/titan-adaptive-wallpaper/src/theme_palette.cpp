@@ -3,9 +3,6 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QDir>
-#include <QFileInfo>
-#include <QStringList>
-#include <algorithm>
 #include <cctype>
 #include <cstdlib>
 
@@ -221,68 +218,31 @@ ThemePalette ThemePalette::amoled() {
     return p;
 }
 
-namespace {
-
-QStringList preset_search_dirs() {
-    return {
-        QStringLiteral("/usr/share/archtitan/themes"),
-        QDir::currentPath() + QStringLiteral("/airootfs/usr/share/archtitan/themes"),
-        QStringLiteral("/home/msfvenom/custom-os-build/airootfs/usr/share/archtitan/themes")
-    };
-}
-
-std::string normalize_preset_key(const std::string& name) {
-    std::string key;
-    for (unsigned char c : name) {
-        if (std::isalnum(c)) key.push_back(static_cast<char>(std::tolower(c)));
-    }
-    if (key == "catppuccinmocha") key = "mocha";
-    if (key == "catppuccinlatte") key = "latte";
-    if (key == "archtitansignature") key = "archtitan";
-    return key;
-}
-
-std::optional<ThemePalette> from_installed_theme(const std::string& id) {
-    if (id.empty()) return std::nullopt;
-    for (const QString& dir : preset_search_dirs()) {
-        for (const QString& candidate : {
-                 QString::fromStdString(id),
-                 QString::fromStdString(id) + QStringLiteral(".json")}) {
-            QFileInfo file(QDir(dir), candidate);
-            if (file.isFile()) {
-                return ThemePalette::from_json_file(file.absoluteFilePath().toStdString());
-            }
-        }
-    }
-    return std::nullopt;
-}
-
-} // namespace
-
 std::vector<std::string> ThemePalette::available_presets() {
-    std::vector<std::string> out = {
-        "mocha", "nord", "tokyonight", "dracula",
-        "gruvbox", "everforest", "rosepine", "amoled"
+    return {
+        "mocha",
+        "nord",
+        "tokyonight",
+        "dracula",
+        "gruvbox",
+        "everforest",
+        "rosepine",
+        "amoled"
     };
-
-    for (const QString& dir : preset_search_dirs()) {
-        QDir d(dir);
-        if (!d.exists()) continue;
-        const QStringList files = d.entryList({QStringLiteral("*.json")}, QDir::Files, QDir::Name);
-        for (const QString& file : files) {
-            auto parsed = from_json_file(d.filePath(file).toStdString());
-            std::string id = parsed.has_value() ? parsed->id
-                                                : QFileInfo(file).completeBaseName().toStdString();
-            if (id.empty()) continue;
-            if (std::find(out.begin(), out.end(), id) == out.end()) out.push_back(id);
-        }
-    }
-    return out;
 }
 
 std::optional<ThemePalette> ThemePalette::from_preset(const std::string& name) {
-    const std::string key = normalize_preset_key(name);
-    if (key == "mocha" || key == "catppuccin") return mocha();
+    // Settings and the CLI use human-readable labels ("Catppuccin Mocha",
+    // "AMOLED"), while presets use lowercase ids. Normalise both forms so a
+    // palette pill can never silently fall back to the previous theme.
+    std::string key;
+    key.reserve(name.size());
+    for (unsigned char c : name) {
+        if (c == ' ' || c == '-' || c == '_') continue;
+        key.push_back(static_cast<char>(std::tolower(c)));
+    }
+
+    if (key == "mocha" || key == "catppuccin" || key == "catppuccinmocha") return mocha();
     if (key == "nord") return nord();
     if (key == "tokyonight" || key == "tokyo") return tokyonight();
     if (key == "dracula") return dracula();
@@ -290,15 +250,17 @@ std::optional<ThemePalette> ThemePalette::from_preset(const std::string& name) {
     if (key == "everforest") return everforest();
     if (key == "rosepine" || key == "rose") return rosepine();
     if (key == "amoled" || key == "pureblack") return amoled();
-
-    // Any installed theme JSON (archtitan, kanagawa, latte, custom, future
-    // additions) works as a palette without needing a hard-coded preset.
-    return from_installed_theme(key);
+    return std::nullopt;
 }
 
 static RGB parse_color_prop(const QJsonObject& obj, const QString& key, const RGB& fallback) {
     if (obj.contains(key) && obj[key].isString()) {
-        return RGB::from_hex(obj[key].toString().toStdString());
+        RGB parsed;
+        // A malformed swatch must never turn every anchor black (which used to
+        // render the wallpaper as a black screen).
+        if (RGB::from_hex_checked(obj[key].toString().toStdString(), parsed)) {
+            return parsed;
+        }
     }
     return fallback;
 }

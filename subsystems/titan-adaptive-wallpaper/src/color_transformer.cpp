@@ -67,8 +67,9 @@ RGB ColorTransformer::transform_pixel(const RGB& src) const {
     OKLab in_lab = rgb_to_oklab(src);
     float in_L = in_lab.L;
 
-    // AMOLED special crush
-    if (m_options.amoled_black_crush && in_L < 0.06f) {
+    // AMOLED crush only affects true near-blacks. A broader threshold used to
+    // swallow most of an already dark wallpaper and look like a black screen.
+    if (m_options.amoled_black_crush && in_L < 0.02f) {
         return { 0.0f, 0.0f, 0.0f };
     }
 
@@ -154,7 +155,9 @@ QImage ColorTransformer::transform(const QImage& source) const {
             OKLab in_lab = rgb_u8_to_oklab(r, g, b);
             float in_L = in_lab.L;
 
-            if (amoled_crush && in_L < 0.06f) {
+            if (amoled_crush && in_L < 0.02f) {
+                // Keep the source alpha intact; dropping it would hand swaybg a
+                // fully transparent image that reads as a blank wallpaper.
                 scanline[x] = (static_cast<uint32_t>(a) << 24);
                 continue;
             }
