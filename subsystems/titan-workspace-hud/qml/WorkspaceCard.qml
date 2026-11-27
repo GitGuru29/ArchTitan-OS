@@ -13,18 +13,57 @@ Rectangle {
     property int winCount: 0
     property bool hasAudio: false
 
+    readonly property bool liquidGlass: (typeof AppearanceSettings !== "undefined" &&
+                                         AppearanceSettings.glassmorphism !== undefined)
+                                        ? AppearanceSettings.glassmorphism !== false
+                                        : true
+
     width: cardWidth
     height: cardHeight
     radius: 16
+    clip: true
 
-    color: isActive ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.12)
-                    : (dropArea.containsDrag ? TitanTheme.accentSofter
-                                             : (cardMouse.containsMouse ? TitanTheme.bg4 : TitanTheme.glassAlt))
+    color: isActive ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b,
+                              liquidGlass ? 0.14 : 0.24)
+                    : (dropArea.containsDrag ? (liquidGlass ? TitanTheme.accentSofter : TitanTheme.accentSoft)
+                                             : (cardMouse.containsMouse ? (liquidGlass ? TitanTheme.glassCard : TitanTheme.bg3)
+                                                                        : (liquidGlass ? TitanTheme.glassAlt : TitanTheme.bg1)))
     border.width: isActive || dropArea.containsDrag ? 2 : 1
     border.color: isActive || dropArea.containsDrag ? TitanTheme.accentEdge : TitanTheme.borderSubtle
 
-    Behavior on color { ColorAnimation { duration: 160 } }
-    Behavior on border.color { ColorAnimation { duration: 160 } }
+    Behavior on color { ColorAnimation { duration: 180 } }
+    Behavior on border.color { ColorAnimation { duration: 180 } }
+
+    // Liquid-glass body sheen and refraction lip.
+    Rectangle {
+        anchors.fill: parent
+        visible: card.liquidGlass
+        gradient: Gradient {
+            orientation: Gradient.Vertical
+            GradientStop { position: 0.0; color: "#24FFFFFF" }
+            GradientStop { position: 0.45; color: "#05FFFFFF" }
+            GradientStop { position: 1.0; color: "#12000000" }
+        }
+        z: 1
+    }
+
+    Rectangle {
+        anchors { left: parent.left; right: parent.right; top: parent.top }
+        height: 1
+        visible: card.liquidGlass
+        color: Qt.rgba(1, 1, 1, 0.38)
+        z: 3
+    }
+
+    Rectangle {
+        anchors.fill: parent
+        radius: card.radius
+        color: "transparent"
+        border.color: Qt.rgba(1, 1, 1, 0.10)
+        border.width: 1
+        visible: card.liquidGlass
+        z: 3
+    }
 
     Rectangle {
         id: shortcutPill
@@ -35,7 +74,7 @@ Rectangle {
         height: 22
         radius: 7
         color: isActive ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.28)
-                        : Qt.rgba(0.05, 0.05, 0.08, 0.66)
+                        : Qt.rgba(0.05, 0.05, 0.08, card.liquidGlass ? 0.42 : 0.72)
         border.color: isActive ? TitanTheme.accentEdge : TitanTheme.borderSubtle
         border.width: 1
         z: 5
@@ -90,7 +129,7 @@ Rectangle {
         width: countText.implicitWidth + 14
         height: 22
         radius: 7
-        color: Qt.rgba(0.05, 0.05, 0.08, 0.74)
+        color: Qt.rgba(0.05, 0.05, 0.08, card.liquidGlass ? 0.46 : 0.78)
         border.color: TitanTheme.borderSubtle
         border.width: 1
         z: 5
@@ -158,7 +197,7 @@ Rectangle {
         width: 124
         height: 28
         radius: 14
-        color: TitanTheme.glassCard
+        color: card.liquidGlass ? TitanTheme.glassCard : TitanTheme.bg1
         border.color: TitanTheme.accentEdge
         border.width: 1
         visible: dropArea.containsDrag

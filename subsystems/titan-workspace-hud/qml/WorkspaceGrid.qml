@@ -6,7 +6,10 @@ Item {
 
     property string searchText: ""
 
-    readonly property bool liquidGlass: AppearanceSettings.glassmorphism !== false
+    readonly property bool liquidGlass: (typeof AppearanceSettings !== "undefined" &&
+                                         AppearanceSettings.glassmorphism !== undefined)
+                                        ? AppearanceSettings.glassmorphism !== false
+                                        : true
     readonly property int columns: 5
     readonly property int rows: 2
     readonly property int spacing: 8
@@ -61,40 +64,79 @@ Item {
         anchors.fill: parent
         anchors.margins: 6
         radius: outerRadius + 6
-        color: Qt.rgba(0, 0, 0, 0.45)
+        color: Qt.rgba(0, 0, 0, gridContainer.liquidGlass ? 0.32 : 0.62)
         z: -1
+
+        Behavior on color { ColorAnimation { duration: 180 } }
     }
 
     Rectangle {
         id: glassSurface
         anchors.fill: parent
         radius: outerRadius
-        color: gridContainer.liquidGlass ? TitanTheme.glassCard : TitanTheme.bg1
+        color: gridContainer.liquidGlass ? TitanTheme.glass : TitanTheme.bg0
         border.width: 1
-        border.color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g,
-                              TitanTheme.accent.b, gridContainer.liquidGlass ? 0.45 : 0.18)
+        border.color: gridContainer.liquidGlass
+                      ? Qt.rgba(1, 1, 1, 0.18)
+                      : Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g,
+                                TitanTheme.accent.b, 0.18)
         clip: true
 
+        Behavior on color { ColorAnimation { duration: 180 } }
+
+        // Frosted body: white at the top, dark vignette at the bottom.
         Rectangle {
             anchors.fill: parent
             visible: gridContainer.liquidGlass
             gradient: Gradient {
                 orientation: Gradient.Vertical
-                GradientStop { position: 0.0; color: "#26FFFFFF" }
-                GradientStop { position: 0.42; color: "#08FFFFFF" }
-                GradientStop { position: 1.0; color: "#12000000" }
+                GradientStop { position: 0.0; color: "#2EFFFFFF" }
+                GradientStop { position: 0.38; color: "#0AFFFFFF" }
+                GradientStop { position: 1.0; color: "#16000000" }
             }
+        }
+
+        // Specular top lip — the bright refraction edge of liquid glass.
+        Rectangle {
+            anchors { left: parent.left; right: parent.right; top: parent.top }
+            height: 1.5
+            visible: gridContainer.liquidGlass
+            color: Qt.rgba(1, 1, 1, 0.42)
         }
 
         Rectangle {
             anchors { left: parent.left; right: parent.right; top: parent.top }
-            height: 52
+            height: 64
             visible: gridContainer.liquidGlass
-            opacity: 0.5
+            opacity: 0.55
             gradient: Gradient {
                 orientation: Gradient.Vertical
-                GradientStop { position: 0.0; color: "#4DFFFFFF" }
+                GradientStop { position: 0.0; color: "#66FFFFFF" }
                 GradientStop { position: 1.0; color: "#00FFFFFF" }
+            }
+        }
+
+        // Slow travelling highlight, like the host shell's glass sweep.
+        Rectangle {
+            id: specularSweep
+            anchors.verticalCenter: parent.verticalCenter
+            width: 220
+            height: parent.height * 2
+            rotation: -18
+            visible: gridContainer.liquidGlass
+            gradient: Gradient {
+                orientation: Gradient.Horizontal
+                GradientStop { position: 0.0; color: "#00FFFFFF" }
+                GradientStop { position: 0.5; color: "#1AFFFFFF" }
+                GradientStop { position: 1.0; color: "#00FFFFFF" }
+            }
+
+            NumberAnimation on x {
+                from: -260
+                to: glassSurface.width + 260
+                duration: 9000
+                loops: Animation.Infinite
+                easing.type: Easing.Linear
             }
         }
 
@@ -138,6 +180,17 @@ Item {
 
             Behavior on x { NumberAnimation { duration: 180; easing.type: Easing.OutQuad } }
             Behavior on y { NumberAnimation { duration: 180; easing.type: Easing.OutQuad } }
+        }
+
+        // Inner rim keeps the glass edge visible over the workspace cards.
+        Rectangle {
+            anchors.fill: parent
+            radius: outerRadius
+            color: "transparent"
+            border.color: Qt.rgba(1, 1, 1, 0.10)
+            border.width: 1
+            visible: gridContainer.liquidGlass
+            z: 24
         }
     }
 }

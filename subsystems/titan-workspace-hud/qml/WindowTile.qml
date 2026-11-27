@@ -47,7 +47,29 @@ Item {
         border.color: isFocused || dragArea.containsMouse ? TitanTheme.accentEdge : TitanTheme.borderSubtle
         border.width: isFocused || dragArea.containsMouse ? 1.5 : 1
 
+        Behavior on color { ColorAnimation { duration: 180 } }
         Behavior on border.color { ColorAnimation { duration: 150 } }
+
+        // Liquid-glass sheen over the thumbnail, with a bright top refraction lip.
+        Rectangle {
+            anchors.fill: parent
+            visible: windowTile.liquidGlass
+            gradient: Gradient {
+                orientation: Gradient.Vertical
+                GradientStop { position: 0.0; color: "#20FFFFFF" }
+                GradientStop { position: 0.5; color: "#04FFFFFF" }
+                GradientStop { position: 1.0; color: "#0C000000" }
+            }
+            z: 4
+        }
+
+        Rectangle {
+            anchors { left: parent.left; right: parent.right; top: parent.top }
+            height: 1
+            visible: windowTile.liquidGlass
+            color: Qt.rgba(1, 1, 1, 0.34)
+            z: 4
+        }
 
         Image {
             id: winThumbnail
@@ -71,7 +93,7 @@ Item {
             anchors.margins: 1
             height: 18
             radius: 8
-            color: TitanTheme.glass
+            color: windowTile.liquidGlass ? TitanTheme.glass : TitanTheme.bg2
             z: 5
 
             Row {
@@ -108,7 +130,7 @@ Item {
             width: 24
             height: 24
             radius: 6
-            color: TitanTheme.glassCard
+            color: windowTile.liquidGlass ? TitanTheme.glassCard : TitanTheme.bg1
             border.color: TitanTheme.borderSubtle
             border.width: 1
             z: 8
@@ -170,7 +192,8 @@ Item {
             width: 16
             height: 16
             radius: 8
-            color: closeMouse.containsMouse ? TitanTheme.danger : Qt.rgba(0.05, 0.05, 0.08, 0.55)
+            color: closeMouse.containsMouse ? TitanTheme.danger
+                                            : Qt.rgba(0.05, 0.05, 0.08, windowTile.liquidGlass ? 0.38 : 0.72)
             z: 10
 
             Text {
@@ -198,7 +221,7 @@ Item {
             width: Math.min(parent.width - 8, titleText.implicitWidth + 12)
             height: 16
             radius: 4
-            color: TitanTheme.glassCard
+            color: windowTile.liquidGlass ? TitanTheme.glassCard : TitanTheme.bg1
             border.color: TitanTheme.borderSubtle
             border.width: 1
             opacity: dragArea.containsMouse && !dragArea.drag.active ? 1.0 : 0.0

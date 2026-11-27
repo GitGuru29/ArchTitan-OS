@@ -20,7 +20,7 @@
 - **Drag-and-Drop Relocation:** Drag any tile into another workspace card to dispatch Hyprland `movetoworkspacesilent`.
 - **Window Controls:** Close windows from the tile's `✕` button or click a tile to focus it.
 - **Host-style Focus Ring:** An accent outline slides between cells to mark the active workspace.
-- **Liquid Glass:** Frosted sheet, specular sheen, cards and tiles follow the Settings `glassmorphism` toggle live.
+- **Liquid Glass:** Frosted sheet, travelling specular highlight, bright refraction lips and translucent cards/tiles. The scrim lightens so Hyprland's backdrop blur shows through. Every surface follows the Settings → Appearance → Glassmorphism toggle live; disabled mode uses solid theme surfaces.
 - **Direct Hyprland IPC:** Queries `$XDG_RUNTIME_DIR/hypr/$HYPRLAND_INSTANCE_SIGNATURE/.socket.sock` directly in C++.
 
 ## Architecture

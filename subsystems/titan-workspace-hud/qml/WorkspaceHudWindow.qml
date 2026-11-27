@@ -13,7 +13,8 @@ Window {
     color: "transparent"
     visible: false
 
-    readonly property bool liquidGlass: (typeof AppearanceSettings !== "undefined")
+    readonly property bool liquidGlass: (typeof AppearanceSettings !== "undefined" &&
+                                         AppearanceSettings.glassmorphism !== undefined)
                                         ? AppearanceSettings.glassmorphism !== false
                                         : true
 
@@ -55,7 +56,10 @@ Window {
     // Dimmed full-screen scrim, like the host overview. Clicking away closes.
     Rectangle {
         anchors.fill: parent
-        color: Qt.rgba(0.015, 0.02, 0.035, 0.76)
+        // Lighter scrim when glass is on so Hyprland's backdrop blur shows through.
+        color: Qt.rgba(0.015, 0.02, 0.035, hudRoot.liquidGlass ? 0.44 : 0.80)
+
+        Behavior on color { ColorAnimation { duration: 180 } }
 
         MouseArea {
             anchors.fill: parent
@@ -94,13 +98,39 @@ Window {
             width: parent.width
             height: 46
             radius: 14
-            color: hudRoot.liquidGlass ? TitanTheme.glassCard : TitanTheme.bg1
+            clip: true
+            color: hudRoot.liquidGlass ? TitanTheme.glass : TitanTheme.bg1
             border.width: 1
-            border.color: Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g,
-                                  TitanTheme.accent.b, hudRoot.liquidGlass ? 0.42 : 0.18)
+            border.color: hudRoot.liquidGlass
+                          ? Qt.rgba(1, 1, 1, 0.20)
+                          : Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g,
+                                    TitanTheme.accent.b, 0.18)
+
+            Behavior on color { ColorAnimation { duration: 180 } }
+
+            Rectangle {
+                anchors.fill: parent
+                visible: hudRoot.liquidGlass
+                gradient: Gradient {
+                    orientation: Gradient.Vertical
+                    GradientStop { position: 0.0; color: "#2AFFFFFF" }
+                    GradientStop { position: 0.55; color: "#05FFFFFF" }
+                    GradientStop { position: 1.0; color: "#10000000" }
+                }
+                z: 0
+            }
+
+            Rectangle {
+                anchors { left: parent.left; right: parent.right; top: parent.top }
+                height: 1
+                visible: hudRoot.liquidGlass
+                color: Qt.rgba(1, 1, 1, 0.40)
+                z: 1
+            }
 
             TextField {
                 id: searchField
+                z: 2
                 anchors.fill: parent
                 leftPadding: 16
                 rightPadding: 92
@@ -128,6 +158,7 @@ Window {
             }
 
             Text {
+                z: 2
                 anchors.right: parent.right
                 anchors.rightMargin: 14
                 anchors.verticalCenter: parent.verticalCenter
