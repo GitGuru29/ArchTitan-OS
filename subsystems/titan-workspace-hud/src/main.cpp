@@ -1,6 +1,9 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
+#include <QQmlPropertyMap>
+#include <QSettings>
+#include <QFileSystemWatcher>
 #include <QQuickWindow>
 #include <QQuickImageProvider>
 #include <QIcon>
@@ -128,6 +131,24 @@ int main(int argc, char *argv[])
     QQmlApplicationEngine engine;
     engine.addImageProvider("icon", new AppIconProvider());
     engine.rootContext()->setContextProperty("hyprland", &hyprland);
+
+    // Mirror Settings > Appearance > Glassmorphism into QML (same contract as
+    // the media HUD) so the overview can follow the toggle live.
+    auto *appearance = QQmlPropertyMap::create(&app);
+    auto refreshGlass = [appearance]() {
+        QSettings settings(QStringLiteral("ArchTitan"), QStringLiteral("archtitan-settings"));
+        appearance->insert(QStringLiteral("glassmorphism"),
+                           settings.value(QStringLiteral("appearance/glassmorphism"), true).toBool());
+    };
+    refreshGlass();
+    engine.rootContext()->setContextProperty(QStringLiteral("AppearanceSettings"), appearance);
+
+    const QString settingsFile = QSettings(QStringLiteral("ArchTitan"),
+                                           QStringLiteral("archtitan-settings")).fileName();
+    auto *settingsWatcher = new QFileSystemWatcher(&app);
+    settingsWatcher->addPath(QFileInfo(settingsFile).absolutePath());
+    QObject::connect(settingsWatcher, &QFileSystemWatcher::directoryChanged,
+                     &app, refreshGlass);
 
     const QUrl url(QStringLiteral("qrc:/qml/WorkspaceHudWindow.qml"));
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,

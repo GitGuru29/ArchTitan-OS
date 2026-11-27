@@ -23,6 +23,8 @@ fi
 echo ""
 echo "[1/3] Copying system binaries to $PEN_ROOT/usr/local/bin/..."
 BINARIES=(
+    "titan-shell"
+    "titan-workspace-hud"
     "titan-adaptive-wallpaper"
     "archtitan-settings"
     "titan-set-wallpaper"
@@ -30,7 +32,6 @@ BINARIES=(
     "titan-wallpaper-picker"
     "titan-media-hud"
     "titan-theme"
-    "titan-media-hud"
     "titan-tour"
     "titan-ai"
     "titan-ai-kitty"
@@ -57,8 +58,8 @@ for bin in "${BINARIES[@]}"; do
         if [ "$was_immutable" -eq 1 ]; then
             sudo chattr +i "$dest"
         fi
-        # Also sync to /usr/bin if present
-        if [ -d "$PEN_ROOT/usr/bin" ] && [ "$bin" = "titan-media-hud" ]; then
+        # Also sync to /usr/bin if present on target
+        if [ -d "$PEN_ROOT/usr/bin" ] && [ -e "$PEN_ROOT/usr/bin/$bin" ]; then
             sudo cp -f "$src" "$PEN_ROOT/usr/bin/$bin"
             sudo chmod 755 "$PEN_ROOT/usr/bin/$bin"
         fi
