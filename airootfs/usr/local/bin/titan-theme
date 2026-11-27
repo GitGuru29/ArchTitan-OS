@@ -764,6 +764,7 @@ def cmd_set(tid: str, change_wallpaper: bool = True, notify_user: bool = True) -
             except Exception:
                 pass
 
+    use_theme_wallpaper = os.environ.get("TITAN_USE_THEME_WALLPAPER", "").lower() in ("1", "true", "yes")
     if (cur_wp and os.path.isfile(cur_wp)
             and "/archtitan/wallpapers/" not in cur_wp
             and not use_theme_wallpaper):

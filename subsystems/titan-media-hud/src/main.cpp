@@ -45,6 +45,7 @@ int main(int argc, char *argv[])
                 socket.write((cmd + "\n").toUtf8());
                 socket.flush();
                 socket.waitForBytesWritten(300);
+                usleep(30000);
                 return 0;
             }
             if (cmd == "toggle" || cmd == "show") {
@@ -91,6 +92,9 @@ int main(int argc, char *argv[])
     qmlRegisterSingletonInstance<AudioProfileController>("ArchTitan.Media", 1, 0, "AudioProfile", &audioCtrl);
 
     QQmlApplicationEngine engine;
+    engine.addImportPath(QStringLiteral("/usr/lib/qt6/qml"));
+    engine.addImportPath(QStringLiteral("/usr/local/lib/qt6/qml"));
+
     // Mirror Settings glassmorphism into QML.
     auto *appearance = QQmlPropertyMap::create(&app);
     auto refreshGlass = [appearance]() {
@@ -123,26 +127,22 @@ int main(int argc, char *argv[])
 
         auto *layerWindow = LayerShellQt::Window::get(window);
         if (layerWindow) {
-            // Host Super+M sits left of screen centre, just under the bar.
-            layerWindow->setAnchors(LayerShellQt::Window::Anchors(LayerShellQt::Window::AnchorTop | LayerShellQt::Window::AnchorLeft));
-            QScreen *screen = window->screen();
-            const int hostLeft = screen ? (screen->geometry().center().x() - 546) : 0;
-            const int leftMargin = hostLeft > 0 ? hostLeft : 0;
+            // Anchor centered at top, positioned just below Waybar
+            layerWindow->setAnchors(LayerShellQt::Window::Anchors(LayerShellQt::Window::AnchorTop));
             layerWindow->setLayer(LayerShellQt::Window::LayerOverlay);
-
-            // Position just below Waybar: 4px margin + 34px height + 4px gap = 42px
-            layerWindow->setMargins(QMargins(leftMargin, 42, 0, 0));
-
-            // Don't reserve exclusive space — this floats over content
+            layerWindow->setMargins(QMargins(0, 42, 0, 0));
             layerWindow->setExclusiveZone(0);
-
-            // Get keyboard when visible (for ESC key)
             layerWindow->setKeyboardInteractivity(LayerShellQt::Window::KeyboardInteractivityOnDemand);
-
             layerWindow->setScope("titan-media-island");
         }
 
         window->show();
+
+        // Ensure window maps and brings to front on Wayland LayerShell when opened
+        QObject::connect(&islandCtrl, &MediaIslandController::requestOpen, window, [window]() {
+            window->show();
+            window->requestActivate();
+        });
     }, Qt::QueuedConnection);
 
     engine.load(url);

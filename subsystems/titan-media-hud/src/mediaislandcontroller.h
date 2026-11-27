@@ -102,4 +102,5 @@ private:
     bool m_autoPopupEnabled{true};
     QTimer m_autoHideTimer;
     QTimer m_debounceTimer;
+    QTimer m_stateSafetyTimer;
 };

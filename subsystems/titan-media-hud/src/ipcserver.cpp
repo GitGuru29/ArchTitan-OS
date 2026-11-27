@@ -49,26 +49,38 @@ void IpcServer::onNewConnection()
         QLocalSocket *socket = m_server->nextPendingConnection();
         if (!socket) continue;
 
-        // Read command (small payload, blocking is fine)
-        socket->waitForReadyRead(100);
-        QString cmd = QString::fromUtf8(socket->readAll()).trimmed().toLower();
-        socket->disconnectFromServer();
-        socket->deleteLater();
+        auto handleData = [this, socket]() {
+            const QByteArray data = socket->readAll();
+            const QString cmd = QString::fromUtf8(data).trimmed().toLower();
+            if (cmd.isEmpty()) return;
 
-        if (cmd == "toggle") {
-            m_controller->toggle();
-        } else if (cmd == "show") {
-            if (!m_controller->isVisible()) {
-                m_controller->toggle(); // opens
+            if (cmd == "toggle") {
+                m_controller->toggle();
+            } else if (cmd == "show") {
+                if (!m_controller->isVisible()) {
+                    m_controller->toggle();
+                }
+            } else if (cmd == "hide" || cmd == "dismiss") {
+                m_controller->dismiss();
+            } else if (cmd == "expand") {
+                m_controller->expand();
+            } else if (cmd == "compact" || cmd == "collapse") {
+                m_controller->collapse();
+            } else {
+                qDebug() << "IpcServer: Unknown command:" << cmd;
             }
-        } else if (cmd == "hide" || cmd == "dismiss") {
-            m_controller->dismiss();
-        } else if (cmd == "expand") {
-            m_controller->expand();
-        } else if (cmd == "compact" || cmd == "collapse") {
-            m_controller->collapse();
+        };
+
+        if (socket->bytesAvailable() > 0) {
+            handleData();
+            socket->disconnectFromServer();
+            socket->deleteLater();
         } else {
-            qDebug() << "IpcServer: Unknown command:" << cmd;
+            connect(socket, &QLocalSocket::readyRead, this, [handleData, socket]() {
+                handleData();
+                socket->disconnectFromServer();
+            });
+            connect(socket, &QLocalSocket::disconnected, socket, &QLocalSocket::deleteLater);
         }
     }
 }

@@ -16,6 +16,17 @@ MediaIslandController::MediaIslandController(QObject *parent)
     // Debounce timer to prevent repeated auto-popups from rapid metadata changes
     m_debounceTimer.setSingleShot(true);
     m_debounceTimer.setInterval(800);
+
+    // Safety fallback timer to prevent state lockups if QML animations are interrupted
+    m_stateSafetyTimer.setSingleShot(true);
+    m_stateSafetyTimer.setInterval(600);
+    connect(&m_stateSafetyTimer, &QTimer::timeout, this, [this]() {
+        if (m_state == Opening) {
+            setState(Compact);
+        } else if (m_state == Closing) {
+            setState(Hidden);
+        }
+    });
 }
 
 void MediaIslandController::setState(State newState)
@@ -27,51 +38,25 @@ void MediaIslandController::setState(State newState)
 
 void MediaIslandController::toggle()
 {
-    switch (m_state) {
-    case Hidden:
-        m_autoHideTimer.stop();
+    m_autoHideTimer.stop();
+    if (m_state == Hidden || m_state == Closing) {
         setState(Opening);
+        m_stateSafetyTimer.start();
         emit requestOpen();
-        break;
-
-    case Compact:
-    case Expanded:
-        m_autoHideTimer.stop();
+    } else {
         setState(Closing);
+        m_stateSafetyTimer.start();
         emit requestClose();
-        break;
-
-    // If animating, ignore rapid presses — let current animation finish
-    case Opening:
-    case Expanding:
-    case Collapsing:
-    case Closing:
-        break;
     }
 }
 
 void MediaIslandController::dismiss()
 {
-    switch (m_state) {
-    case Compact:
-    case Expanded:
-        m_autoHideTimer.stop();
+    m_autoHideTimer.stop();
+    if (m_state != Hidden) {
         setState(Closing);
+        m_stateSafetyTimer.start();
         emit requestClose();
-        break;
-
-    case Expanding:
-        // Cancel expand, go to closing
-        m_autoHideTimer.stop();
-        setState(Closing);
-        emit requestClose();
-        break;
-
-    case Opening:
-    case Collapsing:
-    case Closing:
-    case Hidden:
-        break;
     }
 }
 
@@ -94,6 +79,7 @@ void MediaIslandController::collapse()
 
 void MediaIslandController::onOpenAnimationFinished()
 {
+    m_stateSafetyTimer.stop();
     if (m_state == Opening) {
         setState(Compact);
     }
@@ -101,6 +87,7 @@ void MediaIslandController::onOpenAnimationFinished()
 
 void MediaIslandController::onCloseAnimationFinished()
 {
+    m_stateSafetyTimer.stop();
     if (m_state == Closing) {
         setState(Hidden);
     }
@@ -130,6 +117,7 @@ void MediaIslandController::autoPopup()
     m_debounceTimer.start();
 
     setState(Opening);
+    m_stateSafetyTimer.start();
     emit requestOpen();
 
     // Auto-hide after 4 seconds
