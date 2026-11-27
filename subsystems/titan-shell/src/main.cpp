@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
                       << "  -n, --notifications   Open quick settings notifications\n"
                       << "  -m, --sysmon          Toggle system monitor sidebar\n"
                       << "  -u, --menu            Toggle application menu\n"
-                      << "  -w, --workspace-hud   Toggle workspace HUD\n"
+                      << "  -w, --workspace-hud   Toggle overview (workspace switcher)\n"
                       << "  -h, --help            Displays help on commandline options\n";
             return 0;
         } else if (arg == QStringLiteral("--spotlight") || arg == QStringLiteral("-s") || arg == QStringLiteral("--toggle-spotlight")) {
@@ -97,7 +97,9 @@ int main(int argc, char *argv[])
         } else if (arg == QStringLiteral("--hide-menu")) {
             if (ShellIpc::sendCommand(QStringLiteral("menu-hide"))) return 0;
             break;
-        } else if (arg == QStringLiteral("--workspace-hud") || arg == QStringLiteral("-w") || arg == QStringLiteral("--toggle-workspace-hud")) {
+        } else if (arg == QStringLiteral("--workspace-hud") || arg == QStringLiteral("-w") ||
+                   arg == QStringLiteral("--toggle-workspace-hud") ||
+                   arg == QStringLiteral("--toggle-overview") || arg == QStringLiteral("--overview")) {
             if (ShellIpc::sendCommand(QStringLiteral("workspace-hud-toggle"))) return 0;
             break;
         } else if (arg == QStringLiteral("--show-workspace-hud")) {

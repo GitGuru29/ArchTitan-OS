@@ -313,13 +313,16 @@ void ShellController::registerWorkspaceHudWindow(QObject *obj)
 {
     auto *window = qobject_cast<QQuickWindow *>(obj);
     if (!window) return;
-    window->setWidth(1264);
-    window->setHeight(320);
+    // Host-style overview: full-screen layer with a dimmed scrim and centred
+    // sheet. The QML root owns its size, so don't force a fixed window here.
     auto *layer = LayerShellQt::Window::get(window);
     if (layer) {
         layer->setLayer(LayerShellQt::Window::LayerOverlay);
-        layer->setAnchors(LayerShellQt::Window::Anchors(LayerShellQt::Window::AnchorTop));
-        layer->setMargins(QMargins(0, 110, 0, 0));
+        layer->setAnchors(LayerShellQt::Window::Anchors(
+            LayerShellQt::Window::AnchorTop | LayerShellQt::Window::AnchorBottom |
+            LayerShellQt::Window::AnchorLeft | LayerShellQt::Window::AnchorRight));
+        layer->setMargins(QMargins(0, 0, 0, 0));
+        layer->setExclusiveZone(0);
         layer->setKeyboardInteractivity(LayerShellQt::Window::KeyboardInteractivityOnDemand);
         layer->setScope(QStringLiteral("titan-workspace-hud"));
     }

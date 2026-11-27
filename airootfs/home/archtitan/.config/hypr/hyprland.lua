@@ -97,7 +97,7 @@ end
 -- the same physical key. Binding more than one variant runs the command twice
 -- and `--toggle` closes the window it just opened.
 superBind(mainMod .. " + Space", hl.dsp.exec_cmd("titan-spotlight --toggle"))  -- Super+Space: Titan Spotlight
-superBind(mainMod .. " + Tab", hl.dsp.exec_cmd("titan-workspace-hud --toggle"))  -- Super+Tab: 10-Workspace HUD Switcher
+superBind(mainMod .. " + Tab", hl.dsp.exec_cmd("titan-workspace-hud --toggle-overview"), { description = "Shell: Toggle overview" })
 superBind(mainMod .. " + D", hl.dsp.exec_cmd("titan-spotlight --toggle"))       -- Super+D: App Launcher (Spotlight)
 superBind(mainMod .. " + R", hl.dsp.exec_cmd("titan-spotlight --toggle"))  -- Super+R: Secondary App runner (Spotlight)
 superBind(mainMod .. " + slash", hl.dsp.exec_cmd("titan-menu --toggle"))        -- Help & Shortcuts Cheat Sheet (Super+/)

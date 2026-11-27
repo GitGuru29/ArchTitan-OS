@@ -174,13 +174,9 @@ void HyprlandController::refresh()
         }
     }
 
-    constexpr int cardW = 236;
-    constexpr int cardH = 136;
-    constexpr int usableW = cardW - 16;
-    constexpr int usableH = cardH - 16;
-    constexpr int offsetX = 8;
-    constexpr int offsetY = 8;
-
+    // Window rectangles are stored normalised (0..1) inside a workspace cell.
+    // QML scales them to the real cell size so the overview adapts to any
+    // monitor resolution instead of being locked to a fixed 236x136 card.
     QVariantList wsList;
     for (int wsId = 1; wsId <= 10; ++wsId) {
         QVariantMap wsObj;
@@ -201,24 +197,26 @@ void HyprlandController::refresh()
             double ww = szArr.size() >= 2 ? szArr.at(0).toDouble(100.0) : 100.0;
             double wh = szArr.size() >= 2 ? szArr.at(1).toDouble(100.0) : 100.0;
 
-            int rx, ry, rw, rh;
+            double nx, ny, nw, nh;
             if (numWins <= 4) {
-                rx = static_cast<int>((wx / monW) * usableW) + offsetX;
-                ry = static_cast<int>((wy / monH) * usableH) + offsetY;
-                rw = qMax(48, static_cast<int>((ww / monW) * usableW));
-                rh = qMax(48, static_cast<int>((wh / monH) * usableH));
+                nx = monW > 0 ? wx / monW : 0.02;
+                ny = monH > 0 ? wy / monH : 0.02;
+                nw = monW > 0 ? ww / monW : 0.25;
+                nh = monH > 0 ? wh / monH : 0.25;
             } else {
-                int subCol = i % 2;
-                int subRow = (i / 2) % 2;
-                rw = (usableW - 6) / 2;
-                rh = (usableH - 6) / 2;
-                rx = offsetX + subCol * (rw + 6);
-                ry = offsetY + subRow * (rh + 6);
+                const int subCol = i % 2;
+                const int subRow = (i / 2) % 2;
+                nw = 0.5;
+                nh = 0.5;
+                nx = subCol * 0.5;
+                ny = subRow * 0.5;
                 if (i >= 4) break;
             }
 
-            rx = qMax(6, qMin(rx, cardW - rw - 6));
-            ry = qMax(6, qMin(ry, cardH - rh - 6));
+            nw = qBound(0.08, nw, 0.96);
+            nh = qBound(0.08, nh, 0.96);
+            nx = qBound(0.0, nx, 1.0 - nw);
+            ny = qBound(0.0, ny, 1.0 - nh);
 
             QString appClass = c.value("class").toString();
             QString address = c.value("address").toString();
@@ -229,10 +227,10 @@ void HyprlandController::refresh()
             winObj["class"] = appClass;
             winObj["title"] = title;
             winObj["icon"] = resolveIcon(appClass);
-            winObj["rx"] = rx;
-            winObj["ry"] = ry;
-            winObj["rw"] = rw;
-            winObj["rh"] = rh;
+            winObj["rxN"] = nx;
+            winObj["ryN"] = ny;
+            winObj["rwN"] = nw;
+            winObj["rhN"] = nh;
             winObj["isFocused"] = (!activeWinAddress.isEmpty() && address == activeWinAddress);
 
             QString cleanAddress = address;

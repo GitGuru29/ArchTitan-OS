@@ -97,7 +97,9 @@ int main(int argc, char *argv[])
                 return 0;
             }
             return 0;
-        } else if (arg == "toggle" || arg == "--toggle") {
+        } else if (arg == "toggle" || arg == "--toggle" ||
+                   arg == "overview" || arg == "--overview" ||
+                   arg == "toggle-overview" || arg == "--toggle-overview") {
             if (IpcServer::sendCommand("TOGGLE")) {
                 return 0;
             }
@@ -115,7 +117,7 @@ int main(int argc, char *argv[])
 
     QGuiApplication app(argc, argv);
     app.setApplicationName("titan-workspace-hud");
-    app.setApplicationDisplayName("ArchTitan Workspace HUD");
+    app.setApplicationDisplayName("ArchTitan Overview");
     app.setOrganizationName("ArchTitan");
 
     std::signal(SIGINT, [](int) { QGuiApplication::quit(); });
@@ -161,14 +163,16 @@ int main(int argc, char *argv[])
         auto window = qobject_cast<QQuickWindow*>(obj);
         if (!window) return;
 
-        window->setWidth(1264);
-        window->setHeight(320);
-
+        // Host-style overview: a full-screen layer with a dimmed scrim and a
+        // centred workspace sheet. The QML root owns its own size.
         auto layerWindow = LayerShellQt::Window::get(window);
         if (layerWindow) {
             layerWindow->setLayer(LayerShellQt::Window::LayerOverlay);
-            layerWindow->setAnchors(LayerShellQt::Window::Anchors(LayerShellQt::Window::AnchorTop));
-            layerWindow->setMargins(QMargins(0, 110, 0, 0));
+            layerWindow->setAnchors(LayerShellQt::Window::Anchors(
+                LayerShellQt::Window::AnchorTop | LayerShellQt::Window::AnchorBottom |
+                LayerShellQt::Window::AnchorLeft | LayerShellQt::Window::AnchorRight));
+            layerWindow->setMargins(QMargins(0, 0, 0, 0));
+            layerWindow->setExclusiveZone(0);
             layerWindow->setKeyboardInteractivity(LayerShellQt::Window::KeyboardInteractivityOnDemand);
             layerWindow->setScope("titan-workspace-hud");
         }

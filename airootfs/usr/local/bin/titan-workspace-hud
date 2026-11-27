@@ -13,6 +13,8 @@ if [[ "$*" == *"--show"* ]]; then
     exec "$SHELL_BIN" --show-workspace-hud
 elif [[ "$*" == *"--hide"* ]]; then
     exec "$SHELL_BIN" --hide-workspace-hud
+elif [[ "$*" == *"--toggle-overview"* ]] || [[ "$*" == *"--overview"* ]]; then
+    exec "$SHELL_BIN" --overview
 else
     exec "$SHELL_BIN" --workspace-hud
 fi
