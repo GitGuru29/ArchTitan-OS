@@ -385,7 +385,6 @@ Window {
             }
 
             WheelHandler {
-                anchors.fill: parent
                 onWheel: (event) => {
                     if (!Mpris) return
                     var delta = event.angleDelta.y > 0 ? 0.05 : -0.05
