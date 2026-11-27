@@ -1,8 +1,10 @@
 import QtQuick
 import QtQuick.Controls
+import ArchTitan.TitanUI
 
 Rectangle {
     id: card
+
     property int cardIndex: 0
     property int wsId: 1
     property bool isActive: false
@@ -14,15 +16,16 @@ Rectangle {
     height: 136
     radius: 16
 
-
-    color: isActive ? "#D9181825" : (dropArea.containsDrag ? "#4000D2FF" : (cardMouse.containsMouse ? "#B3252838" : "#8C1E1E2E"))
-    border.color: isActive ? "#00D2FF" : (dropArea.containsDrag ? "#00D2FF" : (cardMouse.containsMouse ? "#26FFFFFF" : "#12FFFFFF"))
-    border.width: isActive || dropArea.containsDrag ? 2.5 : 1.5
+    color: isActive ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.14)
+                    : (dropArea.containsDrag ? TitanTheme.accentSofter
+                                             : (cardMouse.containsMouse ? TitanTheme.bg4 : TitanTheme.glassAlt))
+    border.width: isActive || dropArea.containsDrag ? 2 : 1
+    border.color: isActive || dropArea.containsDrag ? TitanTheme.accentEdge : TitanTheme.borderSubtle
 
     Behavior on color { ColorAnimation { duration: 160 } }
     Behavior on border.color { ColorAnimation { duration: 160 } }
 
-    // Direct Keyboard Shortcut Pill (󰘳 1 .. 󰘳 0)
+    // Direct keyboard shortcut pill (󰘳 1 .. 󰘳 0)
     Rectangle {
         id: shortcutPill
         anchors.top: parent.top
@@ -31,8 +34,9 @@ Rectangle {
         width: shortcutText.implicitWidth + 12
         height: 18
         radius: 6
-        color: isActive ? "#3300D2FF" : "#B311111B"
-        border.color: isActive ? "#8000D2FF" : "#1AFFFFFF"
+        color: isActive ? Qt.rgba(TitanTheme.accent.r, TitanTheme.accent.g, TitanTheme.accent.b, 0.28)
+                        : Qt.rgba(0.05, 0.05, 0.08, 0.66)
+        border.color: isActive ? TitanTheme.accentEdge : TitanTheme.borderSubtle
         border.width: 1
         z: 5
 
@@ -43,11 +47,11 @@ Rectangle {
             font.family: "JetBrainsMono Nerd Font, monospace"
             font.pixelSize: 10
             font.bold: true
-            color: isActive ? "#00D2FF" : "#80CDD6F4"
+            color: isActive ? TitanTheme.accent : TitanTheme.textMid
         }
     }
 
-    // Live Audio Stream Badge (Pulsing 󰕾)
+    // Pulsing audio badge
     Rectangle {
         id: audioPill
         visible: hasAudio
@@ -58,17 +62,16 @@ Rectangle {
         width: 22
         height: 18
         radius: 6
-        color: "#33A6E3A1"
-        border.color: "#80A6E3A1"
+        color: Qt.rgba(TitanTheme.success.r, TitanTheme.success.g, TitanTheme.success.b, 0.18)
+        border.color: Qt.rgba(TitanTheme.success.r, TitanTheme.success.g, TitanTheme.success.b, 0.48)
         border.width: 1
         z: 6
 
         Text {
-            id: audioGlyph
             anchors.centerIn: parent
             text: "󰕾"
             font.pixelSize: 10
-            color: "#A6E3A1"
+            color: TitanTheme.success
 
             SequentialAnimation on opacity {
                 running: hasAudio
@@ -79,7 +82,7 @@ Rectangle {
         }
     }
 
-    // Window Count Badge (Visible on busy spaces >= 3 windows)
+    // Window count badge
     Rectangle {
         id: countPill
         visible: winCount >= 3
@@ -89,8 +92,8 @@ Rectangle {
         width: countText.implicitWidth + 12
         height: 18
         radius: 6
-        color: "#CC11111B"
-        border.color: "#1AFFFFFF"
+        color: Qt.rgba(0.05, 0.05, 0.08, 0.74)
+        border.color: TitanTheme.borderSubtle
         border.width: 1
         z: 5
 
@@ -101,25 +104,29 @@ Rectangle {
             font.family: "Inter, sans-serif"
             font.pixelSize: 9
             font.weight: Font.DemiBold
-            color: "#A6CDD6F4"
+            color: TitanTheme.textMid
         }
     }
 
-    // Empty Workspace: Large Elegant Centered Number
+    // Host-style large workspace number, always present behind live tiles.
     Text {
-        visible: winCount === 0
         anchors.centerIn: parent
         text: wsId.toString()
         font.family: "Inter, Noto Sans, sans-serif"
         font.pixelSize: 52
         font.bold: true
-        color: isActive ? "#8C00D2FF" : "#38CDD6F4"
+        color: isActive ? TitanTheme.accent : TitanTheme.textHigh
+        opacity: winCount === 0 ? 0.82 : 0.16
+        z: 0
+
+        Behavior on opacity { NumberAnimation { duration: 160 } }
     }
 
-    // Occupied Workspace: Miniature Window Tiles
+    // Live miniature window tiles
     Item {
         anchors.fill: parent
         visible: winCount > 0
+        z: 2
 
         Repeater {
             model: windowList
@@ -138,7 +145,6 @@ Rectangle {
         }
     }
 
-    // Drop Area for relocating dragged windows
     DropArea {
         id: dropArea
         anchors.fill: parent
@@ -149,15 +155,14 @@ Rectangle {
         }
     }
 
-    // Drag Over Hint
     Rectangle {
         id: dropHint
         anchors.centerIn: parent
         width: 100
         height: 24
         radius: 12
-        color: "#CC11111B"
-        border.color: "#8000D2FF"
+        color: TitanTheme.glassCard
+        border.color: TitanTheme.accentEdge
         border.width: 1
         visible: dropArea.containsDrag
         z: 30
@@ -168,7 +173,7 @@ Rectangle {
             font.family: "Inter, sans-serif"
             font.pixelSize: 10
             font.weight: Font.DemiBold
-            color: "#00D2FF"
+            color: TitanTheme.accent
         }
     }
 
