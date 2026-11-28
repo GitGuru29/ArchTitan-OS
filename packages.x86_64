@@ -121,12 +121,25 @@ xdg-utils
 libnotify
 xdg-user-dirs
 
-# ── Qt Runtimes ───────────────────────────────────────────────────────────────
+# ── Qt & Quickshell Runtimes ──────────────────────────────────────────────────
 qt5-wayland
 qt6-wayland
 qt6-webengine
 qt6-5compat
-# wlr-layer-shell for the Qt6/QML overlay apps (titan-media-hud, titan-quicksettings)
+qt6-declarative
+qt6-svg
+qt6-imageformats
+qt6-multimedia
+qt6-positioning
+qt6-quicktimeline
+qt6-sensors
+qt6-virtualkeyboard
+kirigami
+kdialog
+syntax-highlighting
+cpptrace
+jemalloc
+# wlr-layer-shell for overlay apps
 layer-shell-qt
 
 # ── Developer Tools & Runtimes ────────────────────────────────────────────────

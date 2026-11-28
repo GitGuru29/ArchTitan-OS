@@ -55,9 +55,9 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP")
     hl.exec_cmd("hyprctl setcursor Bibata-Modern-Classic 24")
     hl.exec_cmd("systemctl --user restart xdg-desktop-portal-hyprland 2>/dev/null || true")
+    hl.exec_cmd("qs -c ii")
     hl.exec_cmd("titan-shell --daemon")
     hl.exec_cmd("titan-focus --daemon")
-    hl.exec_cmd("titan-media-hud --daemon")
     hl.exec_cmd("bash -c 'sleep 1 && waybar'")
     hl.exec_cmd("titan-wallpaper-restore")
     hl.exec_cmd("titan-hotzones")
@@ -97,7 +97,7 @@ end
 -- the same physical key. Binding more than one variant runs the command twice
 -- and `--toggle` closes the window it just opened.
 superBind(mainMod .. " + Space", hl.dsp.exec_cmd("titan-spotlight --toggle"))  -- Super+Space: Titan Spotlight
-superBind(mainMod .. " + Tab", hl.dsp.exec_cmd("titan-workspace-hud --toggle-overview"), { description = "Shell: Toggle overview" })
+superBind(mainMod .. " + Tab", hl.dsp.global("quickshell:overviewWorkspacesToggle"), { description = "Shell: Toggle overview" })
 superBind(mainMod .. " + D", hl.dsp.exec_cmd("titan-spotlight --toggle"))       -- Super+D: App Launcher (Spotlight)
 superBind(mainMod .. " + R", hl.dsp.exec_cmd("titan-spotlight --toggle"))  -- Super+R: Secondary App runner (Spotlight)
 superBind(mainMod .. " + slash", hl.dsp.exec_cmd("titan-menu --toggle"))        -- Help & Shortcuts Cheat Sheet (Super+/)
@@ -434,8 +434,8 @@ hl.layer_rule({ match = { namespace = "^swayosd$" }, blur = true, ignore_alpha =
 -- animated inside the surface, so suppress the compositor's map/unmap fade.
 hl.layer_rule({ name = "titan-zone-osd", match = { namespace = "^titan-zone-osd$" }, no_anim = true })
 
--- ArchTitan Media Island -- SUPER+M toggle (uses LayerShellQt, no window rules needed)
-hl.bind(mainMod .. " + M", hl.dsp.exec_cmd("titan-media-hud --toggle"))  -- Toggle media island overlay
+-- ArchTitan Media Controls -- SUPER+M toggle (Host Quickshell Media Controls)
+superBind(mainMod .. " + M", hl.dsp.global("quickshell:mediaControlsToggle"), { description = "Shell: Toggle media controls" })
 -- Media keys (XF86) & SwayOSD OSD bindings
 hl.bind("XF86AudioPlay",         hl.dsp.exec_cmd("playerctl play-pause"))
 hl.bind("XF86AudioNext",         hl.dsp.exec_cmd("playerctl next"))

@@ -23,6 +23,8 @@ fi
 echo ""
 echo "[1/3] Copying system binaries to $PEN_ROOT/usr/local/bin/..."
 BINARIES=(
+    "qs"
+    "quickshell"
     "titan-shell"
     "titan-workspace-hud"
     "titan-adaptive-wallpaper"
@@ -69,6 +71,24 @@ for bin in "${BINARIES[@]}"; do
 done
 
 echo ""
+echo "[1b/3] Installing Quickshell runtime libraries & QML modules..."
+if [ -d "$REPO_DIR/airootfs/usr/lib/qt6/qml/Quickshell" ]; then
+    sudo mkdir -p "$PEN_ROOT/usr/lib/qt6/qml"
+    sudo cp -rP "$REPO_DIR/airootfs/usr/lib/qt6/qml/Quickshell" "$PEN_ROOT/usr/lib/qt6/qml/"
+    echo "  -> Installed Quickshell QML modules"
+fi
+if ls "$REPO_DIR/airootfs/usr/lib/libjemalloc.so"* 1>/dev/null 2>&1; then
+    sudo cp -P "$REPO_DIR/airootfs/usr/lib/libjemalloc.so"* "$PEN_ROOT/usr/lib/" 2>/dev/null || true
+fi
+if ls "$REPO_DIR/airootfs/usr/lib/libcpptrace.so"* 1>/dev/null 2>&1; then
+    sudo cp -P "$REPO_DIR/airootfs/usr/lib/libcpptrace.so"* "$PEN_ROOT/usr/lib/" 2>/dev/null || true
+fi
+if [ -d "$REPO_DIR/airootfs/usr/share/fonts/TTF/illogical-impulse-google-sans-flex" ]; then
+    sudo mkdir -p "$PEN_ROOT/usr/share/fonts/TTF"
+    sudo cp -r "$REPO_DIR/airootfs/usr/share/fonts/TTF/illogical-impulse-google-sans-flex" "$PEN_ROOT/usr/share/fonts/TTF/"
+fi
+
+echo ""
 echo "[2/3] Installing systemd user services to $PEN_ROOT/etc/systemd/user/..."
 sudo mkdir -p "$PEN_ROOT/etc/systemd/user"
 sudo cp -f "$REPO_DIR/airootfs/etc/systemd/user/titan-adaptive-wallpaper.service" "$PEN_ROOT/etc/systemd/user/"
@@ -109,15 +129,30 @@ EOF
         cp -f "$REPO_DIR/airootfs/home/archtitan/.config/hypr/hyprland.lua" "$TARGET_USER_HOME/.config/hypr/" 2>/dev/null || true
     fi
 
+    # Sync Quickshell and Illogical Impulse configs
+    if [ -d "$REPO_DIR/airootfs/home/archtitan/.config/quickshell" ]; then
+        mkdir -p "$TARGET_USER_HOME/.config/quickshell"
+        cp -rP "$REPO_DIR/airootfs/home/archtitan/.config/quickshell/"* "$TARGET_USER_HOME/.config/quickshell/" 2>/dev/null || true
+        echo "  -> Synced quickshell config to user"
+    fi
+    if [ -d "$REPO_DIR/airootfs/home/archtitan/.config/illogical-impulse" ]; then
+        mkdir -p "$TARGET_USER_HOME/.config/illogical-impulse"
+        cp -rP "$REPO_DIR/airootfs/home/archtitan/.config/illogical-impulse/"* "$TARGET_USER_HOME/.config/illogical-impulse/" 2>/dev/null || true
+        echo "  -> Synced illogical-impulse config to user"
+    fi
+
     # Fix ownership to 1000:1000
     sudo chown -R 1000:1000 "$TARGET_USER_HOME/.config" 2>/dev/null || true
     echo "  -> User config and systemd auto-start configured."
 fi
 
 # Sync /etc/skel configs
-if [ -d "$PEN_ROOT/etc/skel/.config/hypr" ]; then
-    sudo cp -f "$REPO_DIR/airootfs/etc/skel/.config/hypr/hyprland.conf" "$PEN_ROOT/etc/skel/.config/hypr/"
-    sudo cp -f "$REPO_DIR/airootfs/etc/skel/.config/hypr/hyprland.lua" "$PEN_ROOT/etc/skel/.config/hypr/"
+if [ -d "$PEN_ROOT/etc/skel" ]; then
+    mkdir -p "$PEN_ROOT/etc/skel/.config/hypr" "$PEN_ROOT/etc/skel/.config/quickshell" "$PEN_ROOT/etc/skel/.config/illogical-impulse"
+    sudo cp -f "$REPO_DIR/airootfs/etc/skel/.config/hypr/hyprland.conf" "$PEN_ROOT/etc/skel/.config/hypr/" 2>/dev/null || true
+    sudo cp -f "$REPO_DIR/airootfs/etc/skel/.config/hypr/hyprland.lua" "$PEN_ROOT/etc/skel/.config/hypr/" 2>/dev/null || true
+    sudo cp -rP "$REPO_DIR/airootfs/etc/skel/.config/quickshell/"* "$PEN_ROOT/etc/skel/.config/quickshell/" 2>/dev/null || true
+    sudo cp -rP "$REPO_DIR/airootfs/etc/skel/.config/illogical-impulse/"* "$PEN_ROOT/etc/skel/.config/illogical-impulse/" 2>/dev/null || true
 fi
 
 echo ""

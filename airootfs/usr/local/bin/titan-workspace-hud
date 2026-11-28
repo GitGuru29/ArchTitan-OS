@@ -1,20 +1,23 @@
 #!/usr/bin/env bash
-# Wrapper shim forwarding to unified titan-shell
-SHELL_BIN="$(command -v titan-shell 2>/dev/null || echo "/usr/local/bin/titan-shell")"
+# ==============================================================================
+# titan-workspace-hud — Delegates to Host Quickshell Workspace Overview
+# ==============================================================================
 
-if [[ "$*" == *"-d"* ]] || [[ "$*" == *"--daemon"* ]]; then
-    if ! pgrep -x titan-shell >/dev/null; then
-        exec "$SHELL_BIN" --daemon
-    fi
-    exit 0
-fi
+ACTION="${1:-toggle}"
 
-if [[ "$*" == *"--show"* ]]; then
-    exec "$SHELL_BIN" --show-workspace-hud
-elif [[ "$*" == *"--hide"* ]]; then
-    exec "$SHELL_BIN" --hide-workspace-hud
-elif [[ "$*" == *"--toggle-overview"* ]] || [[ "$*" == *"--overview"* ]]; then
-    exec "$SHELL_BIN" --overview
-else
-    exec "$SHELL_BIN" --workspace-hud
-fi
+case "$ACTION" in
+    --daemon|-d)
+        if ! pgrep -x qs >/dev/null && ! pgrep -x quickshell >/dev/null; then
+            exec qs -c ii &
+        fi
+        ;;
+    --close|-c)
+        qs -c ii ipc call search close 2>/dev/null || hyprctl dispatch global quickshell:overviewWorkspacesClose 2>/dev/null || true
+        ;;
+    --open|-o)
+        qs -c ii ipc call search open 2>/dev/null || true
+        ;;
+    --toggle-overview|-t|toggle|*)
+        qs -c ii ipc call search workspacesToggle 2>/dev/null || hyprctl dispatch global quickshell:overviewWorkspacesToggle 2>/dev/null || true
+        ;;
+esac

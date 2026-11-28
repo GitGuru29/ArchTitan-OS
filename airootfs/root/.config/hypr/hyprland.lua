@@ -55,6 +55,7 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP")
     hl.exec_cmd("hyprctl setcursor Bibata-Modern-Classic 24")
     hl.exec_cmd("systemctl --user restart xdg-desktop-portal-hyprland 2>/dev/null || true")
+    hl.exec_cmd("qs -c ii")
     hl.exec_cmd("titan-shell --daemon")
     hl.exec_cmd("titan-focus --daemon")
     hl.exec_cmd("bash -c 'sleep 1 && waybar'")
@@ -76,18 +77,12 @@ end)
 
 local mainMod = "SUPER"
 
--- Super-key TAP -> Spotlight, without hijacking Super+<key> chords.
--- A bare `release = true` bind on SUPER_L fires on every Super release,
--- including the one that ends Super+Tab / Super+Space / Super+\. Spotlight
--- then opens with exclusive keyboard focus on top of whatever the chord just
--- opened, so those shortcuts look dead. Instead: arm on press, disarm in every
--- Super chord (see superBind), and only open Spotlight if still armed on
--- release, i.e. Super was tapped on its own.
-local superTapArmed = false
-
+-- Bare Super is intentionally unbound. A release bind on SUPER_L fires on
+-- every Super chord (including Super+M / Super+Tab) and used to stack
+-- Spotlight on top of them, so Spotlight is now only reachable via its
+-- explicit Super+Space / Super+D / Super+R bindings below.
 local function superBind(combo, action, opts)
     hl.bind(combo, function()
-        superTapArmed = false
         if type(action) == "function" then
             action()
         else
@@ -96,24 +91,13 @@ local function superBind(combo, action, opts)
     end, opts)
 end
 
-for _, superKey in ipairs({ "SUPER_L", "SUPER_R" }) do
-    hl.bind(superKey, function() superTapArmed = true end,
-        { ignore_mods = true, transparent = true })
-    hl.bind(superKey, function()
-        if superTapArmed then
-            superTapArmed = false
-            hl.dispatch(hl.dsp.exec_cmd("titan-spotlight --toggle"))  -- Windows/Super logo tap opens Spotlight
-        end
-    end, { ignore_mods = true, transparent = true, release = true })
-end
-
 -- Shell & Utilities (ArchTitan Central Command Palette & Spotlight)
 -- Bind each chord exactly ONCE. Hyprland resolves key names case-insensitively
 -- and by keycode, so "space"/"Space" and "Tab"/"tab"/"ISO_Left_Tab" all match
 -- the same physical key. Binding more than one variant runs the command twice
 -- and `--toggle` closes the window it just opened.
 superBind(mainMod .. " + Space", hl.dsp.exec_cmd("titan-spotlight --toggle"))  -- Super+Space: Titan Spotlight
-superBind(mainMod .. " + Tab", hl.dsp.exec_cmd("titan-workspace-hud --toggle-overview"), { description = "Shell: Toggle overview" })
+superBind(mainMod .. " + Tab", hl.dsp.global("quickshell:overviewWorkspacesToggle"), { description = "Shell: Toggle overview" })
 superBind(mainMod .. " + D", hl.dsp.exec_cmd("titan-spotlight --toggle"))       -- Super+D: App Launcher (Spotlight)
 superBind(mainMod .. " + R", hl.dsp.exec_cmd("titan-spotlight --toggle"))  -- Super+R: Secondary App runner (Spotlight)
 superBind(mainMod .. " + slash", hl.dsp.exec_cmd("titan-menu --toggle"))        -- Help & Shortcuts Cheat Sheet (Super+/)
@@ -450,8 +434,8 @@ hl.layer_rule({ match = { namespace = "^swayosd$" }, blur = true, ignore_alpha =
 -- animated inside the surface, so suppress the compositor's map/unmap fade.
 hl.layer_rule({ name = "titan-zone-osd", match = { namespace = "^titan-zone-osd$" }, no_anim = true })
 
--- ArchTitan Media Island -- SUPER+M toggle (uses LayerShellQt, no window rules needed)
-hl.bind(mainMod .. " + M", hl.dsp.exec_cmd("titan-media-hud --toggle"))  -- Toggle media island overlay
+-- ArchTitan Media Controls -- SUPER+M toggle (Host Quickshell Media Controls)
+superBind(mainMod .. " + M", hl.dsp.global("quickshell:mediaControlsToggle"), { description = "Shell: Toggle media controls" })
 -- Media keys (XF86) & SwayOSD OSD bindings
 hl.bind("XF86AudioPlay",         hl.dsp.exec_cmd("playerctl play-pause"))
 hl.bind("XF86AudioNext",         hl.dsp.exec_cmd("playerctl next"))

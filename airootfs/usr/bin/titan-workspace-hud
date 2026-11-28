@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# titan-workspace-hud — Delegates to Host Quickshell Workspace Overview
+# ==============================================================================
+
+ACTION="${1:-toggle}"
+
+case "$ACTION" in
+    --daemon|-d)
+        if ! pgrep -x qs >/dev/null && ! pgrep -x quickshell >/dev/null; then
+            exec qs -c ii &
+        fi
+        ;;
+    --close|-c)
+        qs -c ii ipc call search close 2>/dev/null || hyprctl dispatch global quickshell:overviewWorkspacesClose 2>/dev/null || true
+        ;;
+    --open|-o)
+        qs -c ii ipc call search open 2>/dev/null || true
+        ;;
+    --toggle-overview|-t|toggle|*)
+        qs -c ii ipc call search workspacesToggle 2>/dev/null || hyprctl dispatch global quickshell:overviewWorkspacesToggle 2>/dev/null || true
+        ;;
+esac
